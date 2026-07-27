@@ -35,6 +35,58 @@
     "howItWorks": "কীভাবে কাজ করে",
     "cuisinesTitle": "রন্ধনশৈলী অনুযায়ী দেখুন"
   },
+  "directory": {
+    "title": "আপনার কাছাকাছি রেস্টুরেন্ট",
+    "subtitle": "আপনার দোরগোড়ায় দুর্দান্ত খাবার খুঁজে নিন",
+    "searchPlaceholder": "রেস্টুরেন্ট বা খাবার খুঁজুন",
+    "filters": "ফিল্টার",
+    "sortBy": "সাজান",
+    "sortRecommended": "প্রস্তাবিত",
+    "sortRating": "সর্বোচ্চ রেটিং",
+    "sortDeliveryTime": "দ্রুততম ডেলিভারি",
+    "sortDistance": "সবচেয়ে কাছে",
+    "allTypes": "সব",
+    "openNow": "এখন খোলা",
+    "clear": "সব মুছুন",
+    "resultsCount": "{count, plural, =0 {কোনো জায়গা নেই} =1 {১টি জায়গা} other {#টি জায়গা}}",
+    "noResults": "আপনার ফিল্টারের সাথে কোনো জায়গা মেলেনি",
+    "noResultsHint": "একটি ফিল্টার মুছে দেখুন বা অন্য কিছু খুঁজুন"
+  },
+  "vendorType": {
+    "restaurant": "রেস্টুরেন্ট",
+    "cafe": "ক্যাফে",
+    "cloud-kitchen": "ক্লাউড কিচেন",
+    "home-chef": "হোম শেফ",
+    "catering": "ক্যাটারিং"
+  },
+  "restaurant": {
+    "menu": "মেনু",
+    "info": "তথ্য",
+    "reviews": "রিভিউ",
+    "deliveryFee": "ডেলিভারি ফি",
+    "minOrder": "সর্বনিম্ন অর্ডার",
+    "deliveryTime": "ডেলিভারির সময়",
+    "freeDeliveryOver": "{amount} এর বেশি অর্ডারে ফ্রি ডেলিভারি",
+    "add": "যোগ করুন",
+    "popular": "জনপ্রিয়",
+    "unavailable": "শেষ",
+    "openingHours": "খোলার সময়",
+    "about": "সম্পর্কে",
+    "searchMenu": "এই মেনুতে খুঁজুন",
+    "backToRestaurants": "সব রেস্টুরেন্ট",
+    "from": "থেকে",
+    "items": "{count, plural, =1 {১টি আইটেম} other {#টি আইটেম}}",
+    "closedToday": "বন্ধ"
+  },
+  "days": {
+    "mon": "সোমবার",
+    "tue": "মঙ্গলবার",
+    "wed": "বুধবার",
+    "thu": "বৃহস্পতিবার",
+    "fri": "শুক্রবার",
+    "sat": "শনিবার",
+    "sun": "রবিবার"
+  },
   "footer": {
     "company": "কোম্পানি",
     "about": "আমাদের সম্পর্কে",

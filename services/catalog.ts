@@ -1,10 +1,21 @@
 import {
   categories,
+  cuisineById,
   cuisines,
+  foodBySlug,
+  foodsByVendor,
+  menuSectionsByVendor,
   vendorBySlug,
   vendors,
 } from "@/lib/mock";
-import type { Category, Cuisine, Vendor, VendorType } from "@/types";
+import type {
+  Category,
+  Cuisine,
+  FoodItem,
+  MenuSection,
+  Vendor,
+  VendorType,
+} from "@/types";
 import { mockDelay, paginate, type Paginated } from "./http";
 
 /**
@@ -81,4 +92,45 @@ export async function getFeaturedVendors(limit = 6): Promise<Vendor[]> {
 
 export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
   return mockDelay(vendorBySlug.get(slug) ?? null);
+}
+
+/** Slugs for `generateStaticParams` — synchronous, build-time only. */
+export function getVendorSlugs(): string[] {
+  return vendors.filter((v) => !v.deletedAt).map((v) => v.slug);
+}
+
+/** Resolve a vendor's cuisine names for display (FK lookup). */
+export async function getVendorCuisines(vendor: Vendor): Promise<Cuisine[]> {
+  return mockDelay(
+    vendor.cuisineIds.map((id) => cuisineById.get(id)).filter((c): c is Cuisine => Boolean(c)),
+  );
+}
+
+/** A menu section with its (available) items attached, ordered for display. */
+export interface MenuSectionWithItems extends MenuSection {
+  items: FoodItem[];
+}
+
+/** Full menu for a vendor — sections in order, each with its food items. */
+export async function getVendorMenu(vendorId: string): Promise<MenuSectionWithItems[]> {
+  const sections = [...(menuSectionsByVendor[vendorId] ?? [])].sort((a, b) => a.sort - b.sort);
+  const items = foodsByVendor[vendorId] ?? [];
+  const menu = sections.map((section) => ({
+    ...section,
+    items: items.filter((f) => f.sectionId === section.id && !f.deletedAt),
+  }));
+  return mockDelay(menu.filter((s) => s.items.length > 0));
+}
+
+/** Popular items across a vendor's menu, for the "Popular" rail. */
+export async function getPopularItems(vendorId: string, limit = 6): Promise<FoodItem[]> {
+  const items = (foodsByVendor[vendorId] ?? [])
+    .filter((f) => f.isPopular && !f.deletedAt)
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, limit);
+  return mockDelay(items);
+}
+
+export async function getFoodBySlug(slug: string): Promise<FoodItem | null> {
+  return mockDelay(foodBySlug.get(slug) ?? null);
 }

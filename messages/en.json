@@ -35,6 +35,58 @@
     "howItWorks": "How it works",
     "cuisinesTitle": "Explore by cuisine"
   },
+  "directory": {
+    "title": "Restaurants near you",
+    "subtitle": "Discover great food delivering to your door",
+    "searchPlaceholder": "Search restaurants or dishes",
+    "filters": "Filters",
+    "sortBy": "Sort by",
+    "sortRecommended": "Recommended",
+    "sortRating": "Top rated",
+    "sortDeliveryTime": "Fastest delivery",
+    "sortDistance": "Nearest",
+    "allTypes": "All",
+    "openNow": "Open now",
+    "clear": "Clear all",
+    "resultsCount": "{count, plural, =0 {No places} =1 {1 place} other {# places}}",
+    "noResults": "No places match your filters",
+    "noResultsHint": "Try clearing a filter or searching for something else"
+  },
+  "vendorType": {
+    "restaurant": "Restaurants",
+    "cafe": "Cafes",
+    "cloud-kitchen": "Cloud Kitchens",
+    "home-chef": "Home Chefs",
+    "catering": "Catering"
+  },
+  "restaurant": {
+    "menu": "Menu",
+    "info": "Info",
+    "reviews": "Reviews",
+    "deliveryFee": "Delivery fee",
+    "minOrder": "Min. order",
+    "deliveryTime": "Delivery time",
+    "freeDeliveryOver": "Free delivery over {amount}",
+    "add": "Add",
+    "popular": "Popular",
+    "unavailable": "Sold out",
+    "openingHours": "Opening hours",
+    "about": "About",
+    "searchMenu": "Search this menu",
+    "backToRestaurants": "All restaurants",
+    "from": "from",
+    "items": "{count, plural, =1 {1 item} other {# items}}",
+    "closedToday": "Closed"
+  },
+  "days": {
+    "mon": "Monday",
+    "tue": "Tuesday",
+    "wed": "Wednesday",
+    "thu": "Thursday",
+    "fri": "Friday",
+    "sat": "Saturday",
+    "sun": "Sunday"
+  },
   "footer": {
     "company": "Company",
     "about": "About us",

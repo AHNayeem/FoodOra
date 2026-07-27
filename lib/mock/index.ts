@@ -7,3 +7,5 @@
 export * from "./cuisines";
 export * from "./categories";
 export * from "./vendors";
+export * from "./menus";
+export * from "./foods";

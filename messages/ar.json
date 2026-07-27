@@ -35,6 +35,58 @@
     "howItWorks": "كيف تعمل",
     "cuisinesTitle": "استكشف حسب المطبخ"
   },
+  "directory": {
+    "title": "مطاعم بالقرب منك",
+    "subtitle": "اكتشف طعامًا رائعًا يصل إلى بابك",
+    "searchPlaceholder": "ابحث عن مطاعم أو أطباق",
+    "filters": "التصفية",
+    "sortBy": "ترتيب حسب",
+    "sortRecommended": "موصى به",
+    "sortRating": "الأعلى تقييمًا",
+    "sortDeliveryTime": "الأسرع توصيلاً",
+    "sortDistance": "الأقرب",
+    "allTypes": "الكل",
+    "openNow": "مفتوح الآن",
+    "clear": "مسح الكل",
+    "resultsCount": "{count, plural, =0 {لا توجد أماكن} =1 {مكان واحد} =2 {مكانان} few {# أماكن} many {# مكانًا} other {# مكان}}",
+    "noResults": "لا توجد أماكن تطابق عوامل التصفية",
+    "noResultsHint": "جرّب إزالة أحد عوامل التصفية أو ابحث عن شيء آخر"
+  },
+  "vendorType": {
+    "restaurant": "المطاعم",
+    "cafe": "المقاهي",
+    "cloud-kitchen": "المطابخ السحابية",
+    "home-chef": "طهاة المنزل",
+    "catering": "خدمات الطعام"
+  },
+  "restaurant": {
+    "menu": "القائمة",
+    "info": "معلومات",
+    "reviews": "التقييمات",
+    "deliveryFee": "رسوم التوصيل",
+    "minOrder": "الحد الأدنى للطلب",
+    "deliveryTime": "وقت التوصيل",
+    "freeDeliveryOver": "توصيل مجاني للطلبات فوق {amount}",
+    "add": "أضف",
+    "popular": "الأكثر طلبًا",
+    "unavailable": "نفد",
+    "openingHours": "ساعات العمل",
+    "about": "نبذة",
+    "searchMenu": "ابحث في هذه القائمة",
+    "backToRestaurants": "كل المطاعم",
+    "from": "من",
+    "items": "{count, plural, =1 {صنف واحد} =2 {صنفان} few {# أصناف} many {# صنفًا} other {# صنف}}",
+    "closedToday": "مغلق"
+  },
+  "days": {
+    "mon": "الإثنين",
+    "tue": "الثلاثاء",
+    "wed": "الأربعاء",
+    "thu": "الخميس",
+    "fri": "الجمعة",
+    "sat": "السبت",
+    "sun": "الأحد"
+  },
   "footer": {
     "company": "الشركة",
     "about": "من نحن",

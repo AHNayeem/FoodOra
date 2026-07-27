@@ -78,19 +78,20 @@ Phases follow the spec (A–E). Current status:
 - [ ] **C1** Landing Website (hero done; add how-it-works, app CTA, testimonials, blog teaser)
 - [ ] **C2** Authentication UI (mock) — routes `/login` `/register` referenced, not built
 - [ ] **C3** Customer App
-- [ ] **C4** Restaurant Directory (`/restaurants`)
-- [ ] **C5** Restaurant Details (`/restaurants/[slug]`)
-- [ ] **C6** Food Details — extend mock with `foods.ts` (FoodItem type already defined)
-- [ ] **C7** Cart (Zustand store)
+- [x] **C4** Restaurant Directory (`/restaurants`) — URL-driven filters (type/sort/open/search), results grid, empty state, loading skeleton
+- [x] **C5** Restaurant Details (`/restaurants/[slug]`) — cover hero, stats, sectioned menu + section nav, info/hours sidebar; `generateStaticParams` + `generateMetadata`, 404 on miss
+- [x] **C6** Food data — `menus.ts` (menu sections) + `foods.ts` (~40 items) seeded and surfaced on the detail menu; `FoodItemCard` with popular/spicy/price/compare. Cart action stubbed (toast) pending C7
+- [ ] **C7** Cart (Zustand store) — wire `AddToCartButton` to the store
 - [ ] **C8** Checkout
 - [ ] **C9** Order Tracking (simulated)
 - [ ] **C10–C33** Dashboards, POS, QR menu, delivery, wallet, offers, reviews, AI assistant,
       notifications, CMS, analytics, settings, a11y/perf review
 - [ ] **D / E** Backend architecture & implementation (after prototype is complete)
 
-### Known stubs (expected at foundation stage)
+### Known stubs (expected at this stage)
 
-Nav links (`/restaurants`, `/cafes`, `/offers`, `/login`, …) resolve to the
-404 page until their phases are built. `foods.ts` seed + review/order entities
-are intentionally deferred to their phases; the *types* exist so services are
-ready.
+`/restaurants` + `/restaurants/[slug]` are live. Remaining nav links (`/cafes`,
+`/offers`, `/login`, `/search`, …) still resolve to the 404 page until their
+phases are built. The menu "Add" button toasts instead of adding to a cart —
+the Zustand cart store lands in C7. Review/order entities are deferred to their
+phases; the *types* exist so services are ready.
