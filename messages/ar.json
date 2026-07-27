@@ -1,0 +1,48 @@
+{
+  "common": {
+    "appName": "فودورا",
+    "tagline": "المنظومة الرقمية المتكاملة للطعام",
+    "search": "بحث",
+    "signIn": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "getStarted": "ابدأ الآن",
+    "orderNow": "اطلب الآن",
+    "seeAll": "عرض الكل",
+    "loading": "جارٍ التحميل…",
+    "openNow": "مفتوح الآن",
+    "closed": "مغلق",
+    "freeDelivery": "توصيل مجاني",
+    "min": "دقيقة",
+    "off": "خصم"
+  },
+  "nav": {
+    "restaurants": "المطاعم",
+    "cafes": "المقاهي",
+    "homeChefs": "طهاة المنزل",
+    "cloudKitchens": "المطابخ السحابية",
+    "catering": "خدمات الطعام",
+    "offers": "العروض",
+    "forBusiness": "للأعمال"
+  },
+  "home": {
+    "heroTitle": "كل ما تشتهيه، يصل إليك.",
+    "heroSubtitle": "اكتشف المطاعم وطهاة المنزل والمطابخ السحابية وخدمات الطعام — اطلب في ثوانٍ وتتبّع فورًا.",
+    "searchPlaceholder": "أدخل عنوان التوصيل",
+    "findFood": "ابحث عن الطعام",
+    "categoriesTitle": "ماذا تشتهي؟",
+    "trendingTitle": "الأكثر رواجًا بالقرب منك",
+    "trendingSubtitle": "أكثر الأماكن تفضيلاً في منطقتك الآن",
+    "howItWorks": "كيف تعمل",
+    "cuisinesTitle": "استكشف حسب المطبخ"
+  },
+  "footer": {
+    "company": "الشركة",
+    "about": "من نحن",
+    "careers": "الوظائف",
+    "help": "مركز المساعدة",
+    "legal": "قانوني",
+    "terms": "الشروط",
+    "privacy": "الخصوصية",
+    "rights": "جميع الحقوق محفوظة."
+  }
+}

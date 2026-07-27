@@ -1,0 +1,48 @@
+{
+  "common": {
+    "appName": "FoodOra",
+    "tagline": "The complete digital ecosystem for food",
+    "search": "Search",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "getStarted": "Get started",
+    "orderNow": "Order now",
+    "seeAll": "See all",
+    "loading": "Loading…",
+    "openNow": "Open now",
+    "closed": "Closed",
+    "freeDelivery": "Free delivery",
+    "min": "min",
+    "off": "off"
+  },
+  "nav": {
+    "restaurants": "Restaurants",
+    "cafes": "Cafes",
+    "homeChefs": "Home Chefs",
+    "cloudKitchens": "Cloud Kitchens",
+    "catering": "Catering",
+    "offers": "Offers",
+    "forBusiness": "For Business"
+  },
+  "home": {
+    "heroTitle": "Every craving, delivered.",
+    "heroSubtitle": "Discover restaurants, home chefs, cloud kitchens and catering — order in seconds, track in real time.",
+    "searchPlaceholder": "Enter your delivery address",
+    "findFood": "Find food",
+    "categoriesTitle": "What are you craving?",
+    "trendingTitle": "Trending near you",
+    "trendingSubtitle": "The most-loved spots in your area right now",
+    "howItWorks": "How it works",
+    "cuisinesTitle": "Explore by cuisine"
+  },
+  "footer": {
+    "company": "Company",
+    "about": "About us",
+    "careers": "Careers",
+    "help": "Help center",
+    "legal": "Legal",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "rights": "All rights reserved."
+  }
+}
