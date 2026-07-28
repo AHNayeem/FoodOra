@@ -1,38 +1,72 @@
 "use client";
 
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import type { CartVendor, FoodItem } from "@/types";
+import { useCart } from "@/stores/cart";
+import { buildCartLine } from "@/lib/cart";
+import { ItemCustomizer } from "@/components/cart/item-customizer";
 import { cn } from "@/lib/utils";
 
 /**
- * AddToCartButton — placeholder for the cart action. The cart store lands in
- * Phase C7; until then this confirms the interaction with a toast so the menu
- * feels live. Swapping in the store touches only this component.
+ * AddToCartButton — the menu's cart action (Phase C7). Dishes with option
+ * groups open the customizer; simple dishes add straight to the store. The
+ * single-vendor conflict prompt is handled globally by CartConflictDialog, so
+ * this only reacts to the non-conflict success path.
  */
 export function AddToCartButton({
-  itemName,
-  disabled,
+  item,
+  vendor,
   className,
 }: {
-  itemName: string;
-  disabled?: boolean;
+  item: FoodItem;
+  vendor: CartVendor;
   className?: string;
 }) {
-  const t = useTranslations();
+  const t = useTranslations("restaurant");
+  const tc = useTranslations("cart");
+  const add = useCart((s) => s.add);
+  const openCart = useCart((s) => s.open);
+  const [customizing, setCustomizing] = useState(false);
+
+  const hasOptions = item.optionGroups.length > 0;
+
+  function handleClick() {
+    if (hasOptions) {
+      setCustomizing(true);
+      return;
+    }
+    const line = buildCartLine(item, [], 1);
+    const { conflict } = add(vendor, line);
+    if (!conflict) {
+      openCart();
+      toast.success(tc("added", { name: item.name }));
+    }
+  }
 
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-label={`${t("restaurant.add")} — ${itemName}`}
-      onClick={() => toast.success(`${itemName} — ${t("restaurant.add")}`)}
-      className={cn(
-        "inline-flex size-9 items-center justify-center rounded-field bg-primary text-white shadow-sm transition-[transform,background] duration-[var(--duration-fast)] hover:bg-primary-600 active:scale-90 disabled:pointer-events-none disabled:opacity-40",
-        className,
+    <>
+      <button
+        type="button"
+        aria-label={`${t("add")} — ${item.name}`}
+        onClick={handleClick}
+        className={cn(
+          "inline-flex size-9 items-center justify-center rounded-field bg-primary text-white shadow-sm transition-[transform,background] duration-[var(--duration-fast)] hover:bg-primary-600 active:scale-90",
+          className,
+        )}
+      >
+        <Plus className="size-5" aria-hidden />
+      </button>
+      {hasOptions && (
+        <ItemCustomizer
+          item={item}
+          vendor={vendor}
+          open={customizing}
+          onClose={() => setCustomizing(false)}
+        />
       )}
-    >
-      <Plus className="size-5" aria-hidden />
-    </button>
+    </>
   );
 }

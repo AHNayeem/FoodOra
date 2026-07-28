@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/constants/site";
-import { vendors } from "@/lib/mock";
+import { cateringServices, vendors } from "@/lib/mock";
 
-/** Sitemap — static marketing routes + vendor detail pages. */
+/** Sitemap — static marketing routes + vendor & caterer detail pages. */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticRoutes = ["", "/restaurants", "/cafes", "/home-chefs", "/offers", "/about"];
+  const staticRoutes = ["", "/restaurants", "/cafes", "/home-chefs", "/catering", "/offers", "/about"];
   const base = siteConfig.url;
 
   const staticEntries: MetadataRoute.Sitemap = staticRoutes.map((path) => ({
@@ -19,5 +19,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...vendorEntries];
+  const cateringEntries: MetadataRoute.Sitemap = cateringServices.map((s) => ({
+    url: `${base}/catering/${s.slug}`,
+    changeFrequency: "weekly",
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...vendorEntries, ...cateringEntries];
 }

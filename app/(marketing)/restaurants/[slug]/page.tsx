@@ -10,7 +10,7 @@ import {
 import { VendorHero } from "@/components/vendor/vendor-hero";
 import { OpeningHours } from "@/components/vendor/opening-hours";
 import { FoodItemCard } from "@/components/cards/food-item-card";
-import type { CurrencyCode } from "@/config/regions";
+import type { CartVendor } from "@/types";
 
 type Params = Promise<{ slug: string }>;
 
@@ -49,7 +49,16 @@ export default async function VendorPage({ params }: { params: Params }) {
     getVendorCuisines(vendor),
     getTranslations("restaurant"),
   ]);
-  const currency = vendor.currency as CurrencyCode;
+  const cartVendor: CartVendor = {
+    id: vendor.id,
+    slug: vendor.slug,
+    name: vendor.name,
+    currency: vendor.currency,
+    countryCode: vendor.location.countryCode,
+    deliveryFee: vendor.deliveryFee,
+    minOrder: vendor.minOrder,
+    freeDeliveryOver: vendor.freeDeliveryOver,
+  };
 
   return (
     <div className="pb-16">
@@ -86,7 +95,7 @@ export default async function VendorPage({ params }: { params: Params }) {
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {section.items.map((item) => (
-                    <FoodItemCard key={item.id} item={item} currency={currency} />
+                    <FoodItemCard key={item.id} item={item} vendor={cartVendor} />
                   ))}
                 </div>
               </section>

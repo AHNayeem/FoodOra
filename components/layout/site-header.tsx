@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Menu, X, UtensilsCrossed } from "lucide-react";
@@ -8,12 +8,24 @@ import { primaryNav } from "@/constants/navigation";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { AccountMenu } from "@/components/layout/account-menu";
+import { CartButton } from "@/components/cart/cart-button";
+import { useAuth } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 
 /** SiteHeader — sticky marketing header with responsive nav + mobile drawer. */
 export function SiteHeader() {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
+  const user = useAuth((s) => s.user);
+  const hydrated = useAuth((s) => s.hydrated);
+
+  // The session store skips auto-rehydration so SSR and the first client render
+  // both start logged-out (no mismatch); we rehydrate from localStorage here.
+  useEffect(() => {
+    useAuth.persist.rehydrate();
+  }, []);
+  const signedIn = hydrated && !!user;
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-surface/85 backdrop-blur-md">
@@ -40,12 +52,19 @@ export function SiteHeader() {
         <div className="ms-auto flex items-center gap-1">
           <LocaleSwitcher className="hidden sm:inline-flex" />
           <ThemeToggle />
-          <Button href="/login" variant="ghost" size="sm" className="hidden md:inline-flex">
-            {t("common.signIn")}
-          </Button>
-          <Button href="/register" size="sm" className="hidden md:inline-flex">
-            {t("common.getStarted")}
-          </Button>
+          <CartButton />
+          {signedIn && user ? (
+            <AccountMenu user={user} />
+          ) : (
+            <>
+              <Button href="/login" variant="ghost" size="sm" className="hidden md:inline-flex">
+                {t("common.signIn")}
+              </Button>
+              <Button href="/register" size="sm" className="hidden md:inline-flex">
+                {t("common.getStarted")}
+              </Button>
+            </>
+          )}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -76,14 +95,16 @@ export function SiteHeader() {
               {t(item.labelKey)}
             </Link>
           ))}
-          <div className="mt-2 flex items-center gap-2 px-1">
-            <Button href="/login" variant="outline" size="sm" className="flex-1">
-              {t("common.signIn")}
-            </Button>
-            <Button href="/register" size="sm" className="flex-1">
-              {t("common.getStarted")}
-            </Button>
-          </div>
+          {!signedIn && (
+            <div className="mt-2 flex items-center gap-2 px-1">
+              <Button href="/login" variant="outline" size="sm" className="flex-1">
+                {t("common.signIn")}
+              </Button>
+              <Button href="/register" size="sm" className="flex-1">
+                {t("common.getStarted")}
+              </Button>
+            </div>
+          )}
           <div className="px-1 pt-1">
             <LocaleSwitcher />
           </div>

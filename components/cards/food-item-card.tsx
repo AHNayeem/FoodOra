@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Flame } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import type { FoodItem } from "@/types";
+import type { CartVendor, FoodItem } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { Badge } from "@/components/ui/badge";
 import { AddToCartButton } from "@/components/menu/add-to-cart-button";
@@ -11,16 +11,18 @@ import { cn } from "@/lib/utils";
 /**
  * FoodItemCard — a single dish row on a restaurant menu (Phase C5/C6). Server
  * component: text (price, badges) is region/locale-aware. The only interactive
- * part is the client AddToCartButton.
+ * part is the client AddToCartButton, which needs the vendor snapshot to seed
+ * the single-vendor cart.
  */
 export async function FoodItemCard({
   item,
-  currency,
+  vendor,
 }: {
   item: FoodItem;
-  currency: CurrencyCode;
+  vendor: CartVendor;
 }) {
   const t = await getTranslations("restaurant");
+  const currency = vendor.currency as CurrencyCode;
 
   return (
     <article
@@ -69,7 +71,7 @@ export async function FoodItemCard({
         </div>
         <div className="absolute -bottom-2 end-2">
           {item.isAvailable ? (
-            <AddToCartButton itemName={item.name} />
+            <AddToCartButton item={item} vendor={vendor} />
           ) : (
             <Badge tone="danger">{t("unavailable")}</Badge>
           )}

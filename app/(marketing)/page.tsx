@@ -1,20 +1,27 @@
 import { getTranslations } from "next-intl/server";
 import { Hero } from "@/components/sections/hero";
 import { CategoryRail } from "@/components/sections/category-rail";
+import { HowItWorks } from "@/components/sections/how-it-works";
+import { Testimonials } from "@/components/sections/testimonials";
+import { AppDownload } from "@/components/sections/app-download";
+import { BlogTeaser } from "@/components/sections/blog-teaser";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { VendorCard } from "@/components/cards/vendor-card";
 import { getCategories, getCuisines, getTrendingVendors } from "@/services/catalog";
+import { getBlogPosts, getTestimonials } from "@/services/content";
 
 /**
- * Home (Phase C1 — landing). Server component: data is fetched through the
+ * Home (Phase C1 — landing). Server component: all data is fetched through the
  * async services seam, exactly as it will be against a real backend.
  */
 export default async function HomePage() {
   const t = await getTranslations();
-  const [categories, trending, cuisines] = await Promise.all([
+  const [categories, trending, cuisines, testimonials, posts] = await Promise.all([
     getCategories(),
     getTrendingVendors(6),
     getCuisines(),
+    getTestimonials(6),
+    getBlogPosts(3),
   ]);
 
   return (
@@ -25,6 +32,8 @@ export default async function HomePage() {
         <SectionHeading title={t("home.categoriesTitle")} />
         <CategoryRail categories={categories} />
       </section>
+
+      <HowItWorks />
 
       <section className="container-site py-12">
         <SectionHeading
@@ -40,7 +49,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="container-site py-12 pb-20">
+      <section className="container-site py-12">
         <SectionHeading title={t("home.cuisinesTitle")} />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
           {cuisines.map((c) => (
@@ -57,6 +66,12 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      <Testimonials items={testimonials} />
+
+      <AppDownload />
+
+      <BlogTeaser posts={posts} />
     </>
   );
 }

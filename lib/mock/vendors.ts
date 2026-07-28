@@ -1,7 +1,10 @@
 import type { Vendor, WeeklyHours } from "@/types";
 import { SEED_NOW } from "./cuisines";
 
-const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };
+// `ownerId: null` by default — most demo vendors are unclaimed. Bella Napoli
+// overrides it (after `...base`) so it belongs to the `usr_owner` demo account,
+// which is what the vendor dashboard (Phase C10) loads as "my restaurant".
+const base = { ownerId: null, createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };
 
 /** Standard "open late" hours reused by most vendors. */
 const stdHours: WeeklyHours = {
@@ -56,6 +59,7 @@ export const vendors: Vendor[] = [
     promoLabel: "20% off over ৳800",
     currency: "BDT",
     ...base,
+    ownerId: "usr_owner",
   },
   {
     id: "ven_burger_lab",

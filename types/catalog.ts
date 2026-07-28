@@ -33,6 +33,8 @@ export interface Category extends BaseEntity {
 export interface Vendor extends BaseEntity {
   slug: string;
   type: VendorType;
+  /** Owning account (`usr_*`) — powers the vendor dashboard's "my restaurant". */
+  ownerId: string | null;
   name: string;
   tagline: string;
   description: string;
