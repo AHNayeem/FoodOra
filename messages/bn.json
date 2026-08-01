@@ -13,7 +13,9 @@
     "closed": "বন্ধ",
     "freeDelivery": "ফ্রি ডেলিভারি",
     "min": "মিনিট",
-    "off": "ছাড়"
+    "off": "ছাড়",
+    "menu": "মেনু",
+    "close": "বন্ধ করুন"
   },
   "nav": {
     "restaurants": "রেস্টুরেন্ট",
@@ -24,7 +26,11 @@
     "bookTable": "টেবিল বুকিং",
     "catering": "ক্যাটারিং",
     "offers": "অফার",
-    "forBusiness": "ব্যবসার জন্য"
+    "forBusiness": "ব্যবসার জন্য",
+    "primary": "প্রধান",
+    "more": "আরও",
+    "discover": "খুঁজে দেখুন",
+    "services": "সেবা"
   },
   "home": {
     "heroTitle": "প্রতিটি স্বাদ, পৌঁছে যাবে দোরগোড়ায়।",

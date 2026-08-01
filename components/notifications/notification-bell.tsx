@@ -76,7 +76,7 @@ export function NotificationBell({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label={t("title")}
-        className="relative inline-flex size-10 items-center justify-center rounded-pill border border-line text-ink transition-colors hover:bg-surface-muted"
+        className="relative inline-flex size-11 items-center justify-center rounded-pill border border-line text-ink transition-colors hover:bg-surface-muted lg:size-10"
       >
         <Bell className="size-4.5" aria-hidden />
         {unread > 0 && (

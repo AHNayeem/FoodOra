@@ -53,20 +53,24 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
             onSubmit={onSubmit}
-            className="mt-8 flex flex-col gap-2 rounded-pill bg-surface p-2 shadow-card sm:flex-row sm:items-center"
+            className="mt-8 flex w-full flex-col gap-2.5 rounded-panel bg-surface p-2.5 shadow-card outline-primary outline-offset-2 has-[input:focus-visible]:outline-2 sm:flex-row sm:items-center sm:gap-2 sm:rounded-pill sm:p-2"
           >
-            <div className="flex flex-1 items-center gap-2 ps-4">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-pill bg-surface-muted px-4 sm:bg-transparent sm:px-0 sm:ps-4">
               <MapPin className="size-5 shrink-0 text-primary" aria-hidden />
               <input
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder={t("searchPlaceholder")}
                 aria-label={t("searchPlaceholder")}
-                className="h-11 w-full bg-transparent text-ink outline-none placeholder:text-muted"
+                className="h-12 w-full min-w-0 bg-transparent text-base text-ink outline-none placeholder:truncate placeholder:text-muted sm:h-11"
               />
             </div>
-            <Button type="submit" size="lg" className="sm:w-auto">
-              <Search className="size-5" aria-hidden />
+            <Button
+              type="submit"
+              size="lg"
+              className="h-12 w-full px-6 sm:h-13 sm:w-auto sm:px-7"
+            >
+              <Search className="size-5 shrink-0" aria-hidden />
               {t("findFood")}
             </Button>
           </motion.form>

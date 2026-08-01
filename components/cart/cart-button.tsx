@@ -24,7 +24,9 @@ export function CartButton({ className }: { className?: string }) {
       onClick={open}
       aria-label={count > 0 ? `${t("open")} (${count})` : t("open")}
       className={cn(
-        "relative inline-flex size-10 items-center justify-center rounded-pill text-ink transition-colors hover:bg-surface-muted",
+        // 44px on touch layouts (the minimum comfortable tap target), 40px once
+        // there is a mouse and the header is dense.
+        "relative inline-flex size-11 items-center justify-center rounded-pill text-ink transition-colors hover:bg-surface-muted lg:size-10",
         className,
       )}
     >

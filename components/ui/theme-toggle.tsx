@@ -42,7 +42,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={() => applyThemePreference(dark ? "light" : "dark")}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       className={cn(
-        "inline-flex size-10 items-center justify-center rounded-pill text-ink transition-colors hover:bg-surface-muted",
+        "inline-flex size-11 items-center justify-center rounded-pill text-ink transition-colors hover:bg-surface-muted lg:size-10",
         className,
       )}
     >

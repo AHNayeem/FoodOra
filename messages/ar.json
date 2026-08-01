@@ -13,7 +13,9 @@
     "closed": "مغلق",
     "freeDelivery": "توصيل مجاني",
     "min": "دقيقة",
-    "off": "خصم"
+    "off": "خصم",
+    "menu": "القائمة",
+    "close": "إغلاق"
   },
   "nav": {
     "restaurants": "المطاعم",
@@ -24,7 +26,11 @@
     "bookTable": "حجز طاولة",
     "catering": "خدمات الطعام",
     "offers": "العروض",
-    "forBusiness": "للأعمال"
+    "forBusiness": "للأعمال",
+    "primary": "الرئيسية",
+    "more": "المزيد",
+    "discover": "اكتشف",
+    "services": "الخدمات"
   },
   "home": {
     "heroTitle": "كل ما تشتهيه، يصل إليك.",

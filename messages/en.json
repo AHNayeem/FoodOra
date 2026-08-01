@@ -13,7 +13,9 @@
     "closed": "Closed",
     "freeDelivery": "Free delivery",
     "min": "min",
-    "off": "off"
+    "off": "off",
+    "menu": "Menu",
+    "close": "Close"
   },
   "nav": {
     "restaurants": "Restaurants",
@@ -24,7 +26,11 @@
     "bookTable": "Book a Table",
     "catering": "Catering",
     "offers": "Offers",
-    "forBusiness": "For Business"
+    "forBusiness": "For Business",
+    "primary": "Primary",
+    "more": "More",
+    "discover": "Discover",
+    "services": "Services"
   },
   "home": {
     "heroTitle": "Every craving, delivered.",
