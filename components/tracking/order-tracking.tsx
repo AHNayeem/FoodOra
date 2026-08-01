@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -294,6 +295,19 @@ export function OrderTracking({ orderId }: { orderId: string }) {
           {t("refundPending", {
             amount: formatPrice(order.lifecycle.refundAmount, currency),
           })}
+        </p>
+      )}
+
+      {/* A wallet refund is not pending anything — the money is already back
+          (C19), so say so, and point at the ledger row that proves it. */}
+      {order.lifecycle.refund === "approved" && order.payment.method === "wallet" && (
+        <p className="mt-4 rounded-field bg-fresh/10 p-3 text-center text-sm text-body">
+          {t("refundedToWallet", {
+            amount: formatPrice(order.lifecycle.refundAmount, currency),
+          })}{" "}
+          <Link href="/account/wallet" className="font-semibold text-primary hover:underline">
+            {t("viewWallet")}
+          </Link>
         </p>
       )}
 

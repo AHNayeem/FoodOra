@@ -12,6 +12,8 @@ import { OpeningHours } from "@/components/vendor/opening-hours";
 import { FoodItemCard } from "@/components/cards/food-item-card";
 import { VendorPlans } from "@/components/subscriptions/vendor-plans";
 import { VenueBookingBand } from "@/components/reservations/venue-booking-band";
+import { VendorReviews } from "@/components/reviews/vendor-reviews";
+import { AiReviewSummary } from "@/components/ai/ai-review-summary";
 import type { CartVendor } from "@/types";
 
 type Params = Promise<{ slug: string }>;
@@ -112,6 +114,12 @@ export default async function VendorPage({ params }: { params: Params }) {
 
             {/* Subscription plans this kitchen runs (Phase C15) */}
             <VendorPlans vendorId={vendor.id} vendorName={vendor.name} />
+
+            {/* What the reviews add up to, in themes (Phase C24) */}
+            <AiReviewSummary vendorId={vendor.id} vendorName={vendor.name} />
+
+            {/* What customers made of it (Phase C22) */}
+            <VendorReviews vendorId={vendor.id} vendorName={vendor.name} />
           </div>
 
           {/* Info sidebar */}

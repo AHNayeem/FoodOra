@@ -28,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/reservations", changeFrequency: "daily", priority: 0.8 },
     { path: "/catering", changeFrequency: "weekly", priority: 0.8 },
     { path: "/offers", changeFrequency: "daily", priority: 0.8 },
+    { path: "/ai", changeFrequency: "monthly", priority: 0.7 },
     // Editorial
     { path: "/blog", changeFrequency: "weekly", priority: 0.7 },
     // Company

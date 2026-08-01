@@ -8,6 +8,7 @@ import { SearchToolbar } from "@/components/search/search-toolbar";
 import { SearchFilters, type SearchFacets } from "@/components/search/search-filters";
 import { VendorCard } from "@/components/cards/vendor-card";
 import { FoodResultCard } from "@/components/cards/food-result-card";
+import { AiSearchNote } from "@/components/ai/ai-search-note";
 import type { DietaryTag, VendorType } from "@/types";
 
 const VENDOR_TYPES = new Set<VendorType>([
@@ -142,6 +143,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
 
         <div className="min-w-0">
           <SearchToolbar facets={facets} resultCount={total} />
+
+          {/* What the assistant made of a sentence-shaped query (Phase C24) */}
+          {facets.q && <AiSearchNote query={facets.q} />}
 
           {/* Category shortcuts — a second way into the same query space. */}
           <div className="no-scrollbar -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">

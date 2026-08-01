@@ -15,6 +15,7 @@ import {
   PartyPopper,
   Percent,
   Salad,
+  Sparkles,
   UtensilsCrossed,
 } from "lucide-react";
 
@@ -37,6 +38,7 @@ export const primaryNav: NavItem[] = [
   { labelKey: "nav.bookTable", href: "/reservations", icon: CalendarCheck, group: "services" },
   { labelKey: "nav.catering", href: "/catering", icon: PartyPopper, group: "services" },
   { labelKey: "nav.offers", href: "/offers", icon: Percent, group: "services" },
+  { labelKey: "nav.assistant", href: "/ai", icon: Sparkles, group: "services" },
 ];
 
 /** Section order + headings for the drawer. */

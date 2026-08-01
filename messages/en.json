@@ -30,7 +30,8 @@
     "primary": "Primary",
     "more": "More",
     "discover": "Discover",
-    "services": "Services"
+    "services": "Services",
+    "assistant": "Food AI"
   },
   "home": {
     "heroTitle": "Every craving, delivered.",
@@ -595,7 +596,8 @@
       "addresses": "Addresses",
       "wallet": "Wallet",
       "settings": "Settings",
-      "coupons": "Coupons"
+      "coupons": "Coupons",
+      "reviews": "Reviews"
     },
     "role": {
       "guest": "Guest",
@@ -671,13 +673,34 @@
       "refund": "Refund",
       "reward": "Reward"
     },
+    "moneyIn": "Money in ({days}d)",
+    "moneyOut": "Money out ({days}d)",
+    "lowBalance": "Your balance is running low. Top up to keep paying with your wallet.",
+    "filterAll": "All",
+    "transactionsFilterEmpty": "No transactions of this kind yet.",
+    "customAmount": "Or enter an amount",
+    "topUpMethod": "Pay with",
+    "topUpVia": {
+      "card": "Card",
+      "mobile-banking": "Mobile banking"
+    },
+    "topUpProcessing": "Processing…",
+    "topUpSimulated": "Simulated — no real payment is taken.",
+    "topUpFailed": "We couldn't add the funds. Please try again.",
     "addFunds": "Add funds",
-    "addFundsHint": "Choose an amount to add to your wallet. Simulated — no real payment is taken.",
+    "addFundsHint": "Choose an amount, or type your own.",
     "confirmTopUp": "Add to wallet",
     "topUpSuccess": "{amount} added to your wallet",
     "riderApp": "Rider app",
     "coupons": "Coupons",
-    "viewInvoice": "View invoice"
+    "viewInvoice": "View invoice",
+    "errors": {
+      "topUpMin": "That amount is below the minimum top-up.",
+      "topUpMax": "That amount is above the maximum top-up.",
+      "topUpDeclined": "Your bank declined the top-up. Try another amount or method.",
+      "topUpRange": "Enter an amount between {min} and {max}."
+    },
+    "rateOrder": "Rate order"
   },
   "favorites": {
     "title": "Favorites",
@@ -857,6 +880,7 @@
     "payCardDesc": "Visa ending {last4}",
     "payWallet": "FoodOra wallet",
     "payWalletDesc": "Balance {balance}",
+    "payWalletShort": "Short by {missing}",
     "notesTitle": "Order notes",
     "notesPlaceholder": "Anything the restaurant or rider should know? (optional)",
     "summaryTitle": "Order summary",
@@ -893,7 +917,8 @@
       "selectTime": "Please choose a time slot.",
       "emptyCart": "Your cart is empty.",
       "generic": "Something went wrong. Please try again.",
-      "paymentDeclined": "Your payment was declined. Try a different method."
+      "paymentDeclined": "Your payment was declined. Try a different method.",
+      "insufficientFunds": "Your wallet doesn't cover this order. Top up or pick another method."
     },
     "discountWithCode": "Discount ({code})"
   },
@@ -1048,7 +1073,9 @@
     "viewInvoice": "View invoice",
     "requestRefund": "Request refund",
     "refundRequested": "Refund requested — we'll be in touch.",
-    "refundPending": "A refund of {amount} has been requested and is being reviewed."
+    "refundPending": "A refund of {amount} has been requested and is being reviewed.",
+    "refundedToWallet": "{amount} has been returned to your FoodOra wallet.",
+    "viewWallet": "View wallet"
   },
   "dashboard": {
     "brand": "FoodOra Merchant",
@@ -1075,7 +1102,8 @@
       "pos": "POS",
       "qr": "QR",
       "coupons": "Coupons",
-      "kitchen": "Kitchen"
+      "kitchen": "Kitchen",
+      "reviews": "Reviews"
     },
     "overviewTitle": "Overview",
     "overviewSubtitle": "How your restaurant is doing today.",
@@ -2445,5 +2473,458 @@
     "resetToast": "Demo data reset.",
     "hide": "Hide demo controls",
     "show": "Show demo controls"
+  },
+  "reviews": {
+    "sectionTitle": "Reviews",
+    "writeCta": "Write a review",
+    "writeTitle": "Rate {vendor}",
+    "editTitle": "Edit your review",
+    "orderRef": "Order {number}",
+    "close": "Close",
+    "cancel": "Cancel",
+    "submit": "Post review",
+    "saveChanges": "Save changes",
+    "submitted": "Thanks! Your review of {vendor} is live.",
+    "updated": "Your review has been updated.",
+    "deleted": "Review withdrawn.",
+    "anonymous": "Guest",
+    "overallQuestion": "How was your order?",
+    "band": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "okay": "Okay",
+      "poor": "Not great",
+      "bad": "Bad"
+    },
+    "aspectsTitle": "Rate the details",
+    "aspect": {
+      "food": "Food",
+      "delivery": "Delivery",
+      "packaging": "Packaging",
+      "value": "Value"
+    },
+    "tagsTitle": "What stood out?",
+    "tag": {
+      "tasty": "Tasty",
+      "generous": "Generous portions",
+      "hot-on-arrival": "Hot on arrival",
+      "fast-delivery": "Fast delivery",
+      "well-packaged": "Well packaged",
+      "good-value": "Good value",
+      "friendly-rider": "Friendly rider",
+      "will-reorder": "Would order again",
+      "late": "Late",
+      "arrived-cold": "Arrived cold",
+      "small-portion": "Small portions",
+      "wrong-item": "Wrong item",
+      "pricey": "Pricey",
+      "poor-packaging": "Poor packaging"
+    },
+    "dishesTitle": "Which dishes?",
+    "commentTitle": "Your review",
+    "commentPlaceholder": "What did you like — or what would you change?",
+    "photosTitle": "Photos",
+    "addPhoto": "Add",
+    "photoLibraryHint": "Pick a photo to attach.",
+    "removePhoto": "Remove photo",
+    "riderQuestion": "How did {name} do?",
+    "riderHint": "Rated separately — the kitchen isn't judged on the ride.",
+    "photoBy": "Photo by {name}",
+    "closePhoto": "Close photo",
+    "outOfFive": "{rating} out of 5",
+    "starsCount": "{count, plural, one {# star} other {# stars}}",
+    "starsShort": "{count}★",
+    "basedOn": "{count, plural, =0 {No reviews yet} one {From # review} other {From # reviews}}",
+    "recommend": "{percent}% would order again",
+    "peopleSay": "People say:",
+    "verifiedCount": "{count, plural, one {# verified order} other {# verified orders}}",
+    "withPhotosCount": "{count, plural, one {# with a photo} other {# with photos}}",
+    "verified": "Verified order",
+    "edited": "Edited",
+    "helpful": "{count, plural, =0 {Helpful} other {Helpful (#)}}",
+    "report": "Report",
+    "reported": "Reported",
+    "reportThanks": "Thanks — we'll take a look at this review.",
+    "replyFrom": "Reply from {vendor}",
+    "lovedTitle": "Most loved dishes",
+    "mentions": "{count, plural, one {# mention} other {# mentions}}",
+    "filterPhotos": "With photos",
+    "clearFilters": "Clear",
+    "sortBy": "Sort",
+    "sort": {
+      "recent": "Most recent",
+      "helpful": "Most helpful",
+      "highest": "Highest rated",
+      "lowest": "Lowest rated"
+    },
+    "loadMore": "Show more reviews",
+    "noneTitle": "No reviews match that",
+    "noneBody": "Nobody has reviewed {vendor} under these filters yet. Try clearing them.",
+    "pendingTitle": "Waiting for your rating",
+    "pendingHint": "You have 30 days to review an order after it arrives.",
+    "rateOrder": "Rate order",
+    "daysLeft": "{count, plural, =0 {Window closed} one {# day left} other {# days left}}",
+    "mineTitle": "Your reviews",
+    "mineEmptyTitle": "You haven't reviewed anything yet",
+    "mineEmptyBody": "Once an order arrives you can rate the food, the packaging and the rider — it takes about a minute.",
+    "seeOrders": "See your orders",
+    "edit": "Edit review",
+    "delete": "Withdraw review",
+    "aboutVendor": "About {vendor}",
+    "aboutRider": "About your courier",
+    "editLockedHint": "locked, the restaurant has replied",
+    "yourAverage": "Your average rating",
+    "boardTitle": "Reviews",
+    "boardSubtitle": "What customers are saying about {vendor}",
+    "boardTab": {
+      "all": "All",
+      "unanswered": "Needs a reply",
+      "critical": "Critical",
+      "photos": "With photos"
+    },
+    "boardEmpty": {
+      "all": "No reviews yet.",
+      "unanswered": "Every review has been answered. Nicely done.",
+      "critical": "No reviews at two stars or below.",
+      "photos": "No reviews with photos yet."
+    },
+    "breakdownTitle": "Rating breakdown",
+    "trendTitle": "Rating over time",
+    "reviewsLower": "reviews",
+    "kpiAverage": "Average rating",
+    "kpiUnanswered": "Awaiting reply",
+    "kpiReplyRate": "{percent}% answered",
+    "kpiThisMonth": "This month",
+    "kpiThisMonthHint": "Reviews received",
+    "kpiCritical": "Critical",
+    "kpiCriticalHint": "Two stars or below",
+    "reply": "Reply",
+    "replyingTo": "Replying to {name}",
+    "replyLabel": "Your reply",
+    "replyPlaceholder": "Thank them, or put things right. Everyone can read this.",
+    "replySignature": "Posted publicly as {vendor}",
+    "sendReply": "Post reply",
+    "replySent": "Your reply is live.",
+    "riderFeedbackTitle": "What customers said",
+    "errors": {
+      "ratingRequired": "Pick a star rating first.",
+      "commentTooShort": "That's a bit short — write at least 10 characters or leave it blank.",
+      "commentTooLong": "That review is too long.",
+      "tooMuchMedia": "You can attach up to 4 photos.",
+      "notDelivered": "You can only review an order that arrived.",
+      "alreadyReviewed": "You've already reviewed this order.",
+      "windowClosed": "The 30-day window for reviewing this order has closed.",
+      "editLocked": "This review is locked — the restaurant has already replied.",
+      "notFound": "That review no longer exists.",
+      "alreadyVoted": "You've already voted on this review.",
+      "ownReview": "You can't vote on your own review.",
+      "alreadyReported": "You've already reported this review.",
+      "replyTooShort": "Write at least 10 characters.",
+      "replyTooLong": "That reply is too long.",
+      "alreadyReplied": "You've already replied to this review."
+    }
+  },
+  "ai": {
+    "meta": {
+      "title": "Food assistant",
+      "description": "Ask for a dish by mood, budget, diet or allergy and get answers built from the live menu."
+    },
+    "title": "Food assistant",
+    "subtitle": "Built from the live menu, not guesswork",
+    "launch": "Open the food assistant",
+    "launchShort": "Ask AI",
+    "askAbout": "Ask about this menu",
+    "openFull": "Open full page",
+    "close": "Close",
+    "clear": "Clear chat",
+    "thinking": "Thinking",
+    "empty": {
+      "heading": "What are you in the mood for?",
+      "body": "Tell me a budget, a diet, an allergy or just how you feel, and I'll pull dishes off the live menu.",
+      "disclaimer": "No language model is involved — answers are matched against the real catalogue."
+    },
+    "hub": {
+      "intro": "Ask in your own words, plan a few days of meals, or tell me what to keep off your plate. Everything here is worked out from the live menu on this device.",
+      "honestHeading": "What this actually is",
+      "honestNoModel": "No language model: your sentence is matched against the catalogue by keyword, so it is precise about filters and hopeless at small talk.",
+      "honestEstimates": "Macros and allergens are estimated from each dish's description, never declared by the kitchen. Treat them as a guide.",
+      "honestVoice": "Voice input is real — it uses your browser's own speech recognition, and nothing is uploaded.",
+      "honestPrivacy": "Order history is only used when personalised recommendations are on in your settings."
+    },
+    "composer": {
+      "label": "Ask the food assistant",
+      "placeholder": "Something light under ৳500, no peanuts…",
+      "send": "Send"
+    },
+    "voice": {
+      "start": "Dictate",
+      "stop": "Stop dictating",
+      "denied": "Microphone access was denied.",
+      "failed": "Couldn't catch that — try again."
+    },
+    "scan": {
+      "open": "Use a photo",
+      "modeDish": "Identify a dish",
+      "modeMenu": "Read a menu card",
+      "privacy": "The photo stays on your device.",
+      "sentDish": "📷 Sent a photo of a dish",
+      "sentMenu": "📷 Sent a photo of a menu",
+      "dishHeading": "Best match",
+      "menuHeading": "Menu read",
+      "match": "Looks like {dish} — {confidence}% confident."
+    },
+    "search": {
+      "understood": "I read that as",
+      "apply": "Apply this reading",
+      "unsure": "Some of it I couldn't place."
+    },
+    "vendor": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "dish": {
+      "conflict": "Contains {allergens}"
+    },
+    "confidence": {
+      "high": "Good estimate",
+      "medium": "Rough estimate",
+      "low": "Loose estimate"
+    },
+    "insight": {
+      "basedOn": "Estimated as {profile}.",
+      "mayContain": "May contain",
+      "noneDetected": "Nothing on your avoid list turned up.",
+      "viewOnMenu": "See it on {vendor}'s menu"
+    },
+    "allergy": {
+      "avoidHeading": "Worth steering around"
+    },
+    "plan": {
+      "targetLine": "About {target} kcal a day",
+      "totalCost": "Menu cost of the whole plan"
+    },
+    "planner": {
+      "heading": "Diet planner",
+      "subtitle": "Three meals a day, drawn from kitchens that deliver to you.",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "rebuild": "Build it again",
+      "averageDay": "Average day",
+      "building": "Building your plan…",
+      "empty": "Nothing in the catalogue fits your profile yet — try removing a restriction."
+    },
+    "profile": {
+      "heading": "Your food profile",
+      "subtitle": "The assistant remembers this and screens every answer against it.",
+      "allergies": "Never show me",
+      "allergiesHint": "A hard filter — these are removed from every suggestion, whatever else you ask for.",
+      "dietary": "I usually eat",
+      "goal": "What I'm aiming for",
+      "calorieTarget": "Daily calories",
+      "calorieTargetHint": "Leave empty to use the goal's default ({value} kcal).",
+      "budget": "Usual spend per dish",
+      "budgetHint": "Used to size “cheap” and to cap the planner.",
+      "saved": "Profile updated."
+    },
+    "nutrition": {
+      "calories": "{value} kcal",
+      "ofTarget": "{percent}% of target",
+      "barLabel": "Protein {protein} g, carbs {carbs} g, fat {fat} g",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "grams": "{value} g",
+      "proteinShort": "{value} g protein"
+    },
+    "review": {
+      "heading": "What the reviews add up to",
+      "headingNamed": "What people say about {vendor}",
+      "praise": "Praised for",
+      "gripes": "Watch out for"
+    },
+    "reply": {
+      "greeting": "Hello! Tell me a budget, a diet, an allergy or just how you feel — I'll pull dishes off the live menu.",
+      "help": "I read your question against the real catalogue and answer with dishes you can order right here.",
+      "recommend": "Here's what I'd order right now.",
+      "recommendPersonal": "Going on what you've ordered and saved before:",
+      "unsure": "I didn't follow all of that, so here's my best guess. Naming a dish, a budget or a diet works best.",
+      "dishes": "Here's what fits.",
+      "dishesAt": "From {vendor}'s menu:",
+      "noDishes": "Nothing on the menus matches that.",
+      "vendors": "{count, plural, one {# place} other {# places}} worth a look.",
+      "noVendors": "No places match that.",
+      "mood": "For {mood}, these are my picks.",
+      "budget": "Best of the menu at that price.",
+      "budgetParty": "About {price} a head for {people, plural, one {# person} other {# people}}.",
+      "nutrition": "Here's what {dish} works out to.",
+      "nutritionList": "The closest matches, with what each works out to.",
+      "nutritionNoDish": "Name a dish and I'll break it down — or give me a ceiling like “under 600 calories”.",
+      "allergySafe": "{dish} looks clear of everything you avoid.",
+      "allergyUnsafe": "I'd skip {dish} — it clashes with what you avoid.",
+      "allergyScan": "Screening every menu against {count, plural, one {# allergen} other {# allergens}}. {safe, plural, =0 {Nothing came through clean.} one {# dish is clear.} other {# dishes are clear.}}",
+      "allergyNoProfile": "Tell me what to keep off your plate and I'll screen every menu for it.",
+      "plan": "{days, plural, one {A one-day plan} other {A #-day plan}} at about {target} kcal a day.",
+      "planEmpty": "I couldn't build a plan that fits — try loosening your profile.",
+      "reorder": "{count, plural, one {The dish} other {The dishes}} you've ordered before:",
+      "reorderNone": "You haven't ordered anything on this device yet.",
+      "reorderOff": "Personalised recommendations are off, so I can't see what you've ordered.",
+      "track": "Your order is on its way.",
+      "trackNone": "Nothing in flight right now.",
+      "scanDish": "That looks like {dish} — {confidence}% confident.",
+      "scanMenu": "That reads like {vendor}'s menu. Here's what I picked out."
+    },
+    "note": {
+      "estimate": "Macros are estimated from the dish description, not declared by the kitchen.",
+      "caloriesEstimated": "This dish lists no calories, so even that figure is inferred.",
+      "allergyDisclaimer": "Allergens are inferred from the menu text. Always confirm with the restaurant before ordering.",
+      "personalizedOff": "Personalised recommendations are off, so this is the catalogue's best rather than yours.",
+      "screened": "Screened against {count, plural, one {# allergen} other {# allergens}} on your profile.",
+      "avoiding": "I'm keeping {count, plural, one {# allergen} other {# allergens}} off the list, which may be why nothing fits.",
+      "reorderConflict": "{count, plural, one {One of these now clashes} other {# of these now clash}} with your allergy profile.",
+      "recognitionMock": "There is no vision model here — the match comes from the file, not the picture.",
+      "recognitionConflict": "Careful: this clashes with {count, plural, one {an allergen} other {allergens}} you avoid.",
+      "reviewDerived": "Summarised from the ratings and tags on this restaurant's own reviews.",
+      "planCost": "Prices are today's menu prices. Nothing is ordered.",
+      "planProjected": "The plan is worked out fresh every time — nothing is saved or scheduled.",
+      "howItWorks": "No language model is involved: I match keywords against the catalogue, so I'm precise about filters and hopeless at small talk.",
+      "relaxed": {
+        "price": "Nothing fit that budget, so these go a little over.",
+        "mood": "Nothing matched that mood exactly — these are the closest."
+      }
+    },
+    "link": {
+      "seeAll": "See all results",
+      "browseAll": "Browse everything",
+      "orderHistory": "Your orders",
+      "track": "Track it"
+    },
+    "verdict": {
+      "loved": "People love this place — {average}★ across {count, plural, one {# review} other {# reviews}}, and {recommend}% would order again.",
+      "solid": "A solid kitchen — {average}★ from {count, plural, one {# review} other {# reviews}}, with {recommend}% ordering again.",
+      "mixed": "Reviews are mixed: {average}★ from {count, plural, one {# review} other {# reviews}}, {recommend}% would order again.",
+      "poor": "Reviews run poor — {average}★ from {count, plural, one {# review} other {# reviews}}.",
+      "tooFew": "Only {count, plural, one {# review} other {# reviews}} so far — too few to read much into."
+    },
+    "chip": {
+      "mood": "Mood: {mood}",
+      "maxPrice": "Up to {price}",
+      "maxCalories": "Under {calories} kcal",
+      "dietary": "{tag}",
+      "avoid": "No {allergen}",
+      "spicy": "Spicy",
+      "healthy": "Healthy",
+      "openNow": "Open now",
+      "people": "{count, plural, one {# person} other {# people}}",
+      "vendorType": "{type}",
+      "cuisine": "{name}",
+      "category": "{name}"
+    },
+    "prompt": {
+      "cheapDinner": "Something cheap",
+      "healthyLunch": "A light, healthy lunch",
+      "spicy": "Something spicy",
+      "comfort": "Comfort food",
+      "dateNight": "Date night",
+      "quick": "I'm starving",
+      "vegan": "Vegan dinner",
+      "planWeek": "Plan my meals",
+      "calories": "Calories in a dish",
+      "allergyCheck": "What's safe for me?",
+      "reorder": "My usual",
+      "surprise": "Surprise me",
+      "nearby": "A cafe open now",
+      "budgetTable": "Dinner for four"
+    },
+    "mood": {
+      "comfort": "comfort food",
+      "light": "something light",
+      "celebrate": "a celebration",
+      "hangover": "a rough morning",
+      "date-night": "a date night",
+      "quick": "something quick",
+      "cosy": "a cosy evening",
+      "adventurous": "something new"
+    },
+    "goal": {
+      "balanced": "Balanced",
+      "weight-loss": "Weight loss",
+      "muscle-gain": "Muscle gain",
+      "keto": "Keto",
+      "plant-based": "Plant-based",
+      "family": "Family"
+    },
+    "slot": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner"
+    },
+    "dietary": {
+      "halal": "Halal",
+      "vegetarian": "Vegetarian",
+      "vegan": "Vegan",
+      "gluten-free": "Gluten-free",
+      "keto": "Keto",
+      "healthy": "Healthy",
+      "spicy": "Spicy"
+    },
+    "vendorType": {
+      "restaurant": "restaurants",
+      "cafe": "cafes",
+      "cloud-kitchen": "cloud kitchens",
+      "home-chef": "home chefs",
+      "catering": "caterers"
+    },
+    "allergen": {
+      "gluten": "Gluten",
+      "dairy": "Dairy",
+      "eggs": "Eggs",
+      "nuts": "Tree nuts",
+      "peanuts": "Peanuts",
+      "soy": "Soy",
+      "shellfish": "Shellfish",
+      "fish": "Fish",
+      "sesame": "Sesame"
+    },
+    "profileClass": {
+      "drink": "a drink",
+      "dessert": "a dessert",
+      "salad": "a salad",
+      "fried": "something fried",
+      "grill": "grilled food",
+      "curry": "a curry",
+      "grain": "a rice, bread or pasta dish",
+      "soup": "a soup",
+      "mixed": "a mixed plate"
+    },
+    "aspect": {
+      "food": "Food",
+      "delivery": "Delivery",
+      "packaging": "Packaging",
+      "value": "Value"
+    },
+    "tag": {
+      "tasty": "Tasty",
+      "generous": "Generous portions",
+      "hot-on-arrival": "Hot on arrival",
+      "fast-delivery": "Fast delivery",
+      "well-packaged": "Well packaged",
+      "good-value": "Good value",
+      "friendly-rider": "Friendly rider",
+      "will-reorder": "Would order again",
+      "late": "Late",
+      "arrived-cold": "Arrived cold",
+      "small-portion": "Small portions",
+      "wrong-item": "Wrong item",
+      "pricey": "Pricey",
+      "poor-packaging": "Poor packaging"
+    },
+    "errors": {
+      "empty": "Type a question first.",
+      "tooLong": "That's a bit long — try asking it in a sentence.",
+      "notFound": "I couldn't find that.",
+      "unsupportedFile": "That file type isn't supported — try a JPEG or PNG.",
+      "fileTooLarge": "That image is too large. 8 MB is the limit.",
+      "planRange": "Plans run from one to seven days.",
+      "planEmpty": "I couldn't build a plan from your profile — try removing a restriction."
+    }
   }
 }

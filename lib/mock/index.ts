@@ -29,3 +29,4 @@ export * from "./reservations";
 export * from "./delivery-zones";
 export * from "./riders";
 export * from "./delivery-jobs";
+export * from "./reviews";

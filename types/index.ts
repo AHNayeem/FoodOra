@@ -19,3 +19,5 @@ export * from "./qr";
 export * from "./subscription";
 export * from "./reservation";
 export * from "./delivery";
+export * from "./review";
+export * from "./ai";

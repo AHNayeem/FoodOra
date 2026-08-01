@@ -37,11 +37,11 @@ app/
     blog/  blog/[slug]/ editorial index + article reader
     about|careers|help|terms|privacy|partner|rider/          CMS-backed pages
     account/            private customer app behind a client auth gate: profile,
-                        orders, subscriptions, reservations, favorites, addresses,
-                        wallet, coupons, settings
+                        orders, subscriptions, reservations, favorites, reviews,
+                        addresses, wallet, coupons, settings
   (dashboard)/          vendor dashboard (route group) — own sidebar + topbar shell
     dashboard/          overview, orders, menu (C10), pos (C11), qr studio (C12),
-                        reservations book (C16), coupons (C21)
+                        reservations book (C16), coupons (C21), reviews (C22)
   (qr)/                 scanned-table surface (route group) — no site chrome at all
     m/[slug]/           QR menu a printed table code resolves to (Phase C12)
   (rider)/              delivery partner app (route group) — phone-shaped frame,
@@ -59,6 +59,10 @@ lib/
   utils.ts  format.ts   cn(), slugify(); region-aware price/number/eta formatters
   coupons.ts            the coupon rules engine — derived status + one evaluator
                         every coupon surface shares (C21)
+  wallet.ts             wallet rules — cover/shortfall, the settle guard,
+                        summary + month grouping (C19)
+  reviews.ts            the rating engine — one summariser every surface shares,
+                        histogram from a stored aggregate, review windows (C22)
   mock/                 seed data — the ONLY place demo data lives
 
 services/                async data seam — components call THESE, never lib/mock directly
@@ -72,6 +76,8 @@ services/                async data seam — components call THESE, never lib/mo
   pages.ts              CMS-managed page docs — about/help/careers/legal/pitch
   favorites.ts          re-joins saved ids to vendors/dishes, drops stale ones (C23)
   settings.ts           account settings, password change, closure (C28)
+  wallet.ts             the wallet read, plus top-up and wallet-payment
+                        authorisation — both can decline (C19)
   vendor.ts             vendor dashboard reads — stats/charts/best-sellers/orders (Phase C10)
   pos.ts                counter catalog/tables + simulated completeSale (Phase C11)
   qr.ts                 QR menu config, scanned-table resolution, rounds, service calls (C12)
@@ -79,6 +85,8 @@ services/                async data seam — components call THESE, never lib/mo
   reservations.ts       bookable venues, availability, book/cancel + the venue's book (C16)
   delivery.ts           rider + zone, trip offers, running a trip, earnings,
                         wallet / cash hand-ins (C18)
+  reviews.ts            the review corpus + its aggregate, writing/editing a
+                        review, helpful votes and the merchant's replies (C22)
 
 types/                   domain models (BaseEntity w/ soft-delete + audit fields)
 components/
@@ -95,6 +103,9 @@ components/
   offers/               offer-card, copy-code, offer-terms, claim-coupon (C21)
   coupons/              coupon-ticket — the one way a coupon is drawn, in the
                         wallet, the checkout picker and the merchant list (C21)
+  reviews/              stars (display + picker), rating summary w/ histogram,
+                        review card (one card for all four surfaces), media
+                        lightbox, the write/edit dialog, vendor band (C22)
   blog/                 post-card, post-body (structured BlogBlock renderer)
   marketing/            marketing-blocks (hero/stats/values/steps/faq),
                         legal-document, pitch-page (/partner + /rider)
@@ -102,7 +113,8 @@ components/
                         best-sellers, orders-board, menu-manager (C10), pos/ (C11),
                         qr/ studio + print sheet (C12),
                         reservations/ book + floor view (C16),
-                        coupons/ manager + issue form (C21)
+                        coupons/ manager + issue form (C21),
+                        reviews/ board + reply form + rating trend (C22)
   qr/                   scanned-table guest surface: menu view, item row, welcome,
                         ticket / bill / service sheets, qr-code renderer (C12)
   subscriptions/        meal-plan card/filters/hero, weekly menu, nutrition strip,
@@ -155,8 +167,8 @@ Phases follow the spec (A–E). Current status:
       mock — add/edit/delete/set-default; checkout now reads the same store so
       edits carry over), and **wallet** (persisted `stores/wallet.ts` seeded
       from `services/wallet.ts` + `lib/mock/wallet.ts`; balance + ledger +
-      simulated top-up). New `Wallet` types; `account` i18n namespace expanded
-      (en/bn/ar)
+      simulated top-up — *made spendable in C19*). New `Wallet` types; `account`
+      i18n namespace expanded (en/bn/ar)
 - [x] **C4** Restaurant Directory (`/restaurants`) — URL-driven filters (type/sort/open/search), results grid, empty state, loading skeleton
 - [x] **C5** Restaurant Details (`/restaurants/[slug]`) — cover hero, stats, sectioned menu + section nav, info/hours sidebar; `generateStaticParams` + `generateMetadata`, 404 on miss
 - [x] **C6** Food data — `menus.ts` (menu sections) + `foods.ts` (~40 items) seeded and surfaced on the detail menu; `FoodItemCard` with popular/spicy/price/compare. Cart action stubbed (toast) pending C7
@@ -348,7 +360,7 @@ Phases follow the spec (A–E). Current status:
         `<details>` so they work without JS
       - Sitemap now covers all 17 static routes plus vendor, caterer, meal-plan
         and article details. All three locale catalogs stay key-for-key
-        identical (1,818 keys as of C21), with full Arabic plural forms
+        identical (2,141 keys as of C19), with full Arabic plural forms
 - [x] **C23** Favorites — a heart on every vendor card, menu row, search result
       and the vendor hero. `stores/favorites.ts` persists **ids only** (newest
       first) and `services/favorites.ts` re-joins them to entities, dropping and
@@ -411,6 +423,42 @@ Phases follow the spec (A–E). Current status:
       `delivery` i18n namespace (en/bn/ar, full Arabic plurals); the account menu
       routes riders here instead of the merchant dashboard, and `/rider` gained an
       "already a partner?" way in
+- [x] **C19** Wallet — the wallet stopped being a statement and became a tender.
+      C3 gave it a balance, a ledger and a top-up button; nothing could spend it,
+      and checkout offered a "wallet" tender against a hard-coded `2450` that
+      disagreed with the store the moment anyone topped up. Now the money is real
+      in both directions and there is **exactly one way it moves**: the store
+      appends a *signed transaction* and re-sums, so the balance cannot drift from
+      the ledger and there is no setter that could let it. Every post is
+      order-scoped and guarded by the ledger itself (`isSettled`), which is what
+      makes a persisted, multi-tab, autopilot-driven prototype safe to replay: an
+      order can be charged once and refunded once, however many times its status
+      change is re-committed.
+      **Spending** — the checkout tender reads the live balance, refuses to be
+      picked when it cannot cover the order and says *by how much* it falls short.
+      The chosen tender is **derived, not stored**: adding a tip or losing a coupon
+      raises the total, so `payment === "wallet"` silently resolves to cash the
+      instant it stops being affordable, leaving no window where the selection is
+      stale. The rule is enforced again in `services/wallet.authoriseWalletPayment`
+      — a disabled button is a courtesy, not a control — and the debit is posted
+      against the order number, so the receipt and the ledger row are the same
+      payment.
+      **Refunding** — a wallet payment is the one tender this app can actually
+      reverse (the money is in a ledger it owns), so a wallet-paid order that ends
+      badly is refunded *automatically, as part of committing the transition*
+      rather than by whichever surface happened to cancel it: `stores/orders.ts`
+      credits the wallet and follows through to `refunded`, so the customer is told
+      via the same notification path as every other status. Cash was never taken
+      and a card refund is a bank's business — both keep the "requested → pending"
+      path. The tracker now distinguishes the two.
+      **The surface** — `/account/wallet` became the statement behind those
+      payments: a thirty-day money-in/money-out summary, a type filter, months as
+      headings, a low-balance nudge, and a top-up that takes a custom amount and a
+      funding method through a gateway that can decline (amount `1234`, the
+      reserved-failure trick C8 uses for cards). New `lib/wallet.ts` (the pure
+      rules every surface shares — cover/shortfall, summarise, group, the settle
+      guard) and three new seam functions in `services/wallet.ts`; `account`,
+      `checkout` and `tracking` i18n extended (en/bn/ar)
 - [x] **C21** Coupons — the redeemable half of a promotion, on both sides.
       An **offer** (C20) is a campaign the platform advertises; a **coupon** is a
       ticket a customer holds. The rule lives on `Coupon`, everything personal —
@@ -483,7 +531,119 @@ Phases follow the spec (A–E). Current status:
       `components/demo/*` adds an autopilot that plays the actors a presenter
       is not — through the same store actions, so it has no privileged path.
       New `notifications` / `admin` / `demo` i18n namespaces (en/bn/ar)
-- [ ] **C19, C22, C24–C27, C29–C33 (remaining)** wallet UI, reviews, AI assistant,
+- [x] **C22** Reviews — the customer's half of a finished order, on every side.
+      A review *is* an order that came back with an opinion: the `orderId` is what
+      makes it verified, what stops the same order being rated twice, and what
+      lets a merchant answer a real customer rather than an anonymous star. One
+      form writes **two rows** where a courier was involved (`Review.subject`) —
+      a late rider is not the kitchen's fault and cold food is not the rider's —
+      which is why the same card renders on the storefront, in the account, on
+      the merchant's board and in the rider's profile.
+      **The aggregate is derived, never stored** (`lib/reviews.ts` is the only
+      place an average, a histogram or an aspect score is calculated, and every
+      surface calls it). The catalogue's `rating` / `reviewCount` are the
+      denormalised counters a backend keeps beside the table — nobody runs
+      `AVG()` over 3,410 rows on a page view — so `distributionFromAggregate`
+      reconstructs the histogram those two numbers imply (bell, floor, then whole
+      reviews moved between adjacent buckets until the histogram's own mean *is*
+      the stored average) and `summariseVendor` folds in whatever this device
+      wrote. In Phase E the reconstruction is deleted and replaced by one
+      `GROUP BY rating`; every caller keeps its signature. The corpus itself is
+      synthesised per vendor (`lib/mock/reviews.ts`, mulberry32 anchored to `now`,
+      the C10/C16/C18 pattern) and **draws its stars from that same histogram**,
+      so the page of reviews can never contradict the number printed above it.
+      **Rules live in the seam, not in disabled buttons:** rating an order that
+      never arrived, rating it twice, editing one the restaurant has already
+      answered publicly (the reply locks the review — a public answer to specific
+      words), voting on your own review, voting twice, replying twice, replying to
+      another restaurant's review — every one is refused by `services/reviews.ts`
+      with an i18n key, and the 30-day window is re-checked at submit because a
+      form can sit open past midnight.
+      **Customer:** a reviews band on every restaurant page (summary + clickable
+      histogram + aspect averages + what people keep saying + "most loved dishes"
+      joined back to the menu, filter by star / photos, four sorts, helpful votes,
+      report, load more), a write/edit dialog that asks for the overall star first
+      and only then offers the half of the tag vocabulary that agrees with it
+      (`tagsForRating`), photo attachments (spec: Photo Review — video is the same
+      row with a poster frame), a courier score, and `/account/reviews` (orders
+      still owed a rating with their days remaining, then everything written, each
+      editable until answered). **Merchant:** `/dashboard/reviews` — the same
+      corpus and the same summary the storefront reads, a six-month rating trend
+      pinned to the 1–5 domain, tabs that default to *needs a reply*, and an
+      inline public answer. **Rider:** recent feedback on `/delivery/profile`.
+      New `types/review.ts`, persisted `stores/reviews.ts` (reviews written here,
+      helpful votes, reports — deletions are soft, because the row is what proves
+      an order was already reviewed); merchant replies ride on `stores/merchant.ts`
+      and are joined into the seam's `ReviewContext` by `useReviewContext`, so a
+      reply written in the dashboard shows up for the customer. New `reviews` i18n
+      namespace (en/bn/ar, full Arabic plurals); account + dashboard sidebars
+      gained the entry. Review *notifications* are deliberately left to C25
+- [x] **C24** AI Assistant — the whole "AI Features" block of the spec (Food
+      Assistant, AI Chat, AI/Meal/Restaurant Recommendation, Mood & Budget Based
+      Search, Allergy Warning, Nutrition Analysis, Diet Planner, AI Search, Voice
+      Search, Image Search, Food Recognition, OCR Menu Scanner, AI Review
+      Summary), built on one claim: **there is no model, and the assistant never
+      pretends there is one.** A deterministic parser turns a sentence into
+      *the search page's own facets* — `lib/ai.parseRequest` → `RequestConstraints`
+      → `searchHref`, so anything it can answer is also a link the customer can
+      open and refine by hand, and it has no private notion of what a dish is.
+      That hand-off *is* the AI Search feature, and it is why the assistant can
+      never surface a dish the catalogue would not.
+      **A reply is a key plus data, never a sentence.** `AssistantSay` is an i18n
+      key and its ICU values; `AssistantBlock`s are typed cards holding **ids
+      only** (the C23 favorites rule). So a thread restored from localStorage
+      next week shows today's prices, and *re-reads itself in Bangla* if the
+      locale changed meanwhile — which stored prose never could. The seam embeds
+      the entities it referenced (`AssistantReply.entities`), exactly as a chat
+      endpoint would; `resolveEntities` is the batch fetch on rehydrate.
+      **Nothing derived is stored, and every estimate says so.** The seed gives a
+      dish a name, a description and a calorie count; `lib/nutrition.ts` infers
+      the rest. Macros come from an energy *split* per dish class (fried, salad,
+      dessert, grain…) nudged by dietary tags, so `4·protein + 4·carbs + 9·fat`
+      lands back on the stated calories — an estimate that contradicts the number
+      beside it is worse than none (script-verified across all 75 dishes).
+      Allergens are keyword-inferred and deliberately over-report, with a vendor's
+      own dietary tag outranking a guess made from an adjective (a vegan curry is
+      not flagged for dairy). The haystack reads the **slug** as well as the prose:
+      "Margherita DOP — fior di latte, San Marzano, basil" never says *pizza*, so
+      a gluten screen on the description alone cleared it — `pizza-margherita`
+      does not. Confidence is reported (`high`/`medium`/`low`) and the UI labels
+      every figure an estimate.
+      **Rules live in the seam.** `services/ai.ts` refuses an empty message, a
+      paragraph, an unsupported file, an oversized image and an out-of-range plan
+      with i18n keys — and enforces the one rule that matters most in a single
+      place: when C28's `personalizedRecommendations` is off it drops every id
+      the device handed it, so the privacy switch changes the *answer*, not just
+      what persists. Allergies survive it: they are safety, not personalisation.
+      When the hard filter leaves too little, the seam relaxes **price first, then
+      mood, never the diet or the allergens**, and says which concession it made.
+      **Surfaces:** a slide-over panel on every public page (`CartDrawer`'s
+      behaviour, not a second overlay), the `/ai` hub (same thread, plus the
+      profile and a 1/3/7-day planner), an AI review summary band on every
+      restaurant page (client-side, through C22's own seam, so it and the review
+      list beneath it read the same corpus), and the search page's "I read that
+      as" note. **Voice search is genuinely real** — the browser's own Web Speech
+      API, nothing uploaded, and the button hides itself where support is absent;
+      it fills the composer rather than sending, because speech mishears. Image
+      recognition is honest instead: a deterministic fingerprint (the file never
+      leaves the browser), a filename that really is read, and a confidence
+      capped at 0.72 when it was a draw. The diet planner is **projected, never
+      stored** (the C15 rule) — greedy best-fit per slot against the goal's
+      calorie target, no dish or kitchen twice in a day.
+      New `types/ai.ts`, `lib/nutrition.ts` (`sumNutrition` moved out of
+      `lib/subscriptions.ts` into `totalNutrition`, the `lib/dates` precedent),
+      `lib/ai.ts`, `services/ai.ts`, persisted `stores/assistant.ts` (thread +
+      food profile; entities are a cache and are deliberately *not* persisted),
+      13 components under `components/ai/`, the `/ai` route, and a new `ai` i18n
+      namespace — catalogs now **2512 keys**, key-for-key identical across
+      en/bn/ar with full Arabic six-form plurals; all 69 literal lookups, 59
+      seam-emitted keys and every dynamic vocabulary group script-verified to
+      resolve. Quick-prompt chips carry a *localised label and a fixed English
+      phrase*, which is the localised path into an English-first parser.
+      tsc + eslint clean; `scripts/ai-flow.ts` is a **119-assertion** flow check
+      over parser, macros, allergens, planner, composer, privacy, recognition,
+      review summary and AI search; routes 200 in en/bn/ar
+- [ ] **C25–C27, C29–C33 (remaining)** notifications,
       full CMS admin, deeper analytics, a11y/perf review
 - [ ] **D / E** Backend architecture & implementation (after prototype is complete)
 
@@ -502,7 +662,8 @@ there are no known 404s left in the customer app. The vendor dashboard (`/dashbo
 `/dashboard/orders`, `/dashboard/menu`) is live behind the sign-in + management-role
 gate (sign in as `owner@foodora.dev` / `demo1234`). The customer app (`/account`,
 `/account/orders`, `/account/subscriptions`, `/account/favorites`,
-`/account/addresses`, `/account/wallet`, `/account/settings`) is live behind the
+`/account/reviews`, `/account/addresses`, `/account/wallet`, `/account/settings`)
+is live behind the
 sign-in gate. Auth is fully simulated (no backend/JWT): any seeded account signs in
 with password `demo1234`, OTP accepts `123456`, social buttons resolve to the
 demo customer. The cart is live (add from any menu, single-vendor) and checkout is live
@@ -551,3 +712,23 @@ phases; the *types* exist so services are ready. Settings that need a server to 
 privacy flags, 2FA) persist locally and would be sent verbatim to the Phase E
 endpoints; account deletion clears every persisted customer store but has no
 server-side retention window yet.
+The food assistant (C24) is at `/ai`, or behind the floating button on any
+public page — try "something cheap and vegan, no peanuts", "comfort food for a
+rainy evening", "how many calories is the Margherita DOP", or "plan my meals for
+5 days". Honest limits, and the UI states each of them rather than hiding them:
+**there is no language model.** The parser reads keywords, which makes it precise
+about filters (a budget, a diet, an allergen, a named dish) and useless at
+conversation — it has no memory of the previous turn and cannot be argued with.
+It is also English-first: the localised quick chips exist so a Bangla or Arabic
+speaker has a working path, and they send a fixed English phrase. **Macros and
+allergens are inferred**, from each dish's own words rather than declared by the
+kitchen, so the assistant labels them estimates, over-reports allergens on
+purpose, and tells the customer to confirm with the restaurant — never rely on it
+for a real allergy. **Photo recognition is a fingerprint, not vision**: the same
+photo always gives the same answer and a filename that names a dish really is
+read, but an anonymous photo is a deterministic draw and says so with a
+confidence below 0.72. Voice input is the exception — it is the browser's own
+speech recognition, genuinely working, with nothing uploaded (the button hides
+itself where the browser has no support). The conversation, the food profile and
+any plan are device-local like an order, so nothing is shared between phones and
+no plan is ever scheduled or charged.

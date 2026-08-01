@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Star } from "lucide-react";
 import type { CurrencyCode } from "@/config/regions";
 import type { Order } from "@/types";
 import { useOrders } from "@/stores/orders";
+import { useReviews } from "@/stores/reviews";
 import { cartCount } from "@/lib/cart";
 import { isActive, splitOrders } from "@/lib/order-lifecycle";
 import { isTerminal } from "@/lib/order-machine";
+import { canReviewOrder } from "@/lib/reviews";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { WriteReviewDialog } from "@/components/reviews/write-review-dialog";
 
 /**
  * OrderHistory — the customer's active & past orders (Phase C3).
@@ -27,8 +30,12 @@ export function OrderHistory() {
   const t = useTranslations("account");
   const orders = useOrders((s) => s.orders);
   const hydrated = useOrders((s) => s.hydrated);
+  // One reading of the clock for the whole list, taken at mount: every card's
+  // "can this still be reviewed?" has to be answered against the same instant.
+  const [nowMs] = useState(() => Date.now());
   useEffect(() => {
     useOrders.persist.rehydrate();
+    useReviews.persist.rehydrate();
   }, []);
 
   if (!hydrated) {
@@ -61,14 +68,14 @@ export function OrderHistory() {
       {active.length > 0 && (
         <Group title={t("activeOrders")}>
           {active.map((order) => (
-            <OrderCard key={order.id} order={order} live />
+            <OrderCard key={order.id} order={order} nowMs={nowMs} live />
           ))}
         </Group>
       )}
       {past.length > 0 && (
         <Group title={t("pastOrders")}>
           {past.map((order) => (
-            <OrderCard key={order.id} order={order} />
+            <OrderCard key={order.id} order={order} nowMs={nowMs} />
           ))}
         </Group>
       )}
@@ -85,9 +92,24 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function OrderCard({ order, live = false }: { order: Order; live?: boolean }) {
+function OrderCard({
+  order,
+  nowMs,
+  live = false,
+}: {
+  order: Order;
+  nowMs: number;
+  live?: boolean;
+}) {
   const t = useTranslations("account");
   const locale = useLocale();
+  const reviews = useReviews((s) => s.reviews);
+  const [rating, setRating] = useState(false);
+  const reviewable = canReviewOrder(
+    order,
+    nowMs,
+    reviews.some((review) => review.orderId === order.id && !review.deletedAt),
+  );
   const currency = order.vendor.currency as CurrencyCode;
   const count = cartCount(order.lines);
   const placed = new Date(order.placedAt).toLocaleDateString(locale, {
@@ -139,7 +161,19 @@ function OrderCard({ order, live = false }: { order: Order; live?: boolean }) {
         <Button href={`/restaurants/${order.vendor.slug}`} size="sm" variant="ghost">
           {t("reorder")}
         </Button>
+        {/* Rating is only offered where it is actually allowed — the same window
+            check the seam re-runs on submit (Phase C22). */}
+        {reviewable && (
+          <Button size="sm" variant="outline" onClick={() => setRating(true)}>
+            <Star className="size-4" aria-hidden />
+            {t("rateOrder")}
+          </Button>
+        )}
       </div>
+
+      {reviewable && (
+        <WriteReviewDialog order={order} open={rating} onClose={() => setRating(false)} />
+      )}
     </li>
   );
 }

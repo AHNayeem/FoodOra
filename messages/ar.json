@@ -30,7 +30,8 @@
     "primary": "الرئيسية",
     "more": "المزيد",
     "discover": "اكتشف",
-    "services": "الخدمات"
+    "services": "الخدمات",
+    "assistant": "ذكاء الطعام"
   },
   "home": {
     "heroTitle": "كل ما تشتهيه، يصل إليك.",
@@ -595,7 +596,8 @@
       "addresses": "العناوين",
       "wallet": "المحفظة",
       "settings": "الإعدادات",
-      "coupons": "الكوبونات"
+      "coupons": "الكوبونات",
+      "reviews": "التقييمات"
     },
     "role": {
       "guest": "زائر",
@@ -671,13 +673,34 @@
       "refund": "استرداد",
       "reward": "مكافأة"
     },
+    "moneyIn": "الوارد ({days} يومًا)",
+    "moneyOut": "الصادر ({days} يومًا)",
+    "lowBalance": "رصيدك أوشك على النفاد. اشحن محفظتك لمواصلة الدفع بها.",
+    "filterAll": "الكل",
+    "transactionsFilterEmpty": "لا توجد معاملات من هذا النوع بعد.",
+    "customAmount": "أو أدخل مبلغًا",
+    "topUpMethod": "طريقة الدفع",
+    "topUpVia": {
+      "card": "بطاقة",
+      "mobile-banking": "الخدمات المصرفية عبر الهاتف"
+    },
+    "topUpProcessing": "جارٍ المعالجة…",
+    "topUpSimulated": "محاكاة — لا يتم خصم أي دفعة حقيقية.",
+    "topUpFailed": "تعذّرت إضافة الرصيد. يرجى المحاولة مرة أخرى.",
     "addFunds": "إضافة رصيد",
-    "addFundsHint": "اختر مبلغًا لإضافته إلى محفظتك. محاكاة — لا يتم خصم أي دفعة حقيقية.",
+    "addFundsHint": "اختر مبلغًا أو أدخل مبلغًا خاصًا بك.",
     "confirmTopUp": "أضف إلى المحفظة",
     "topUpSuccess": "تمت إضافة {amount} إلى محفظتك",
     "riderApp": "تطبيق السائق",
     "coupons": "الكوبونات",
-    "viewInvoice": "عرض الفاتورة"
+    "viewInvoice": "عرض الفاتورة",
+    "errors": {
+      "topUpMin": "هذا المبلغ أقل من الحد الأدنى للشحن.",
+      "topUpMax": "هذا المبلغ يتجاوز الحد الأقصى للشحن.",
+      "topUpDeclined": "رفض البنك عملية الشحن. جرّب مبلغًا أو طريقة أخرى.",
+      "topUpRange": "أدخل مبلغًا بين {min} و {max}."
+    },
+    "rateOrder": "قيّم الطلب"
   },
   "favorites": {
     "title": "المفضلة",
@@ -857,6 +880,7 @@
     "payCardDesc": "فيزا تنتهي بـ {last4}",
     "payWallet": "محفظة فودورا",
     "payWalletDesc": "الرصيد {balance}",
+    "payWalletShort": "ينقص {missing}",
     "notesTitle": "ملاحظات الطلب",
     "notesPlaceholder": "هل هناك ما يجب أن يعرفه المطعم أو السائق؟ (اختياري)",
     "summaryTitle": "ملخص الطلب",
@@ -893,7 +917,8 @@
       "selectTime": "يرجى اختيار موعد.",
       "emptyCart": "سلتك فارغة.",
       "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
-      "paymentDeclined": "تم رفض عملية الدفع. جرّب طريقة أخرى."
+      "paymentDeclined": "تم رفض عملية الدفع. جرّب طريقة أخرى.",
+      "insufficientFunds": "رصيد محفظتك لا يغطي هذا الطلب. اشحنها أو اختر طريقة أخرى."
     },
     "discountWithCode": "الخصم ({code})"
   },
@@ -1048,7 +1073,9 @@
     "viewInvoice": "عرض الفاتورة",
     "requestRefund": "طلب استرداد",
     "refundRequested": "تم تسجيل طلب الاسترداد — سنتواصل معك.",
-    "refundPending": "طلب استرداد بقيمة {amount} قيد المراجعة."
+    "refundPending": "طلب استرداد بقيمة {amount} قيد المراجعة.",
+    "refundedToWallet": "تمت إعادة {amount} إلى محفظة فودأورا الخاصة بك.",
+    "viewWallet": "عرض المحفظة"
   },
   "dashboard": {
     "brand": "FoodOra للتجار",
@@ -1075,7 +1102,8 @@
       "pos": "نقاط البيع",
       "qr": "رموز QR",
       "coupons": "الكوبونات",
-      "kitchen": "المطبخ"
+      "kitchen": "المطبخ",
+      "reviews": "التقييمات"
     },
     "overviewTitle": "نظرة عامة",
     "overviewSubtitle": "كيف يسير مطعمك اليوم.",
@@ -2445,5 +2473,458 @@
     "resetToast": "تمت إعادة تعيين بيانات العرض.",
     "hide": "إخفاء أدوات العرض",
     "show": "إظهار أدوات العرض"
+  },
+  "reviews": {
+    "sectionTitle": "التقييمات",
+    "writeCta": "اكتب تقييماً",
+    "writeTitle": "قيّم {vendor}",
+    "editTitle": "تعديل تقييمك",
+    "orderRef": "الطلب {number}",
+    "close": "إغلاق",
+    "cancel": "إلغاء",
+    "submit": "نشر التقييم",
+    "saveChanges": "حفظ التغييرات",
+    "submitted": "شكراً لك! تقييمك لـ {vendor} منشور الآن.",
+    "updated": "تم تحديث تقييمك.",
+    "deleted": "تم سحب التقييم.",
+    "anonymous": "ضيف",
+    "overallQuestion": "كيف كان طلبك؟",
+    "band": {
+      "excellent": "ممتاز",
+      "good": "جيد",
+      "okay": "مقبول",
+      "poor": "دون المتوقع",
+      "bad": "سيئ"
+    },
+    "aspectsTitle": "قيّم التفاصيل",
+    "aspect": {
+      "food": "الطعام",
+      "delivery": "التوصيل",
+      "packaging": "التغليف",
+      "value": "القيمة"
+    },
+    "tagsTitle": "ما الذي لفت انتباهك؟",
+    "tag": {
+      "tasty": "لذيذ",
+      "generous": "كمية سخية",
+      "hot-on-arrival": "وصل ساخناً",
+      "fast-delivery": "توصيل سريع",
+      "well-packaged": "تغليف جيد",
+      "good-value": "سعر مناسب",
+      "friendly-rider": "سائق لطيف",
+      "will-reorder": "سأطلب مرة أخرى",
+      "late": "متأخر",
+      "arrived-cold": "وصل بارداً",
+      "small-portion": "كمية قليلة",
+      "wrong-item": "صنف خاطئ",
+      "pricey": "غالي",
+      "poor-packaging": "تغليف سيئ"
+    },
+    "dishesTitle": "أي الأطباق؟",
+    "commentTitle": "تقييمك",
+    "commentPlaceholder": "ما الذي أعجبك — أو ما الذي تودّ تغييره؟",
+    "photosTitle": "الصور",
+    "addPhoto": "إضافة",
+    "photoLibraryHint": "اختر صورة لإرفاقها.",
+    "removePhoto": "إزالة الصورة",
+    "riderQuestion": "كيف كان أداء {name}؟",
+    "riderHint": "يُقيَّم بشكل منفصل — فالمطبخ لا يُحاسَب على رحلة التوصيل.",
+    "photoBy": "صورة من {name}",
+    "closePhoto": "إغلاق الصورة",
+    "outOfFive": "{rating} من ٥",
+    "starsCount": "{count, plural, zero {# نجمة} one {نجمة واحدة} two {نجمتان} few {# نجوم} many {# نجمة} other {# نجمة}}",
+    "starsShort": "{count}★",
+    "basedOn": "{count, plural, =0 {لا توجد تقييمات بعد} zero {من # تقييم} one {من تقييم واحد} two {من تقييمين} few {من # تقييمات} many {من # تقييماً} other {من # تقييم}}",
+    "recommend": "{percent}% سيطلبون مرة أخرى",
+    "peopleSay": "يقول الناس:",
+    "verifiedCount": "{count, plural, zero {# طلب موثّق} one {طلب موثّق واحد} two {طلبان موثّقان} few {# طلبات موثّقة} many {# طلباً موثّقاً} other {# طلب موثّق}}",
+    "withPhotosCount": "{count, plural, zero {# مع صور} one {واحد مع صورة} two {اثنان مع صور} few {# مع صور} many {# مع صور} other {# مع صور}}",
+    "verified": "طلب موثّق",
+    "edited": "مُعدّل",
+    "helpful": "{count, plural, =0 {مفيد} other {مفيد (#)}}",
+    "report": "إبلاغ",
+    "reported": "تم الإبلاغ",
+    "reportThanks": "شكراً — سنراجع هذا التقييم.",
+    "replyFrom": "رد من {vendor}",
+    "lovedTitle": "الأطباق الأكثر إعجاباً",
+    "mentions": "{count, plural, zero {# إشارة} one {إشارة واحدة} two {إشارتان} few {# إشارات} many {# إشارة} other {# إشارة}}",
+    "filterPhotos": "مع صور",
+    "clearFilters": "مسح",
+    "sortBy": "ترتيب",
+    "sort": {
+      "recent": "الأحدث",
+      "helpful": "الأكثر إفادة",
+      "highest": "الأعلى تقييماً",
+      "lowest": "الأدنى تقييماً"
+    },
+    "loadMore": "عرض المزيد من التقييمات",
+    "noneTitle": "لا توجد تقييمات مطابقة",
+    "noneBody": "لا توجد تقييمات لـ {vendor} ضمن هذه الفلاتر. جرّب مسحها.",
+    "pendingTitle": "بانتظار تقييمك",
+    "pendingHint": "لديك ٣٠ يوماً لتقييم الطلب بعد وصوله.",
+    "rateOrder": "قيّم الطلب",
+    "daysLeft": "{count, plural, =0 {انتهت المهلة} zero {# يوم متبقٍ} one {يوم واحد متبقٍ} two {يومان متبقيان} few {# أيام متبقية} many {# يوماً متبقياً} other {# يوم متبقٍ}}",
+    "mineTitle": "تقييماتك",
+    "mineEmptyTitle": "لم تكتب أي تقييم بعد",
+    "mineEmptyBody": "بمجرد وصول الطلب يمكنك تقييم الطعام والتغليف والسائق — لا يستغرق سوى دقيقة.",
+    "seeOrders": "عرض طلباتك",
+    "edit": "تعديل التقييم",
+    "delete": "سحب التقييم",
+    "aboutVendor": "عن {vendor}",
+    "aboutRider": "عن سائق التوصيل",
+    "editLockedHint": "مقفل، فقد ردّ المطعم",
+    "yourAverage": "متوسط تقييماتك",
+    "boardTitle": "التقييمات",
+    "boardSubtitle": "ما يقوله العملاء عن {vendor}",
+    "boardTab": {
+      "all": "الكل",
+      "unanswered": "بحاجة إلى رد",
+      "critical": "حرجة",
+      "photos": "مع صور"
+    },
+    "boardEmpty": {
+      "all": "لا توجد تقييمات بعد.",
+      "unanswered": "تم الرد على كل التقييمات. أحسنت.",
+      "critical": "لا توجد تقييمات بنجمتين أو أقل.",
+      "photos": "لا توجد تقييمات مع صور بعد."
+    },
+    "breakdownTitle": "تفصيل التقييم",
+    "trendTitle": "التقييم عبر الوقت",
+    "reviewsLower": "تقييم",
+    "kpiAverage": "متوسط التقييم",
+    "kpiUnanswered": "بانتظار الرد",
+    "kpiReplyRate": "{percent}% تم الرد عليها",
+    "kpiThisMonth": "هذا الشهر",
+    "kpiThisMonthHint": "التقييمات الواردة",
+    "kpiCritical": "حرجة",
+    "kpiCriticalHint": "نجمتان أو أقل",
+    "reply": "رد",
+    "replyingTo": "الرد على {name}",
+    "replyLabel": "ردّك",
+    "replyPlaceholder": "اشكرهم، أو صحّح الأمر. الجميع يستطيع قراءة هذا.",
+    "replySignature": "يُنشر علناً باسم {vendor}",
+    "sendReply": "نشر الرد",
+    "replySent": "تم نشر ردّك.",
+    "riderFeedbackTitle": "ما قاله العملاء",
+    "errors": {
+      "ratingRequired": "اختر تقييماً بالنجوم أولاً.",
+      "commentTooShort": "قصير قليلاً — اكتب ١٠ أحرف على الأقل أو اتركه فارغاً.",
+      "commentTooLong": "هذا التقييم طويل جداً.",
+      "tooMuchMedia": "يمكنك إرفاق ٤ صور كحد أقصى.",
+      "notDelivered": "لا يمكنك تقييم إلا طلباً وصل فعلاً.",
+      "alreadyReviewed": "لقد قيّمت هذا الطلب من قبل.",
+      "windowClosed": "انتهت مهلة الـ٣٠ يوماً لتقييم هذا الطلب.",
+      "editLocked": "هذا التقييم مقفل — فقد ردّ المطعم عليه.",
+      "notFound": "لم يعد هذا التقييم موجوداً.",
+      "alreadyVoted": "لقد صوّت على هذا التقييم من قبل.",
+      "ownReview": "لا يمكنك التصويت على تقييمك.",
+      "alreadyReported": "لقد أبلغت عن هذا التقييم من قبل.",
+      "replyTooShort": "اكتب ١٠ أحرف على الأقل.",
+      "replyTooLong": "هذا الرد طويل جداً.",
+      "alreadyReplied": "لقد رددت على هذا التقييم من قبل."
+    }
+  },
+  "ai": {
+    "meta": {
+      "title": "مساعد الطعام",
+      "description": "اطلب طبقًا حسب المزاج أو الميزانية أو النظام الغذائي أو الحساسية، والإجابة تُبنى من القائمة الحية."
+    },
+    "title": "مساعد الطعام",
+    "subtitle": "مبني على القائمة الحية، لا على التخمين",
+    "launch": "افتح مساعد الطعام",
+    "launchShort": "اسأل الذكاء",
+    "askAbout": "اسأل عن هذه القائمة",
+    "openFull": "افتح الصفحة كاملة",
+    "close": "إغلاق",
+    "clear": "مسح المحادثة",
+    "thinking": "أفكّر",
+    "empty": {
+      "heading": "بماذا تشتهي اليوم؟",
+      "body": "أخبرني بميزانية أو نظام غذائي أو حساسية، أو بمزاجك فقط، وسأختار أطباقًا من القائمة الحية.",
+      "disclaimer": "لا يوجد نموذج لغوي — الإجابات مطابَقة مع الكتالوج الحقيقي."
+    },
+    "hub": {
+      "intro": "اسأل بكلماتك، أو خطّط لأيام من الوجبات، أو أخبرني بما يجب إبعاده عن طبقك. كل شيء هنا محسوب من القائمة الحية على هذا الجهاز.",
+      "honestHeading": "ما هذا في الحقيقة",
+      "honestNoModel": "لا نموذج لغوي: جملتك تُطابَق مع الكتالوج بالكلمات المفتاحية، فهو دقيق في المرشِّحات وعاجز عن الدردشة.",
+      "honestEstimates": "القيم الغذائية ومسبّبات الحساسية مقدَّرة من وصف الطبق، لا مُعلنة من المطبخ. اعتبرها دليلًا إرشاديًا.",
+      "honestVoice": "الإدخال الصوتي حقيقي — يستخدم التعرّف على الكلام في متصفحك، ولا يُرفع أي شيء.",
+      "honestPrivacy": "لا يُستخدم سجل الطلبات إلا إذا كانت التوصيات المخصَّصة مفعَّلة في إعداداتك."
+    },
+    "composer": {
+      "label": "اسأل مساعد الطعام",
+      "placeholder": "شيء خفيف بأقل من ٥٠٠، بدون فول سوداني…",
+      "send": "إرسال"
+    },
+    "voice": {
+      "start": "الإملاء الصوتي",
+      "stop": "إيقاف الإملاء",
+      "denied": "تم رفض الوصول إلى الميكروفون.",
+      "failed": "لم ألتقط ذلك — حاول مرة أخرى."
+    },
+    "scan": {
+      "open": "استخدم صورة",
+      "modeDish": "تعرَّف على طبق",
+      "modeMenu": "اقرأ بطاقة قائمة",
+      "privacy": "تبقى الصورة على جهازك.",
+      "sentDish": "📷 أرسلتُ صورة طبق",
+      "sentMenu": "📷 أرسلتُ صورة قائمة",
+      "dishHeading": "أقرب تطابق",
+      "menuHeading": "قراءة القائمة",
+      "match": "يبدو أنه {dish} — بثقة {confidence}%."
+    },
+    "search": {
+      "understood": "فهمتُ ذلك على أنه",
+      "apply": "طبّق هذه القراءة",
+      "unsure": "بعضه لم أتمكن من تحديده."
+    },
+    "vendor": {
+      "open": "مفتوح",
+      "closed": "مغلق"
+    },
+    "dish": {
+      "conflict": "يحتوي على {allergens}"
+    },
+    "confidence": {
+      "high": "تقدير جيد",
+      "medium": "تقدير تقريبي",
+      "low": "تقدير فضفاض"
+    },
+    "insight": {
+      "basedOn": "قُدِّر باعتباره {profile}.",
+      "mayContain": "قد يحتوي على",
+      "noneDetected": "لم يظهر أي شيء من قائمة تجنّبك.",
+      "viewOnMenu": "شاهده في قائمة {vendor}"
+    },
+    "allergy": {
+      "avoidHeading": "يُستحسن تجنّبها"
+    },
+    "plan": {
+      "targetLine": "نحو {target} سعرة يوميًا",
+      "totalCost": "تكلفة الخطة كاملة"
+    },
+    "planner": {
+      "heading": "مخطِّط النظام الغذائي",
+      "subtitle": "ثلاث وجبات يوميًا من مطابخ توصل إليك.",
+      "days": "{count, plural, zero {# يوم} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",
+      "rebuild": "أعد البناء",
+      "averageDay": "متوسط اليوم",
+      "building": "يجري بناء خطتك…",
+      "empty": "لا شيء في الكتالوج يناسب ملفك بعد — جرّب إزالة أحد القيود."
+    },
+    "profile": {
+      "heading": "ملفك الغذائي",
+      "subtitle": "يتذكره المساعد ويفحص كل إجابة بناءً عليه.",
+      "allergies": "لا تعرض لي أبدًا",
+      "allergiesHint": "مرشِّح صارم — تُزال من كل اقتراح مهما كان طلبك.",
+      "dietary": "عادةً آكل",
+      "goal": "ما أسعى إليه",
+      "calorieTarget": "السعرات اليومية",
+      "calorieTargetHint": "اتركه فارغًا لاستخدام الافتراضي للهدف ({value} سعرة).",
+      "budget": "الإنفاق المعتاد للطبق",
+      "budgetHint": "يُستخدم لتحديد معنى «رخيص» ولضبط سقف المخطِّط.",
+      "saved": "تم تحديث الملف."
+    },
+    "nutrition": {
+      "calories": "{value} سعرة",
+      "ofTarget": "{percent}% من الهدف",
+      "barLabel": "بروتين {protein} غ، كربوهيدرات {carbs} غ، دهون {fat} غ",
+      "protein": "بروتين",
+      "carbs": "كربوهيدرات",
+      "fat": "دهون",
+      "grams": "{value} غ",
+      "proteinShort": "{value} غ بروتين"
+    },
+    "review": {
+      "heading": "ما تخلص إليه المراجعات",
+      "headingNamed": "ما يقوله الناس عن {vendor}",
+      "praise": "يُشاد بـ",
+      "gripes": "انتبه إلى"
+    },
+    "reply": {
+      "greeting": "أهلًا! أخبرني بميزانية أو نظام غذائي أو حساسية، أو بمزاجك فقط — وسأختار من القائمة الحية.",
+      "help": "أطابق سؤالك مع الكتالوج الحقيقي وأجيب بأطباق يمكنك طلبها من هنا مباشرة.",
+      "recommend": "هذا ما كنت سأطلبه الآن.",
+      "recommendPersonal": "بناءً على ما طلبته وحفظته سابقًا:",
+      "unsure": "لم أفهم كل ذلك، فهذا أفضل تخميني. ذكر طبق أو ميزانية أو نظام غذائي يعطي أفضل نتيجة.",
+      "dishes": "هذا ما يناسب.",
+      "dishesAt": "من قائمة {vendor}:",
+      "noDishes": "لا شيء في القوائم يطابق ذلك.",
+      "vendors": "{count, plural, zero {لا أماكن} one {مكان واحد} two {مكانان} few {# أماكن} many {# مكانًا} other {# مكان}} تستحق النظر.",
+      "noVendors": "لا توجد أماكن تطابق ذلك.",
+      "mood": "من أجل {mood}، هذه اختياراتي.",
+      "budget": "أفضل ما في القائمة بهذا السعر.",
+      "budgetParty": "نحو {price} للفرد لـ {people, plural, zero {لا أحد} one {شخص واحد} two {شخصين} few {# أشخاص} many {# شخصًا} other {# شخص}}.",
+      "nutrition": "إليك ما يخلص إليه {dish}.",
+      "nutritionList": "أقرب التطابقات، مع حساب كل منها.",
+      "nutritionNoDish": "سمِّ طبقًا وسأحلّله — أو أعطني سقفًا مثل «أقل من ٦٠٠ سعرة».",
+      "allergySafe": "يبدو {dish} خاليًا من كل ما تتجنّبه.",
+      "allergyUnsafe": "كنت سأتجاوز {dish} — فهو يتعارض مع ما تتجنّبه.",
+      "allergyScan": "أفحص كل قائمة مقابل {count, plural, zero {لا مسبّبات} one {مسبّب واحد} two {مسبّبين} few {# مسبّبات} many {# مسبّبًا} other {# مسبّب}}. {safe, plural, =0 {لم يخرج شيء نظيفًا.} one {طبق واحد آمن.} two {طبقان آمنان.} few {# أطباق آمنة.} many {# طبقًا آمنًا.} other {# طبق آمن.}}",
+      "allergyNoProfile": "أخبرني بما يجب إبعاده عن طبقك وسأفحص كل قائمة من أجله.",
+      "plan": "{days, plural, zero {خطة} one {خطة ليوم واحد} two {خطة ليومين} few {خطة لـ# أيام} many {خطة لـ# يومًا} other {خطة لـ# يوم}} بنحو {target} سعرة يوميًا.",
+      "planEmpty": "لم أستطع بناء خطة مناسبة — جرّب تخفيف ملفك.",
+      "reorder": "{count, plural, zero {الأطباق} one {الطبق} two {الطبقان} few {الأطباق} many {الأطباق} other {الأطباق}} التي طلبتها من قبل:",
+      "reorderNone": "لم تطلب شيئًا من هذا الجهاز بعد.",
+      "reorderOff": "التوصيات المخصَّصة مغلقة، فلا أستطيع رؤية ما طلبته.",
+      "track": "طلبك في الطريق.",
+      "trackNone": "لا شيء في الطريق الآن.",
+      "scanDish": "يبدو أنه {dish} — بثقة {confidence}%.",
+      "scanMenu": "يبدو أنها قائمة {vendor}. هذا ما التقطته."
+    },
+    "note": {
+      "estimate": "القيم الغذائية مقدَّرة من وصف الطبق، لا مُعلنة من المطبخ.",
+      "caloriesEstimated": "لا يذكر هذا الطبق سعراته، لذا فحتى ذلك الرقم مستنتَج.",
+      "allergyDisclaimer": "مسبّبات الحساسية مستنتَجة من نص القائمة. تأكّد دائمًا من المطعم قبل الطلب.",
+      "personalizedOff": "التوصيات المخصَّصة مغلقة، فهذه أفضل ما في الكتالوج لا ما يخصّك.",
+      "screened": "فُحصت مقابل {count, plural, zero {لا مسبّبات} one {مسبّب واحد} two {مسبّبين} few {# مسبّبات} many {# مسبّبًا} other {# مسبّب}} في ملفك.",
+      "avoiding": "أُبعد {count, plural, zero {لا مسبّبات} one {مسبّبًا واحدًا} two {مسبّبين} few {# مسبّبات} many {# مسبّبًا} other {# مسبّب}}، وربما لهذا لا يناسب شيء.",
+      "reorderConflict": "{count, plural, zero {لا شيء منها يتعارض} one {واحد منها يتعارض} two {اثنان منها يتعارضان} few {# منها تتعارض} many {# منها تتعارض} other {# منها يتعارض}} الآن مع ملف حساسيتك.",
+      "recognitionMock": "لا يوجد نموذج رؤية هنا — التطابق مستخرج من الملف لا من الصورة.",
+      "recognitionConflict": "انتبه: يتعارض هذا مع {count, plural, zero {مسبّبات} one {مسبّب} two {مسبّبين} few {مسبّبات} many {مسبّبات} other {مسبّبات}} تتجنّبها.",
+      "reviewDerived": "مُلخَّص من تقييمات ووسوم مراجعات هذا المطعم نفسه.",
+      "planCost": "الأسعار هي أسعار قائمة اليوم. لم يُطلب شيء.",
+      "planProjected": "تُحسب الخطة من جديد في كل مرة — لا يُحفظ شيء ولا يُجدوَل.",
+      "howItWorks": "لا يوجد نموذج لغوي: أطابق الكلمات المفتاحية مع الكتالوج، فأنا دقيق في المرشِّحات وعاجز عن الدردشة.",
+      "relaxed": {
+        "price": "لم يناسب شيء تلك الميزانية، فهذه تتجاوزها قليلًا.",
+        "mood": "لم يطابق شيء ذلك المزاج تمامًا — وهذه أقربها."
+      }
+    },
+    "link": {
+      "seeAll": "عرض كل النتائج",
+      "browseAll": "تصفّح كل شيء",
+      "orderHistory": "طلباتك",
+      "track": "تتبّعه"
+    },
+    "verdict": {
+      "loved": "يحب الناس هذا المكان — {average}★ عبر {count, plural, zero {لا مراجعات} one {مراجعة واحدة} two {مراجعتين} few {# مراجعات} many {# مراجعة} other {# مراجعة}}، و{recommend}% سيطلبون مجددًا.",
+      "solid": "مطبخ موثوق — {average}★ من {count, plural, zero {لا مراجعات} one {مراجعة واحدة} two {مراجعتين} few {# مراجعات} many {# مراجعة} other {# مراجعة}}، و{recommend}% يطلبون مجددًا.",
+      "mixed": "المراجعات متباينة: {average}★ من {count, plural, zero {لا مراجعات} one {مراجعة واحدة} two {مراجعتين} few {# مراجعات} many {# مراجعة} other {# مراجعة}}، و{recommend}% سيطلبون مجددًا.",
+      "poor": "المراجعات ضعيفة — {average}★ من {count, plural, zero {لا مراجعات} one {مراجعة واحدة} two {مراجعتين} few {# مراجعات} many {# مراجعة} other {# مراجعة}}.",
+      "tooFew": "{count, plural, zero {لا مراجعات} one {مراجعة واحدة} two {مراجعتان} few {# مراجعات} many {# مراجعة} other {# مراجعة}} فقط حتى الآن — أقل من أن يُبنى عليها."
+    },
+    "chip": {
+      "mood": "المزاج: {mood}",
+      "maxPrice": "حتى {price}",
+      "maxCalories": "أقل من {calories} سعرة",
+      "dietary": "{tag}",
+      "avoid": "بدون {allergen}",
+      "spicy": "حار",
+      "healthy": "صحي",
+      "openNow": "مفتوح الآن",
+      "people": "{count, plural, zero {لا أحد} one {شخص واحد} two {شخصان} few {# أشخاص} many {# شخصًا} other {# شخص}}",
+      "vendorType": "{type}",
+      "cuisine": "{name}",
+      "category": "{name}"
+    },
+    "prompt": {
+      "cheapDinner": "شيء رخيص",
+      "healthyLunch": "غداء خفيف وصحي",
+      "spicy": "شيء حار",
+      "comfort": "طعام يريح النفس",
+      "dateNight": "سهرة رومانسية",
+      "quick": "أتضوّر جوعًا",
+      "vegan": "عشاء نباتي صرف",
+      "planWeek": "خطّط وجباتي",
+      "calories": "سعرات طبق ما",
+      "allergyCheck": "ما الآمن لي؟",
+      "reorder": "المعتاد",
+      "surprise": "فاجئني",
+      "nearby": "مقهى مفتوح الآن",
+      "budgetTable": "عشاء لأربعة"
+    },
+    "mood": {
+      "comfort": "طعام يريح النفس",
+      "light": "شيء خفيف",
+      "celebrate": "احتفال",
+      "hangover": "صباح ثقيل",
+      "date-night": "سهرة رومانسية",
+      "quick": "شيء سريع",
+      "cosy": "أمسية دافئة",
+      "adventurous": "شيء جديد"
+    },
+    "goal": {
+      "balanced": "متوازن",
+      "weight-loss": "إنقاص الوزن",
+      "muscle-gain": "بناء العضلات",
+      "keto": "كيتو",
+      "plant-based": "نباتي",
+      "family": "عائلي"
+    },
+    "slot": {
+      "breakfast": "الفطور",
+      "lunch": "الغداء",
+      "dinner": "العشاء"
+    },
+    "dietary": {
+      "halal": "حلال",
+      "vegetarian": "نباتي",
+      "vegan": "نباتي صرف",
+      "gluten-free": "خالٍ من الغلوتين",
+      "keto": "كيتو",
+      "healthy": "صحي",
+      "spicy": "حار"
+    },
+    "vendorType": {
+      "restaurant": "مطاعم",
+      "cafe": "مقاهٍ",
+      "cloud-kitchen": "مطابخ سحابية",
+      "home-chef": "طهاة منزليون",
+      "catering": "متعهدو ضيافة"
+    },
+    "allergen": {
+      "gluten": "الغلوتين",
+      "dairy": "الألبان",
+      "eggs": "البيض",
+      "nuts": "المكسّرات",
+      "peanuts": "الفول السوداني",
+      "soy": "الصويا",
+      "shellfish": "القشريات",
+      "fish": "السمك",
+      "sesame": "السمسم"
+    },
+    "profileClass": {
+      "drink": "مشروبًا",
+      "dessert": "حلوى",
+      "salad": "سلطة",
+      "fried": "طعامًا مقليًا",
+      "grill": "طعامًا مشويًا",
+      "curry": "كاري",
+      "grain": "طبق أرز أو خبز أو معكرونة",
+      "soup": "شوربة",
+      "mixed": "طبقًا مختلطًا"
+    },
+    "aspect": {
+      "food": "الطعام",
+      "delivery": "التوصيل",
+      "packaging": "التغليف",
+      "value": "القيمة"
+    },
+    "tag": {
+      "tasty": "لذيذ",
+      "generous": "حصص وفيرة",
+      "hot-on-arrival": "وصل ساخنًا",
+      "fast-delivery": "توصيل سريع",
+      "well-packaged": "تغليف جيد",
+      "good-value": "قيمة جيدة",
+      "friendly-rider": "سائق لطيف",
+      "will-reorder": "سأطلب مجددًا",
+      "late": "متأخر",
+      "arrived-cold": "وصل باردًا",
+      "small-portion": "حصص صغيرة",
+      "wrong-item": "صنف خاطئ",
+      "pricey": "غالي",
+      "poor-packaging": "تغليف رديء"
+    },
+    "errors": {
+      "empty": "اكتب سؤالًا أولًا.",
+      "tooLong": "هذا طويل بعض الشيء — اسأل في جملة واحدة.",
+      "notFound": "لم أعثر على ذلك.",
+      "unsupportedFile": "نوع الملف غير مدعوم — جرّب JPEG أو PNG.",
+      "fileTooLarge": "الصورة كبيرة جدًا. الحد ٨ ميغابايت.",
+      "planRange": "تمتد الخطط من يوم واحد إلى سبعة أيام.",
+      "planEmpty": "لم أستطع بناء خطة من ملفك — جرّب إزالة أحد القيود."
+    }
   }
 }

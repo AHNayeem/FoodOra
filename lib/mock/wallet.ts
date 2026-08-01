@@ -5,8 +5,10 @@ const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };
 
 /**
  * wallet.ts — the demo customer's wallet ledger, surfaced in the account app
- * (Phase C3) and referenced at checkout (`DEMO_WALLET_BALANCE`). Tied to
- * `usr_customer`; maps onto the future `Wallet` / `WalletTransaction` models.
+ * (Phase C3) and spent at checkout (C19 — which is why the balance below is the
+ * *only* opening balance; the hard-coded one checkout used to show is gone).
+ * Tied to `usr_customer`; maps onto the future `Wallet` / `WalletTransaction`
+ * models.
  * The opening balance equals the sum of the seeded transactions so the ledger
  * is internally consistent.
  */

@@ -3,13 +3,26 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Wallet, WalletTransaction, WalletTransactionType } from "@/types";
+import { wallet as seedWallet } from "@/lib/mock";
+import { coversAmount, isSettled } from "@/lib/wallet";
 
 /**
- * wallet store — the customer's wallet balance + ledger (Phase C3). Seeds once
- * from the mock service (`getWallet`) then persists, so a simulated top-up
- * survives a refresh. Money only ever moves by appending a signed transaction
- * and re-summing, keeping the balance and ledger consistent. When the Phase E
- * backend arrives this becomes a cache of the server-owned wallet.
+ * wallet store — the customer's wallet balance + ledger (Phase C3, made
+ * spendable in C19).
+ *
+ * Seeds once from the mock service (`getWallet`) then persists, so money that
+ * moves survives a refresh. **Money only ever moves by appending a signed
+ * transaction and re-summing**, which is what keeps the balance and the ledger
+ * from drifting apart — there is no setter for `balance`.
+ *
+ * C19 added the two directions that make it a payment instrument rather than a
+ * statement: `pay` (checkout debits it) and `refundOrder` (the orders store
+ * credits it back when a wallet-paid order fails). Both are order-scoped and
+ * guarded by the ledger itself: a given order can be charged once and refunded
+ * once, however many times a persisted, multi-tab store replays the change.
+ *
+ * When the Phase E backend arrives this becomes a cache of the server-owned
+ * wallet and the actions become mutation calls; the signatures stay put.
  */
 interface WalletState {
   currency: string;
@@ -19,18 +32,38 @@ interface WalletState {
   seeded: boolean;
   seed: (wallet: Wallet) => void;
   /** Simulated top-up: append a credit and bump the balance. */
-  topUp: (amount: number) => void;
+  topUp: (amount: number, description?: string) => void;
   /** Cashback earned by a coupon (Phase C21) — the same append, tagged a reward. */
   reward: (amount: number, description: string, orderNumber: string | null) => void;
+  /**
+   * Charge an order to the wallet (C19). Returns false — and moves nothing — if
+   * the balance no longer covers it or the order was already charged.
+   */
+  pay: (amount: number, description: string, orderNumber: string) => boolean;
+  /**
+   * Return an order's money to the wallet (C19). Returns false if that order
+   * was already refunded, so a replayed status change cannot pay out twice.
+   */
+  refundOrder: (amount: number, description: string, orderNumber: string) => boolean;
+  /**
+   * Bring the wallet up before writing to it from outside the account app.
+   *
+   * A refund is posted by the orders store, which can be reached from a surface
+   * that never opened the wallet (the vendor board cancelling an order). Without
+   * this the credit would land on an empty, unseeded wallet and the seed would
+   * later overwrite it. Seeds from the mock ledger directly — the same shortcut
+   * `stores/orders` takes for its demo working set, and idempotent either way.
+   */
+  ensureSeeded: () => void;
   setHydrated: () => void;
 }
 
 /**
- * Money only ever moves by appending a signed transaction and re-summing, so
- * the balance and the ledger cannot drift apart. Both credits (a top-up, coupon
- * cashback) go through here.
+ * The one place a transaction is minted. Every credit and every debit goes
+ * through here, so the balance is always the running total of the ledger above
+ * it — a signed amount, never a separate "add" and "subtract" path.
  */
-function credit(
+function post(
   state: WalletState,
   amount: number,
   type: WalletTransactionType,
@@ -39,7 +72,7 @@ function credit(
 ): Partial<WalletState> {
   const now = new Date().toISOString();
   const txn: WalletTransaction = {
-    id: `wtx_${Date.now().toString(36)}`,
+    id: `wtx_${Date.now().toString(36)}_${type}`,
     type,
     amount,
     description,
@@ -54,7 +87,7 @@ function credit(
 
 export const useWallet = create<WalletState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currency: "BDT",
       balance: 0,
       transactions: [],
@@ -71,10 +104,37 @@ export const useWallet = create<WalletState>()(
                 seeded: true,
               },
         ),
-      topUp: (amount) =>
-        set((s) => credit(s, amount, "top-up", "Added via card ending 4242", null)),
+      topUp: (amount, description = "Added via card ending 4242") =>
+        set((s) => post(s, amount, "top-up", description, null)),
       reward: (amount, description, orderNumber) =>
-        set((s) => credit(s, amount, "reward", description, orderNumber)),
+        set((s) => post(s, amount, "reward", description, orderNumber)),
+
+      pay: (amount, description, orderNumber) => {
+        const s = get();
+        // Re-checked here and not only at the tender: the total can move after
+        // the customer picks the wallet, and the service authorises against the
+        // same balance this line reads.
+        if (!coversAmount(s.balance, amount)) return false;
+        if (isSettled(s.transactions, orderNumber, "payment")) return false;
+        set((cur) => post(cur, -amount, "payment", description, orderNumber));
+        return true;
+      },
+
+      refundOrder: (amount, description, orderNumber) => {
+        get().ensureSeeded();
+        if (isSettled(get().transactions, orderNumber, "refund")) return false;
+        set((cur) => post(cur, amount, "refund", description, orderNumber));
+        return true;
+      },
+
+      ensureSeeded: () => {
+        // Optional: outside a browser (tests, SSR) there is no storage to read
+        // back, and the seed below is all that is needed.
+        if (!get().hydrated) void useWallet.persist?.rehydrate();
+        if (get().seeded) return;
+        get().seed(seedWallet);
+      },
+
       setHydrated: () => set({ hydrated: true }),
     }),
     {

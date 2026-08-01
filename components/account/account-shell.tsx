@@ -13,6 +13,7 @@ import {
   Wallet,
   Ticket,
   Heart,
+  Star,
   Settings,
   Lock,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const NAV = [
   { href: "/account/subscriptions", key: "subscriptions", icon: CalendarClock },
   { href: "/account/reservations", key: "reservations", icon: CalendarCheck },
   { href: "/account/favorites", key: "favorites", icon: Heart },
+  { href: "/account/reviews", key: "reviews", icon: Star },
   { href: "/account/addresses", key: "addresses", icon: MapPin },
   { href: "/account/wallet", key: "wallet", icon: Wallet },
   { href: "/account/coupons", key: "coupons", icon: Ticket },

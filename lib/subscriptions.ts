@@ -16,6 +16,7 @@ import type {
   Weekday,
 } from "@/types";
 import { WEEKDAYS, addDays, fromDateKey, toDateKey, weekdayOf } from "./dates";
+import { totalNutrition } from "./nutrition";
 import { roundMoney } from "./checkout";
 
 /**
@@ -291,17 +292,15 @@ export function deliveredCount(sub: ScheduleRules, now: Date): number {
 // Menu helpers
 // ---------------------------------------------------------------------------
 
-/** Sum the macros of a set of meals — a day's total, or a whole week's. */
+/**
+ * Sum the macros of a set of meals — a day's total, or a whole week's.
+ *
+ * The arithmetic itself moved to `lib/nutrition.totalNutrition` in C24, when
+ * the diet planner needed to add up à-la-carte dishes rather than plan meals;
+ * this stays as the plan-shaped door onto it (the `lib/dates` precedent).
+ */
 export function sumNutrition(meals: PlanMeal[]): NutritionFacts {
-  return meals.reduce<NutritionFacts>(
-    (acc, meal) => ({
-      calories: acc.calories + meal.nutrition.calories,
-      protein: acc.protein + meal.nutrition.protein,
-      carbs: acc.carbs + meal.nutrition.carbs,
-      fat: acc.fat + meal.nutrition.fat,
-    }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  );
+  return totalNutrition(meals.map((meal) => meal.nutrition));
 }
 
 /** Group a plan's weekly menu by weekday, in Monday-first order. */

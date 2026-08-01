@@ -17,7 +17,7 @@ import { useCoupons } from "@/stores/coupons";
 import { useWallet } from "@/stores/wallet";
 import { authorisePayment, placeOrder } from "@/services/orders";
 import { getAddressBook } from "@/services/account";
-import { getWallet } from "@/services/wallet";
+import { authoriseWalletPayment, getWallet } from "@/services/wallet";
 import {
   applyCoupon,
   applyCouponCode,
@@ -28,6 +28,7 @@ import {
 } from "@/services/coupons";
 import { amountToMinOrder, cartSubtotal } from "@/lib/cart";
 import { computeTotals } from "@/lib/checkout";
+import { coversAmount } from "@/lib/wallet";
 import { formatPrice } from "@/lib/format";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -98,11 +99,15 @@ export function CheckoutView() {
   const seedCoupons = useCoupons((s) => s.seed);
   const addClaim = useCoupons((s) => s.addClaim);
   const recordRedemption = useCoupons((s) => s.recordRedemption);
-  // Cashback is paid into the wallet, so it has to be loaded before it is credited.
+  // The wallet is both a tender and a payee here: it can pay for the order
+  // (C19) and it receives cashback afterwards (C21), so it has to be loaded
+  // before either happens.
   const walletHydrated = useWallet((s) => s.hydrated);
   const walletSeeded = useWallet((s) => s.seeded);
   const seedWallet = useWallet((s) => s.seed);
   const rewardWallet = useWallet((s) => s.reward);
+  const walletBalance = useWallet((s) => s.balance);
+  const payFromWallet = useWallet((s) => s.pay);
   const pastOrders = useOrders((s) => s.orders);
 
   // Rehydrate the persisted stores on the client (they skip auto-hydration).
@@ -210,6 +215,17 @@ export function CheckoutView() {
       live = false;
     };
   }, [claims, basket, couponsHydrated, couponsSeeded, appliedId, tc]);
+
+  /**
+   * The wallet can stop being affordable after it was chosen — adding a tip or
+   * losing a coupon both raise the total. The tender is therefore *derived*
+   * rather than trusted: it falls back to cash the moment the balance stops
+   * covering the order, and the wallet button says by how much it falls short.
+   * Deriving it means there is no window in which the selection is stale.
+   */
+  const walletTotal = pricing?.total ?? 0;
+  const tender: PaymentMethod =
+    payment === "wallet" && !coversAmount(walletBalance, walletTotal) ? "cash" : payment;
 
   // ---- Loading / empty states (all hooks above run unconditionally) ----
   if (!hydrated) {
@@ -341,10 +357,14 @@ export function CheckoutView() {
     // Online payments authorise before the order exists (spec: "Online Payment
     // (Mock)"). Cash skips straight through — there is nothing to authorise
     // until the rider is on the doorstep, which is where the machine settles it.
-    const authorise =
-      payment === "cash"
-        ? Promise.resolve({ data: { authCode: "" }, error: null as string | null })
-        : authorisePayment({ method: payment, cardNumber: DEMO_CARD_NUMBER });
+    // The wallet authorises against its own balance rather than the card
+    // gateway: it is the one tender that can genuinely refuse (C19).
+    const authorise: Promise<{ data: { authCode: string } | null; error: string | null }> =
+      tender === "cash"
+        ? Promise.resolve({ data: { authCode: "" }, error: null })
+        : tender === "wallet"
+          ? authoriseWalletPayment({ balance: walletBalance, amount: pricing.total })
+          : authorisePayment({ method: tender, cardNumber: DEMO_CARD_NUMBER });
 
     authorise.then((auth) => {
       if (auth.error) {
@@ -360,7 +380,7 @@ export function CheckoutView() {
         scheduledFor: timeMode === "schedule" ? scheduledSlot : null,
         contact: { name: contactName.trim(), phone: contactPhone.trim() },
         notes: notes.trim() || null,
-        payment: { method: payment, cardLast4: payment === "card" ? DEMO_CARD_LAST4 : null },
+        payment: { method: tender, cardLast4: tender === "card" ? DEMO_CARD_LAST4 : null },
         pricing,
       }).then((res) => {
         if (res.error || !res.data) {
@@ -369,6 +389,12 @@ export function CheckoutView() {
           return;
         }
         const order = res.data;
+        // The debit is posted against the order, not the click: the ledger row
+        // carries the order number, so the wallet page and the receipt refer to
+        // the same payment and a refund can find it again (C19).
+        if (order.payment.method === "wallet") {
+          payFromWallet(order.pricing.total, order.vendor.name, order.orderNumber);
+        }
         addOrder(order);
         settleCoupon(order);
         clearCart();
@@ -619,7 +645,13 @@ export function CheckoutView() {
 
           {/* Payment */}
           <Section title={t("paymentTitle")}>
-            <PaymentMethods value={payment} onChange={setPayment} currency={currency} />
+            <PaymentMethods
+              value={tender}
+              onChange={setPayment}
+              currency={currency}
+              walletBalance={walletBalance}
+              total={pricing.total}
+            />
           </Section>
 
           {/* Notes */}

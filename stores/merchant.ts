@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Coupon } from "@/types";
+import type { Coupon, ReviewReply } from "@/types";
 
 /**
  * merchant store — the vendor desk's local, simulated control state (Phase C10).
@@ -31,11 +31,19 @@ interface MerchantState {
    * performance still counts — the UPDATE a backend would run.
    */
   couponEndedAt: Record<string, string>;
+  /**
+   * Public answers to customer reviews (Phase C22): review id → reply. Kept
+   * here because replying is a vendor-desk write, and read back by the
+   * storefront through `useReviewContext` — a reply the customer cannot see
+   * would not be a reply.
+   */
+  reviewReplies: Record<string, ReviewReply>;
   hydrated: boolean;
   setOnline: (online: boolean) => void;
   toggleItem: (foodId: string) => void;
   addCoupon: (coupon: Coupon) => void;
   endCoupon: (couponId: string, endedAt: string) => void;
+  addReviewReply: (reviewId: string, reply: ReviewReply) => void;
   setHydrated: () => void;
 }
 
@@ -46,6 +54,7 @@ export const useMerchant = create<MerchantState>()(
       unavailable: [],
       coupons: [],
       couponEndedAt: {},
+      reviewReplies: {},
       hydrated: false,
       setOnline: (online) => set({ online }),
       toggleItem: (foodId) =>
@@ -57,6 +66,8 @@ export const useMerchant = create<MerchantState>()(
       addCoupon: (coupon) => set((s) => ({ coupons: [coupon, ...s.coupons] })),
       endCoupon: (couponId, endedAt) =>
         set((s) => ({ couponEndedAt: { ...s.couponEndedAt, [couponId]: endedAt } })),
+      addReviewReply: (reviewId, reply) =>
+        set((s) => ({ reviewReplies: { ...s.reviewReplies, [reviewId]: reply } })),
       setHydrated: () => set({ hydrated: true }),
     }),
     {
@@ -66,6 +77,7 @@ export const useMerchant = create<MerchantState>()(
         unavailable: s.unavailable,
         coupons: s.coupons,
         couponEndedAt: s.couponEndedAt,
+        reviewReplies: s.reviewReplies,
       }),
       skipHydration: true,
       onRehydrateStorage: () => (state) => state?.setHydrated(),

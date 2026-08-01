@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
+import { RiderFeedback } from "./rider-feedback";
 
 /**
  * RiderProfileView — `/delivery/profile` (Phase C18; spec: Delivery Partner
@@ -209,6 +210,9 @@ export function RiderProfileView() {
           {saving ? t("working") : t("saveChanges")}
         </button>
       </section>
+
+      {/* What customers said (Phase C22) */}
+      <RiderFeedback riderId={rider.id} />
 
       {/* What the zone pays */}
       <section className="rounded-card border border-line bg-surface p-5">

@@ -26,6 +26,7 @@ import {
   riderSnapshot,
 } from "@/lib/order-lifecycle";
 import { useNotifications } from "./notifications";
+import { useWallet } from "./wallet";
 
 /**
  * orders store — the single source of truth for every live order, on every
@@ -114,6 +115,31 @@ function emit(items: AppNotification[]) {
   if (items.length > 0) useNotifications.getState().push(items);
 }
 
+/** Statuses that end an order badly enough to owe the customer their money. */
+const REFUNDABLE: readonly OrderStatus[] = ["cancelled", "rejected", "returned"];
+
+/**
+ * Should this order's money go back to the wallet, and has it not already?
+ *
+ * A wallet payment is the one tender the prototype can actually reverse — the
+ * money is in a ledger this app owns, so there is nothing to wait for. Cash was
+ * never taken and a card refund is a bank's business, which is why both keep the
+ * "requested → pending" path (`askRefund`) instead.
+ *
+ * The ledger is the guard, not a flag on the order: `refundOrder` refuses a
+ * second credit for the same order number, so a replayed transition (a second
+ * tab, a rehydrate, the demo autopilot) cannot pay out twice.
+ */
+function owesWalletRefund(order: Order): boolean {
+  return (
+    order.payment.method === "wallet" &&
+    REFUNDABLE.includes(order.status) &&
+    // The machine flips a paid online order to `refunded` on cancel/reject; a
+    // returned one is still `paid`. Either way the money left the wallet.
+    (order.payment.status === "paid" || order.payment.status === "refunded")
+  );
+}
+
 export const useOrders = create<OrdersState>()(
   persist(
     (set, get) => ({
@@ -140,6 +166,32 @@ export const useOrders = create<OrdersState>()(
           orders: s.orders.map((o) => (o.id === id ? result.order : o)),
         }));
         emit(notificationsFor(result.order, result.event));
+
+        // Settling the wallet is part of committing the transition, not a thing
+        // a surface remembers to do: an order can be cancelled from four of
+        // them, and the money has to come back from all four. The follow-on
+        // `refunded` transition is what tells the customer, through the same
+        // notification path as every other status.
+        //
+        // The caller's transition already succeeded, so a failure here must not
+        // be reported as its failure — the settlement is reported only by what
+        // it commits.
+        if (owesWalletRefund(result.order)) {
+          const credited = useWallet
+            .getState()
+            .refundOrder(
+              result.order.pricing.total,
+              result.order.vendor.name,
+              result.order.orderNumber,
+            );
+          if (credited) {
+            const settled = get().advance(id, "refunded", "system", {
+              refundAmount: result.order.pricing.total,
+            });
+            if (settled.order) return { order: settled.order, error: null };
+          }
+        }
+
         return { order: result.order, error: null };
       },
 

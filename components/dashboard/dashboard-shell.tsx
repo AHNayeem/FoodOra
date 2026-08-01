@@ -14,6 +14,7 @@ import {
   Calculator,
   QrCode,
   Ticket,
+  Star,
   Store,
   ExternalLink,
   LogOut,
@@ -50,6 +51,7 @@ const NAV = [
   { href: "/dashboard/pos", key: "pos", icon: Calculator, exact: false },
   { href: "/dashboard/menu", key: "menu", icon: UtensilsCrossed, exact: false },
   { href: "/dashboard/coupons", key: "coupons", icon: Ticket, exact: false },
+  { href: "/dashboard/reviews", key: "reviews", icon: Star, exact: false },
   { href: "/dashboard/qr", key: "qr", icon: QrCode, exact: false },
 ] as const;
 
