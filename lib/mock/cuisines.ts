@@ -21,3 +21,4 @@ export const cuisines: Cuisine[] = [
 ];
 
 export const cuisineById = new Map(cuisines.map((c) => [c.id, c]));
+export const cuisineBySlug = new Map(cuisines.map((c) => [c.slug, c]));

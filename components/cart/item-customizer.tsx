@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import type { CartSelectedOption, CartVendor, FoodItem } from "@/types";
+import type { CartLine, CartSelectedOption, CartVendor, FoodItem } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { useCart } from "@/stores/cart";
 import { buildCartLine, lineUnitPrice } from "@/lib/cart";
@@ -18,17 +18,24 @@ import { cn } from "@/lib/utils";
  * ItemCustomizer — the "configure then add" sheet for dishes with option
  * groups. Required groups render as single-select, optional groups as
  * multi-select capped at `max`. The footer shows the live line total.
+ *
+ * By default it writes to the delivery cart. Pass `onAdd` to receive the built
+ * line instead — the QR menu (C12) uses that to add to a table sitting, which
+ * is a different store with the same line shape.
  */
 export function ItemCustomizer({
   item,
   vendor,
   open,
   onClose,
+  onAdd,
 }: {
   item: FoodItem;
   vendor: CartVendor;
   open: boolean;
   onClose: () => void;
+  /** Takes ownership of the built line; the cart store is left untouched. */
+  onAdd?: (line: CartLine) => void;
 }) {
   const t = useTranslations("cart");
   const add = useCart((s) => s.add);
@@ -76,8 +83,14 @@ export function ItemCustomizer({
 
   function handleAdd() {
     const line = buildCartLine(item, chosen, qty);
-    const { conflict } = add(vendor, line);
     onClose();
+
+    if (onAdd) {
+      onAdd(line);
+      return;
+    }
+
+    const { conflict } = add(vendor, line);
     if (!conflict) {
       openCart();
       toast.success(t("added", { name: item.name }));

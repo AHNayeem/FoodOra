@@ -4,7 +4,17 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { User as UserIcon, ShoppingBag, MapPin, Wallet, Lock } from "lucide-react";
+import {
+  User as UserIcon,
+  ShoppingBag,
+  CalendarClock,
+  CalendarCheck,
+  MapPin,
+  Wallet,
+  Heart,
+  Settings,
+  Lock,
+} from "lucide-react";
 import { useAuth } from "@/stores/auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,8 +22,12 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/account", key: "profile", icon: UserIcon },
   { href: "/account/orders", key: "orders", icon: ShoppingBag },
+  { href: "/account/subscriptions", key: "subscriptions", icon: CalendarClock },
+  { href: "/account/reservations", key: "reservations", icon: CalendarCheck },
+  { href: "/account/favorites", key: "favorites", icon: Heart },
   { href: "/account/addresses", key: "addresses", icon: MapPin },
   { href: "/account/wallet", key: "wallet", icon: Wallet },
+  { href: "/account/settings", key: "settings", icon: Settings },
 ] as const;
 
 /**

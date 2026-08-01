@@ -64,6 +64,54 @@ export const menuSections: MenuSection[] = [
   s("sec_sugar_cakes", "ven_sugar_spoon", "Cakes", 1),
   s("sec_sugar_pastries", "ven_sugar_spoon", "Pastries", 2),
   s("sec_sugar_drinks", "ven_sugar_spoon", "Drinks", 3),
+
+  // Bean & Bloom
+  s("sec_bloom_espresso", "ven_bean_and_bloom", "Espresso Bar", 1),
+  s("sec_bloom_toasts", "ven_bean_and_bloom", "Toasts & Plates", 2),
+
+  // The Reading Room
+  s("sec_reading_filter", "ven_the_reading_room", "Filter & Pots", 1),
+  s("sec_reading_toasties", "ven_the_reading_room", "Toasties", 2),
+
+  // Matcha House
+  s("sec_matcha_drinks", "ven_matcha_house", "Matcha Bar", 1),
+  s("sec_matcha_sweets", "ven_matcha_house", "Wagashi", 2),
+
+  // Cha Ghor
+  s("sec_cha_tea", "ven_cha_ghor", "Cha", 1),
+  s("sec_cha_snacks", "ven_cha_ghor", "Snacks", 2),
+
+  // Wok This Way
+  s("sec_wok_noodles", "ven_wok_this_way", "Wok Noodles", 1),
+  s("sec_wok_sides", "ven_wok_this_way", "Small Plates", 2),
+
+  // Naan Stop
+  s("sec_naan_wraps", "ven_naan_stop", "Tandoor Wraps", 1),
+  s("sec_naan_sides", "ven_naan_stop", "Sides", 2),
+
+  // Pasta Pronto
+  s("sec_pronto_pasta", "ven_pasta_pronto", "Fresh Pasta", 1),
+  s("sec_pronto_extras", "ven_pasta_pronto", "Salads & Extras", 2),
+
+  // Bowl & Broth
+  s("sec_broth_ramen", "ven_bowl_and_broth", "Ramen", 1),
+  s("sec_broth_sides", "ven_bowl_and_broth", "Sides", 2),
+
+  // Nadia's Table
+  s("sec_nadia_mezze", "ven_nadias_table", "Mezze", 1),
+  s("sec_nadia_mains", "ven_nadias_table", "Mains", 2),
+
+  // Mishtis by Ruma
+  s("sec_ruma_sweets", "ven_mishtis_by_ruma", "Sweets", 1),
+
+  // Chef Arif's Grill
+  s("sec_arif_grill", "ven_chef_arifs_grill", "From the Charcoal", 1),
+
+  // Tiffin by Shirin
+  s("sec_shirin_tiffin", "ven_tiffin_by_shirin", "Daily Tiffin", 1),
+
+  // Lola's Bakes
+  s("sec_lola_cakes", "ven_lolas_bakes", "Cakes & Bakes", 1),
 ];
 
 export const menuSectionById = new Map(menuSections.map((m) => [m.id, m]));

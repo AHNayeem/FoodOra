@@ -1,4 +1,4 @@
-import type { BaseEntity, ISODate } from "./common";
+import type { BaseEntity, ISODate, RiderVehicle } from "./common";
 import type { CartLine, CartVendor } from "./cart";
 
 /**
@@ -76,7 +76,7 @@ export interface OrderPayment {
 export interface Courier extends BaseEntity {
   name: string;
   phone: string;
-  vehicle: "bike" | "scooter" | "bicycle" | "car";
+  vehicle: RiderVehicle;
   /** Average rating out of 5. */
   rating: number;
   /** Completed deliveries — a light trust signal in the UI. */

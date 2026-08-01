@@ -51,12 +51,19 @@ export type VendorType =
   | "home-chef"
   | "catering";
 
+/**
+ * How a courier gets around. Shared vocabulary: it is both a property of the
+ * rider (their registered vehicle, Phase C18) and of the courier snapshot the
+ * customer's tracker shows (Phase C9).
+ */
+export type RiderVehicle = "bike" | "scooter" | "bicycle" | "car";
+
+/** Weekday key — the vocabulary for opening hours and recurring schedules. */
+export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
 /** Opening hours for a single weekday (24h "HH:mm", null = closed). */
 export interface DayHours {
   open: string | null;
   close: string | null;
 }
-export type WeeklyHours = Record<
-  "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun",
-  DayHours
->;
+export type WeeklyHours = Record<Weekday, DayHours>;

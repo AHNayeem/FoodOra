@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -8,7 +9,8 @@ export function SectionHeading({
   seeAllHref,
   seeAllLabel,
 }: {
-  title: string;
+  /** Usually a translated string; accepts nodes so a heading can carry an icon. */
+  title: ReactNode;
   subtitle?: string;
   seeAllHref?: string;
   seeAllLabel?: string;

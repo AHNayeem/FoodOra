@@ -11,6 +11,7 @@ import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { AccountMenu } from "@/components/layout/account-menu";
 import { CartButton } from "@/components/cart/cart-button";
 import { useAuth } from "@/stores/auth";
+import { useFavorites } from "@/stores/favorites";
 import { cn } from "@/lib/utils";
 
 /** SiteHeader — sticky marketing header with responsive nav + mobile drawer. */
@@ -22,8 +23,11 @@ export function SiteHeader() {
 
   // The session store skips auto-rehydration so SSR and the first client render
   // both start logged-out (no mismatch); we rehydrate from localStorage here.
+  // Favorites rehydrate here too, once per page, so the heart on every card can
+  // just read `hydrated` instead of each one re-reading localStorage (C23).
   useEffect(() => {
     useAuth.persist.rehydrate();
+    useFavorites.persist.rehydrate();
   }, []);
   const signedIn = hydrated && !!user;
 

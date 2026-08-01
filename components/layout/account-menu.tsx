@@ -7,7 +7,10 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   User as UserIcon,
+  Bike,
   ShoppingBag,
+  CalendarClock,
+  CalendarCheck,
   Heart,
   MapPin,
   Wallet,
@@ -46,7 +49,11 @@ export function AccountMenu({ user }: { user: User }) {
     };
   }, [open]);
 
-  const isStaff = user.role !== "customer" && user.role !== "guest";
+  // Riders get the rider app rather than the merchant dashboard (which would
+  // only show them its role gate); an admin can reach both.
+  const isRider = user.role === "delivery-rider" || user.role === "super-admin";
+  const isStaff =
+    user.role !== "customer" && user.role !== "guest" && user.role !== "delivery-rider";
   const initials = user.name
     .split(" ")
     .map((w) => w[0])
@@ -57,9 +64,12 @@ export function AccountMenu({ user }: { user: User }) {
   const items = [
     { href: "/account", label: t("profile"), icon: UserIcon },
     { href: "/account/orders", label: t("orders"), icon: ShoppingBag },
+    { href: "/account/subscriptions", label: t("subscriptions"), icon: CalendarClock },
+    { href: "/account/reservations", label: t("reservations"), icon: CalendarCheck },
     { href: "/account/addresses", label: t("addresses"), icon: MapPin },
     { href: "/account/favorites", label: t("favorites"), icon: Heart },
     { href: "/account/wallet", label: t("wallet"), icon: Wallet },
+    ...(isRider ? [{ href: "/delivery", label: t("riderApp"), icon: Bike }] : []),
     ...(isStaff
       ? [{ href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard }]
       : []),

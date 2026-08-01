@@ -2,6 +2,7 @@ import type { CartVendor, Order, OrderStatus, PaymentMethod } from "@/types";
 import { buildCartLine } from "@/lib/cart";
 import { computeTotals } from "@/lib/checkout";
 import { foodsByVendor } from "./foods";
+import { hashSeed, mulberry32 } from "./rng";
 import { vendorById } from "./vendors";
 
 /**
@@ -39,25 +40,6 @@ const CUSTOMERS = [
   "Mitu Akter", "Shakib Alam", "Rima Sultana", "Arif Hasan",
   "Nusaiba Noor", "Hasib Rahman", "Lamia Chowdhury", "Omar Faruk",
 ];
-
-/** mulberry32 — small deterministic PRNG so a vendor's history never shifts. */
-function mulberry32(seed: number) {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
-  };
-}
-
-function hashSeed(input: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h = Math.imul(h ^ input.charCodeAt(i), 16777619);
-  }
-  return h >>> 0;
-}
 
 /** Derive the human order reference the same way `services/orders` does. */
 function orderNumberFrom(ms: number): string {

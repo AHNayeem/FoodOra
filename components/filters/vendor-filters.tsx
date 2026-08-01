@@ -33,13 +33,28 @@ interface Props {
   search: string;
 }
 
+interface VendorFiltersProps extends Props {
+  /**
+   * Hide the vendor-type chips. Used by the single-vertical directories
+   * (`/cafes`, `/home-chefs`, `/cloud-kitchens`) where the type comes from the
+   * route, so it must not also appear as a removable filter.
+   */
+  hideTypeFilter?: boolean;
+}
+
 /**
  * VendorFilters — the directory filter bar (Phase C4). URL is the source of
  * truth: current state arrives as props (read server-side from searchParams),
  * and every change rewrites the query string so results stay shareable and the
  * page re-fetches through the services seam.
  */
-export function VendorFilters({ type, sort, openNow, search }: Props) {
+export function VendorFilters({
+  type,
+  sort,
+  openNow,
+  search,
+  hideTypeFilter = false,
+}: VendorFiltersProps) {
   const t = useTranslations("directory");
   const tType = useTranslations("vendorType");
   const router = useRouter();
@@ -85,17 +100,19 @@ export function VendorFilters({ type, sort, openNow, search }: Props) {
         />
       </div>
 
-      {/* Type chips */}
-      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
-        <FilterChip active={type === ""} onClick={() => push({ type: "" })}>
-          {t("allTypes")}
-        </FilterChip>
-        {VENDOR_TYPES.map((vt) => (
-          <FilterChip key={vt} active={type === vt} onClick={() => push({ type: vt })}>
-            {tType(vt)}
+      {/* Type chips — omitted when the route already pins the vendor type. */}
+      {!hideTypeFilter && (
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+          <FilterChip active={type === ""} onClick={() => push({ type: "" })}>
+            {t("allTypes")}
           </FilterChip>
-        ))}
-      </div>
+          {VENDOR_TYPES.map((vt) => (
+            <FilterChip key={vt} active={type === vt} onClick={() => push({ type: vt })}>
+              {tType(vt)}
+            </FilterChip>
+          ))}
+        </div>
+      )}
 
       {/* Sort + toggles */}
       <div className="flex flex-wrap items-center gap-3">

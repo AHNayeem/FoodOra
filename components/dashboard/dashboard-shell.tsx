@@ -8,8 +8,10 @@ import { toast } from "sonner";
 import {
   LayoutDashboard,
   ClipboardList,
+  CalendarCheck,
   UtensilsCrossed,
   Calculator,
+  QrCode,
   Store,
   ExternalLink,
   LogOut,
@@ -40,8 +42,10 @@ const MANAGEMENT_ROLES: readonly UserRole[] = [
 const NAV = [
   { href: "/dashboard", key: "overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/orders", key: "orders", icon: ClipboardList, exact: false },
+  { href: "/dashboard/reservations", key: "reservations", icon: CalendarCheck, exact: false },
   { href: "/dashboard/pos", key: "pos", icon: Calculator, exact: false },
   { href: "/dashboard/menu", key: "menu", icon: UtensilsCrossed, exact: false },
+  { href: "/dashboard/qr", key: "qr", icon: QrCode, exact: false },
 ] as const;
 
 /** Centered state (spinner / gate messages) used before the dashboard renders. */

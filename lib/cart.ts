@@ -10,6 +10,33 @@ import type {
  * and reused by the drawer, checkout (C8) and any future server recompute.
  */
 
+/**
+ * Narrow a full {@link Vendor} to the snapshot the cart persists. Keeping this
+ * in one place means every surface that can add to the cart (menu, search
+ * results, offers) writes an identical vendor shape.
+ */
+export function toCartVendor(vendor: {
+  id: string;
+  slug: string;
+  name: string;
+  currency: string;
+  location: { countryCode: string };
+  deliveryFee: number;
+  minOrder: number;
+  freeDeliveryOver: number | null;
+}): CartVendor {
+  return {
+    id: vendor.id,
+    slug: vendor.slug,
+    name: vendor.name,
+    currency: vendor.currency,
+    countryCode: vendor.location.countryCode,
+    deliveryFee: vendor.deliveryFee,
+    minOrder: vendor.minOrder,
+    freeDeliveryOver: vendor.freeDeliveryOver,
+  };
+}
+
 /** Stable line id: identical food + option selections collapse into one line. */
 export function makeLineId(foodId: string, optionIds: string[]): string {
   return [foodId, ...[...optionIds].sort()].join("|");

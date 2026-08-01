@@ -10,6 +10,8 @@ import {
 import { VendorHero } from "@/components/vendor/vendor-hero";
 import { OpeningHours } from "@/components/vendor/opening-hours";
 import { FoodItemCard } from "@/components/cards/food-item-card";
+import { VendorPlans } from "@/components/subscriptions/vendor-plans";
+import { VenueBookingBand } from "@/components/reservations/venue-booking-band";
 import type { CartVendor } from "@/types";
 
 type Params = Promise<{ slug: string }>;
@@ -100,6 +102,16 @@ export default async function VendorPage({ params }: { params: Params }) {
                 </div>
               </section>
             ))}
+
+            {/* Table booking, for venues with a floor (Phase C16) */}
+            <VenueBookingBand
+              vendorId={vendor.id}
+              vendorName={vendor.name}
+              vendorSlug={vendor.slug}
+            />
+
+            {/* Subscription plans this kitchen runs (Phase C15) */}
+            <VendorPlans vendorId={vendor.id} vendorName={vendor.name} />
           </div>
 
           {/* Info sidebar */}

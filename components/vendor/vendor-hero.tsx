@@ -6,6 +6,7 @@ import type { Cuisine, Vendor } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { Badge } from "@/components/ui/badge";
 import { Rating } from "@/components/ui/rating";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { formatDistance, formatEta, formatPrice } from "@/lib/format";
 
 /**
@@ -81,6 +82,16 @@ export async function VendorHero({
               </Badge>
             )}
           </div>
+
+          {/* Save this vendor (C23) — pinned to the card corner so it clears the
+              wrapping title on narrow screens. */}
+          <FavoriteButton
+            kind="vendor"
+            id={vendor.id}
+            name={vendor.name}
+            variant="plain"
+            className="absolute end-4 top-4 border border-line md:static md:self-start"
+          />
         </div>
 
         {/* Stats row */}

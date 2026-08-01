@@ -12,6 +12,8 @@ export const primaryNav: NavItem[] = [
   { labelKey: "nav.cafes", href: "/cafes" },
   { labelKey: "nav.homeChefs", href: "/home-chefs" },
   { labelKey: "nav.cloudKitchens", href: "/cloud-kitchens" },
+  { labelKey: "nav.mealPlans", href: "/meal-plans" },
+  { labelKey: "nav.bookTable", href: "/reservations" },
   { labelKey: "nav.catering", href: "/catering" },
   { labelKey: "nav.offers", href: "/offers" },
 ];

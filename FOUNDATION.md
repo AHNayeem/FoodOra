@@ -29,8 +29,24 @@ app/
   (marketing)/          public site (route group) — header + footer chrome
     layout.tsx
     page.tsx            Phase C1 landing (hero, categories, trending, cuisines)
+    search/             smart search results — every landing funnel lands here
+    restaurants|cafes|cloud-kitchens|home-chefs|catering/   vertical directories
+    meal-plans/         subscription meal plans + subscribe builder (C15)
+    reservations/       table-booking directory + booking confirmation (C16)
+    offers/             deals hub (flash / featured / coupons / vendor promos)
+    blog/  blog/[slug]/ editorial index + article reader
+    about|careers|help|terms|privacy|partner|rider/          CMS-backed pages
+    account/            private customer app behind a client auth gate: profile,
+                        orders, subscriptions, reservations, favorites, addresses,
+                        wallet, settings
   (dashboard)/          vendor dashboard (route group) — own sidebar + topbar shell
-    dashboard/          overview, orders, menu (Phase C10)
+    dashboard/          overview, orders, menu (C10), pos (C11), qr studio (C12),
+                        reservations book (C16)
+  (qr)/                 scanned-table surface (route group) — no site chrome at all
+    m/[slug]/           QR menu a printed table code resolves to (Phase C12)
+  (rider)/              delivery partner app (route group) — phone-shaped frame,
+    delivery/           on-shift switch + bottom tabs: today (offers), trip/[id],
+                        earnings, wallet, history, profile (Phase C18)
   icon.svg  manifest.ts  robots.ts  sitemap.ts  not-found.tsx
 
 config/
@@ -39,24 +55,57 @@ config/
 
 lib/
   theme.ts              design tokens (TS mirror of globals.css @theme)
+  theme-preference.ts   light/dark *preference* contract (storage key + apply/subscribe)
   utils.ts  format.ts   cn(), slugify(); region-aware price/number/eta formatters
   mock/                 seed data — the ONLY place demo data lives
 
 services/                async data seam — components call THESE, never lib/mock directly
   http.ts               mockDelay(), paginate(), Result envelope
   catalog.ts            getVendors/getTrending/getCuisines/... (backend-ready signatures)
-  content.ts            getTestimonials/getBlogPosts (landing social-proof + blog)
+  content.ts            getTestimonials/getBlogPosts/getRelatedPosts (social proof + blog)
+  search.ts             smart search across vendors + dishes, with facets & sorts
+  offers.ts             promotions grouped by placement; owns the clock (C20)
+  pages.ts              CMS-managed page docs — about/help/careers/legal/pitch
+  favorites.ts          re-joins saved ids to vendors/dishes, drops stale ones (C23)
+  settings.ts           account settings, password change, closure (C28)
   vendor.ts             vendor dashboard reads — stats/charts/best-sellers/orders (Phase C10)
+  pos.ts                counter catalog/tables + simulated completeSale (Phase C11)
+  qr.ts                 QR menu config, scanned-table resolution, rounds, service calls (C12)
+  subscriptions.ts      meal plans, tiers, weekly menus + subscribe/skip/pause/cancel (C15)
+  reservations.ts       bookable venues, availability, book/cancel + the venue's book (C16)
+  delivery.ts           rider + zone, trip offers, running a trip, earnings,
+                        wallet / cash hand-ins (C18)
 
 types/                   domain models (BaseEntity w/ soft-delete + audit fields)
 components/
   ui/                   primitives: button, badge, rating, toaster, theme-toggle, locale-switcher
   layout/               site-header, site-footer
-  cards/                vendor-card
+  cards/                vendor-card, food-item-card, food-result-card
   sections/             hero, category-rail, section-heading, how-it-works,
                         testimonials, app-download (+ store-badges), blog-teaser
+  search/               search-box (type-ahead), search-filters, search-toolbar
+  account/              account-shell + profile/orders/addresses/wallet/favorites
+                        views, settings/ (appearance, password, danger zone)
+  favorites/            favorite-button (the heart, used on every card)
+  directory/            vendor-directory (shared vertical listing), dash-icon
+  offers/               offer-card, copy-code, offer-terms
+  blog/                 post-card, post-body (structured BlogBlock renderer)
+  marketing/            marketing-blocks (hero/stats/values/steps/faq),
+                        legal-document, pitch-page (/partner + /rider)
   dashboard/            vendor dashboard: shell, stat-card, revenue/peak charts,
-                        best-sellers, orders-board, menu-manager (Phase C10)
+                        best-sellers, orders-board, menu-manager (C10), pos/ (C11),
+                        qr/ studio + print sheet (C12),
+                        reservations/ book + floor view (C16)
+  qr/                   scanned-table guest surface: menu view, item row, welcome,
+                        ticket / bill / service sheets, qr-code renderer (C12)
+  subscriptions/        meal-plan card/filters/hero, weekly menu, nutrition strip,
+                        subscribe builder, account subscription cards (C15)
+  reservations/         venue card + directory (live availability), booking form
+                        (party/day/time grid), confirmation, account booking
+                        cards, vendor-page band (C16)
+  rider/                delivery partner app: shell + context, today (offers),
+                        offer card, trip view + multi-stop route map + handoff
+                        sheet, earnings, wallet, history, profile (C18)
 constants/               site config, navigation model
 messages/                en / bn / ar translation catalogs
 ```
@@ -143,8 +192,109 @@ Phases follow the spec (A–E). Current status:
       `types/table.ts`; seeded `lib/mock/tables.ts` (dine-in floor plans, also
       groundwork for C16). New `pos` i18n namespace (en/bn/ar, full Arabic
       plurals); dashboard sidebar gains a POS link
-- [ ] **C12–C16** QR menu, home-chef marketplace, cafe directory,
-      subscription meals, table booking
+- [x] **C12** QR Menu — two surfaces over one seam (`services/qr.ts`). **Guest**
+      (`/m/[slug]?t=<table>`, own chrome-free `(qr)` route group, `noindex`):
+      a scanned table code opens a welcome sheet (venue greeting, table badge,
+      optional guest name), then a one-column mobile menu with sticky search and
+      section rail. Guests order in **rounds** — build a round, send it to the
+      kitchen, keep ordering — and each sent round's kitchen progress is
+      *derived from elapsed time* (C9's pattern, `lib/qr.ts` `roundStatus`), as
+      are service-call acknowledgements. A running **bill** sums every sent
+      round with the venue's service charge and country tax; payment stays at
+      the table (no dine-in rail exists yet, and the screen says so). **Service
+      calls** (waiter / water / cutlery / bill) are venue-gated and refuse to
+      fire from a table-less venue code. The sitting persists per device in
+      `stores/dine-in.ts` — deliberately *not* the delivery cart, and it resets
+      when a different table is scanned. **Vendor** (`/dashboard/qr`): a code
+      studio that previews, copies, downloads (SVG/PNG) and prints table tents
+      as a real A4 sheet in a detached print window, filtered by floor zone,
+      plus a read-only summary of what guests can do here. Codes are generated
+      in the browser (`qrcode`, loaded on demand) and encode the studio's own
+      origin, so they are correct on localhost, a preview deploy and production
+      with nothing configured. Seeded `lib/mock/qr-menus.ts` (`QrMenuConfig` per
+      sit-down venue — the coffee shop is browse-only, the dessert bar has no
+      service charge); tables come from the C11 floor plans. `ItemCustomizer`
+      gained an `onAdd` escape hatch so the same sheet serves both carts. New
+      `types/qr.ts` + `qr` i18n namespace (en/bn/ar, full Arabic plurals)
+- [x] **C13 / C14 (directory layer)** Home Chef Marketplace (`/home-chefs`) and
+      Cafe Directory (`/cafes`), plus a Cloud Kitchen Directory
+      (`/cloud-kitchens`) — one shared `VendorDirectory` (type pinned by the
+      route, `VendorFilters` gains `hideTypeFilter`) with per-vertical hero copy
+      and value props. Seed grew from 10 vendors to 23 (5 restaurants, 6 cafes,
+      6 cloud kitchens, 6 home chefs), each with menu sections and dishes —
+      75 food items total. *Deferred to their own phases:* home-chef weekly-menu
+      / subscription scheduling (C15 — now landed), chef income dashboard, table
+      booking (C16)
+- [x] **C15** Subscription Meals — the recurring vertical (spec: Subscription
+      Meal, Healthy Meal Plans, and the home-chef Weekly Menu). **Directory**
+      (`/meal-plans`, URL-driven goal / meal-slot / sort / search filters, hero,
+      plan grid, *how a meal plan works*), **plan detail**
+      (`/meal-plans/[slug]`) with a day-by-day **rotating weekly menu** — every
+      dish carries its own macros and each day totals them —
+      commitment tiers priced per cycle, a per-day nutrition panel and
+      `generateStaticParams` + `generateMetadata` + 404, and a **subscribe
+      builder** (`/meal-plans/[slug]/subscribe`, `noindex`) that collects tier,
+      which meals, which weekdays, start date, hand-off window, address (reusing
+      the C8 address book and `AddressFields`) and kitchen notes against a live
+      per-cycle price. **Managing it** lives at `/account/subscriptions`: skip a
+      single day, pause until a date, resume, cancel — each mutation validated
+      by the seam (a skip past the kitchen's cutoff is refused there, not by a
+      disabled button) and committed back to the store.
+      The delivery calendar is **never stored**: a subscription keeps only its
+      rules (start date, weekdays, skips, pause) and `lib/subscriptions.ts`
+      projects them against `now` (C9/C12's pattern), which also makes a pause
+      self-expiring — `effectiveStatus` reports active again the day it ends,
+      with nothing scheduled to flip a flag. Pure math in `lib/subscriptions.ts`
+      (`computeSubscriptionPricing`, `buildSchedule`, `canSkipDelivery`,
+      `menuByDay`); simulated `services/subscriptions.ts`; persisted
+      `stores/subscriptions.ts`. Seeded `lib/mock/meal-plans.ts` — 6 plans across
+      3 kitchens, 16 tiers, 59 menu rows, with each plan's daily macros equal to
+      its own menu averaged out; the tiffin service runs Sunday–Thursday (the
+      Dhaka work week) and includes delivery. Vendor pages gained a *subscribe to
+      this kitchen* band. New `types/subscription.ts` (+ a shared `Weekday` in
+      `common.ts`) and `subscriptions` i18n namespace (en/bn/ar, full Arabic
+      plurals); header nav and the account menu/sidebar gained the entries
+- [x] **C16** Table Booking — the reservations vertical (spec: Table Booking,
+      plus the dashboard's Reservation Management / Table Management).
+      **Directory** (`/reservations`, URL-driven party / sort / search, venue
+      grid, *how booking works*), **booking form**
+      (`/restaurants/[slug]/book`, `noindex`, 404 for venues with no floor) —
+      party, day and time as one continuous question, since changing the party
+      changes the times; taken slots stay visible and struck through so a busy
+      evening looks busy — **confirmation/status** (`/reservations/[id]`), and
+      **managing it** at `/account/reservations` (upcoming vs past, cancel).
+      The venue side is `/dashboard/reservations`: the day's **book** with the
+      floor's real actions (confirm / decline / seat / complete / no-show, guarded
+      by a transition table) beside a **floor view** of who is on which table.
+      Vendor pages gained a *reserve a table* band, shown only where there is a
+      floor plan.
+      Availability is **derived, never stored** — there is no slot table, only
+      opening hours, the C11 floor plan, a `BookingPolicy` and the bookings
+      already taken. `lib/reservations.ts` answers the one question that matters
+      ("given the book, can this party sit for a full turn starting here?") by
+      overlap arithmetic, and allocates tables **best-fit** — smallest table that
+      takes the party, joining two in one zone only when no single table fits, so
+      a six-top is not burned on a couple. The same functions drive the guest
+      grid, the re-check at booking time and the dashboard floor, so those three
+      cannot disagree. Status is derived too (C9/C12/C15's pattern): a sitting
+      that has elapsed reads `completed`, one never seated reads `no-show`, with
+      nothing sweeping the book. Policy is **data**, so a sushi counter (75-min
+      turns, 15-min grid, deposit from five guests) and a rooftop trattoria
+      behave differently with no branch in any component; Spice Route reviews
+      every request instead of auto-confirming. Cutoffs live in the seam — a skip
+      past the cancellation window is refused there, not by a disabled button.
+      Simulated `services/reservations.ts`; persisted `stores/reservations.ts`
+      (the guest's bookings, plus the venue's status changes as overrides on the
+      synthesised book). Seeded `lib/mock/reservations.ts` — six policies, and
+      the book itself synthesised per request by a deterministic factory anchored
+      to `now` (C10's pattern) that seats every generated party through the real
+      allocator, so the book never double-books a table and fills to a share of
+      each venue's own capacity rather than a flat count. New
+      `types/reservation.ts`, `lib/dates.ts` (the plain-date and clock-time
+      primitives, extracted from `lib/subscriptions.ts` now that two domains
+      share them) and `reservations` i18n namespace (en/bn/ar, full Arabic
+      plurals); header nav, account menu/sidebar and the dashboard sidebar gained
+      the entries
 - [x] **C17** Catering (`/catering`) — event-catering vertical. **Directory**
       (`/catering`, URL-driven event-type / sort / search filters, hero, caterer
       grid, *how catering works*), **caterer detail** (`/catering/[slug]`, hero
@@ -159,21 +309,120 @@ Phases follow the spec (A–E). Current status:
       `requestQuote`) over `lib/mock/catering.ts` (6 caterers, ~16 packages, 7
       add-ons); persisted `stores/catering.ts` (skipHydration like orders). New
       `catering` types + i18n namespace (en/bn/ar, full Arabic plurals)
-- [ ] **C18–C33** rider app, wallet UI, offers, coupons, reviews, AI assistant,
-      notifications, CMS, analytics, settings, a11y/perf review
+- [x] **Landing surface completed** — every link reachable from the landing page
+      (header nav, footer, and each section) now resolves to a real page. This
+      slice also lands parts of later phases:
+      - **Smart Search** (`/search`) — new `services/search.ts` resolves one
+        query across vendors *and* dishes (field-weighted relevance) with URL-
+        driven facets: cuisine, dietary, price level, rating, delivery time,
+        open-now, free-delivery, has-offers, plus six sort orders. Debounced
+        type-ahead (`SearchBox`, request-id guarded), sticky facet sidebar,
+        category shortcuts and a suggestion-led empty state. The hero address
+        form, category rail and cuisine grid all funnel here. `noindex`
+      - **C20 Offers** (`/offers`) — new `Offer` model (discount *rule* +
+        eligibility + validity window), `lib/mock/offers.ts` (14 campaigns) and
+        `services/offers.ts`. Grouped by placement: flash deals with scarcity
+        meters and days-left counters, featured platform offers, copyable coupon
+        codes (`CopyCode`), vendor deals, and a rail of vendors running their own
+        promotions. Windows are stored as *day offsets* and stamped by
+        `buildOffers(now)` in the service, so campaigns are always live and the
+        seed never reads the clock (same pattern as `vendor-orders.ts`).
+        *Coupons (C21) as a redeemable account entity is still its own phase*
+      - **CMS content layer (part of C26)** — `types/marketing.ts` +
+        `lib/mock/pages.ts` + `services/pages.ts`: no marketing or legal page
+        holds prose of its own, each renders a document from the seam.
+        `/blog` + `/blog/[slug]` (9 posts with structured `BlogBlock` bodies,
+        category filter, tag-matched related rail, `generateStaticParams`),
+        `/about`, `/careers` (7 roles, team filter), `/help` (4 support channels
+        + 4 FAQ groups), `/terms`, `/privacy`, and the two acquisition pages
+        `/partner` + `/rider` (shared `PitchPage`). Reusable bands live in
+        `components/marketing/marketing-blocks.tsx`; FAQs use native
+        `<details>` so they work without JS
+      - Sitemap now covers all 17 static routes plus vendor, caterer, meal-plan
+        and article details. All three locale catalogs stay key-for-key
+        identical (1462 keys as of C16), with full Arabic plural forms
+- [x] **C23** Favorites — a heart on every vendor card, menu row, search result
+      and the vendor hero. `stores/favorites.ts` persists **ids only** (newest
+      first) and `services/favorites.ts` re-joins them to entities, dropping and
+      counting ids that no longer resolve, so a renamed or delisted item can
+      never go stale in the store. Saving requires a session. `/account/favorites`
+      tabs places vs dishes, defaulting to whichever has content. `VendorCard` was
+      restructured (wrapper + inner link) so the heart is a real sibling button
+      rather than a button nested in an anchor
+- [x] **C28** Settings (`/account/settings`) — new `types/settings.ts`,
+      `lib/mock/settings.ts` (opinionated defaults: transactional on, marketing
+      off), `services/settings.ts` and persisted `stores/settings.ts`. Sections:
+      **appearance & region** (three-way system/light/dark, language, currency),
+      **notifications** (5 topics × email/push/SMS as a real table; order email
+      is locked, per `REQUIRED_NOTIFICATIONS` on the seam), **privacy**,
+      **security**, **password change** (service-owned validation returning i18n
+      keys) and a **danger zone** — JSON data export, sign-out-everywhere, and
+      account deletion gated on typing the account email. Every toggle saves on
+      change, optimistically, then commits the service's echo (and rolls back on
+      error) — no Save button to lose. Theme/language/currency are *not* stored
+      here: the new `lib/theme-preference.ts` owns the preference contract
+      (absent key = follow OS), so the header toggle, the pre-paint
+      `ThemeScript` and this page all drive one owner
+- [x] **C18** Delivery Rider App (`/delivery`) — the courier side, in its own
+      `(rider)` route group with a phone-shaped shell: a compact top bar carrying
+      the one control that matters all day (on shift / off shift), a bottom tab
+      bar, and a persistent pointer back to a trip in progress. **Today** leads
+      with the shift, then what the day has paid, then the trips on offer — each
+      offer card answering the four questions a rider has before their thumb
+      moves (what it pays, how far, how many drops, how much cash) against a
+      countdown. **Running a trip** (`/delivery/trip/[id]`) is a checklist with a
+      map: only the next stop is actionable, a pickup completes in one tap, and a
+      drop goes through the handoff sheet. **Earnings** breaks the money into the
+      four things that generate it over today / week / month, **Wallet** keeps the
+      two balances apart (what the platform owes the rider, and the cash the
+      rider owes the platform), **Trips** is the week day by day, and **Profile**
+      owns the vehicle, the zone and the documents — beside the zone's fare card,
+      so a rider can see the rule that produced their last payout.
+      The unit of work is a **trip, not an order**, which is what makes *batch
+      delivery* a data shape rather than a special case: two orders are four
+      stops through the same router. `lib/delivery.ts` **computes the route**
+      (nearest-feasible-first with one hard constraint — you cannot deliver what
+      you have not collected), and does it over the real coordinates the catalog
+      already holds, so distance, ETA and pay all follow from the same geometry
+      the map draws. Fares are **data** (`lib/mock/delivery-zones.ts`): a
+      sprawling suburban zone pays more per kilometre, peaks at different hours
+      and lets riders hold more cash than an inner-city one, with no branch in any
+      component. **Handoff codes are derived from the order id**, so the rider's
+      app and the customer's tracker (C9, which now shows the code) agree with
+      nothing shared between them — and the seam refuses a delivery on a wrong
+      code, or one where owed cash was not confirmed, or a stop taken out of
+      route order. Cash is treated as a debt with a zone ceiling: past days are
+      settled at end of shift, today's is what the wallet asks the rider to hand
+      in. Simulated `services/delivery.ts`; persisted `stores/rider.ts` (shift,
+      the accepted trip captured whole, declined offers, hand-ins, cash-outs) fed
+      back as `RiderContext`. Trips are synthesised per rider by a deterministic
+      factory anchored to `now` (C10's pattern) whose orders are priced through
+      checkout's own `computeTotals`, so what a rider collects on a cash order is
+      a genuine order total. New `types/delivery.ts`, `lib/mock/rng.ts` (the
+      seeded PRNG, extracted now that a third domain synthesises data) and
+      `delivery` i18n namespace (en/bn/ar, full Arabic plurals); the account menu
+      routes riders here instead of the merchant dashboard, and `/rider` gained an
+      "already a partner?" way in
+- [ ] **C19–C33 (remaining)** wallet UI, coupons, reviews, AI assistant,
+      notifications, full CMS admin, analytics, a11y/perf review
 - [ ] **D / E** Backend architecture & implementation (after prototype is complete)
 
 ### Known stubs (expected at this stage)
 
-`/restaurants`, `/restaurants/[slug]`, `/login`, `/register` and
-`/forgot-password` are live. Remaining nav links (`/cafes`, `/offers`,
-`/search`, …), the landing blog links (`/blog`, `/blog/[slug]` — CMS is a later
-phase) and the remaining account-menu targets (`/account/favorites`,
-`/account/settings`, `/terms`, `/privacy`) still resolve to the
-404 page until their phases are built. The vendor dashboard (`/dashboard`,
+**Every link on the landing page now resolves** — header nav (`/restaurants`,
+`/cafes`, `/home-chefs`, `/cloud-kitchens`, `/meal-plans`, `/catering`,
+`/offers`), footer
+(`/about`, `/careers`, `/help`, `/terms`, `/privacy`, `/partner`, `/rider`), the
+hero/category/cuisine funnels into `/search`, and the blog teaser into `/blog`
+and `/blog/[slug]`.
+
+**Every link in the signed-in account menu now resolves too** — `/account/favorites`
+(C23), `/account/settings` (C28) and `/account/subscriptions` (C15) landed, so
+there are no known 404s left in the customer app. The vendor dashboard (`/dashboard`,
 `/dashboard/orders`, `/dashboard/menu`) is live behind the sign-in + management-role
 gate (sign in as `owner@foodora.dev` / `demo1234`). The customer app (`/account`,
-`/account/orders`, `/account/addresses`, `/account/wallet`) is live behind the
+`/account/orders`, `/account/subscriptions`, `/account/favorites`,
+`/account/addresses`, `/account/wallet`, `/account/settings`) is live behind the
 sign-in gate. Auth is fully simulated (no backend/JWT): any seeded account signs in
 with password `demo1234`, OTP accepts `123456`, social buttons resolve to the
 demo customer. The cart is live (add from any menu, single-vendor) and checkout is live
@@ -181,5 +430,44 @@ demo customer. The cart is live (add from any menu, single-vendor) and checkout 
 orders store; the confirmation screen's "Track your order" button opens
 `/orders/[id]`, the live tracker (C9) — it resolves orders placed on *this*
 device (the persisted store) and shows a not-found state for unknown ids.
-Review entities are deferred to their phases; the *types* exist so services are
-ready.
+The QR menu (C12) needs no account at all — open
+`/m/bella-napoli?t=tbl_bella_napoli_t3` to sit at table T3, or
+`/m/the-daily-grind` for a browse-only venue. A table sitting lives on the
+device that scanned it, so the bill does not follow a guest to a second phone
+and staff cannot see the round land anywhere yet; the kitchen-side ticket feed
+arrives with the Kitchen Display surface.
+Meal plans (C15) are browsable signed-out, but subscribing needs an account —
+try `/meal-plans/lean-and-green`, then `/account/subscriptions` to skip a day or
+pause. A subscription is device-local like an order, nothing is charged, and no
+renewal actually fires: the calendar is projected from the start date and the
+clock, so "next delivery" is always right without a scheduler. The kitchen has
+no production view of its subscribers yet.
+Table booking (C16) is browsable signed-out and bookable with an account — try
+`/reservations` (change the party size and watch the times change), or go straight
+to `/restaurants/bella-napoli/book`; `/restaurants/spice-route/book` is the venue
+that reviews requests rather than confirming instantly, and
+`/restaurants/sakura-sushi/book` with five guests is the one that asks for a
+deposit. The venue's own book is `/dashboard/reservations` (sign in as
+`owner@foodora.dev`, which owns Bella Napoli). Honest limits: a booking is
+device-local like an order, so the venue cannot really see a guest's booking and
+the guest cannot see the venue confirm it — the two sides share the *derivation*
+but not a database. The rest of each venue's book is synthesised per request, so
+it is coherent and stable for a given day but is not a real ledger: status
+changes the floor makes are kept as overrides in the browser, and no deposit is
+ever charged or held.
+The rider app (C18) is at `/delivery` — sign in as `rider@foodora.dev`, go on
+shift, and take one of the offers (the second one is a batch of two orders, so the
+multi-stop route is always there to try). The four-digit code a drop asks for is
+the same code the customer's tracker shows, because both derive it from the order
+id — open `/orders/[id]` on an order that is on its way to read it. Honest limits:
+a trip is device-local like an order, so a vendor cannot really see a rider accept
+their order and the customer cannot watch this rider move; the two sides share the
+*derivation*, not a database. The week of trips behind earnings is synthesised per
+rider — coherent and stable for a given day, but not a ledger — and no cash, hand-in
+or withdrawal moves real money. Documents are read-only: upload is support's job in
+the prototype. Fleet management (assigning riders, watching the map) belongs to the
+admin console, not here. Review entities are deferred to their
+phases; the *types* exist so services are ready. Settings that need a server to mean anything (notification channels,
+privacy flags, 2FA) persist locally and would be sent verbatim to the Phase E
+endpoints; account deletion clears every persisted customer store but has no
+server-side retention window yet.

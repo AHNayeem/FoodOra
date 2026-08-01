@@ -15,6 +15,7 @@ import {
   PartyPopper,
   Phone,
   ReceiptText,
+  ShieldCheck,
   ShoppingBag,
   Star,
   XCircle,
@@ -30,6 +31,7 @@ import {
   trackingProgress,
   type TrackingProgress,
 } from "@/lib/tracking";
+import { otpFor } from "@/lib/delivery";
 import { cartCount } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -186,6 +188,25 @@ export function OrderTracking({ orderId }: { orderId: string }) {
       {/* Courier */}
       {showCourier && courier && (
         <CourierCard courier={courier} t={t} />
+      )}
+
+      {/* Handoff code. The rider's app derives the same four digits from the
+          order id (see lib/delivery.otpFor), so the two screens agree with no
+          backend between them — and the rider cannot close the delivery without
+          it (Phase C18). */}
+      {showCourier && !progress.complete && (
+        <div className="mt-4 flex items-center gap-4 rounded-panel border border-line bg-surface p-5">
+          <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-pill bg-primary/10 text-primary">
+            <ShieldCheck className="size-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted">{t("handoffCodeTitle")}</p>
+            <p className="text-2xl font-extrabold tracking-[0.3em] text-ink">
+              {otpFor(order.id)}
+            </p>
+          </div>
+          <p className="max-w-40 text-xs text-muted">{t("handoffCodeHint")}</p>
+        </div>
       )}
 
       {/* Timeline */}

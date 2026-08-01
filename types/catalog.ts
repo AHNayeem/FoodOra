@@ -28,6 +28,12 @@ export interface Category extends BaseEntity {
   image: string;
   /** Ordering weight for the home category rail. */
   sort: number;
+  /**
+   * Match terms used to resolve a category to dishes and vendors during search
+   * (a real backend would use a join table; this keeps the mapping explicit
+   * data rather than fuzzy name matching).
+   */
+  keywords: string[];
 }
 
 export interface Vendor extends BaseEntity {

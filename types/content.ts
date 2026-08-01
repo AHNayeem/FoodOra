@@ -20,7 +20,18 @@ export interface Testimonial extends BaseEntity {
   rating: number;
 }
 
-/** A blog / editorial post teaser for the landing "from the blog" section. */
+/**
+ * One block of article content. Discriminated by `type` so the renderer can
+ * switch exhaustively without casts, and so a CMS can return rich text as
+ * structured data rather than raw HTML.
+ */
+export type BlogBlock =
+  | { type: "paragraph"; text: string }
+  | { type: "heading"; text: string }
+  | { type: "list"; items: string[] }
+  | { type: "quote"; text: string; cite?: string };
+
+/** A blog / editorial post — teaser fields plus the full article body. */
 export interface BlogPost extends BaseEntity {
   slug: string;
   title: string;
@@ -30,8 +41,16 @@ export interface BlogPost extends BaseEntity {
   /** Editorial category label, e.g. "Guides". */
   category: string;
   author: string;
+  /** Short author bio shown in the article byline card. */
+  authorRole: string;
+  /** Author avatar URL. */
+  authorAvatar: string;
   /** Estimated read time in minutes. */
   readMinutes: number;
   /** ISO date the post was published. */
   publishedAt: string;
+  /** Free-form tags, used for the tag list and related-post matching. */
+  tags: string[];
+  /** The article itself, in order. */
+  body: BlogBlock[];
 }

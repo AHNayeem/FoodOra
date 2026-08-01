@@ -5,6 +5,7 @@ import type { CartVendor, FoodItem } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { Badge } from "@/components/ui/badge";
 import { AddToCartButton } from "@/components/menu/add-to-cart-button";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,12 @@ export async function FoodItemCard({
             fill
             sizes="112px"
             className={cn("object-cover", !item.isAvailable && "grayscale")}
+          />
+          <FavoriteButton
+            kind="food"
+            id={item.id}
+            name={item.name}
+            className="absolute end-1 top-1 size-8"
           />
         </div>
         <div className="absolute -bottom-2 end-2">
