@@ -1,4 +1,4 @@
-import { buildOffers, vendorById } from "@/lib/mock";
+import { buildOffers, couponIdForOffer, vendorById } from "@/lib/mock";
 import type { Offer, OfferPlacement, Vendor } from "@/types";
 import { mockDelay } from "./http";
 
@@ -18,6 +18,12 @@ export interface OfferWithVendors {
   offer: Offer;
   /** Empty for platform-wide offers. */
   vendors: Vendor[];
+  /**
+   * The claimable coupon minted from this campaign (Phase C21), or null when it
+   * applies automatically. Resolved here so the card can offer "save to my
+   * coupons" without knowing how a coupon id is derived.
+   */
+  couponId: string | null;
 }
 
 /** True when `nowMs` falls inside the offer's validity window. */
@@ -38,6 +44,7 @@ function withVendors(offer: Offer): OfferWithVendors {
     vendors: offer.vendorIds
       .map((id) => vendorById.get(id))
       .filter((v): v is Vendor => Boolean(v) && !v!.deletedAt),
+    couponId: offer.code ? couponIdForOffer(offer.id) : null,
   };
 }
 

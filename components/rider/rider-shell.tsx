@@ -23,6 +23,7 @@ import { useRider } from "@/stores/rider";
 import { getRiderProfile, getRiderZone, nextStopOf } from "@/services/delivery";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RiderProvider } from "./rider-context";
@@ -187,6 +188,7 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center">
               <LocaleSwitcher className="hidden sm:inline-flex" />
               <ThemeToggle />
+              <NotificationBell audience="rider" />
               <Link
                 href="/"
                 aria-label={t("viewSite")}

@@ -9,9 +9,11 @@ import {
   LayoutDashboard,
   ClipboardList,
   CalendarCheck,
+  CookingPot,
   UtensilsCrossed,
   Calculator,
   QrCode,
+  Ticket,
   Store,
   ExternalLink,
   LogOut,
@@ -24,6 +26,7 @@ import { useMerchant } from "@/stores/merchant";
 import { getDashboardVendor } from "@/services/vendor";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DashboardProvider } from "./dashboard-context";
@@ -42,9 +45,11 @@ const MANAGEMENT_ROLES: readonly UserRole[] = [
 const NAV = [
   { href: "/dashboard", key: "overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/orders", key: "orders", icon: ClipboardList, exact: false },
+  { href: "/dashboard/kitchen", key: "kitchen", icon: CookingPot, exact: false },
   { href: "/dashboard/reservations", key: "reservations", icon: CalendarCheck, exact: false },
   { href: "/dashboard/pos", key: "pos", icon: Calculator, exact: false },
   { href: "/dashboard/menu", key: "menu", icon: UtensilsCrossed, exact: false },
+  { href: "/dashboard/coupons", key: "coupons", icon: Ticket, exact: false },
   { href: "/dashboard/qr", key: "qr", icon: QrCode, exact: false },
 ] as const;
 
@@ -208,6 +213,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-1">
               <LocaleSwitcher className="hidden sm:inline-flex" />
               <ThemeToggle />
+              <NotificationBell audience="restaurant" />
               <Link
                 href="/"
                 className="inline-flex size-10 items-center justify-center rounded-pill text-ink transition-colors hover:bg-surface-muted"

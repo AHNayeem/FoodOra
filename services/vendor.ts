@@ -46,6 +46,12 @@ export interface VendorDashboard {
   peak: HourlyPoint[];
   bestSellers: BestSeller[];
   recentOrders: Order[];
+  /**
+   * The whole synthesised window. The overview re-runs `vendorStats` over this
+   * *plus* the live order store, so today's KPIs count orders that were actually
+   * placed on this device rather than only the generated ones.
+   */
+  allOrders: Order[];
 }
 
 export async function getVendorDashboard(
@@ -65,6 +71,7 @@ export async function getVendorDashboard(
       peak: peakHours(orders),
       bestSellers: bestSellers(orders, 5),
       recentOrders: orders.slice(0, 6),
+      allOrders: orders,
     },
     400,
   );

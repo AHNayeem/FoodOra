@@ -4,13 +4,9 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
-  BadgeCheck,
   Bike,
-  CookingPot,
-  Loader2,
+  ChefHat,
   MessageSquare,
-  Navigation,
-  PackageCheck,
   PackageX,
   PartyPopper,
   Phone,
@@ -18,48 +14,52 @@ import {
   ShieldCheck,
   ShoppingBag,
   Star,
+  Timer,
   XCircle,
 } from "lucide-react";
 import type { CurrencyCode } from "@/config/regions";
-import type { Courier, OrderStatus } from "@/types";
+import type { OrderCancelReason } from "@/types";
 import { useOrders } from "@/stores/orders";
-import { cancelOrder, getCourier } from "@/services/orders";
+import { cancelOrder } from "@/services/orders";
+import { remainingMinutes, trackingProgress, type TrackingProgress } from "@/lib/tracking";
 import {
-  canCancel,
-  hasCourier,
-  remainingMinutes,
-  trackingProgress,
-  type TrackingProgress,
-} from "@/lib/tracking";
-import { otpFor } from "@/lib/delivery";
+  canCustomerCancel,
+  isOtpRevealed,
+  isTerminal,
+} from "@/lib/order-machine";
+import { CUSTOMER_CANCEL_REASONS, toMinutes } from "@/lib/order-lifecycle";
 import { cartCount } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
+import { OrderTimeline } from "@/components/orders/order-timeline";
+import { ReasonDialog } from "@/components/orders/reason-dialog";
+import { STATUS_ICON } from "@/components/orders/order-status-meta";
 import { TrackingMap } from "@/components/tracking/tracking-map";
 import { cn } from "@/lib/utils";
 
-/** Re-derive the simulated status on this cadence so the UI stays live. */
-const TICK_MS = 10_000;
-
-/** Icon per lifecycle stage, shared by the hero and the timeline. */
-const STEP_ICON: Record<OrderStatus, typeof Bike> = {
-  placed: ReceiptText,
-  confirmed: BadgeCheck,
-  preparing: CookingPot,
-  ready: ShoppingBag,
-  "picked-up": PackageCheck,
-  "on-the-way": Navigation,
-  delivered: PartyPopper,
-  cancelled: XCircle,
-};
+/**
+ * Re-render cadence. One second, not ten: the screen now shows a live
+ * preparation countdown, and a countdown that jumps in ten-second steps looks
+ * broken. Nothing is *computed* on this tick beyond time formatting.
+ */
+const TICK_MS = 1000;
 
 /**
- * OrderTracking — the simulated live tracker (Phase C9). Resolves the order
- * from the persisted orders store, derives its live status from elapsed time
- * (see `lib/tracking`), and re-renders on a timer so the timeline, ETA and map
- * marker advance on their own. The customer can cancel while the kitchen hasn't
- * started. Frontend-only: no sockets, no real courier, no map tiles.
+ * OrderTracking — the customer's live tracker (spec §1–§8).
+ *
+ * The rewrite here is not cosmetic. This screen used to derive an order's status
+ * by interpolating the clock between `placedAt` and the ETA, so the food
+ * "arrived" forty minutes after checkout whether or not a restaurant had ever
+ * accepted it — and the OTP step the spec makes mandatory was decorative.
+ *
+ * It now reads the order out of the shared store, which is the same record the
+ * restaurant board and the rider app write to. Every stage on screen is
+ * something somebody actually did, in the tab next door or on the autopilot.
+ * The clock is used for exactly two things: how long until the kitchen's
+ * promised ready time, and how far along the route to draw the marker.
+ *
+ * The handoff code follows the spec strictly — it is issued at checkout but
+ * revealed only once the rider is at the door (`isOtpRevealed`).
  */
 export function OrderTracking({ orderId }: { orderId: string }) {
   const t = useTranslations("tracking");
@@ -69,42 +69,26 @@ export function OrderTracking({ orderId }: { orderId: string }) {
 
   const hydrated = useOrders((s) => s.hydrated);
   const order = useOrders((s) => s.orders.find((o) => o.id === orderId));
-  const updateStatus = useOrders((s) => s.updateStatus);
+  const advance = useOrders((s) => s.advance);
+  const askRefund = useOrders((s) => s.askRefund);
 
   const [now, setNow] = useState(() => Date.now());
-  const [courier, setCourier] = useState<Courier | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  // Rehydrate the persisted store on the client (it skips auto-hydration).
   useEffect(() => {
     useOrders.persist.rehydrate();
   }, []);
 
-  // Live tick — advances the simulated progression.
+  // Live tick — drives countdowns and the map marker only.
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), TICK_MS);
     return () => clearInterval(id);
   }, []);
 
-  const progress = order ? trackingProgress(order, now) : null;
-  const showCourier = !!(order && progress && hasCourier(order, progress));
+  if (!hydrated) return <TrackingSkeleton />;
 
-  // Assign the courier once the order is out for delivery.
-  useEffect(() => {
-    if (showCourier && order && !courier) getCourier(order.id).then(setCourier);
-  }, [showCourier, order, courier]);
-
-  // ---- Loading / not-found (all hooks above run unconditionally) ----
-  if (!hydrated) {
-    return (
-      <div className="container-site flex min-h-[50vh] items-center justify-center py-16">
-        <div className="size-8 animate-spin rounded-full border-2 border-line border-t-primary" />
-      </div>
-    );
-  }
-
-  if (!order || !progress) {
+  if (!order) {
     return (
       <div className="container-site flex min-h-[50vh] flex-col items-center justify-center gap-3 py-16 text-center">
         <span className="inline-flex size-16 items-center justify-center rounded-pill bg-surface-muted text-muted">
@@ -119,39 +103,47 @@ export function OrderTracking({ orderId }: { orderId: string }) {
     );
   }
 
+  const progress = trackingProgress(order, now);
   const currency = order.vendor.currency as CurrencyCode;
   const isDelivery = order.fulfillment === "delivery";
-  const { pricing } = order;
-  const mins = remainingMinutes(progress.remainingMs);
+  const rider = order.lifecycle.rider;
+  const showOtp = isOtpRevealed(order);
+
   const fmtTime = (ms: number) =>
     new Date(ms).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-  const etaTime = fmtTime(progress.etaMs);
-  const destinationLabel = isDelivery ? order.address?.label ?? t("mapYou") : order.vendor.name;
 
-  function handleCancel() {
+  function handleCancel(reason: OrderCancelReason, note: string) {
     if (!order) return;
     setCancelling(true);
-    cancelOrder(order.id).then((res) => {
+    cancelOrder(order.id, reason).then((res) => {
       setCancelling(false);
-      setConfirmOpen(false);
+      setCancelOpen(false);
       if (res.error || !res.data) {
         toast.error(t("cancelError"));
         return;
       }
-      updateStatus(order.id, "cancelled");
+      const result = advance(order.id, "cancelled", "customer", {
+        reason,
+        note: note || null,
+      });
+      if (result.error) {
+        toast.error(t("cancelError"));
+        return;
+      }
       toast.success(t("cancelSuccess"));
     });
   }
 
   return (
     <div className="container-site max-w-2xl py-8">
-      {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-h1 text-ink">{t("title")}</h1>
-          <p className="text-sm text-muted">{to("orderNumber", { number: order.orderNumber })}</p>
+          <p className="text-sm text-muted">
+            {to("orderNumber", { number: order.orderNumber })}
+          </p>
         </div>
-        {!progress.complete && !progress.cancelled && (
+        {!isTerminal(order.status) && order.status !== "delivered" && (
           <span className="inline-flex items-center gap-1.5 rounded-pill bg-fresh/15 px-3 py-1 text-sm font-semibold text-fresh">
             <span className="relative flex size-2">
               <span className="absolute inline-flex size-full rounded-full bg-fresh opacity-75 motion-safe:animate-ping" />
@@ -162,47 +154,43 @@ export function OrderTracking({ orderId }: { orderId: string }) {
         )}
       </div>
 
-      {/* Status hero */}
       <StatusHero
+        order={order}
         progress={progress}
+        now={now}
         isDelivery={isDelivery}
-        vendorName={order.vendor.name}
-        mins={mins}
-        etaTime={etaTime}
-        t={t}
-        to={to}
+        etaTime={fmtTime(progress.etaMs)}
       />
 
-      {/* Live map (delivery, while active) */}
-      {isDelivery && !progress.cancelled && (
-        <div className="mt-4">
-          <TrackingMap
-            fraction={progress.fraction}
-            vendorName={order.vendor.name}
-            destinationLabel={destinationLabel}
-            moving={progress.currentStatus === "on-the-way"}
-          />
-        </div>
-      )}
+      {/* Live map — only once a courier is actually carrying the food. */}
+      {isDelivery &&
+        (order.status === "picked-up" ||
+          order.status === "on-the-way" ||
+          order.status === "arrived" ||
+          order.status === "delivery-failed") && (
+          <div className="mt-4">
+            <TrackingMap
+              fraction={progress.fraction}
+              vendorName={order.vendor.name}
+              destinationLabel={order.address?.label ?? t("mapYou")}
+              moving={order.status === "on-the-way"}
+            />
+          </div>
+        )}
 
-      {/* Courier */}
-      {showCourier && courier && (
-        <CourierCard courier={courier} t={t} />
-      )}
+      {/* The rider, from the moment one is assigned — not from pickup. */}
+      {rider && <RiderCard order={order} />}
 
-      {/* Handoff code. The rider's app derives the same four digits from the
-          order id (see lib/delivery.otpFor), so the two screens agree with no
-          backend between them — and the rider cannot close the delivery without
-          it (Phase C18). */}
-      {showCourier && !progress.complete && (
-        <div className="mt-4 flex items-center gap-4 rounded-panel border border-line bg-surface p-5">
-          <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-pill bg-primary/10 text-primary">
+      {/* Handoff code — revealed only at the door (spec §7). */}
+      {showOtp && (
+        <div className="animate-pop-in mt-4 flex items-center gap-4 rounded-panel border-2 border-primary/40 bg-primary/5 p-5">
+          <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-pill bg-primary text-white">
             <ShieldCheck className="size-5" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted">{t("handoffCodeTitle")}</p>
-            <p className="text-2xl font-extrabold tracking-[0.3em] text-ink">
-              {otpFor(order.id)}
+            <p className="text-xs font-semibold text-primary">{t("handoffCodeTitle")}</p>
+            <p className="text-3xl font-extrabold tracking-[0.3em] text-ink tabular-nums">
+              {order.lifecycle.otp}
             </p>
           </div>
           <p className="max-w-40 text-xs text-muted">{t("handoffCodeHint")}</p>
@@ -212,52 +200,7 @@ export function OrderTracking({ orderId }: { orderId: string }) {
       {/* Timeline */}
       <div className="mt-4 rounded-panel border border-line bg-surface p-5">
         <h2 className="mb-4 text-h3 text-ink">{t("timelineTitle")}</h2>
-        <ol className="relative">
-          {progress.steps.map((step, i) => {
-            const Icon = STEP_ICON[step.status];
-            const isLast = i === progress.steps.length - 1;
-            return (
-              <li key={step.status} className="relative flex gap-4 pb-6 last:pb-0">
-                {!isLast && (
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "absolute top-9 left-[17px] h-[calc(100%-1.75rem)] w-0.5",
-                      step.done ? "bg-primary" : "bg-line",
-                    )}
-                  />
-                )}
-                <span
-                  className={cn(
-                    "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-pill border-2 transition-colors",
-                    step.done
-                      ? "border-primary bg-primary text-white"
-                      : "border-line bg-surface text-muted",
-                    step.active && "ring-4 ring-primary/20",
-                  )}
-                >
-                  <Icon className="size-4" aria-hidden />
-                </span>
-                <div className="flex min-w-0 flex-1 items-start justify-between gap-3 pt-1">
-                  <span
-                    className={cn(
-                      "text-sm font-semibold",
-                      step.done ? "text-ink" : "text-muted",
-                    )}
-                  >
-                    {to(`status.${step.status}`)}
-                    {step.active && (
-                      <span className="ml-2 rounded-pill bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                        {t("now")}
-                      </span>
-                    )}
-                  </span>
-                  <time className="shrink-0 text-xs text-muted">{fmtTime(step.at)}</time>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+        <OrderTimeline order={order} now={now} />
       </div>
 
       {/* Summary */}
@@ -266,7 +209,9 @@ export function OrderTracking({ orderId }: { orderId: string }) {
           <h2 className="text-h3 text-ink">{to("summary")}</h2>
           <span className="text-sm text-muted">{order.vendor.name}</span>
         </div>
-        <p className="mt-0.5 text-sm text-muted">{to("items", { count: cartCount(order.lines) })}</p>
+        <p className="mt-0.5 text-sm text-muted">
+          {to("items", { count: cartCount(order.lines) })}
+        </p>
         <ul className="mt-4 space-y-2 border-b border-line pb-4">
           {order.lines.map((line) => (
             <li key={line.id} className="flex justify-between gap-3 text-sm">
@@ -281,7 +226,19 @@ export function OrderTracking({ orderId }: { orderId: string }) {
         </ul>
         <div className="flex items-center justify-between pt-4 text-base font-bold text-ink">
           <span>{tc("total")}</span>
-          <span>{formatPrice(pricing.total, currency)}</span>
+          <span>{formatPrice(order.pricing.total, currency)}</span>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-xs text-muted">
+          <span>{to(`payment.${order.payment.method}`, { last4: order.payment.cardLast4 ?? "" })}</span>
+          <span
+            className={cn(
+              "font-semibold",
+              order.payment.status === "paid" && "text-fresh-600",
+              order.payment.status === "refunded" && "text-primary",
+            )}
+          >
+            {to(`paymentStatus.${order.payment.status}`)}
+          </span>
         </div>
         <Button
           href={`/checkout/success?order=${order.id}`}
@@ -289,20 +246,34 @@ export function OrderTracking({ orderId }: { orderId: string }) {
           size="sm"
           className="mt-3 w-full"
         >
-          {t("viewReceipt")}
+          <ReceiptText className="size-4" aria-hidden />
+          {progress.complete ? t("viewInvoice") : t("viewReceipt")}
         </Button>
       </div>
 
       {/* Actions */}
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-        {canCancel(order, progress) && (
+        {canCustomerCancel(order) && (
           <Button
             variant="outline"
             size="lg"
             className="flex-1 border-danger/40 text-danger hover:bg-danger/10"
-            onClick={() => setConfirmOpen(true)}
+            onClick={() => setCancelOpen(true)}
           >
             {t("cancelOrder")}
+          </Button>
+        )}
+        {progress.failed && order.lifecycle.refund === "none" && (
+          <Button
+            variant="outline"
+            size="lg"
+            className="flex-1"
+            onClick={() => {
+              askRefund(order.id);
+              toast.success(t("refundRequested"));
+            }}
+          >
+            {t("requestRefund")}
           </Button>
         )}
         <Button
@@ -313,72 +284,80 @@ export function OrderTracking({ orderId }: { orderId: string }) {
         >
           {to("orderAgain")}
         </Button>
-        <Button href="/" variant="ghost" size="lg" className="flex-1">
-          {to("backToHome")}
+        <Button href="/account/orders" variant="ghost" size="lg" className="flex-1">
+          {t("allOrders")}
         </Button>
       </div>
 
+      {order.lifecycle.refund === "requested" && (
+        <p className="mt-4 rounded-field bg-surface-muted p-3 text-center text-sm text-body">
+          {t("refundPending", {
+            amount: formatPrice(order.lifecycle.refundAmount, currency),
+          })}
+        </p>
+      )}
+
       <p className="mt-6 text-center text-xs text-muted">{t("simulatedNote")}</p>
 
-      {/* Cancel confirmation */}
-      <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} labelledBy="cancel-title">
-        <div className="p-6">
-          <h2 id="cancel-title" className="text-h3 text-ink">
-            {t("cancelConfirmTitle")}
-          </h2>
-          <p className="mt-2 text-sm text-body">{t("cancelConfirmBody")}</p>
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
-            <Button
-              variant="outline"
-              size="md"
-              className="flex-1"
-              onClick={() => setConfirmOpen(false)}
-            >
-              {t("keepOrder")}
-            </Button>
-            <Button
-              variant="danger"
-              size="md"
-              className="flex-1"
-              onClick={handleCancel}
-              disabled={cancelling}
-            >
-              {cancelling && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {t("confirmCancel")}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <ReasonDialog
+        open={cancelOpen}
+        title={t("cancelConfirmTitle")}
+        body={t("cancelConfirmBody")}
+        reasons={CUSTOMER_CANCEL_REASONS}
+        confirmLabel={t("confirmCancel")}
+        submitting={cancelling}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={handleCancel}
+      />
     </div>
   );
 }
 
+/**
+ * The hero — the one sentence the customer opened the page for.
+ *
+ * Three shapes, because three situations genuinely differ: a finished order (a
+ * result), an interrupted one (an explanation), and one in flight (a countdown).
+ * The in-flight case shows the kitchen's promised time while the food is being
+ * cooked and the delivery ETA once it has left, rather than one ETA that means
+ * different things at different moments.
+ */
 function StatusHero({
+  order,
   progress,
+  now,
   isDelivery,
-  vendorName,
-  mins,
   etaTime,
-  t,
-  to,
 }: {
+  order: Parameters<typeof trackingProgress>[0];
   progress: TrackingProgress;
+  now: number;
   isDelivery: boolean;
-  vendorName: string;
-  mins: number;
   etaTime: string;
-  t: ReturnType<typeof useTranslations>;
-  to: ReturnType<typeof useTranslations>;
 }) {
-  if (progress.cancelled) {
+  const t = useTranslations("tracking");
+  const to = useTranslations("order");
+
+  if (progress.failed) {
+    const reason =
+      order.lifecycle.rejectionReason ??
+      order.lifecycle.cancelReason ??
+      order.lifecycle.failureReason;
     return (
-      <div className="flex items-center gap-4 rounded-panel border border-danger/30 bg-danger/5 p-6">
+      <div className="flex items-start gap-4 rounded-panel border border-danger/30 bg-danger/5 p-6">
         <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-pill bg-danger/15 text-danger">
           <XCircle className="size-7" aria-hidden />
         </span>
-        <div>
-          <h2 className="text-h2 text-ink">{t("cancelledTitle")}</h2>
-          <p className="text-sm text-body">{t("cancelledSub")}</p>
+        <div className="min-w-0">
+          <h2 className="text-h2 text-ink">{to(`status.${order.status}`)}</h2>
+          <p className="text-sm text-body">
+            {t(`failed.${order.status}`, { vendor: order.vendor.name })}
+          </p>
+          {reason && (
+            <p className="mt-2 inline-flex rounded-pill bg-surface px-3 py-1 text-xs font-semibold text-body">
+              {to(`reason.${reason}`)}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -393,19 +372,24 @@ function StatusHero({
         </span>
         <div>
           <h2 className="text-h2 text-ink">
-            {isDelivery ? t("deliveredTitle") : t("readyTitle")}
+            {isDelivery ? t("deliveredTitle") : t("collectedTitle")}
           </h2>
-          <p className="text-sm text-body">
-            {isDelivery
-              ? t("deliveredSub", { time: etaTime })
-              : t("readySub", { vendor: vendorName })}
-          </p>
+          <p className="text-sm text-body">{t("deliveredSub", { time: etaTime })}</p>
         </div>
       </div>
     );
   }
 
-  const Icon = STEP_ICON[progress.currentStatus];
+  const Icon = STATUS_ICON[order.status];
+  // While the kitchen has the order, count down to the *promise*. Once it is on
+  // the road, count down to the door.
+  const inKitchen =
+    order.status === "confirmed" ||
+    order.status === "preparing" ||
+    order.status === "packing";
+  const readyMins = progress.readyMs == null ? null : toMinutes(progress.readyMs);
+  const overdue = progress.readyMs != null && progress.readyMs < 0;
+
   return (
     <div className="rounded-panel border border-line bg-surface p-6">
       <div className="flex items-center gap-4">
@@ -413,35 +397,81 @@ function StatusHero({
           <Icon className="size-7" aria-hidden />
         </span>
         <div className="min-w-0">
-          <h2 className="text-h2 text-ink">{to(`status.${progress.currentStatus}`)}</h2>
+          <h2 className="text-h2 text-ink">{to(`status.${order.status}`)}</h2>
           <p className="text-sm text-body">
-            {t(`hint.${progress.currentStatus}`, { vendor: vendorName })}
+            {t(`hint.${order.status}`, {
+              vendor: order.vendor.name,
+              rider: order.lifecycle.rider?.name ?? "",
+            })}
           </p>
         </div>
       </div>
+
+      {/* Kitchen progress — a real bar against a promised time. */}
+      {inKitchen && order.lifecycle.prepMinutes != null && (
+        <div className="mt-5">
+          <div className="flex items-center justify-between text-sm">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
+              <ChefHat className="size-4 text-accent-600" aria-hidden />
+              {t("prepProgress")}
+            </span>
+            <span
+              className={cn(
+                "font-bold tabular-nums",
+                overdue ? "text-danger" : "text-ink",
+              )}
+            >
+              {overdue
+                ? t("runningLate")
+                : t("readyIn", { minutes: readyMins ?? 0 })}
+            </span>
+          </div>
+          <div
+            className="mt-2 h-2 overflow-hidden rounded-pill bg-surface-muted"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress.prepFraction * 100)}
+          >
+            <div
+              className={cn(
+                "h-full rounded-pill transition-[width] duration-1000 ease-linear",
+                overdue ? "bg-danger" : "bg-accent",
+              )}
+              style={{ width: `${Math.round(progress.prepFraction * 100)}%` }}
+            />
+          </div>
+          {order.lifecycle.delayMinutes > 0 && (
+            <p className="mt-2 text-xs font-medium text-accent-600">
+              {t("delayNotice", { minutes: order.lifecycle.delayMinutes })}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="mt-5 flex items-center justify-between gap-3 rounded-field bg-surface-muted px-4 py-3">
-        <span className="text-sm text-muted">
+        <span className="inline-flex items-center gap-1.5 text-sm text-muted">
+          <Timer className="size-4" aria-hidden />
           {isDelivery ? t("deliveryEta") : t("pickupEta")}
         </span>
         <span className="text-end">
-          <span className="block text-h3 text-ink">
-            {isDelivery ? t("arrivingIn", { minutes: mins }) : t("readyIn", { minutes: mins })}
+          <span className="block text-h3 text-ink tabular-nums">
+            {t("arrivingIn", { minutes: remainingMinutes(progress.remainingMs) })}
           </span>
           <span className="block text-xs text-muted">{t("byTime", { time: etaTime })}</span>
         </span>
       </div>
+      {/* `now` participates so the countdown re-renders each tick. */}
+      <span className="sr-only">{new Date(now).toISOString()}</span>
     </div>
   );
 }
 
-function CourierCard({
-  courier,
-  t,
-}: {
-  courier: Courier;
-  t: ReturnType<typeof useTranslations>;
-}) {
-  const initials = courier.name
+/** Who is bringing it — name, vehicle, rating, and the two contact affordances. */
+function RiderCard({ order }: { order: Parameters<typeof trackingProgress>[0] }) {
+  const t = useTranslations("tracking");
+  const rider = order.lifecycle.rider!;
+  const initials = rider.name
     .split(" ")
     .map((w) => w[0])
     .slice(0, 2)
@@ -455,12 +485,19 @@ function CourierCard({
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-xs text-muted">{t("courierTitle")}</p>
-        <p className="truncate font-semibold text-ink">{courier.name}</p>
-        <p className="flex items-center gap-1.5 text-xs text-muted">
+        <p className="truncate font-semibold text-ink">{rider.name}</p>
+        <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted">
           <Star className="size-3.5 fill-accent text-accent" aria-hidden />
-          {courier.rating.toFixed(1)}
+          {rider.rating.toFixed(1)}
           <span aria-hidden>·</span>
-          {t(`vehicle.${courier.vehicle}`)}
+          <Bike className="size-3.5" aria-hidden />
+          {t(`vehicle.${rider.vehicle}`)}
+          {rider.plate && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="font-mono">{rider.plate}</span>
+            </>
+          )}
         </p>
       </div>
       <div className="flex shrink-0 gap-2">
@@ -468,7 +505,7 @@ function CourierCard({
           variant="outline"
           size="icon"
           aria-label={t("call")}
-          onClick={() => toast.info(t("callToast", { name: courier.name }))}
+          onClick={() => toast.info(t("callToast", { name: rider.name }))}
         >
           <Phone className="size-4" aria-hidden />
         </Button>
@@ -476,11 +513,26 @@ function CourierCard({
           variant="outline"
           size="icon"
           aria-label={t("message")}
-          onClick={() => toast.info(t("messageToast", { name: courier.name }))}
+          onClick={() => toast.info(t("messageToast", { name: rider.name }))}
         >
           <MessageSquare className="size-4" aria-hidden />
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Loading state. A skeleton of the real layout rather than a spinner, so the
+ * page does not reflow when the persisted store finishes rehydrating.
+ */
+function TrackingSkeleton() {
+  return (
+    <div className="container-site max-w-2xl py-8">
+      <div className="mb-6 h-9 w-52 animate-pulse rounded-pill bg-surface-muted" />
+      <div className="h-32 animate-pulse rounded-panel bg-surface-muted" />
+      <div className="mt-4 h-56 animate-pulse rounded-panel bg-surface-muted" />
+      <div className="mt-4 h-72 animate-pulse rounded-panel bg-surface-muted" />
     </div>
   );
 }

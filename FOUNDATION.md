@@ -38,10 +38,10 @@ app/
     about|careers|help|terms|privacy|partner|rider/          CMS-backed pages
     account/            private customer app behind a client auth gate: profile,
                         orders, subscriptions, reservations, favorites, addresses,
-                        wallet, settings
+                        wallet, coupons, settings
   (dashboard)/          vendor dashboard (route group) — own sidebar + topbar shell
     dashboard/          overview, orders, menu (C10), pos (C11), qr studio (C12),
-                        reservations book (C16)
+                        reservations book (C16), coupons (C21)
   (qr)/                 scanned-table surface (route group) — no site chrome at all
     m/[slug]/           QR menu a printed table code resolves to (Phase C12)
   (rider)/              delivery partner app (route group) — phone-shaped frame,
@@ -57,6 +57,8 @@ lib/
   theme.ts              design tokens (TS mirror of globals.css @theme)
   theme-preference.ts   light/dark *preference* contract (storage key + apply/subscribe)
   utils.ts  format.ts   cn(), slugify(); region-aware price/number/eta formatters
+  coupons.ts            the coupon rules engine — derived status + one evaluator
+                        every coupon surface shares (C21)
   mock/                 seed data — the ONLY place demo data lives
 
 services/                async data seam — components call THESE, never lib/mock directly
@@ -65,6 +67,8 @@ services/                async data seam — components call THESE, never lib/mo
   content.ts            getTestimonials/getBlogPosts/getRelatedPosts (social proof + blog)
   search.ts             smart search across vendors + dishes, with facets & sorts
   offers.ts             promotions grouped by placement; owns the clock (C20)
+  coupons.ts            the coupon wallet: claim / price against a basket / redeem,
+                        plus the merchant's own codes (C21)
   pages.ts              CMS-managed page docs — about/help/careers/legal/pitch
   favorites.ts          re-joins saved ids to vendors/dishes, drops stale ones (C23)
   settings.ts           account settings, password change, closure (C28)
@@ -88,14 +92,17 @@ components/
                         views, settings/ (appearance, password, danger zone)
   favorites/            favorite-button (the heart, used on every card)
   directory/            vendor-directory (shared vertical listing), dash-icon
-  offers/               offer-card, copy-code, offer-terms
+  offers/               offer-card, copy-code, offer-terms, claim-coupon (C21)
+  coupons/              coupon-ticket — the one way a coupon is drawn, in the
+                        wallet, the checkout picker and the merchant list (C21)
   blog/                 post-card, post-body (structured BlogBlock renderer)
   marketing/            marketing-blocks (hero/stats/values/steps/faq),
                         legal-document, pitch-page (/partner + /rider)
   dashboard/            vendor dashboard: shell, stat-card, revenue/peak charts,
                         best-sellers, orders-board, menu-manager (C10), pos/ (C11),
                         qr/ studio + print sheet (C12),
-                        reservations/ book + floor view (C16)
+                        reservations/ book + floor view (C16),
+                        coupons/ manager + issue form (C21)
   qr/                   scanned-table guest surface: menu view, item row, welcome,
                         ticket / bill / service sheets, qr-code renderer (C12)
   subscriptions/        meal-plan card/filters/hero, weekly menu, nutrition strip,
@@ -327,7 +334,8 @@ Phases follow the spec (A–E). Current status:
         promotions. Windows are stored as *day offsets* and stamped by
         `buildOffers(now)` in the service, so campaigns are always live and the
         seed never reads the clock (same pattern as `vendor-orders.ts`).
-        *Coupons (C21) as a redeemable account entity is still its own phase*
+        *Coupons as a redeemable account entity landed in C21, which mints its
+        claimable codes from this same seed*
       - **CMS content layer (part of C26)** — `types/marketing.ts` +
         `lib/mock/pages.ts` + `services/pages.ts`: no marketing or legal page
         holds prose of its own, each renders a document from the seam.
@@ -340,7 +348,7 @@ Phases follow the spec (A–E). Current status:
         `<details>` so they work without JS
       - Sitemap now covers all 17 static routes plus vendor, caterer, meal-plan
         and article details. All three locale catalogs stay key-for-key
-        identical (1462 keys as of C16), with full Arabic plural forms
+        identical (1,818 keys as of C21), with full Arabic plural forms
 - [x] **C23** Favorites — a heart on every vendor card, menu row, search result
       and the vendor hero. `stores/favorites.ts` persists **ids only** (newest
       first) and `services/favorites.ts` re-joins them to entities, dropping and
@@ -403,8 +411,80 @@ Phases follow the spec (A–E). Current status:
       `delivery` i18n namespace (en/bn/ar, full Arabic plurals); the account menu
       routes riders here instead of the merchant dashboard, and `/rider` gained an
       "already a partner?" way in
-- [ ] **C19–C33 (remaining)** wallet UI, coupons, reviews, AI assistant,
-      notifications, full CMS admin, analytics, a11y/perf review
+- [x] **C21** Coupons — the redeemable half of a promotion, on both sides.
+      An **offer** (C20) is a campaign the platform advertises; a **coupon** is a
+      ticket a customer holds. The rule lives on `Coupon`, everything personal —
+      when it was claimed, what it has been spent on — lives on a `CouponClaim`,
+      one row per customer per coupon, exactly as a `coupons` + `coupon_claims`
+      pair of tables would. Campaign coupons are **minted from the offer seed**
+      (every offer carrying a code), so the terms on the deals page and the terms
+      on the ticket in a wallet are the same row and cannot drift; granted
+      coupons — a welcome gift, a referral reward, an apology credit after a late
+      delivery, a birthday freebie, a loyalty cashback — have no campaign behind
+      them and are issued, not claimable.
+      **Status is derived, never stored** (the C15/C16 convention): a coupon reads
+      expired because its window closed and spent because its redemptions reached
+      the limit, with nothing sweeping a table to make that true. There is exactly
+      one evaluator (`lib/coupons.ts`) and every surface asks it the same question,
+      so a coupon the checkout picker offers is one the seam will accept: it
+      prices all five kinds — percentage (with a cap), fixed, free delivery, BOGO
+      (the cheapest item in the basket) and **cashback, which is deliberately not
+      a discount** but a wallet credit paid after the order, so it never flatters
+      the total — and refuses in the order a person would explain it: what is
+      wrong with the coupon, then with the basket, then the kind-specific
+      conditions, first failure wins.
+      **Customer:** `/account/coupons` (claim a code, three tabs — available,
+      used, expired — and a rail of codes still claimable), a **coupon step at
+      checkout** replacing C8's hard-coded promo table (typed codes are claimed on
+      the spot by the seam; the sheet lists what *doesn't* apply too, each with its
+      reason, and the code the basket outgrows is dropped with an explanation), a
+      "save to my coupons" button beside every code on `/offers`, and the code on
+      the receipt. **Merchant:** `/dashboard/coupons` — the vendor's own codes with
+      derived status and performance, an issue form whose validation lives in the
+      seam (codes are unique platform-wide), and *ending* a campaign closes its
+      window rather than deleting it, so it stays readable and its redemptions keep
+      counting. Simulated `services/coupons.ts` (owns the clock, the rules and the
+      joins — it derives the basket's categories and delivery fee itself, so no
+      component can mis-state what a coupon was priced against); persisted
+      `stores/coupons.ts` holds claims only, and the merchant's created/ended
+      coupons ride on `stores/merchant.ts` as the seam's context parameter (the
+      C16/C18 pattern). New `types/coupon.ts`, `lib/mock/coupons.ts` and `coupons`
+      i18n namespace (en/bn/ar, full Arabic plurals); account sidebar/menu and the
+      dashboard sidebar gained the entry
+- [x] **C34** Order Lifecycle — the spine the four surfaces now share. Audit in
+      `ORDER-LIFECYCLE-AUDIT.md`; what it found was that the customer, the
+      restaurant and the rider were three unrelated simulations (a clock-derived
+      status, a `useState` array over a per-visit synthesiser, and a pool of
+      invented trips), so nothing any actor did was visible to any other.
+      **`lib/order-machine.ts`** now owns the lifecycle: 16 states (the spec's
+      full path plus `packing`, `rider-assigned`, `arrived`, `completed` and the
+      distinct failure endings `rejected` / `delivery-failed` / `returned` /
+      `refunded`), an explicit transition graph, per-actor permissions, and a
+      pure `transition()` that refuses illegal moves and stamps the derived
+      fields (promised-ready time, OTP verification, COD settling on delivery).
+      **`stores/orders.ts`** became the single source of truth all four surfaces
+      read and write, with an append-only event log per order, a persisted-store
+      migration for pre-lifecycle orders, and a seeded working set
+      (`lib/mock/demo-orders.ts`) covering every interesting state. Every
+      committed transition emits role-scoped notifications
+      (`lib/notifications.ts` → `stores/notifications.ts`, bell in all four
+      shells). **Customer** (`/orders/[id]`) reads real status, shows a kitchen
+      countdown against the promise, meets the rider at assignment, and sees the
+      handoff code only once the rider arrives. **Restaurant**
+      (`/dashboard/orders`, new `/dashboard/kitchen`) accepts with a prep time,
+      rejects/cancels with a reason, walks preparing → packing → ready, and
+      dispatches automatically or by hand. **Rider** (`/delivery`, new
+      `/delivery/order/[id]`) takes real orders and closes them through an
+      attempt-counted OTP with a lock-out and a failed-delivery fork. **Admin**
+      (new `(admin)` group, `/admin`) is the live-ops board. Shared
+      `components/orders/*` (animated timeline, status chip, dialogs);
+      `lib/tracking.ts` now reads the event log instead of interpolating the
+      clock; `lib/analytics.ts` excludes all failure states from revenue.
+      `components/demo/*` adds an autopilot that plays the actors a presenter
+      is not — through the same store actions, so it has no privileged path.
+      New `notifications` / `admin` / `demo` i18n namespaces (en/bn/ar)
+- [ ] **C19, C22, C24–C27, C29–C33 (remaining)** wallet UI, reviews, AI assistant,
+      full CMS admin, deeper analytics, a11y/perf review
 - [ ] **D / E** Backend architecture & implementation (after prototype is complete)
 
 ### Known stubs (expected at this stage)

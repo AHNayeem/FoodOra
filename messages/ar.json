@@ -203,6 +203,146 @@
     "emptyBody": "تُضاف عروض جديدة كل أسبوع تقريبًا. في الأثناء، كثير من المطابخ تُشغّل عروضها الخاصة.",
     "browseAll": "تصفّح المطاعم"
   },
+  "coupons": {
+    "title": "الكوبونات",
+    "claimTitle": "لديك رمز؟",
+    "claimHint": "أضفه إلى كوبوناتك وسينتظرك عند الدفع.",
+    "codePlaceholder": "أدخل الرمز",
+    "claim": "إضافة",
+    "claimed": "تمت إضافة {title} إلى كوبوناتك",
+    "apply": "تطبيق",
+    "applied": "تم تطبيق الكوبون {code}",
+    "remove": "إزالة",
+    "save": "حفظ",
+    "inWallet": "في كوبوناتك",
+    "copyCode": "نسخ الرمز",
+    "copied": "تم نسخ الرمز {code}",
+    "copyFailed": "تعذّر النسخ — الرمز هو {code}",
+    "useIt": "اطلب الآن",
+    "terms": "الشروط",
+    "minOrder": "الحد الأدنى {amount}",
+    "validAt": "صالح في {vendors}",
+    "usesLeft": "{count, plural, =0 {لم يتبقَّ استخدام} one {تبقى استخدام واحد} two {تبقى استخدامان} few {تبقت # استخدامات} many {تبقى # استخدامًا} other {تبقى # استخدام}}",
+    "expiresIn": "{count, plural, =0 {ينتهي اليوم} one {يوم واحد متبقٍ} two {يومان متبقيان} few {# أيام متبقية} many {# يومًا متبقيًا} other {# يوم متبقٍ}}",
+    "lastUsedOn": "آخر استخدام في الطلب {order}",
+    "emptyTitle": "لا كوبونات بعد",
+    "emptyBody": "الرموز التي تضيفها والمكافآت التي نرسلها لك تتجمع هنا، جاهزة للاستخدام عند الدفع.",
+    "browseOffers": "شاهد عروض اليوم",
+    "tab": {
+      "available": "متاحة",
+      "used": "مستخدمة",
+      "expired": "منتهية"
+    },
+    "tabEmpty": {
+      "available": "لا شيء للاستخدام الآن.",
+      "used": "لم تستخدم أي كوبون بعد.",
+      "expired": "لم ينتهِ أي كوبون. أحسنت."
+    },
+    "suggestedTitle": "رموز يمكنك إضافتها",
+    "suggestedHint": "حملات جارية لا تملكها بعد.",
+    "checkoutTitle": "كوبون",
+    "view": "عرض",
+    "walletCount": "{count, plural, =1 {كوبون واحد في محفظتك} two {كوبونان في محفظتك} few {# كوبونات في محفظتك} many {# كوبونًا في محفظتك} other {# كوبون في محفظتك}}",
+    "bestSaving": "وفّر {amount} بكوبون",
+    "noneApplyHint": "لا ينطبق أي منها على هذا الطلب بعد.",
+    "pickerTitle": "كوبوناتك",
+    "pickerHint": "اختر واحدًا لتطبيقه على هذا الطلب.",
+    "savingOff": "خصم {amount}",
+    "savingDelivery": "توصيل مجاني ({amount})",
+    "savingCashback": "{amount} تعود إلى محفظتك",
+    "value": {
+      "percentage": "خصم {value}%",
+      "fixed": "وفّر {amount}",
+      "freeDelivery": "توصيل مجاني",
+      "bogo": "اشترِ واحدًا واحصل على آخر",
+      "cashback": "استرداد {value}%"
+    },
+    "status": {
+      "active": "سارٍ",
+      "scheduled": "لم يبدأ",
+      "used": "مستخدم",
+      "expired": "منتهٍ"
+    },
+    "source": {
+      "campaign": "عرض المنصة",
+      "welcome": "هدية ترحيب",
+      "referral": "مكافأة إحالة",
+      "loyalty": "مكافأة ولاء",
+      "apology": "من الدعم",
+      "birthday": "هدية عيد ميلاد",
+      "vendor": "من المطعم"
+    },
+    "kind": {
+      "percentage": "نسبة مئوية",
+      "fixed": "مبلغ ثابت",
+      "free-delivery": "توصيل مجاني"
+    },
+    "reason": {
+      "used": "لقد استخدمت هذا الكوبون.",
+      "notStarted": "لم يبدأ هذا الكوبون بعد.",
+      "expired": "انتهت صلاحية هذا الكوبون.",
+      "currency": "غير صالح بهذه العملة.",
+      "vendorOnly": "غير صالح في هذا المطعم.",
+      "categoryOnly": "غير صالح على هذه الأطباق.",
+      "firstOrderOnly": "للطلب الأول فقط.",
+      "minOrder": "طلبك أقل من الحد الأدنى لهذا الكوبون.",
+      "minOrderAmount": "اطلب بقيمة {amount} لاستخدامه",
+      "deliveryOnly": "لطلبات التوصيل فقط.",
+      "needsTwoItems": "أضف صنفًا ثانيًا لاستخدامه.",
+      "noSaving": "لن يوفّر هذا شيئًا على هذا الطلب."
+    },
+    "merchantTitle": "الكوبونات",
+    "merchantSubtitle": "الرموز التي توزّعها، وما حققته.",
+    "newCoupon": "كوبون جديد",
+    "newCouponHint": "يضيفه العملاء بإدخال الرمز. لن يظهر في صفحة عروض المنصة.",
+    "createCoupon": "إنشاء الكوبون",
+    "cancel": "إلغاء",
+    "created": "الكوبون {code} أصبح ساريًا",
+    "ended": "تم إنهاء الكوبون {code}",
+    "endNow": "إنهاء الآن",
+    "statLive": "كوبونات سارية",
+    "statLiveHint": "{count, plural, =1 {واحد إجمالًا} two {اثنان إجمالًا} few {# إجمالًا} many {# إجمالًا} other {# إجمالًا}}",
+    "statRedemptions": "مرات الاستخدام",
+    "statDiscount": "الخصم الممنوح",
+    "statRevenue": "الإيرادات",
+    "statRevenueHint": "الطلبات التي استخدمت رمزًا",
+    "merchantEmptyTitle": "لا كوبونات بعد",
+    "merchantEmptyBody": "أصدر رمزًا لإعادة الناس في فترة هادئة.",
+    "colCoupon": "الكوبون",
+    "colStatus": "الحالة",
+    "colRedemptions": "استُخدم",
+    "colDiscount": "الخصم",
+    "colRevenue": "الإيرادات",
+    "colActions": "إجراءات",
+    "fieldCode": "الرمز",
+    "fieldTitle": "العنوان",
+    "fieldDescription": "الوصف",
+    "fieldKind": "النوع",
+    "fieldPercent": "نسبة الخصم",
+    "fieldAmount": "مبلغ الخصم",
+    "fieldMaxDiscount": "أقصى خصم",
+    "fieldNoCap": "بلا حد",
+    "fieldMinOrder": "الحد الأدنى للطلب",
+    "fieldUsageLimit": "الاستخدامات لكل عميل",
+    "fieldDuration": "المدة (أيام)",
+    "errors": {
+      "emptyCode": "أدخل رمزًا.",
+      "unknownCode": "هذا الرمز غير صالح.",
+      "alreadyHeld": "هذا الكوبون موجود في كوبوناتك.",
+      "expiredCode": "انتهت صلاحية هذا الرمز.",
+      "notStartedCode": "هذا الرمز غير فعّال بعد.",
+      "notHeld": "أنت لا تملك هذا الكوبون.",
+      "badCode": "الرموز من ٤ إلى ١٦ حرفًا ورقمًا.",
+      "codeTaken": "هذا الرمز مستخدم بالفعل.",
+      "titleRequired": "أعطِ الكوبون عنوانًا.",
+      "badPercent": "أدخل نسبة بين ١ و١٠٠.",
+      "badValue": "أدخل مبلغًا أكبر من صفر.",
+      "badDuration": "شغّله ليوم واحد على الأقل.",
+      "badLimit": "اسمح باستخدام واحد على الأقل.",
+      "alreadyEnded": "هذا الكوبون منتهٍ بالفعل.",
+      "generic": "حدث خطأ ما."
+    }
+  },
   "blog": {
     "metaTitle": "مدوّنة FoodOra",
     "metaDescription": "أدلة ومقابلات وملاحظات المنتج من الفريق الذي يبني منظومة الطعام — ومن المطابخ التي تعمل عليها.",
@@ -448,7 +588,8 @@
       "favorites": "المفضلة",
       "addresses": "العناوين",
       "wallet": "المحفظة",
-      "settings": "الإعدادات"
+      "settings": "الإعدادات",
+      "coupons": "الكوبونات"
     },
     "role": {
       "guest": "زائر",
@@ -528,7 +669,9 @@
     "addFundsHint": "اختر مبلغًا لإضافته إلى محفظتك. محاكاة — لا يتم خصم أي دفعة حقيقية.",
     "confirmTopUp": "أضف إلى المحفظة",
     "topUpSuccess": "تمت إضافة {amount} إلى محفظتك",
-    "riderApp": "تطبيق السائق"
+    "riderApp": "تطبيق السائق",
+    "coupons": "الكوبونات",
+    "viewInvoice": "عرض الفاتورة"
   },
   "favorites": {
     "title": "المفضلة",
@@ -712,13 +855,6 @@
     "notesPlaceholder": "هل هناك ما يجب أن يعرفه المطعم أو السائق؟ (اختياري)",
     "summaryTitle": "ملخص الطلب",
     "items": "{count, plural, =0 {لا عناصر} zero {لا عناصر} one {عنصر واحد} two {عنصران} few {# عناصر} many {# عنصرًا} other {# عنصر}}",
-    "promoTitle": "رمز ترويجي",
-    "promoPlaceholder": "أدخل الرمز",
-    "apply": "تطبيق",
-    "promoApplied": "تم تطبيق الرمز {code}",
-    "removePromo": "إزالة",
-    "promoInvalid": "هذا الرمز غير صالح.",
-    "promoMinNotMet": "طلبك صغير جدًا لاستخدام هذا الرمز.",
     "tipTitle": "أضف إكرامية للسائق",
     "tipNone": "لا شيء",
     "subtotal": "المجموع الفرعي",
@@ -750,8 +886,10 @@
       "cityRequired": "يرجى إدخال المدينة.",
       "selectTime": "يرجى اختيار موعد.",
       "emptyCart": "سلتك فارغة.",
-      "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
-    }
+      "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+      "paymentDeclined": "تم رفض عملية الدفع. جرّب طريقة أخرى."
+    },
+    "discountWithCode": "الخصم ({code})"
   },
   "order": {
     "confirmedTitle": "تم تقديم الطلب!",
@@ -773,20 +911,69 @@
     "notFoundHint": "لم نتمكن من العثور على هذا الطلب — ربما تم مسحه من هذا الجهاز.",
     "items": "{count, plural, =0 {لا عناصر} zero {لا عناصر} one {عنصر واحد} two {عنصران} few {# عناصر} many {# عنصرًا} other {# عنصر}}",
     "status": {
-      "placed": "تم تقديم الطلب",
-      "confirmed": "مؤكد",
+      "placed": "بانتظار المطعم",
+      "confirmed": "تم قبول الطلب",
       "preparing": "قيد التحضير",
-      "ready": "جاهز",
+      "ready": "جاهز للاستلام",
       "picked-up": "تم الاستلام",
-      "on-the-way": "في الطريق",
+      "on-the-way": "في الطريق إليك",
       "delivered": "تم التوصيل",
-      "cancelled": "ملغى"
+      "cancelled": "ملغى",
+      "packing": "قيد التغليف",
+      "rider-assigned": "تم تعيين سائق",
+      "arrived": "وصل السائق",
+      "completed": "مكتمل",
+      "rejected": "مرفوض",
+      "delivery-failed": "فشل التوصيل",
+      "returned": "أُعيد الطلب",
+      "refunded": "تم الاسترداد"
     },
     "payment": {
       "cash": "الدفع عند الاستلام",
       "card": "بطاقة تنتهي بـ {last4}",
       "wallet": "محفظة فودورا"
-    }
+    },
+    "actor": {
+      "customer": "العميل",
+      "restaurant": "المطعم",
+      "rider": "السائق",
+      "system": "تلقائي",
+      "admin": "الدعم"
+    },
+    "reason": {
+      "out-of-stock": "الصنف غير متوفر",
+      "too-busy": "المطبخ مزدحم جدًا",
+      "closing-soon": "على وشك الإغلاق",
+      "cannot-deliver": "لا يمكن التوصيل لهذا العنوان",
+      "changed-mind": "غيّرت رأيي",
+      "too-slow": "الانتظار طويل",
+      "ordered-by-mistake": "طلب بالخطأ",
+      "duplicate": "طلب مكرر",
+      "customer-unavailable": "العميل غير متاح",
+      "wrong-address": "عنوان خاطئ",
+      "refused-delivery": "العميل رفض الاستلام",
+      "other": "سبب آخر"
+    },
+    "paymentStatus": {
+      "pending": "الدفع معلّق",
+      "paid": "مدفوع",
+      "failed": "فشل الدفع",
+      "refunded": "تم الاسترداد"
+    },
+    "note": {
+      "delay": "طلب المطعم {minutes} دقيقة إضافية",
+      "otpFailed": "{count, plural, one {# محاولة خاطئة} other {# محاولات خاطئة}}",
+      "refundRequested": "تم طلب الاسترداد"
+    },
+    "now": "الآن",
+    "back": "رجوع",
+    "reasonNoteLabel": "أخبرنا المزيد",
+    "reasonNotePlaceholder": "أضف ملاحظة قصيرة (اختياري)",
+    "invoiceTitle": "الفاتورة",
+    "invoiceSub": "تمت تسوية الطلب {number} — التفاصيل الكاملة أدناه.",
+    "deliveredAt": "تم التوصيل في",
+    "viewTimeline": "عرض مسار الطلب",
+    "collectedTitle": "تم الاستلام"
   },
   "tracking": {
     "title": "تتبّع طلبك",
@@ -805,12 +992,17 @@
     "cancelledTitle": "تم إلغاء الطلب",
     "cancelledSub": "تم إلغاء هذا الطلب ولن يتم تحصيل أي رسوم.",
     "hint": {
-      "placed": "استلمنا طلبك وأرسلناه إلى المطعم.",
-      "confirmed": "قبِل {vendor} طلبك.",
+      "placed": "أرسلنا طلبك إلى {vendor}. سيؤكدونه بعد لحظات.",
+      "confirmed": "قبل {vendor} طلبك وسيبدأ التحضير.",
       "preparing": "المطبخ يُحضّر طعامك.",
-      "ready": "تم تغليف طلبك وهو جاهز.",
-      "picked-up": "استلم المندوب طلبك.",
-      "on-the-way": "المندوب في طريقه إليك."
+      "ready": "طلبك مغلّف وبانتظار سائق.",
+      "picked-up": "استلم {rider} طلبك وانطلق.",
+      "on-the-way": "{rider} في طريقه إليك.",
+      "packing": "تم الطهي ويجري التغليف الآن.",
+      "rider-assigned": "{rider} في طريقه إلى {vendor} لاستلام طلبك.",
+      "arrived": "{rider} عند بابك — شارك الرمز أدناه.",
+      "delivered": "تم التوصيل. بالهناء والشفاء!",
+      "completed": "اكتمل هذا الطلب."
     },
     "courierTitle": "مندوبك",
     "vehicle": {
@@ -834,7 +1026,23 @@
     "cancelError": "تعذّر إلغاء طلبك. حاول مرة أخرى.",
     "simulatedNote": "التتبّع المباشر محاكاة في هذا النموذج الأولي.",
     "handoffCodeTitle": "رمز التسليم الخاص بك",
-    "handoffCodeHint": "اقرأه للسائق — يحتاجه لإتمام التوصيل."
+    "handoffCodeHint": "اقرأه للسائق — يحتاجه لإتمام التوصيل.",
+    "failed": {
+      "rejected": "لم يتمكن {vendor} من قبول هذا الطلب.",
+      "cancelled": "أُلغي هذا الطلب ولن يتم خصم أي مبلغ.",
+      "delivery-failed": "تعذّر إتمام التسليم.",
+      "returned": "أُعيد طلبك إلى {vendor}.",
+      "refunded": "تم استرداد قيمة هذا الطلب."
+    },
+    "prepProgress": "تقدّم التحضير",
+    "runningLate": "هناك تأخير",
+    "delayNotice": "أضاف المطعم {minutes} دقيقة إلى الوقت المتوقع.",
+    "collectedTitle": "تم الاستلام — بالهناء والشفاء!",
+    "allOrders": "كل الطلبات",
+    "viewInvoice": "عرض الفاتورة",
+    "requestRefund": "طلب استرداد",
+    "refundRequested": "تم تسجيل طلب الاسترداد — سنتواصل معك.",
+    "refundPending": "طلب استرداد بقيمة {amount} قيد المراجعة."
   },
   "dashboard": {
     "brand": "FoodOra للتجار",
@@ -859,7 +1067,9 @@
       "reservations": "الحجوزات",
       "menu": "القائمة",
       "pos": "نقاط البيع",
-      "qr": "رموز QR"
+      "qr": "رموز QR",
+      "coupons": "الكوبونات",
+      "kitchen": "المطبخ"
     },
     "overviewTitle": "نظرة عامة",
     "overviewSubtitle": "كيف يسير مطعمك اليوم.",
@@ -884,10 +1094,10 @@
     "ordersSubtitle": "اقبل الطلبات الواردة وحضّرها وسلّمها.",
     "tab": {
       "new": "جديد",
-      "preparing": "قيد التحضير",
-      "ready": "جاهز",
+      "preparing": "في المطبخ",
+      "ready": "قيد التوصيل",
       "completed": "مكتمل",
-      "cancelled": "ملغى"
+      "cancelled": "مشاكل"
     },
     "noOrdersInTab": "لا توجد طلبات هنا الآن.",
     "payment": {
@@ -898,7 +1108,8 @@
     "paymentStatus": {
       "pending": "الدفع معلّق",
       "paid": "مدفوع",
-      "failed": "فشل الدفع"
+      "failed": "فشل الدفع",
+      "refunded": "تم الاسترداد"
     },
     "reject": "رفض",
     "accept": "قبول",
@@ -919,7 +1130,73 @@
     "soldOut": "نفد",
     "toggleAvailability": "تبديل توفر {name}",
     "itemBackOn": "{name} عاد إلى القائمة",
-    "item86ed": "تم تحديد {name} كنافد"
+    "item86ed": "تم تحديد {name} كنافد",
+    "back": "رجوع",
+    "minutesShort": "دقيقة",
+    "startPacking": "بدء التغليف",
+    "needMoreTime": "أحتاج وقتًا إضافيًا",
+    "assignRider": "تعيين سائق",
+    "cancelOrder": "إلغاء الطلب",
+    "awaitingResponse": "{count, plural, one {# طلب بانتظار ردك} other {# طلبات بانتظار ردك}}",
+    "readyInShort": "بقي {minutes} دقيقة",
+    "overdueBy": "تأخر {minutes} دقيقة",
+    "delayedBy": "+{minutes} دقيقة",
+    "delayAdded": "تمت إضافة {minutes} دقيقة إلى الوقت المتوقع.",
+    "addMinutes": "أضف {minutes} دقيقة",
+    "showDetail": "عرض التفاصيل",
+    "hideDetail": "إخفاء التفاصيل",
+    "historyTitle": "سجل الطلب",
+    "riderOnJob": "{name} · {vehicle}",
+    "prepTitle": "كم سيستغرق هذا؟",
+    "prepBody": "الطلب {number} · {count, plural, one {# صنف} other {# أصناف}}",
+    "prepHint": "يرى العميل عدًّا تنازليًا مباشرًا مقابل هذا الوعد.",
+    "acceptWithTime": "قبول · {minutes} دقيقة",
+    "rejectTitle": "رفض هذا الطلب؟",
+    "rejectBody": "سينتهي الطلب {number} هنا، وسيُبلَّغ العميل بالسبب.",
+    "confirmReject": "رفض الطلب",
+    "cancelTitle": "إلغاء هذا الطلب؟",
+    "cancelBody": "الطلب {number} مقبول بالفعل. سيُبلَّغ العميل بالسبب.",
+    "confirmCancel": "إلغاء الطلب",
+    "assignTitle": "تعيين سائق",
+    "assignBody": "الطلب {number} مغلّف وجاهز للخروج.",
+    "autoAssign": "تعيين تلقائي",
+    "autoAssignHint": "يختار أعلى السائقين تقييمًا المتاحين في هذه المنطقة.",
+    "orAssignManually": "أو اختر سائقًا",
+    "assignSelected": "تعيين السائق",
+    "riderDeclined": "رفض",
+    "riderAssignedToast": "{name} في الطريق.",
+    "tripsCount": "{count, plural, one {# رحلة} other {# رحلات}}",
+    "vehicle": {
+      "bike": "دراجة نارية",
+      "scooter": "سكوتر",
+      "bicycle": "دراجة هوائية",
+      "car": "سيارة"
+    },
+    "kitchenTitle": "طابور المطبخ",
+    "kitchenSubtitle": "ما هو قيد التحضير وما تأخر. اضغط التذكرة لنقلها.",
+    "kitchen": {
+      "queued": "في الانتظار",
+      "cooking": "قيد الطهي",
+      "packing": "التغليف",
+      "pass": "جاهز للخروج"
+    },
+    "kitchenAdvance": {
+      "queued": "بدء الطهي",
+      "cooking": "بدء التغليف",
+      "packing": "وضع علامة جاهز"
+    },
+    "kitchenEmpty": "لا شيء هنا.",
+    "kitchenPassEmpty": "لا شيء بانتظار الخروج.",
+    "errors": {
+      "illegalTransition": "هذه ليست خطوة تالية صالحة لهذا الطلب.",
+      "notPermitted": "هذه الخطوة ليست من صلاحيتك.",
+      "prepTimeRequired": "اختر وقت التحضير أولًا.",
+      "riderRequired": "عيّن سائقًا أولًا.",
+      "otpLocked": "تم قفل التسليم — محاولات خاطئة كثيرة.",
+      "notFound": "تعذّر العثور على هذا الطلب.",
+      "noRiderAvailable": "لا يوجد سائق متاح الآن.",
+      "generic": "حدث خطأ ما. حاول مرة أخرى."
+    }
   },
   "catering": {
     "metaTitle": "خدمات المناسبات",
@@ -1895,7 +2172,272 @@
       "remitTooMuch": "هذا أكثر مما تحمله.",
       "belowMinimum": "هذا أقل من الحد الأدنى للسحب.",
       "withdrawTooMuch": "هذا أكثر من رصيدك المتاح.",
-      "generic": "حدث خطأ ما. حاول مرة أخرى."
+      "generic": "حدث خطأ ما. حاول مرة أخرى.",
+      "illegalTransition": "هذه ليست خطوة تالية صالحة لهذا الطلب.",
+      "notPermitted": "هذه الخطوة ليست من صلاحيتك.",
+      "prepTimeRequired": "لم يحدد المطعم وقت التحضير بعد.",
+      "riderRequired": "لا يوجد سائق مُسند لهذا الطلب.",
+      "otpLocked": "تم قفل التسليم — محاولات خاطئة كثيرة.",
+      "notFound": "تعذّر العثور على هذا الطلب.",
+      "otpMismatch": "الرمز غير مطابق. اطلب من العميل قراءته مرة أخرى."
+    },
+    "confirmPickup": "تأكيد الاستلام",
+    "handBack": "إعادة المهمة",
+    "startDelivery": "بدء التوصيل",
+    "markArrived": "لقد وصلت",
+    "reportProblem": "الإبلاغ عن مشكلة",
+    "verifyOtp": "تحقّق من الرمز",
+    "retryDelivery": "حاول مرة أخرى",
+    "returnToVendor": "إعادة إلى المطعم",
+    "liveActiveTitle": "توصيلتك",
+    "liveOffersTitle": "جاهز للاستلام",
+    "liveOffersEmpty": "لا شيء جاهز الآن — تحقق بعد قليل.",
+    "continueDelivery": "متابعة التوصيل",
+    "acceptDelivery": "قبول التوصيل",
+    "deliveryAccepted": "الطلب {number} أصبح لك.",
+    "collectFromCounter": "استلم من نافذة السائقين",
+    "waitingMinutes": "{count, plural, =0 {للتو} one {# دقيقة بالانتظار} other {# دقائق بالانتظار}}",
+    "tipIncluded": "بقشيش {amount}",
+    "orderValue": "قيمة الطلب",
+    "assignedTo": "مُسند إلى {name}",
+    "handedBack": "تمت الإعادة — سيجد التوزيع سائقًا آخر.",
+    "advanced": {
+      "picked-up": "تم الاستلام من المطعم.",
+      "on-the-way": "أنت في الطريق — يمكن للعميل رؤيتك.",
+      "arrived": "تم تسجيل وصولك. رمز العميل ظاهر الآن.",
+      "delivery-failed": "تم الإبلاغ. اختر ما سيحدث بعد ذلك.",
+      "returned": "أُعيد إلى المطعم.",
+      "ready": "تمت الإعادة."
+    },
+    "otpTitle": "تحقّق من التسليم",
+    "otpBody": "اطلب من {name} الرمز المكوّن من ٤ أرقام لطلبه {number}.",
+    "otpAttemptsLeft": "{count, plural, one {بقيت # محاولة} other {بقيت # محاولات}}",
+    "otpLocked": "محاولات خاطئة كثيرة. أبلغ عن مشكلة للمتابعة.",
+    "confirmDelivery": "إتمام التوصيل",
+    "paymentSettled": "تمت تسوية الدفع",
+    "handoffDoneTitle": "تم التوصيل",
+    "handoffDoneBody": "تم التسليم إلى {name} والتحقق منه.",
+    "failTitle": "ما الذي حدث؟",
+    "failBody": "سيتم إبلاغ العميل والمطعم معًا.",
+    "confirmFail": "الإبلاغ عن مشكلة"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "empty": "لا شيء بعد. ستظهر تحديثات الطلبات هنا.",
+    "markAllRead": "تعليم الكل كمقروء",
+    "unread": "غير مقروء",
+    "customer": {
+      "placed": {
+        "title": "تم إرسال الطلب",
+        "body": "استلم {vendor} طلبك {order}."
+      },
+      "confirmed": {
+        "title": "تم قبول الطلب",
+        "body": "سيجهّزه {vendor} خلال {minutes} دقيقة تقريبًا."
+      },
+      "preparing": {
+        "title": "يجري تحضير طعامك",
+        "body": "بدأ المطبخ العمل على {order}."
+      },
+      "packing": {
+        "title": "أوشك على الجهوزية",
+        "body": "تم الطهي ويجري التغليف."
+      },
+      "ready": {
+        "title": "جاهز",
+        "body": "{order} مغلّف وبانتظار سائق."
+      },
+      "rider-assigned": {
+        "title": "تم تعيين سائق",
+        "body": "{rider} في طريقه لاستلام طلبك."
+      },
+      "picked-up": {
+        "title": "تم الاستلام",
+        "body": "{rider} معه طعامك وانطلق."
+      },
+      "on-the-way": {
+        "title": "في الطريق",
+        "body": "{rider} متجه إليك."
+      },
+      "nearYou": {
+        "title": "أوشك على الوصول",
+        "body": "{rider} قريب جدًا من بابك."
+      },
+      "arrived": {
+        "title": "رمزك جاهز",
+        "body": "{rider} عند بابك — شارك الرمز المكوّن من ٤ أرقام."
+      },
+      "delivered": {
+        "title": "تم التوصيل",
+        "body": "بالهناء والشفاء! تم تسليم الطلب {order}."
+      },
+      "completed": {
+        "title": "اكتمل الطلب",
+        "body": "فاتورة {order} جاهزة."
+      },
+      "rejected": {
+        "title": "تم رفض الطلب",
+        "body": "لم يتمكن {vendor} من قبول الطلب {order}."
+      },
+      "cancelled": {
+        "title": "تم إلغاء الطلب",
+        "body": "أُلغي الطلب {order}."
+      },
+      "delivery-failed": {
+        "title": "مشكلة في التوصيل",
+        "body": "تعذّر تسليم الطلب {order}."
+      },
+      "returned": {
+        "title": "أُعيد الطلب",
+        "body": "عاد الطلب {order} إلى {vendor}."
+      },
+      "refunded": {
+        "title": "تم الاسترداد",
+        "body": "استرداد الطلب {order} في طريقه إليك."
+      }
+    },
+    "restaurant": {
+      "newOrder": {
+        "title": "طلب جديد",
+        "body": "الطلب {order} من {customer} بانتظار ردك."
+      },
+      "riderAssigned": {
+        "title": "تم تعيين سائق",
+        "body": "{rider} سيستلم {order}."
+      },
+      "deliveryCompleted": {
+        "title": "اكتمل التوصيل",
+        "body": "تم تسليم {order} إلى {customer}."
+      },
+      "orderCancelled": {
+        "title": "تم إلغاء الطلب",
+        "body": "ألغى {customer} الطلب {order}."
+      },
+      "deliveryFailed": {
+        "title": "فشل التوصيل",
+        "body": "تعذّر تسليم {order}."
+      },
+      "orderReturned": {
+        "title": "أُعيد الطلب",
+        "body": "{order} في طريقه إليك."
+      }
+    },
+    "rider": {
+      "pickupReady": {
+        "title": "الاستلام جاهز",
+        "body": "{order} جاهز عند {vendor}."
+      },
+      "deliveryAssigned": {
+        "title": "تم إسناد توصيلة",
+        "body": "استلم {order} من {vendor}."
+      },
+      "otpNeeded": {
+        "title": "تحقّق من التسليم",
+        "body": "اطلب من {customer} رمز الطلب {order}."
+      },
+      "otpVerified": {
+        "title": "تم التحقق من الرمز",
+        "body": "تم تسليم {order} — عمل رائع."
+      }
+    },
+    "admin": {
+      "placed": {
+        "title": "طلب جديد",
+        "body": "تم إرسال {order} إلى {vendor}."
+      },
+      "confirmed": {
+        "title": "تم قبول الطلب",
+        "body": "قبل {vendor} الطلب {order}."
+      },
+      "rider-assigned": {
+        "title": "تم تعيين سائق",
+        "body": "أخذ {rider} الطلب {order}."
+      },
+      "delivered": {
+        "title": "تم التوصيل",
+        "body": "سلّم {rider} الطلب {order}."
+      },
+      "completed": {
+        "title": "اكتمل الطلب",
+        "body": "تمت تسوية {order}."
+      },
+      "rejected": {
+        "title": "تم رفض الطلب",
+        "body": "رفض {vendor} الطلب {order}."
+      },
+      "cancelled": {
+        "title": "تم إلغاء الطلب",
+        "body": "أُلغي الطلب {order}."
+      },
+      "delivery-failed": {
+        "title": "فشل التوصيل",
+        "body": "تعذّر توصيل {order}."
+      },
+      "returned": {
+        "title": "أُعيد الطلب",
+        "body": "عاد {order} إلى {vendor}."
+      },
+      "refunded": {
+        "title": "تم إصدار استرداد",
+        "body": "تم استرداد {order}."
+      }
     }
+  },
+  "admin": {
+    "brand": "عمليات فودأورا",
+    "tagline": "عمليات المنصة",
+    "gateTitle": "سجّل الدخول للمتابعة",
+    "gateBody": "عمليات المنصة مخصصة لحسابات الإدارة. سجّل الدخول بـ admin@foodora.dev.",
+    "gateSignIn": "تسجيل الدخول",
+    "noAccessTitle": "لا صلاحية",
+    "noAccessBody": "هذا الحساب لا يملك صلاحية الوصول إلى عمليات المنصة.",
+    "backToSite": "العودة إلى الموقع",
+    "viewSite": "عرض الموقع",
+    "signOut": "تسجيل الخروج",
+    "signedOut": "تم تسجيل الخروج.",
+    "liveTitle": "العمليات المباشرة",
+    "liveSubtitle": "كل طلب قيد التنفيذ، في كل المطاعم.",
+    "liveBadge": "مباشر",
+    "statLive": "طلبات قيد التنفيذ",
+    "statLiveHint": "{kitchen} في المطبخ · {road} على الطريق",
+    "statRevenue": "إيرادات اليوم",
+    "statRevenueHint": "{count, plural, one {# طلب مكتمل} other {# طلبات مكتملة}}",
+    "statRiders": "سائقون في مهمة",
+    "statRidersHint": "المشغولون من إجمالي الأسطول",
+    "statFailures": "فشل اليوم",
+    "statFailuresHint": "{percent}% من الطلبات المنتهية",
+    "attentionTitle": "{count, plural, one {# طلب يحتاج انتباهك} other {# طلبات تحتاج انتباهك}}",
+    "stuckOverdue": "تأخر {minutes} دقيقة عن الوعد",
+    "stuckNoRider": "{minutes} دقيقة بدون سائق",
+    "stuckUnanswered": "{minutes} دقيقة بلا رد",
+    "stuckFailed": "فشل التوصيل",
+    "feedTitle": "الطلبات المباشرة",
+    "feedEmpty": "لا شيء قيد التنفيذ الآن.",
+    "view": "عرض",
+    "kitchensTitle": "ضغط المطابخ",
+    "kitchensEmpty": "لا توجد طلبات مباشرة.",
+    "overdueCount": "{count} متأخر",
+    "vendorsOnPlatform": "{count} مطعمًا على المنصة",
+    "fleetTitle": "الأسطول",
+    "riderBusy": "في مهمة",
+    "riderFree": "متاح"
+  },
+  "demo": {
+    "badge": "عرض توضيحي",
+    "autopilotOn": "الطيار الآلي يعمل",
+    "autopilotOff": "الطيار الآلي متوقف",
+    "pausedToast": "تم إيقاف الطيار الآلي — التحكم لك الآن.",
+    "resumedToast": "تم استئناف الطيار الآلي.",
+    "speed": "السرعة",
+    "liveCount": "{count, plural, one {# طلب مباشر} other {# طلبات مباشرة}}",
+    "surfaces": "الشاشات",
+    "surfaceCustomer": "العميل",
+    "surfaceRestaurant": "المطعم",
+    "surfaceRider": "السائق",
+    "surfaceAdmin": "الإدارة",
+    "reset": "إعادة تعيين بيانات العرض",
+    "resetToast": "تمت إعادة تعيين بيانات العرض.",
+    "hide": "إخفاء أدوات العرض",
+    "show": "إظهار أدوات العرض"
   }
 }

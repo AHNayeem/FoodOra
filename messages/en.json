@@ -203,6 +203,146 @@
     "emptyBody": "New deals go up most weeks. In the meantime, plenty of kitchens run their own promotions.",
     "browseAll": "Browse restaurants"
   },
+  "coupons": {
+    "title": "Coupons",
+    "claimTitle": "Have a code?",
+    "claimHint": "Add it to your coupons and it will be waiting at checkout.",
+    "codePlaceholder": "Enter code",
+    "claim": "Add",
+    "claimed": "{title} added to your coupons",
+    "apply": "Apply",
+    "applied": "Coupon {code} applied",
+    "remove": "Remove",
+    "save": "Save",
+    "inWallet": "In your coupons",
+    "copyCode": "Copy code",
+    "copied": "Code {code} copied",
+    "copyFailed": "Copy failed — the code is {code}",
+    "useIt": "Order now",
+    "terms": "Terms",
+    "minOrder": "Min. {amount}",
+    "validAt": "Valid at {vendors}",
+    "usesLeft": "{count, plural, =0 {No uses left} =1 {1 use left} other {# uses left}}",
+    "expiresIn": "{count, plural, =0 {Expires today} =1 {1 day left} other {# days left}}",
+    "lastUsedOn": "Last used on order {order}",
+    "emptyTitle": "No coupons yet",
+    "emptyBody": "Codes you claim — and the rewards we send you — collect here, ready to use at checkout.",
+    "browseOffers": "See today's offers",
+    "tab": {
+      "available": "Available",
+      "used": "Used",
+      "expired": "Expired"
+    },
+    "tabEmpty": {
+      "available": "Nothing to spend right now.",
+      "used": "You haven't used a coupon yet.",
+      "expired": "Nothing has expired on you. Nicely played."
+    },
+    "suggestedTitle": "Codes you can claim",
+    "suggestedHint": "Live campaigns you are not holding yet.",
+    "checkoutTitle": "Coupon",
+    "view": "View",
+    "walletCount": "{count, plural, =1 {1 coupon in your wallet} other {# coupons in your wallet}}",
+    "bestSaving": "Save {amount} with a coupon",
+    "noneApplyHint": "None of them apply to this order yet.",
+    "pickerTitle": "Your coupons",
+    "pickerHint": "Pick one to apply to this order.",
+    "savingOff": "{amount} off",
+    "savingDelivery": "Free delivery ({amount})",
+    "savingCashback": "{amount} back to your wallet",
+    "value": {
+      "percentage": "{value}% off",
+      "fixed": "Save {amount}",
+      "freeDelivery": "Free delivery",
+      "bogo": "Buy 1 get 1",
+      "cashback": "{value}% back"
+    },
+    "status": {
+      "active": "Active",
+      "scheduled": "Not started",
+      "used": "Used",
+      "expired": "Expired"
+    },
+    "source": {
+      "campaign": "Platform offer",
+      "welcome": "Welcome gift",
+      "referral": "Referral reward",
+      "loyalty": "Loyalty reward",
+      "apology": "From support",
+      "birthday": "Birthday treat",
+      "vendor": "From the restaurant"
+    },
+    "kind": {
+      "percentage": "Percentage",
+      "fixed": "Fixed amount",
+      "free-delivery": "Free delivery"
+    },
+    "reason": {
+      "used": "You have used this coupon.",
+      "notStarted": "This coupon has not started yet.",
+      "expired": "This coupon has expired.",
+      "currency": "Not valid in this currency.",
+      "vendorOnly": "Not valid at this restaurant.",
+      "categoryOnly": "Not valid on these dishes.",
+      "firstOrderOnly": "First orders only.",
+      "minOrder": "Your order is below this coupon's minimum.",
+      "minOrderAmount": "Spend {amount} to use this",
+      "deliveryOnly": "Delivery orders only.",
+      "needsTwoItems": "Add a second item to use this.",
+      "noSaving": "This would not take anything off this order."
+    },
+    "merchantTitle": "Coupons",
+    "merchantSubtitle": "Codes you hand out, and what they have brought in.",
+    "newCoupon": "New coupon",
+    "newCouponHint": "Customers claim it by entering the code. It will not appear on the platform deals page.",
+    "createCoupon": "Create coupon",
+    "cancel": "Cancel",
+    "created": "Coupon {code} is live",
+    "ended": "Coupon {code} ended",
+    "endNow": "End now",
+    "statLive": "Live coupons",
+    "statLiveHint": "{count, plural, =1 {1 in total} other {# in total}}",
+    "statRedemptions": "Redemptions",
+    "statDiscount": "Discount given",
+    "statRevenue": "Revenue",
+    "statRevenueHint": "Baskets that used a code",
+    "merchantEmptyTitle": "No coupons yet",
+    "merchantEmptyBody": "Issue a code to bring people back on a quiet afternoon.",
+    "colCoupon": "Coupon",
+    "colStatus": "Status",
+    "colRedemptions": "Redeemed",
+    "colDiscount": "Discount",
+    "colRevenue": "Revenue",
+    "colActions": "Actions",
+    "fieldCode": "Code",
+    "fieldTitle": "Title",
+    "fieldDescription": "Description",
+    "fieldKind": "Type",
+    "fieldPercent": "Percent off",
+    "fieldAmount": "Amount off",
+    "fieldMaxDiscount": "Max discount",
+    "fieldNoCap": "No cap",
+    "fieldMinOrder": "Minimum order",
+    "fieldUsageLimit": "Uses per customer",
+    "fieldDuration": "Runs for (days)",
+    "errors": {
+      "emptyCode": "Enter a code.",
+      "unknownCode": "That code isn't valid.",
+      "alreadyHeld": "That coupon is already in your coupons.",
+      "expiredCode": "That code has expired.",
+      "notStartedCode": "That code isn't active yet.",
+      "notHeld": "You don't hold that coupon.",
+      "badCode": "Codes are 4–16 letters and numbers.",
+      "codeTaken": "That code is already in use.",
+      "titleRequired": "Give the coupon a title.",
+      "badPercent": "Enter a percentage between 1 and 100.",
+      "badValue": "Enter an amount above zero.",
+      "badDuration": "Run it for at least a day.",
+      "badLimit": "Allow at least one use.",
+      "alreadyEnded": "That coupon has already ended.",
+      "generic": "Something went wrong."
+    }
+  },
   "blog": {
     "metaTitle": "The FoodOra blog",
     "metaDescription": "Guides, interviews and product notes from the team building the food ecosystem — and the kitchens on it.",
@@ -448,7 +588,8 @@
       "favorites": "Favorites",
       "addresses": "Addresses",
       "wallet": "Wallet",
-      "settings": "Settings"
+      "settings": "Settings",
+      "coupons": "Coupons"
     },
     "role": {
       "guest": "Guest",
@@ -528,7 +669,9 @@
     "addFundsHint": "Choose an amount to add to your wallet. Simulated — no real payment is taken.",
     "confirmTopUp": "Add to wallet",
     "topUpSuccess": "{amount} added to your wallet",
-    "riderApp": "Rider app"
+    "riderApp": "Rider app",
+    "coupons": "Coupons",
+    "viewInvoice": "View invoice"
   },
   "favorites": {
     "title": "Favorites",
@@ -712,13 +855,6 @@
     "notesPlaceholder": "Anything the restaurant or rider should know? (optional)",
     "summaryTitle": "Order summary",
     "items": "{count, plural, =0 {No items} one {# item} other {# items}}",
-    "promoTitle": "Promo code",
-    "promoPlaceholder": "Enter code",
-    "apply": "Apply",
-    "promoApplied": "Code {code} applied",
-    "removePromo": "Remove",
-    "promoInvalid": "That code isn't valid.",
-    "promoMinNotMet": "Your order is too small for this code.",
     "tipTitle": "Add a tip for your rider",
     "tipNone": "None",
     "subtotal": "Subtotal",
@@ -750,8 +886,10 @@
       "cityRequired": "Please enter the city.",
       "selectTime": "Please choose a time slot.",
       "emptyCart": "Your cart is empty.",
-      "generic": "Something went wrong. Please try again."
-    }
+      "generic": "Something went wrong. Please try again.",
+      "paymentDeclined": "Your payment was declined. Try a different method."
+    },
+    "discountWithCode": "Discount ({code})"
   },
   "order": {
     "confirmedTitle": "Order placed!",
@@ -773,20 +911,69 @@
     "notFoundHint": "We couldn't find that order — it may have been cleared from this device.",
     "items": "{count, plural, =0 {No items} one {# item} other {# items}}",
     "status": {
-      "placed": "Order placed",
-      "confirmed": "Confirmed",
+      "placed": "Waiting for restaurant",
+      "confirmed": "Order accepted",
       "preparing": "Preparing",
-      "ready": "Ready",
+      "ready": "Ready for pickup",
       "picked-up": "Picked up",
-      "on-the-way": "On the way",
+      "on-the-way": "Out for delivery",
       "delivered": "Delivered",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "packing": "Packing",
+      "rider-assigned": "Rider assigned",
+      "arrived": "Rider has arrived",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "delivery-failed": "Delivery failed",
+      "returned": "Returned",
+      "refunded": "Refunded"
     },
     "payment": {
       "cash": "Cash on delivery",
       "card": "Card ending {last4}",
       "wallet": "FoodOra wallet"
-    }
+    },
+    "actor": {
+      "customer": "Customer",
+      "restaurant": "Restaurant",
+      "rider": "Rider",
+      "system": "Automatic",
+      "admin": "Support"
+    },
+    "reason": {
+      "out-of-stock": "Item out of stock",
+      "too-busy": "Kitchen too busy",
+      "closing-soon": "Closing soon",
+      "cannot-deliver": "Can't deliver to that address",
+      "changed-mind": "Changed my mind",
+      "too-slow": "Taking too long",
+      "ordered-by-mistake": "Ordered by mistake",
+      "duplicate": "Duplicate order",
+      "customer-unavailable": "Customer unavailable",
+      "wrong-address": "Wrong address",
+      "refused-delivery": "Customer refused delivery",
+      "other": "Other reason"
+    },
+    "paymentStatus": {
+      "pending": "Payment pending",
+      "paid": "Paid",
+      "failed": "Payment failed",
+      "refunded": "Refunded"
+    },
+    "note": {
+      "delay": "Restaurant asked for {minutes} more minutes",
+      "otpFailed": "{count, plural, one {# wrong code entered} other {# wrong codes entered}}",
+      "refundRequested": "Refund requested"
+    },
+    "now": "Now",
+    "back": "Back",
+    "reasonNoteLabel": "Tell us more",
+    "reasonNotePlaceholder": "Add a short note (optional)",
+    "invoiceTitle": "Invoice",
+    "invoiceSub": "Order {number} is settled — here's the full breakdown.",
+    "deliveredAt": "Delivered at",
+    "viewTimeline": "View order timeline",
+    "collectedTitle": "Collected"
   },
   "tracking": {
     "title": "Track your order",
@@ -805,12 +992,17 @@
     "cancelledTitle": "Order cancelled",
     "cancelledSub": "This order was cancelled and won't be charged.",
     "hint": {
-      "placed": "We've received your order and sent it to the restaurant.",
-      "confirmed": "{vendor} has accepted your order.",
+      "placed": "We've sent your order to {vendor}. They'll confirm in a moment.",
+      "confirmed": "{vendor} accepted your order and is about to start cooking.",
       "preparing": "The kitchen is preparing your food.",
-      "ready": "Your order is packed and ready.",
-      "picked-up": "Your courier has collected the order.",
-      "on-the-way": "Your courier is heading to you."
+      "ready": "Your order is packed and waiting for a rider.",
+      "picked-up": "{rider} has your order and is setting off.",
+      "on-the-way": "{rider} is on the way to you.",
+      "packing": "Your food is cooked and being packed.",
+      "rider-assigned": "{rider} is on the way to {vendor} to collect your order.",
+      "arrived": "{rider} is at your door — share the code below.",
+      "delivered": "Delivered. Enjoy your meal!",
+      "completed": "This order is complete."
     },
     "courierTitle": "Your courier",
     "vehicle": {
@@ -834,7 +1026,23 @@
     "cancelError": "We couldn't cancel your order. Please try again.",
     "simulatedNote": "Live tracking is simulated for this prototype.",
     "handoffCodeTitle": "Your handoff code",
-    "handoffCodeHint": "Read it out to the rider — they need it to complete the delivery."
+    "handoffCodeHint": "Read it out to the rider — they need it to complete the delivery.",
+    "failed": {
+      "rejected": "{vendor} couldn't take this order.",
+      "cancelled": "This order was cancelled and won't be charged.",
+      "delivery-failed": "We couldn't complete the handover.",
+      "returned": "Your order was taken back to {vendor}.",
+      "refunded": "This order was refunded."
+    },
+    "prepProgress": "Kitchen progress",
+    "runningLate": "Running late",
+    "delayNotice": "The restaurant added {minutes} minutes to the estimate.",
+    "collectedTitle": "Collected — enjoy your meal!",
+    "allOrders": "All orders",
+    "viewInvoice": "View invoice",
+    "requestRefund": "Request refund",
+    "refundRequested": "Refund requested — we'll be in touch.",
+    "refundPending": "A refund of {amount} has been requested and is being reviewed."
   },
   "dashboard": {
     "brand": "FoodOra Merchant",
@@ -859,7 +1067,9 @@
       "reservations": "Reservations",
       "menu": "Menu",
       "pos": "POS",
-      "qr": "QR"
+      "qr": "QR",
+      "coupons": "Coupons",
+      "kitchen": "Kitchen"
     },
     "overviewTitle": "Overview",
     "overviewSubtitle": "How your restaurant is doing today.",
@@ -884,10 +1094,10 @@
     "ordersSubtitle": "Accept, prepare and hand off incoming orders.",
     "tab": {
       "new": "New",
-      "preparing": "Preparing",
-      "ready": "Ready",
+      "preparing": "In the kitchen",
+      "ready": "Out for delivery",
       "completed": "Completed",
-      "cancelled": "Cancelled"
+      "cancelled": "Problems"
     },
     "noOrdersInTab": "No orders here right now.",
     "payment": {
@@ -898,7 +1108,8 @@
     "paymentStatus": {
       "pending": "Payment pending",
       "paid": "Paid",
-      "failed": "Payment failed"
+      "failed": "Payment failed",
+      "refunded": "Refunded"
     },
     "reject": "Reject",
     "accept": "Accept",
@@ -919,7 +1130,73 @@
     "soldOut": "Sold out",
     "toggleAvailability": "Toggle availability of {name}",
     "itemBackOn": "{name} is back on the menu",
-    "item86ed": "{name} marked sold out"
+    "item86ed": "{name} marked sold out",
+    "back": "Back",
+    "minutesShort": "min",
+    "startPacking": "Start packing",
+    "needMoreTime": "Need more time",
+    "assignRider": "Assign rider",
+    "cancelOrder": "Cancel order",
+    "awaitingResponse": "{count, plural, one {# order awaiting your response} other {# orders awaiting your response}}",
+    "readyInShort": "{minutes} min left",
+    "overdueBy": "{minutes} min over",
+    "delayedBy": "+{minutes} min",
+    "delayAdded": "Added {minutes} minutes to the estimate.",
+    "addMinutes": "Add {minutes} minutes",
+    "showDetail": "Show detail",
+    "hideDetail": "Hide detail",
+    "historyTitle": "Order history",
+    "riderOnJob": "{name} · {vehicle}",
+    "prepTitle": "How long will this take?",
+    "prepBody": "Order {number} · {count, plural, one {# item} other {# items}}",
+    "prepHint": "The customer sees a live countdown against this promise.",
+    "acceptWithTime": "Accept · {minutes} min",
+    "rejectTitle": "Reject this order?",
+    "rejectBody": "Order {number} will end here, and the customer is told why.",
+    "confirmReject": "Reject order",
+    "cancelTitle": "Cancel this order?",
+    "cancelBody": "Order {number} has already been accepted. The customer is told why.",
+    "confirmCancel": "Cancel order",
+    "assignTitle": "Assign a rider",
+    "assignBody": "Order {number} is packed and ready to leave.",
+    "autoAssign": "Assign automatically",
+    "autoAssignHint": "Picks the best-rated available rider in this zone.",
+    "orAssignManually": "Or choose a rider",
+    "assignSelected": "Assign rider",
+    "riderDeclined": "Declined",
+    "riderAssignedToast": "{name} is on the way.",
+    "tripsCount": "{count, plural, one {# trip} other {# trips}}",
+    "vehicle": {
+      "bike": "Motorbike",
+      "scooter": "Scooter",
+      "bicycle": "Bicycle",
+      "car": "Car"
+    },
+    "kitchenTitle": "Kitchen queue",
+    "kitchenSubtitle": "What's on, and what's late. Tap a ticket to move it along.",
+    "kitchen": {
+      "queued": "Queued",
+      "cooking": "Cooking",
+      "packing": "Packing",
+      "pass": "On the pass"
+    },
+    "kitchenAdvance": {
+      "queued": "Start cooking",
+      "cooking": "Start packing",
+      "packing": "Mark ready"
+    },
+    "kitchenEmpty": "Nothing here.",
+    "kitchenPassEmpty": "Nothing waiting to leave.",
+    "errors": {
+      "illegalTransition": "That's not a valid next step for this order.",
+      "notPermitted": "That step isn't yours to make.",
+      "prepTimeRequired": "Choose a preparation time first.",
+      "riderRequired": "Assign a rider first.",
+      "otpLocked": "This handover is locked — too many wrong codes.",
+      "notFound": "We couldn't find that order.",
+      "noRiderAvailable": "No rider is available right now.",
+      "generic": "Something went wrong. Try again."
+    }
   },
   "catering": {
     "metaTitle": "Event Catering",
@@ -1895,7 +2172,272 @@
       "remitTooMuch": "That's more than you're carrying.",
       "belowMinimum": "That's below the minimum withdrawal.",
       "withdrawTooMuch": "That's more than your available balance.",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "illegalTransition": "That's not a valid next step for this order.",
+      "notPermitted": "That step isn't yours to make.",
+      "prepTimeRequired": "The restaurant hasn't set a preparation time.",
+      "riderRequired": "No rider is assigned to this order.",
+      "otpLocked": "This handover is locked — too many wrong codes.",
+      "notFound": "We couldn't find that order.",
+      "otpMismatch": "That code doesn't match. Ask the customer to read it again."
+    },
+    "confirmPickup": "Confirm pickup",
+    "handBack": "Hand job back",
+    "startDelivery": "Start delivery",
+    "markArrived": "I've arrived",
+    "reportProblem": "Report a problem",
+    "verifyOtp": "Verify code",
+    "retryDelivery": "Try again",
+    "returnToVendor": "Return to restaurant",
+    "liveActiveTitle": "Your delivery",
+    "liveOffersTitle": "Ready for pickup",
+    "liveOffersEmpty": "Nothing on the pass right now — check back in a moment.",
+    "continueDelivery": "Continue delivery",
+    "acceptDelivery": "Accept delivery",
+    "deliveryAccepted": "Order {number} is yours.",
+    "collectFromCounter": "Collect from the rider counter",
+    "waitingMinutes": "{count, plural, =0 {Just now} one {# min on the pass} other {# min on the pass}}",
+    "tipIncluded": "{amount} tip",
+    "orderValue": "Order value",
+    "assignedTo": "Assigned to {name}",
+    "handedBack": "Handed back — dispatch will find someone else.",
+    "advanced": {
+      "picked-up": "Collected from the restaurant.",
+      "on-the-way": "On your way — the customer can see you.",
+      "arrived": "Marked as arrived. The customer's code is now visible.",
+      "delivery-failed": "Reported. Choose what happens next.",
+      "returned": "Returned to the restaurant.",
+      "ready": "Handed back."
+    },
+    "otpTitle": "Verify the handover",
+    "otpBody": "Ask {name} for the 4-digit code on their order {number}.",
+    "otpAttemptsLeft": "{count, plural, one {# attempt left} other {# attempts left}}",
+    "otpLocked": "Too many wrong codes. Report a problem to continue.",
+    "confirmDelivery": "Complete delivery",
+    "paymentSettled": "Payment settled",
+    "handoffDoneTitle": "Delivered",
+    "handoffDoneBody": "Handed over to {name} and verified.",
+    "failTitle": "What went wrong?",
+    "failBody": "The customer and the restaurant are both told.",
+    "confirmFail": "Report problem"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Nothing yet. Order updates land here.",
+    "markAllRead": "Mark all read",
+    "unread": "Unread",
+    "customer": {
+      "placed": {
+        "title": "Order placed",
+        "body": "{vendor} has your order {order}."
+      },
+      "confirmed": {
+        "title": "Order accepted",
+        "body": "{vendor} will have it ready in about {minutes} minutes."
+      },
+      "preparing": {
+        "title": "Preparing your food",
+        "body": "The kitchen has started on {order}."
+      },
+      "packing": {
+        "title": "Almost ready",
+        "body": "Your order is cooked and being packed."
+      },
+      "ready": {
+        "title": "Ready",
+        "body": "{order} is packed and waiting for a rider."
+      },
+      "rider-assigned": {
+        "title": "Rider assigned",
+        "body": "{rider} is collecting your order."
+      },
+      "picked-up": {
+        "title": "Picked up",
+        "body": "{rider} has your food and is setting off."
+      },
+      "on-the-way": {
+        "title": "On the way",
+        "body": "{rider} is heading to you."
+      },
+      "nearYou": {
+        "title": "Almost there",
+        "body": "{rider} is nearly at your door."
+      },
+      "arrived": {
+        "title": "Your code is ready",
+        "body": "{rider} is at your door — share your 4-digit code."
+      },
+      "delivered": {
+        "title": "Delivered",
+        "body": "Enjoy your meal! Order {order} was handed over."
+      },
+      "completed": {
+        "title": "Order complete",
+        "body": "Your invoice for {order} is ready."
+      },
+      "rejected": {
+        "title": "Order rejected",
+        "body": "{vendor} couldn't take order {order}."
+      },
+      "cancelled": {
+        "title": "Order cancelled",
+        "body": "Order {order} was cancelled."
+      },
+      "delivery-failed": {
+        "title": "Delivery problem",
+        "body": "We couldn't hand over order {order}."
+      },
+      "returned": {
+        "title": "Order returned",
+        "body": "Order {order} went back to {vendor}."
+      },
+      "refunded": {
+        "title": "Refunded",
+        "body": "Your refund for {order} is on its way."
+      }
+    },
+    "restaurant": {
+      "newOrder": {
+        "title": "New order",
+        "body": "{order} from {customer} needs your response."
+      },
+      "riderAssigned": {
+        "title": "Rider assigned",
+        "body": "{rider} is collecting {order}."
+      },
+      "deliveryCompleted": {
+        "title": "Delivery completed",
+        "body": "{order} was delivered to {customer}."
+      },
+      "orderCancelled": {
+        "title": "Order cancelled",
+        "body": "{customer} cancelled {order}."
+      },
+      "deliveryFailed": {
+        "title": "Delivery failed",
+        "body": "{order} couldn't be handed over."
+      },
+      "orderReturned": {
+        "title": "Order returned",
+        "body": "{order} is coming back to you."
+      }
+    },
+    "rider": {
+      "pickupReady": {
+        "title": "Pickup ready",
+        "body": "{order} is on the pass at {vendor}."
+      },
+      "deliveryAssigned": {
+        "title": "Delivery assigned",
+        "body": "Collect {order} from {vendor}."
+      },
+      "otpNeeded": {
+        "title": "Verify the handover",
+        "body": "Ask {customer} for their code on {order}."
+      },
+      "otpVerified": {
+        "title": "Code verified",
+        "body": "{order} delivered — nice work."
+      }
+    },
+    "admin": {
+      "placed": {
+        "title": "New order",
+        "body": "{order} placed at {vendor}."
+      },
+      "confirmed": {
+        "title": "Order accepted",
+        "body": "{vendor} accepted {order}."
+      },
+      "rider-assigned": {
+        "title": "Rider assigned",
+        "body": "{rider} took {order}."
+      },
+      "delivered": {
+        "title": "Delivered",
+        "body": "{order} delivered by {rider}."
+      },
+      "completed": {
+        "title": "Order complete",
+        "body": "{order} settled."
+      },
+      "rejected": {
+        "title": "Order rejected",
+        "body": "{vendor} rejected {order}."
+      },
+      "cancelled": {
+        "title": "Order cancelled",
+        "body": "{order} was cancelled."
+      },
+      "delivery-failed": {
+        "title": "Delivery failed",
+        "body": "{order} could not be delivered."
+      },
+      "returned": {
+        "title": "Order returned",
+        "body": "{order} went back to {vendor}."
+      },
+      "refunded": {
+        "title": "Refund issued",
+        "body": "{order} was refunded."
+      }
     }
+  },
+  "admin": {
+    "brand": "FoodOra Ops",
+    "tagline": "Platform operations",
+    "gateTitle": "Sign in to continue",
+    "gateBody": "Platform operations is for admin accounts. Sign in as admin@foodora.dev.",
+    "gateSignIn": "Sign in",
+    "noAccessTitle": "No access",
+    "noAccessBody": "This account doesn't have platform operations access.",
+    "backToSite": "Back to site",
+    "viewSite": "View site",
+    "signOut": "Sign out",
+    "signedOut": "Signed out.",
+    "liveTitle": "Live operations",
+    "liveSubtitle": "Every order in flight, across every restaurant.",
+    "liveBadge": "Live",
+    "statLive": "Orders in flight",
+    "statLiveHint": "{kitchen} in the kitchen · {road} on the road",
+    "statRevenue": "Revenue today",
+    "statRevenueHint": "{count, plural, one {# order settled} other {# orders settled}}",
+    "statRiders": "Riders on a job",
+    "statRidersHint": "Busy of total fleet",
+    "statFailures": "Failed today",
+    "statFailuresHint": "{percent}% of finished orders",
+    "attentionTitle": "{count, plural, one {# order needs attention} other {# orders need attention}}",
+    "stuckOverdue": "{minutes} min past promise",
+    "stuckNoRider": "{minutes} min with no rider",
+    "stuckUnanswered": "{minutes} min unanswered",
+    "stuckFailed": "Delivery failed",
+    "feedTitle": "Live orders",
+    "feedEmpty": "Nothing in flight right now.",
+    "view": "View",
+    "kitchensTitle": "Kitchen load",
+    "kitchensEmpty": "No live orders.",
+    "overdueCount": "{count} late",
+    "vendorsOnPlatform": "{count} restaurants on the platform",
+    "fleetTitle": "Fleet",
+    "riderBusy": "On a job",
+    "riderFree": "Available"
+  },
+  "demo": {
+    "badge": "Demo",
+    "autopilotOn": "Autopilot on",
+    "autopilotOff": "Autopilot off",
+    "pausedToast": "Autopilot paused — you're driving.",
+    "resumedToast": "Autopilot resumed.",
+    "speed": "Speed",
+    "liveCount": "{count, plural, one {# live order} other {# live orders}}",
+    "surfaces": "Surfaces",
+    "surfaceCustomer": "Customer",
+    "surfaceRestaurant": "Restaurant",
+    "surfaceRider": "Rider",
+    "surfaceAdmin": "Admin",
+    "reset": "Reset demo data",
+    "resetToast": "Demo data reset.",
+    "hide": "Hide demo controls",
+    "show": "Show demo controls"
   }
 }

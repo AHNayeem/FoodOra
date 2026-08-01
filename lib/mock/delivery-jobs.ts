@@ -236,7 +236,7 @@ function buildJob({
       vendor: cartVendorFor(vendor),
       lines,
       tipPercent,
-      promo: null,
+      coupon: null,
       fulfillment: "delivery",
     });
     tips += pricing.tip;

@@ -1,45 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { ShoppingBag } from "lucide-react";
 import type { CurrencyCode } from "@/config/regions";
-import type { Order, OrderStatus } from "@/types";
+import type { Order } from "@/types";
 import { useOrders } from "@/stores/orders";
 import { cartCount } from "@/lib/cart";
-import { trackingProgress } from "@/lib/tracking";
+import { isActive, splitOrders } from "@/lib/order-lifecycle";
+import { isTerminal } from "@/lib/order-machine";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-/** Badge tint per live status — fresh/green for good news, muted for done/cancelled. */
-const STATUS_TONE: Record<OrderStatus, string> = {
-  placed: "bg-primary/10 text-primary",
-  confirmed: "bg-primary/10 text-primary",
-  preparing: "bg-accent/15 text-accent",
-  ready: "bg-fresh/15 text-fresh",
-  "picked-up": "bg-accent/15 text-accent",
-  "on-the-way": "bg-accent/15 text-accent",
-  delivered: "bg-fresh/15 text-fresh",
-  cancelled: "bg-surface-muted text-muted",
-};
+import { OrderStatusChip } from "@/components/orders/order-status-chip";
 
 /**
- * OrderHistory — the customer's past & active orders (Phase C3). Reads the
- * persisted orders store (same source as confirmation & tracking) and splits it
- * into active vs. completed using the C9 time-derived status, so a just-placed
- * order shows as live and links straight into the tracker. `now` is set on the
- * client after mount to avoid an SSR/hydration mismatch on the derived status.
+ * OrderHistory — the customer's active & past orders (Phase C3).
+ *
+ * The split used to be computed by projecting a status from the clock, which
+ * meant an order the restaurant had never touched still drifted from "active"
+ * into "past" after forty minutes. It now reads the order's real status
+ * (`isActive`), so this list agrees with the tracker it links into — and with
+ * whatever the kitchen last did.
  */
 export function OrderHistory() {
   const t = useTranslations("account");
   const orders = useOrders((s) => s.orders);
   const hydrated = useOrders((s) => s.hydrated);
-  // A single mount-time snapshot for deriving live status. Content only renders
-  // after `hydrated` flips on the client, so this never causes an SSR mismatch.
-  const [now] = useState(() => Date.now());
-
   useEffect(() => {
     useOrders.persist.rehydrate();
   }, []);
@@ -67,26 +54,21 @@ export function OrderHistory() {
     );
   }
 
-  const withStatus = orders.map((order) => ({
-    order,
-    progress: trackingProgress(order, now),
-  }));
-  const active = withStatus.filter((o) => !o.progress.complete && !o.progress.cancelled);
-  const past = withStatus.filter((o) => o.progress.complete || o.progress.cancelled);
+  const { active, past } = splitOrders(orders);
 
   return (
     <div className="space-y-8">
       {active.length > 0 && (
         <Group title={t("activeOrders")}>
-          {active.map(({ order, progress }) => (
-            <OrderCard key={order.id} order={order} status={progress.currentStatus} live />
+          {active.map((order) => (
+            <OrderCard key={order.id} order={order} live />
           ))}
         </Group>
       )}
       {past.length > 0 && (
         <Group title={t("pastOrders")}>
-          {past.map(({ order, progress }) => (
-            <OrderCard key={order.id} order={order} status={progress.currentStatus} />
+          {past.map((order) => (
+            <OrderCard key={order.id} order={order} />
           ))}
         </Group>
       )}
@@ -103,17 +85,8 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function OrderCard({
-  order,
-  status,
-  live = false,
-}: {
-  order: Order;
-  status: OrderStatus;
-  live?: boolean;
-}) {
+function OrderCard({ order, live = false }: { order: Order; live?: boolean }) {
   const t = useTranslations("account");
-  const ts = useTranslations("order.status");
   const locale = useLocale();
   const currency = order.vendor.currency as CurrencyCode;
   const count = cartCount(order.lines);
@@ -134,15 +107,7 @@ function OrderCard({
             >
               {order.vendor.name}
             </Link>
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-xs font-semibold",
-                STATUS_TONE[status],
-              )}
-            >
-              {live && <span className="size-1.5 animate-pulse rounded-full bg-current" />}
-              {ts(status)}
-            </span>
+            <OrderStatusChip status={order.status} live={live} size="sm" />
           </div>
           <p className="mt-0.5 text-sm text-muted">
             {t("orderRef", { number: order.orderNumber })} · {placed}
@@ -163,13 +128,13 @@ function OrderCard({
 
       {/* Actions */}
       <div className="mt-4 flex flex-wrap gap-2">
-        {live && (
+        {isActive(order) && (
           <Button href={`/orders/${order.id}`} size="sm">
             {t("track")}
           </Button>
         )}
         <Button href={`/checkout/success?order=${order.id}`} size="sm" variant="outline">
-          {t("viewReceipt")}
+          {isTerminal(order.status) ? t("viewInvoice") : t("viewReceipt")}
         </Button>
         <Button href={`/restaurants/${order.vendor.slug}`} size="sm" variant="ghost">
           {t("reorder")}

@@ -121,6 +121,16 @@ export async function getRiderZone(zoneId: string): Promise<DeliveryZone | null>
   return mockDelay(zoneById.get(zoneId) ?? null, 150);
 }
 
+/**
+ * The whole active fleet — what dispatch picks from, and what the restaurant's
+ * assign-rider dialog and the admin's rider board list. Optionally narrowed to
+ * one zone, which is how a dispatcher normally looks at it.
+ */
+export async function getFleet(zoneId?: string): Promise<Rider[]> {
+  const active = riders.filter((r) => !r.deletedAt);
+  return mockDelay(zoneId ? active.filter((r) => r.zoneId === zoneId) : active, 150);
+}
+
 /** Every zone — the profile screen lets a rider change which one they work. */
 export async function getDeliveryZones(): Promise<DeliveryZone[]> {
   return mockDelay(

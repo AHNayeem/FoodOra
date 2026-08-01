@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { Banknote, ShoppingBag, Receipt, Star, ArrowRight } from "lucide-react";
 import type { VendorDashboard } from "@/services/vendor";
 import { getVendorDashboard } from "@/services/vendor";
 import type { CurrencyCode } from "@/config/regions";
+import { useOrders, ordersForVendor } from "@/stores/orders";
+import { vendorStats } from "@/lib/analytics";
 import { formatPrice, formatRating } from "@/lib/format";
 import { useDashboard } from "./dashboard-context";
 import { StatCard } from "./stat-card";
@@ -43,9 +45,14 @@ function Panel({
 }
 
 /**
- * OverviewView — the dashboard home (Phase C10). Loads one dashboard snapshot
- * for the active vendor and lays out KPI cards, the revenue trend + peak-hours
- * charts, best sellers and a recent-orders list.
+ * OverviewView — the dashboard home (Phase C10).
+ *
+ * Two sources, deliberately: the synthesised week behind the charts (a
+ * prototype cannot have a real trailing week) and the **live** order store for
+ * anything about right now. Before this, "3 orders pending" came from the
+ * synthesiser too, so it counted invented orders and ignored the real one the
+ * restaurant had just been sent — the number on the busiest card was the one
+ * least connected to reality.
  */
 export function OverviewView() {
   const t = useTranslations("dashboard");
@@ -54,6 +61,21 @@ export function OverviewView() {
 
   const [data, setData] = useState<VendorDashboard | null>(null);
   const [loading, setLoading] = useState(true);
+  // The KPI window is time-bounded ("today"), so the clock is state rather than
+  // something read during render — a render must not depend on `Date.now()`.
+  const [now, setNow] = useState(() => Date.now());
+
+  const liveAll = useOrders((s) => s.orders);
+  const ordersHydrated = useOrders((s) => s.hydrated);
+
+  useEffect(() => {
+    useOrders.persist.rehydrate();
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -68,6 +90,11 @@ export function OverviewView() {
       active = false;
     };
   }, [vendor.id]);
+
+  const live = useMemo(
+    () => (ordersHydrated ? ordersForVendor(liveAll, vendor.id) : []),
+    [liveAll, vendor.id, ordersHydrated],
+  );
 
   if (loading || !data) {
     return (
@@ -86,8 +113,18 @@ export function OverviewView() {
     );
   }
 
-  const { stats } = data;
+  // Charts stay on the synthesised week; the headline numbers are recomputed
+  // over the week *plus* everything live, so today's card counts real orders.
+  const merged = [...live, ...data.recentOrders.filter((o) => !live.some((l) => l.id === o.id))];
+  const stats = vendorStats(
+    [...data.allOrders.filter((o) => !live.some((l) => l.id === o.id)), ...live],
+    vendor,
+    now,
+  );
   const currency = stats.currency as CurrencyCode;
+  const recent = merged
+    .sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt))
+    .slice(0, 6);
 
   return (
     <div className="space-y-6">
@@ -168,7 +205,7 @@ export function OverviewView() {
         }
       >
         <ul className="divide-y divide-line">
-          {data.recentOrders.map((order) => {
+          {recent.map((order) => {
             const count = order.lines.reduce((n, l) => n + l.quantity, 0);
             return (
               <li key={order.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">

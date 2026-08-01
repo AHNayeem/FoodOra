@@ -1,6 +1,7 @@
 import type { CartVendor, Order, OrderStatus, PaymentMethod } from "@/types";
 import { buildCartLine } from "@/lib/cart";
 import { computeTotals } from "@/lib/checkout";
+import { synthesiseLifecycle } from "@/lib/order-lifecycle";
 import { foodsByVendor } from "./foods";
 import { hashSeed, mulberry32 } from "./rng";
 import { vendorById } from "./vendors";
@@ -33,6 +34,15 @@ const HOUR_POOL = [
   20, 20, 20, 21, 21, 21, 22, 22, 23,
 ];
 
+/**
+ * Contact numbers. Previously every synthesised customer shared one number,
+ * which reads as placeholder data the moment anyone scrolls the board.
+ */
+const PHONES = [
+  "+8801711223344", "+8801812345678", "+8801915556677", "+8801677889900",
+  "+8801533221100", "+8801744332211", "+8801988776655", "+8801611224488",
+];
+
 /** Demo customer names attached to each order's contact snapshot. */
 const CUSTOMERS = [
   "Ayesha Rahman", "Imran Chowdhury", "Nabila Karim", "Farhan Ahmed",
@@ -46,14 +56,27 @@ function orderNumberFrom(ms: number): string {
   return `FO-${ms.toString(36).toUpperCase().slice(-6).padStart(6, "0")}`;
 }
 
-/** Map elapsed minutes since an order was placed onto its lifecycle stage. */
+/**
+ * Map elapsed minutes since an order was placed onto its lifecycle stage.
+ *
+ * Widened to the full state set so a week of history contains packing, dispatch
+ * and arrival like a real week does — an analytics feed that only knows six of
+ * fifteen states quietly misreports what the restaurant's day looked like.
+ * Anything older than an hour has settled.
+ */
 function statusForAge(ageMin: number, fulfillment: "delivery" | "pickup"): OrderStatus {
-  if (ageMin < 8) return "placed";
-  if (ageMin < 18) return "confirmed";
-  if (ageMin < 34) return "preparing";
-  if (ageMin < 50) return fulfillment === "pickup" ? "ready" : "picked-up";
-  if (ageMin < 62 && fulfillment === "delivery") return "on-the-way";
-  return "delivered";
+  if (ageMin < 6) return "placed";
+  if (ageMin < 12) return "confirmed";
+  if (ageMin < 26) return "preparing";
+  if (ageMin < 32) return "packing";
+  if (ageMin < 38) return "ready";
+  if (fulfillment === "pickup") return ageMin < 55 ? "delivered" : "completed";
+  if (ageMin < 43) return "rider-assigned";
+  if (ageMin < 47) return "picked-up";
+  if (ageMin < 58) return "on-the-way";
+  if (ageMin < 62) return "arrived";
+  if (ageMin < 75) return "delivered";
+  return "completed";
 }
 
 /**
@@ -110,23 +133,34 @@ export function buildVendorOrders(vendorId: string, now: number): Order[] {
         vendor: cartVendor,
         lines,
         tipPercent,
-        promo: null,
+        coupon: null,
         fulfillment,
       });
 
-      // ~6% of settled orders are cancelled; fresh ones follow the age lifecycle.
+      // ~6% of settled orders end badly. Rejection and cancellation are now
+      // distinct states, so the split is modelled rather than collapsed into
+      // one bucket the dashboard cannot tell apart.
+      const roll = rng();
       const status: OrderStatus =
-        ageMin > 62 && rng() < 0.06 ? "cancelled" : statusForAge(ageMin, fulfillment);
+        ageMin > 62 && roll < 0.06
+          ? roll < 0.025
+            ? "rejected"
+            : "cancelled"
+          : statusForAge(ageMin, fulfillment);
 
       const method: PaymentMethod = pick<PaymentMethod>([
         "cash", "cash", "card", "card", "wallet",
       ]);
-      const paid = method !== "cash" || status === "delivered";
+      const settled = status === "delivered" || status === "completed";
+      const paid = method !== "cash" || settled;
       const customer = pick(CUSTOMERS);
       const placedIso = new Date(placedMs).toISOString();
       const etaIso = new Date(placedMs + 40 * MIN).toISOString();
 
-      orders.push({
+      const failed = status === "cancelled" || status === "rejected";
+      // Built without its lifecycle first: `synthesiseLifecycle` reads the
+      // order's status and timestamps to reconstruct one.
+      const base: Omit<Order, "lifecycle"> = {
         id: `ord_${vendorId}_${placedMs.toString(36)}`,
         orderNumber: orderNumberFrom(placedMs),
         vendor: cartVendor,
@@ -134,11 +168,11 @@ export function buildVendorOrders(vendorId: string, now: number): Order[] {
         fulfillment,
         address: null, // vendor-side view doesn't need the delivery snapshot
         scheduledFor: null,
-        contact: { name: customer, phone: "+8801711000000" },
+        contact: { name: customer, phone: pick(PHONES) },
         notes: null,
         payment: {
           method,
-          status: status === "cancelled" ? "failed" : paid ? "paid" : "pending",
+          status: failed ? (paid ? "refunded" : "failed") : paid ? "paid" : "pending",
           cardLast4: method === "card" ? "4242" : null,
         },
         pricing,
@@ -148,6 +182,10 @@ export function buildVendorOrders(vendorId: string, now: number): Order[] {
         createdAt: placedIso,
         updatedAt: placedIso,
         deletedAt: null,
+      };
+      orders.push({
+        ...base,
+        lifecycle: synthesiseLifecycle(base as Order),
       });
     }
   }

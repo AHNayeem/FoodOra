@@ -1,20 +1,20 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Loader2, Tag, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { CurrencyCode } from "@/config/regions";
 import type { CartLine, CartVendor, OrderPricing } from "@/types";
-import type { Promo } from "@/lib/checkout";
 import { TIP_PRESETS } from "@/lib/checkout";
 import { cartCount } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 /**
- * OrderSummary — the sticky right rail of the checkout: the itemised cart, a
- * promo-code field, a rider-tip selector, the money breakdown and the primary
- * "Place order" action. Purely presentational; all state lives in CheckoutView.
+ * OrderSummary — the sticky right rail of the checkout: the itemised cart, the
+ * coupon step, a rider-tip selector, the money breakdown and the primary "Place
+ * order" action. Purely presentational; all state lives in CheckoutView, and the
+ * coupon step arrives as a slot (Phase C21) so this file stays free of the
+ * coupon engine.
  */
 export function OrderSummary({
   vendor,
@@ -22,12 +22,7 @@ export function OrderSummary({
   pricing,
   tipPercent,
   onTipChange,
-  promoInput,
-  onPromoInputChange,
-  appliedPromo,
-  promoError,
-  onApplyPromo,
-  onRemovePromo,
+  couponSlot,
   onPlaceOrder,
   submitting,
   disabled,
@@ -37,12 +32,8 @@ export function OrderSummary({
   pricing: OrderPricing;
   tipPercent: number;
   onTipChange: (percent: number) => void;
-  promoInput: string;
-  onPromoInputChange: (value: string) => void;
-  appliedPromo: Promo | null;
-  promoError: string | null;
-  onApplyPromo: () => void;
-  onRemovePromo: () => void;
+  /** The coupon field (C21), rendered between the items and the tip. */
+  couponSlot: React.ReactNode;
   onPlaceOrder: () => void;
   submitting: boolean;
   disabled: boolean;
@@ -75,52 +66,8 @@ export function OrderSummary({
         ))}
       </ul>
 
-      {/* Promo code */}
-      <div className="border-b border-line py-4">
-        <label htmlFor="promo" className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-ink">
-          <Tag className="size-4 text-muted" aria-hidden />
-          {t("promoTitle")}
-        </label>
-        {appliedPromo ? (
-          <div className="flex items-center justify-between rounded-field bg-fresh/10 px-3 py-2">
-            <span className="text-sm font-semibold text-fresh-600">
-              {t("promoApplied", { code: appliedPromo.code })}
-            </span>
-            <button
-              type="button"
-              onClick={onRemovePromo}
-              className="inline-flex items-center gap-1 text-xs font-medium text-muted hover:text-danger"
-            >
-              <X className="size-3.5" /> {t("removePromo")}
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <Input
-              id="promo"
-              value={promoInput}
-              onChange={(e) => onPromoInputChange(e.target.value)}
-              placeholder={t("promoPlaceholder")}
-              aria-invalid={!!promoError}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  onApplyPromo();
-                }
-              }}
-              className="uppercase"
-            />
-            <button
-              type="button"
-              onClick={onApplyPromo}
-              className="shrink-0 rounded-field border border-line px-4 text-sm font-semibold text-ink hover:bg-surface-muted"
-            >
-              {t("apply")}
-            </button>
-          </div>
-        )}
-        {promoError && <p className="mt-1.5 text-xs font-medium text-danger">{t(promoError)}</p>}
-      </div>
+      {/* Coupon (Phase C21) */}
+      {couponSlot}
 
       {/* Tip */}
       <div className="border-b border-line py-4">
@@ -154,7 +101,11 @@ export function OrderSummary({
         />
         {pricing.discount > 0 && (
           <Row
-            label={t("discount")}
+            label={
+              pricing.couponCode
+                ? t("discountWithCode", { code: pricing.couponCode })
+                : t("discount")
+            }
             value={`− ${formatPrice(pricing.discount, currency)}`}
             className="text-fresh-600"
           />

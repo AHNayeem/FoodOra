@@ -1,141 +1,165 @@
-import type { Order, OrderStatus } from "@/types";
+import type { Order, OrderEvent, OrderStatus } from "@/types";
+import {
+  isFailure,
+  isTerminal,
+  stagesFor,
+  stageIndex,
+  DELIVERY_STAGES,
+  PICKUP_STAGES,
+} from "./order-machine";
+import { etaInMs, prepFraction, readyInMs, toMinutes } from "./order-lifecycle";
 
 /**
- * tracking.ts — pure logic for the simulated live order tracker (Phase C9).
+ * tracking.ts — the customer's view of where their order is.
  *
- * There is no backend in the prototype, so an order's *live* status is derived
- * from elapsed time rather than pushed by a server: `placeOrder` stamps
- * `placedAt` and `estimatedDeliveryAt`, and this module interpolates the
- * lifecycle between them. Only `cancelled` is a real, persisted override (the
- * customer cancelling) — everything else is projected. When the Phase E backend
- * arrives the order's stored `status` becomes authoritative and this derivation
- * is simply dropped; the component contract (`TrackingProgress`) stays the same.
+ * This module used to *invent* that answer: it interpolated a status from the
+ * elapsed time between `placedAt` and `estimatedDeliveryAt`, which meant an
+ * order marched to "delivered" on a timer whether or not a restaurant had ever
+ * seen it, and the mandatory OTP gate could be skipped by waiting forty minutes.
+ *
+ * It now reads. Status is whatever the restaurant and the rider actually did
+ * (`stores/orders` + `lib/order-machine`); the only things still derived from
+ * the clock are the things that genuinely are estimates — countdowns, ETAs and
+ * how far through the promised preparation window the kitchen is.
+ *
+ * Re-exports the stage lists so existing callers keep one import.
  */
 
-/** Ordered live stages for a delivery order (terminal `cancelled` excluded). */
-export const DELIVERY_STAGES: OrderStatus[] = [
-  "placed",
-  "confirmed",
-  "preparing",
-  "ready",
-  "picked-up",
-  "on-the-way",
-  "delivered",
-];
-
-/** Ordered stages for pickup — the customer collects it, so it ends at `ready`. */
-export const PICKUP_STAGES: OrderStatus[] = [
-  "placed",
-  "confirmed",
-  "preparing",
-  "ready",
-];
-
-/** The stage sequence for an order's fulfillment type. */
-export function stagesFor(fulfillment: Order["fulfillment"]): OrderStatus[] {
-  return fulfillment === "pickup" ? PICKUP_STAGES : DELIVERY_STAGES;
-}
-
-/**
- * How long before the ETA the kitchen "starts". For an ASAP order (ETA is
- * placed + 40 min) this covers the whole window; for a scheduled order it keeps
- * the order dormant until ~40 min before the requested slot, which is what a
- * real operation does.
- */
-const ACTIVE_WINDOW_MS = 40 * 60_000;
+export { DELIVERY_STAGES, PICKUP_STAGES, stagesFor };
 
 export interface TrackStep {
   status: OrderStatus;
-  /** Projected wall-clock time (ms) this stage is reached. */
-  at: number;
-  /** Reached at/before `now`. */
+  /** When it actually happened (ms), or null if it hasn't yet. */
+  at: number | null;
+  /** Reached. */
   done: boolean;
-  /** The current stage — the last reached one, while not yet complete. */
+  /** The stage the order is sitting in right now. */
   active: boolean;
+  /** Who performed it, for the timeline's attribution line. */
+  actor: OrderEvent["actor"] | null;
+  /** Free-text detail recorded with the event (a delay, a reason). */
+  note: string | null;
 }
 
 export interface TrackingProgress {
   steps: TrackStep[];
-  /** Live status: a stage, or `cancelled`. */
+  /** The order's real status. */
   currentStatus: OrderStatus;
-  /** Index into `steps` of the current stage; -1 when cancelled. */
+  /** Index into `steps`; -1 for a status that is not on the happy path. */
   currentIndex: number;
-  /** Terminal stage reached (delivered / ready-for-pickup). */
+  /** Handed over — `delivered` or `completed`. */
   complete: boolean;
+  /** Ended badly — rejected, cancelled, returned, refunded, or a failed drop. */
+  failed: boolean;
+  /** Kept for callers that only care about the cancelled/rejected case. */
   cancelled: boolean;
+  /** Nothing follows this status. */
+  terminal: boolean;
   /** Projected hand-off time (ms). */
   etaMs: number;
   /** Time left until the ETA (ms, clamped ≥ 0). */
   remainingMs: number;
-  /** 0..1 progress along the timeline, for the map marker / progress bar. */
+  /** Time until the kitchen promised the food would be ready (ms); null if unpromised. Negative when overdue. */
+  readyMs: number | null;
+  /** 0..1 through the promised preparation window. */
+  prepFraction: number;
+  /** 0..1 along the whole journey, for the map marker and progress bar. */
   fraction: number;
 }
 
 /**
- * Derive the live tracking state of `order` at wall-clock `now` (ms). Pure and
- * deterministic, so it produces the same result on every render/tick and after
- * a hard refresh.
+ * Derive the customer-facing tracking view of `order` at wall-clock `now` (ms).
+ *
+ * Pure and deterministic. The event log supplies the "when" for every step that
+ * has happened; steps that have not happened simply have no time, which is
+ * honest — a real app cannot tell you when your food will be packed either.
  */
 export function trackingProgress(order: Order, now: number): TrackingProgress {
   const stages = stagesFor(order.fulfillment);
-  const n = stages.length;
-  const placed = Date.parse(order.placedAt);
-  const eta = Date.parse(order.estimatedDeliveryAt);
-  // Progression runs over [start, eta]; `placed` is pinned to the real time.
-  const start = Math.max(placed, eta - ACTIVE_WINDOW_MS);
-  const total = Math.max(eta - start, 1);
+  const events = order.lifecycle?.events ?? [];
 
-  const cancelled = order.status === "cancelled";
-
-  const at = (i: number) => (i === 0 ? placed : start + (i / (n - 1)) * total);
-
-  // Current stage = the furthest step whose projected time has passed.
-  let currentIndex = 0;
-  for (let i = 0; i < n; i++) {
-    if (now >= at(i)) currentIndex = i;
+  // First occurrence wins: a status can be revisited (a rider hands a job back
+  // and the order returns to `ready`), and the timeline shows when it was first
+  // reached rather than the most recent bounce.
+  const firstByStatus = new Map<OrderStatus, OrderEvent>();
+  for (const event of events) {
+    if (!firstByStatus.has(event.status)) firstByStatus.set(event.status, event);
   }
 
-  const complete = !cancelled && currentIndex >= n - 1;
+  const currentIndex = stageIndex(order.status, order.fulfillment);
+  const failed = isFailure(order.status);
+  const complete = order.status === "delivered" || order.status === "completed";
 
-  const steps: TrackStep[] = stages.map((status, i) => ({
-    status,
-    at: at(i),
-    done: !cancelled && i <= currentIndex,
-    active: !cancelled && !complete && i === currentIndex,
-  }));
+  const steps: TrackStep[] = stages.map((status, i) => {
+    const event = firstByStatus.get(status);
+    return {
+      status,
+      at: event ? Date.parse(event.at) : null,
+      done: !!event,
+      active: !failed && i === currentIndex && !complete,
+      actor: event?.actor ?? null,
+      note: event?.note ?? null,
+    };
+  });
 
-  const fraction = Math.min(1, Math.max(0, (now - start) / total));
+  const remainingMs = etaInMs(order, now);
 
   return {
     steps,
-    currentStatus: cancelled ? "cancelled" : stages[currentIndex],
-    currentIndex: cancelled ? -1 : currentIndex,
+    currentStatus: order.status,
+    currentIndex,
     complete,
-    cancelled,
-    etaMs: eta,
-    remainingMs: Math.max(0, eta - now),
-    fraction: cancelled ? 0 : complete ? 1 : fraction,
+    failed,
+    cancelled: order.status === "cancelled" || order.status === "rejected",
+    terminal: isTerminal(order.status),
+    etaMs: Date.parse(order.estimatedDeliveryAt),
+    remainingMs,
+    readyMs: readyInMs(order, now),
+    prepFraction: prepFraction(order, now),
+    fraction: journeyFraction(order, now),
   };
 }
 
 /**
- * Can the customer still cancel? Only before the kitchen starts cooking
- * (i.e. while `placed` / `confirmed`), and never once complete or cancelled —
- * matching typical food-delivery cancellation windows.
+ * How far along the route the courier is, 0..1 — what moves the map marker.
+ *
+ * Stage index alone is too coarse (the marker would jump in five big steps and
+ * then sit still for the whole ride), so the leg the order is *in* is smoothed
+ * by the clock: within `on-the-way`, the marker creeps from the pickup toward
+ * the door as the ETA approaches. The clock is used for animation only — it can
+ * never move the order to the next status.
  */
-export function canCancel(order: Order, progress: TrackingProgress): boolean {
-  if (progress.cancelled || progress.complete) return false;
-  const preparingIndex = stagesFor(order.fulfillment).indexOf("preparing");
-  return progress.currentIndex < preparingIndex;
+function journeyFraction(order: Order, now: number): number {
+  const stages = stagesFor(order.fulfillment);
+  const idx = stageIndex(order.status, order.fulfillment);
+  if (idx < 0) return 0;
+  if (order.status === "delivered" || order.status === "completed") return 1;
+
+  const base = idx / (stages.length - 1);
+
+  if (order.status === "on-the-way") {
+    const startedAt = order.lifecycle.events.find((e) => e.status === "on-the-way");
+    const start = startedAt ? Date.parse(startedAt.at) : now;
+    const end = Date.parse(order.estimatedDeliveryAt);
+    const span = Math.max(end - start, 60_000);
+    const within = Math.min(1, Math.max(0, (now - start) / span));
+    const next = (idx + 1) / (stages.length - 1);
+    return base + (next - base) * within;
+  }
+
+  return base;
 }
 
-/** Whether a courier is assigned yet (delivery orders past the `picked-up` stage). */
-export function hasCourier(order: Order, progress: TrackingProgress): boolean {
-  if (order.fulfillment !== "delivery" || progress.cancelled) return false;
-  return progress.currentIndex >= DELIVERY_STAGES.indexOf("picked-up");
-}
-
-/** ETA remaining in whole minutes (rounded), for the countdown display. */
+/** ETA remaining in whole minutes, for the countdown display. */
 export function remainingMinutes(remainingMs: number): number {
-  return Math.max(0, Math.round(remainingMs / 60_000));
+  return toMinutes(remainingMs);
+}
+
+/**
+ * Whether a courier is assigned. Now a fact rather than a guess: the order
+ * carries the rider snapshot from the moment dispatch assigns one, so the
+ * customer meets their rider at `rider-assigned` instead of at `picked-up`.
+ */
+export function hasCourier(order: Order): boolean {
+  return order.fulfillment === "delivery" && order.lifecycle.rider !== null;
 }

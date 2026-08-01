@@ -11,6 +11,7 @@ import {
   CalendarCheck,
   MapPin,
   Wallet,
+  Ticket,
   Heart,
   Settings,
   Lock,
@@ -27,6 +28,7 @@ const NAV = [
   { href: "/account/favorites", key: "favorites", icon: Heart },
   { href: "/account/addresses", key: "addresses", icon: MapPin },
   { href: "/account/wallet", key: "wallet", icon: Wallet },
+  { href: "/account/coupons", key: "coupons", icon: Ticket },
   { href: "/account/settings", key: "settings", icon: Settings },
 ] as const;
 

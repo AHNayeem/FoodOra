@@ -6,6 +6,7 @@ import type { OfferWithVendors } from "@/services/offers";
 import { daysRemaining } from "@/services/offers";
 import type { CurrencyCode } from "@/config/regions";
 import { Badge } from "@/components/ui/badge";
+import { ClaimCoupon } from "./claim-coupon";
 import { CopyCode } from "./copy-code";
 import { OfferTerms } from "./offer-terms";
 import { formatPrice } from "@/lib/format";
@@ -144,7 +145,12 @@ export async function OfferCard({
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {offer.code ? (
-            <CopyCode code={offer.code} />
+            <>
+              <CopyCode code={offer.code} />
+              {entry.couponId && (
+                <ClaimCoupon code={offer.code} couponId={entry.couponId} />
+              )}
+            </>
           ) : (
             <span className="inline-flex items-center rounded-field bg-fresh-50 px-3 py-2 text-xs font-semibold text-fresh-600">
               {t("autoApplied")}

@@ -7,20 +7,37 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ArrowLeft, Bike, Check, Clock, MapPin, Pencil, Store } from "lucide-react";
 import type { CurrencyCode } from "@/config/regions";
-import type { DeliveryAddress, PaymentMethod, SavedAddress } from "@/types";
+import type { AppliedCoupon, DeliveryAddress, PaymentMethod, SavedAddress } from "@/types";
+import type { CouponOption } from "@/lib/coupons";
 import { useCart } from "@/stores/cart";
 import { useAuth } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { useAddresses } from "@/stores/addresses";
-import { placeOrder } from "@/services/orders";
+import { useCoupons } from "@/stores/coupons";
+import { useWallet } from "@/stores/wallet";
+import { authorisePayment, placeOrder } from "@/services/orders";
 import { getAddressBook } from "@/services/account";
+import { getWallet } from "@/services/wallet";
+import {
+  applyCoupon,
+  applyCouponCode,
+  getBasketCoupons,
+  getGrantedClaims,
+  redeemCoupon,
+  type BasketInput,
+} from "@/services/coupons";
 import { amountToMinOrder, cartSubtotal } from "@/lib/cart";
-import { computeTotals, evaluatePromo, type Promo } from "@/lib/checkout";
+import { computeTotals } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { CouponField } from "@/components/checkout/coupon-field";
 import { OrderSummary } from "@/components/checkout/order-summary";
-import { PaymentMethods, DEMO_CARD_LAST4 } from "@/components/checkout/payment-methods";
+import {
+  PaymentMethods,
+  DEMO_CARD_LAST4,
+  DEMO_CARD_NUMBER,
+} from "@/components/checkout/payment-methods";
 import { AddressFields, emptyAddress, type NewAddress } from "@/components/checkout/address-fields";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +74,7 @@ function toDeliveryAddress(a: SavedAddress): DeliveryAddress {
  */
 export function CheckoutView() {
   const t = useTranslations("checkout");
+  const tc = useTranslations("coupons");
   const locale = useLocale();
   const router = useRouter();
 
@@ -73,6 +91,19 @@ export function CheckoutView() {
   const addrHydrated = useAddresses((s) => s.hydrated);
   const addrSeeded = useAddresses((s) => s.seeded);
   const seedAddrs = useAddresses((s) => s.seed);
+  // Coupons (C21): the wallet is claims-only; the seam prices them per basket.
+  const claims = useCoupons((s) => s.claims);
+  const couponsHydrated = useCoupons((s) => s.hydrated);
+  const couponsSeeded = useCoupons((s) => s.seeded);
+  const seedCoupons = useCoupons((s) => s.seed);
+  const addClaim = useCoupons((s) => s.addClaim);
+  const recordRedemption = useCoupons((s) => s.recordRedemption);
+  // Cashback is paid into the wallet, so it has to be loaded before it is credited.
+  const walletHydrated = useWallet((s) => s.hydrated);
+  const walletSeeded = useWallet((s) => s.seeded);
+  const seedWallet = useWallet((s) => s.seed);
+  const rewardWallet = useWallet((s) => s.reward);
+  const pastOrders = useOrders((s) => s.orders);
 
   // Rehydrate the persisted stores on the client (they skip auto-hydration).
   useEffect(() => {
@@ -80,6 +111,8 @@ export function CheckoutView() {
     useOrders.persist.rehydrate();
     useAuth.persist.rehydrate();
     useAddresses.persist.rehydrate();
+    useCoupons.persist.rehydrate();
+    useWallet.persist.rehydrate();
   }, []);
 
   const [fulfillment, setFulfillment] = useState<Fulfillment>("delivery");
@@ -97,9 +130,9 @@ export function CheckoutView() {
   const [payment, setPayment] = useState<PaymentMethod>("cash");
   const [notes, setNotes] = useState("");
   const [tipPercent, setTipPercent] = useState(0);
-  const [promoInput, setPromoInput] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState<Promo | null>(null);
-  const [promoError, setPromoError] = useState<string | null>(null);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
+  const [couponOptions, setCouponOptions] = useState<CouponOption[] | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -107,6 +140,15 @@ export function CheckoutView() {
   useEffect(() => {
     if (addrHydrated && !addrSeeded) getAddressBook().then(seedAddrs);
   }, [addrHydrated, addrSeeded, seedAddrs]);
+
+  // Same for the coupon wallet and the money wallet — both may be reached for
+  // the first time here rather than from the account app.
+  useEffect(() => {
+    if (couponsHydrated && !couponsSeeded) getGrantedClaims().then(seedCoupons);
+  }, [couponsHydrated, couponsSeeded, seedCoupons]);
+  useEffect(() => {
+    if (walletHydrated && !walletSeeded) getWallet().then(seedWallet);
+  }, [walletHydrated, walletSeeded, seedWallet]);
 
   // The selected address is derived: until the user picks one, it defaults to
   // the book's default (or first) entry — no effect / setState needed.
@@ -127,11 +169,47 @@ export function CheckoutView() {
 
   const pricing = useMemo(
     () =>
-      vendor
-        ? computeTotals({ vendor, lines, tipPercent, promo: appliedPromo, fulfillment })
-        : null,
-    [vendor, lines, tipPercent, appliedPromo, fulfillment],
+      vendor ? computeTotals({ vendor, lines, tipPercent, coupon, fulfillment }) : null,
+    [vendor, lines, tipPercent, coupon, fulfillment],
   );
+
+  /** The basket the coupon seam prices against — cart, not hand-assembled totals. */
+  const basket: BasketInput | null = useMemo(
+    () =>
+      vendor
+        ? { vendor, lines, fulfillment, isFirstOrder: pastOrders.length === 0 }
+        : null,
+    [vendor, lines, fulfillment, pastOrders.length],
+  );
+
+  /**
+   * Re-price the wallet whenever the basket changes. Switching to pickup or
+   * dropping an item can invalidate the applied coupon, so the applied one is
+   * re-read from the same fresh evaluation rather than kept on trust — and
+   * removed, with the reason, if it no longer applies.
+   */
+  const appliedId = coupon?.coupon.id ?? null;
+  useEffect(() => {
+    if (!basket || !couponsHydrated || !couponsSeeded) return;
+    let live = true;
+    getBasketCoupons(claims, basket).then((picker) => {
+      if (!live) return;
+      setCouponOptions(picker.options);
+      if (!appliedId) return;
+      const current = picker.options.find((o) => o.held.coupon.id === appliedId);
+      if (!current) {
+        setCoupon(null);
+      } else if (!current.evaluation.eligible) {
+        setCoupon(null);
+        toast.info(tc(`reason.${current.evaluation.reasonKey}`));
+      } else {
+        setCoupon({ coupon: current.held.coupon, evaluation: current.evaluation });
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, [claims, basket, couponsHydrated, couponsSeeded, appliedId, tc]);
 
   // ---- Loading / empty states (all hooks above run unconditionally) ----
   if (!hydrated) {
@@ -162,10 +240,58 @@ export function CheckoutView() {
 
   const currency = vendor.currency as CurrencyCode;
 
-  function applyPromo() {
-    const res = evaluatePromo(promoInput, subtotal);
-    setPromoError(res.errorKey);
-    setAppliedPromo(res.promo);
+  /** Apply a coupon the customer already holds, picked from the sheet. */
+  function handleApplyCoupon(couponId: string) {
+    if (!basket) return;
+    setCouponBusy(true);
+    applyCoupon(couponId, claims, basket).then((res) => {
+      setCouponBusy(false);
+      if (res.error || !res.data) {
+        toast.error(tc(res.error ?? "errors.unknownCode"));
+        return;
+      }
+      setCoupon({ coupon: res.data.coupon, evaluation: res.data.evaluation });
+      toast.success(tc("applied", { code: res.data.coupon.code }));
+    });
+  }
+
+  /**
+   * Apply a typed code. The seam claims it first when the customer doesn't hold
+   * it yet, so a code from a flyer works here without a detour through the
+   * wallet — and the new claim is persisted so it is there next time.
+   */
+  function handleApplyCode(code: string) {
+    if (!basket) return;
+    setCouponBusy(true);
+    applyCouponCode(code, claims, basket).then((res) => {
+      setCouponBusy(false);
+      if (res.error || !res.data) {
+        toast.error(tc(res.error));
+        return;
+      }
+      if (res.data.claimed) addClaim(res.data.claim);
+      setCoupon({ coupon: res.data.coupon, evaluation: res.data.evaluation });
+      toast.success(tc("applied", { code: res.data.coupon.code }));
+    });
+  }
+
+  /**
+   * Record the spend once the order exists. Cashback is credited to the wallet
+   * here rather than taken off the total — that is what makes it cashback.
+   */
+  function settleCoupon(order: (typeof pastOrders)[number]) {
+    if (!coupon) return;
+    redeemCoupon(coupon.coupon.id, claims, order, coupon.evaluation).then((res) => {
+      if (res.error || !res.data) return;
+      recordRedemption(coupon.coupon.id, res.data);
+      if (res.data.cashback > 0) {
+        rewardWallet(
+          res.data.cashback,
+          `${coupon.coupon.title} · ${coupon.coupon.code}`,
+          order.orderNumber,
+        );
+      }
+    });
   }
 
   function handlePlaceOrder() {
@@ -211,26 +337,43 @@ export function CheckoutView() {
     }
 
     setSubmitting(true);
-    placeOrder({
-      vendor,
-      lines,
-      fulfillment,
-      address,
-      scheduledFor: timeMode === "schedule" ? scheduledSlot : null,
-      contact: { name: contactName.trim(), phone: contactPhone.trim() },
-      notes: notes.trim() || null,
-      payment: { method: payment, cardLast4: payment === "card" ? DEMO_CARD_LAST4 : null },
-      pricing,
-    }).then((res) => {
-      if (res.error || !res.data) {
+
+    // Online payments authorise before the order exists (spec: "Online Payment
+    // (Mock)"). Cash skips straight through — there is nothing to authorise
+    // until the rider is on the doorstep, which is where the machine settles it.
+    const authorise =
+      payment === "cash"
+        ? Promise.resolve({ data: { authCode: "" }, error: null as string | null })
+        : authorisePayment({ method: payment, cardNumber: DEMO_CARD_NUMBER });
+
+    authorise.then((auth) => {
+      if (auth.error) {
         setSubmitting(false);
-        toast.error(t(res.error ?? "errors.generic"));
+        toast.error(t(auth.error));
         return;
       }
-      const order = res.data;
-      addOrder(order);
-      clearCart();
-      router.push(`/checkout/success?order=${order.id}`);
+      placeOrder({
+        vendor,
+        lines,
+        fulfillment,
+        address,
+        scheduledFor: timeMode === "schedule" ? scheduledSlot : null,
+        contact: { name: contactName.trim(), phone: contactPhone.trim() },
+        notes: notes.trim() || null,
+        payment: { method: payment, cardLast4: payment === "card" ? DEMO_CARD_LAST4 : null },
+        pricing,
+      }).then((res) => {
+        if (res.error || !res.data) {
+          setSubmitting(false);
+          toast.error(t(res.error ?? "errors.generic"));
+          return;
+        }
+        const order = res.data;
+        addOrder(order);
+        settleCoupon(order);
+        clearCart();
+        router.push(`/checkout/success?order=${order.id}`);
+      });
     });
   }
 
@@ -498,16 +641,17 @@ export function CheckoutView() {
           pricing={pricing}
           tipPercent={tipPercent}
           onTipChange={setTipPercent}
-          promoInput={promoInput}
-          onPromoInputChange={setPromoInput}
-          appliedPromo={appliedPromo}
-          promoError={promoError}
-          onApplyPromo={applyPromo}
-          onRemovePromo={() => {
-            setAppliedPromo(null);
-            setPromoInput("");
-            setPromoError(null);
-          }}
+          couponSlot={
+            <CouponField
+              currency={currency}
+              options={couponOptions}
+              applied={coupon}
+              busy={couponBusy}
+              onApplyCode={handleApplyCode}
+              onApplyCoupon={handleApplyCoupon}
+              onRemove={() => setCoupon(null)}
+            />
+          }
           onPlaceOrder={handlePlaceOrder}
           submitting={submitting}
           disabled={belowMin}

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Wallet, WalletTransaction } from "@/types";
+import type { Wallet, WalletTransaction, WalletTransactionType } from "@/types";
 
 /**
  * wallet store — the customer's wallet balance + ledger (Phase C3). Seeds once
@@ -20,7 +20,36 @@ interface WalletState {
   seed: (wallet: Wallet) => void;
   /** Simulated top-up: append a credit and bump the balance. */
   topUp: (amount: number) => void;
+  /** Cashback earned by a coupon (Phase C21) — the same append, tagged a reward. */
+  reward: (amount: number, description: string, orderNumber: string | null) => void;
   setHydrated: () => void;
+}
+
+/**
+ * Money only ever moves by appending a signed transaction and re-summing, so
+ * the balance and the ledger cannot drift apart. Both credits (a top-up, coupon
+ * cashback) go through here.
+ */
+function credit(
+  state: WalletState,
+  amount: number,
+  type: WalletTransactionType,
+  description: string,
+  orderNumber: string | null,
+): Partial<WalletState> {
+  const now = new Date().toISOString();
+  const txn: WalletTransaction = {
+    id: `wtx_${Date.now().toString(36)}`,
+    type,
+    amount,
+    description,
+    orderNumber,
+    occurredAt: now,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+  };
+  return { balance: state.balance + amount, transactions: [txn, ...state.transactions] };
 }
 
 export const useWallet = create<WalletState>()(
@@ -43,24 +72,9 @@ export const useWallet = create<WalletState>()(
               },
         ),
       topUp: (amount) =>
-        set((s) => {
-          const now = new Date().toISOString();
-          const txn: WalletTransaction = {
-            id: `wtx_${Date.now().toString(36)}`,
-            type: "top-up",
-            amount,
-            description: "Added via card ending 4242",
-            orderNumber: null,
-            occurredAt: now,
-            createdAt: now,
-            updatedAt: now,
-            deletedAt: null,
-          };
-          return {
-            balance: s.balance + amount,
-            transactions: [txn, ...s.transactions],
-          };
-        }),
+        set((s) => credit(s, amount, "top-up", "Added via card ending 4242", null)),
+      reward: (amount, description, orderNumber) =>
+        set((s) => credit(s, amount, "reward", description, orderNumber)),
       setHydrated: () => set({ hydrated: true }),
     }),
     {

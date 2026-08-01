@@ -9,6 +9,13 @@ import { cn } from "@/lib/utils";
 
 /** Demo payment fixtures — simulated only, no real gateway or stored card. */
 export const DEMO_CARD_LAST4 = "4242";
+/**
+ * The full demo card, sent to the simulated authorisation step. A number ending
+ * `0000` is the one `services/orders.authorisePayment` declines, so the failure
+ * path is reachable deliberately rather than at random — a payment that fails
+ * one time in twenty makes for an unreliable demonstration.
+ */
+export const DEMO_CARD_NUMBER = "4242424242424242";
 export const DEMO_WALLET_BALANCE = 2450;
 
 /**

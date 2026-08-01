@@ -1,15 +1,16 @@
 import type {
   CartLine,
   CartVendor,
-  Courier,
   DeliveryAddress,
   FulfillmentType,
   Order,
+  OrderCancelReason,
   OrderPricing,
   PaymentMethod,
   SavedAddress,
 } from "@/types";
-import { couriers, savedAddresses } from "@/lib/mock";
+import { savedAddresses } from "@/lib/mock";
+import { createLifecycle } from "@/lib/order-lifecycle";
 import { mockDelay, ok, type Result } from "./http";
 
 /**
@@ -44,9 +45,23 @@ function orderNumberFrom(ms: number): string {
 }
 
 /**
+ * How long an online payment "takes" before it settles. Card and wallet resolve
+ * through a visible processing step at checkout rather than instantly, because
+ * an instant success is the one thing a payment screen never does.
+ */
+export const PAYMENT_PROCESSING_MS = 1400;
+
+/**
  * Place an order. Validates the cart is non-empty, simulates gateway latency,
- * then returns a fully-formed Order. Card/wallet payments resolve as `paid`,
- * cash-on-delivery stays `pending` until hand-off — mirroring real behaviour.
+ * then returns a fully-formed Order in `placed` (PENDING_CONFIRMATION) with its
+ * lifecycle record initialised — event log, handoff code and all.
+ *
+ * Card/wallet payments resolve as `paid`, cash-on-delivery stays `pending` until
+ * the rider collects it (the machine settles it on `delivered`).
+ *
+ * Note what is *not* set here: no ETA is promised beyond a provisional one. The
+ * real estimate is stamped when the restaurant accepts and commits to a
+ * preparation time — before that, nobody knows.
  */
 export async function placeOrder(
   input: PlaceOrderInput,
@@ -59,11 +74,12 @@ export async function placeOrder(
 
   const now = Date.now();
   const iso = new Date(now).toISOString();
-  // ASAP orders land in ~40 min; scheduled orders keep their requested time.
+  // Provisional until the kitchen commits to a prep time (see the machine).
   const etaIso = input.scheduledFor ?? new Date(now + 40 * 60_000).toISOString();
+  const id = `ord_${now.toString(36)}`;
 
   const order: Order = {
-    id: `ord_${now.toString(36)}`,
+    id,
     orderNumber: orderNumberFrom(now),
     vendor: input.vendor,
     lines: input.lines,
@@ -84,37 +100,60 @@ export async function placeOrder(
     createdAt: iso,
     updatedAt: iso,
     deletedAt: null,
+    lifecycle: createLifecycle(id, iso),
   };
 
   return ok(order);
 }
 
 /**
- * Cancel an order. Simulated: a real endpoint would enforce the cancellation
- * window server-side; here the client already gates the action (`canCancel`),
- * so this just models the round-trip and returns the affected id. The client
- * then flips the order's status in the store.
+ * Simulate an online payment authorisation (spec: "Online Payment (Mock)").
+ *
+ * Always succeeds for the demo card, and fails for one reserved number, so the
+ * failure path is reachable on purpose rather than at random — a payment that
+ * fails one time in twenty makes for an unreliable demonstration.
  */
-export async function cancelOrder(id: string): Promise<Result<{ id: string }>> {
-  await mockDelay(null, 600);
-  if (!id) return { data: null, error: "errors.generic" };
-  return ok({ id });
-}
-
-/** Stable string hash → non-negative int, for deterministic demo selection. */
-function hashCode(input: string): number {
-  let h = 0;
-  for (let i = 0; i < input.length; i++) {
-    h = (Math.imul(31, h) + input.charCodeAt(i)) | 0;
+export async function authorisePayment(input: {
+  method: PaymentMethod;
+  cardNumber?: string;
+}): Promise<Result<{ authCode: string }>> {
+  await mockDelay(null, PAYMENT_PROCESSING_MS);
+  const digits = (input.cardNumber ?? "").replace(/\D/g, "");
+  if (digits && digits.endsWith("0000")) {
+    return { data: null, error: "errors.paymentDeclined" };
   }
-  return Math.abs(h);
+  return ok({ authCode: `AUTH-${Date.now().toString(36).toUpperCase().slice(-6)}` });
 }
 
 /**
- * Return the courier assigned to an order (Phase C9). Deterministically picked
- * from the demo pool by order id, so a given order always shows the same rider.
+ * Cancel an order. Simulated: a real endpoint would enforce the cancellation
+ * window server-side; here the machine gates it (`canCustomerCancel`), so this
+ * models the round-trip and hands the reason back for the event log.
  */
-export async function getCourier(orderId: string): Promise<Courier> {
-  const courier = couriers[hashCode(orderId) % couriers.length];
-  return mockDelay(courier, 300);
+export async function cancelOrder(
+  id: string,
+  reason: OrderCancelReason,
+): Promise<Result<{ id: string; reason: OrderCancelReason }>> {
+  await mockDelay(null, 600);
+  if (!id) return { data: null, error: "errors.generic" };
+  return ok({ id, reason });
+}
+
+/**
+ * Verify a handoff code against the order's own OTP (spec §7).
+ *
+ * The check lives in the seam, not in the dialog, so a wrong code fails even
+ * though the button was tappable — which is the entire point of a verification
+ * step. Phase E moves this to the server unchanged.
+ */
+export async function verifyOtp(
+  order: Order,
+  entered: string,
+): Promise<Result<{ id: string }>> {
+  await mockDelay(null, 500);
+  const cleaned = entered.replace(/\D/g, "");
+  if (cleaned !== order.lifecycle.otp) {
+    return { data: null, error: "errors.otpMismatch" };
+  }
+  return ok({ id: order.id });
 }

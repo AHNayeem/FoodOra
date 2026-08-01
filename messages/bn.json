@@ -203,6 +203,146 @@
     "emptyBody": "প্রায় প্রতি সপ্তাহেই নতুন ডিল আসে। ততক্ষণে অনেক কিচেন নিজেদের প্রোমোশন চালাচ্ছে।",
     "browseAll": "রেস্টুরেন্ট দেখুন"
   },
+  "coupons": {
+    "title": "কুপন",
+    "claimTitle": "কোড আছে?",
+    "claimHint": "কুপনে যোগ করুন, চেকআউটে সেটি প্রস্তুত থাকবে।",
+    "codePlaceholder": "কোড লিখুন",
+    "claim": "যোগ করুন",
+    "claimed": "{title} আপনার কুপনে যোগ হয়েছে",
+    "apply": "প্রয়োগ",
+    "applied": "কুপন {code} প্রয়োগ হয়েছে",
+    "remove": "সরান",
+    "save": "সংরক্ষণ",
+    "inWallet": "আপনার কুপনে আছে",
+    "copyCode": "কোড কপি",
+    "copied": "কোড {code} কপি হয়েছে",
+    "copyFailed": "কপি হয়নি — কোডটি {code}",
+    "useIt": "এখনই অর্ডার",
+    "terms": "শর্তাবলি",
+    "minOrder": "সর্বনিম্ন {amount}",
+    "validAt": "প্রযোজ্য: {vendors}",
+    "usesLeft": "{count, plural, =0 {আর ব্যবহার করা যাবে না} =1 {১ বার ব্যবহার বাকি} other {# বার ব্যবহার বাকি}}",
+    "expiresIn": "{count, plural, =0 {আজই শেষ} =1 {১ দিন বাকি} other {# দিন বাকি}}",
+    "lastUsedOn": "সর্বশেষ ব্যবহার: অর্ডার {order}",
+    "emptyTitle": "এখনো কোনো কুপন নেই",
+    "emptyBody": "আপনার নেওয়া কোড আর আমাদের পাঠানো পুরস্কার এখানে জমা হয়, চেকআউটে ব্যবহারের জন্য প্রস্তুত।",
+    "browseOffers": "আজকের অফার দেখুন",
+    "tab": {
+      "available": "ব্যবহারযোগ্য",
+      "used": "ব্যবহৃত",
+      "expired": "মেয়াদোত্তীর্ণ"
+    },
+    "tabEmpty": {
+      "available": "এই মুহূর্তে ব্যবহারের মতো কিছু নেই।",
+      "used": "আপনি এখনো কোনো কুপন ব্যবহার করেননি।",
+      "expired": "কোনো কুপনের মেয়াদ ফুরায়নি। চমৎকার।"
+    },
+    "suggestedTitle": "যেসব কোড নিতে পারেন",
+    "suggestedHint": "চলমান ক্যাম্পেইন, যেগুলো এখনো আপনার কাছে নেই।",
+    "checkoutTitle": "কুপন",
+    "view": "দেখুন",
+    "walletCount": "{count, plural, =1 {আপনার কাছে ১টি কুপন} other {আপনার কাছে #টি কুপন}}",
+    "bestSaving": "কুপনে {amount} সাশ্রয় করুন",
+    "noneApplyHint": "এই অর্ডারে এখনো কোনোটি প্রযোজ্য নয়।",
+    "pickerTitle": "আপনার কুপন",
+    "pickerHint": "এই অর্ডারে প্রয়োগ করতে একটি বেছে নিন।",
+    "savingOff": "{amount} ছাড়",
+    "savingDelivery": "ফ্রি ডেলিভারি ({amount})",
+    "savingCashback": "ওয়ালেটে {amount} ফেরত",
+    "value": {
+      "percentage": "{value}% ছাড়",
+      "fixed": "{amount} সাশ্রয়",
+      "freeDelivery": "ফ্রি ডেলিভারি",
+      "bogo": "১টি কিনলে ১টি ফ্রি",
+      "cashback": "{value}% ফেরত"
+    },
+    "status": {
+      "active": "সক্রিয়",
+      "scheduled": "শুরু হয়নি",
+      "used": "ব্যবহৃত",
+      "expired": "মেয়াদোত্তীর্ণ"
+    },
+    "source": {
+      "campaign": "প্ল্যাটফর্ম অফার",
+      "welcome": "স্বাগত উপহার",
+      "referral": "রেফারেল পুরস্কার",
+      "loyalty": "লয়্যালটি পুরস্কার",
+      "apology": "সাপোর্ট থেকে",
+      "birthday": "জন্মদিনের উপহার",
+      "vendor": "রেস্টুরেন্ট থেকে"
+    },
+    "kind": {
+      "percentage": "শতাংশ",
+      "fixed": "নির্দিষ্ট অঙ্ক",
+      "free-delivery": "ফ্রি ডেলিভারি"
+    },
+    "reason": {
+      "used": "এই কুপনটি আপনি ব্যবহার করে ফেলেছেন।",
+      "notStarted": "এই কুপন এখনো শুরু হয়নি।",
+      "expired": "এই কুপনের মেয়াদ শেষ।",
+      "currency": "এই মুদ্রায় প্রযোজ্য নয়।",
+      "vendorOnly": "এই রেস্টুরেন্টে প্রযোজ্য নয়।",
+      "categoryOnly": "এই খাবারগুলোতে প্রযোজ্য নয়।",
+      "firstOrderOnly": "শুধু প্রথম অর্ডারে।",
+      "minOrder": "আপনার অর্ডার এই কুপনের সর্বনিম্ন অঙ্কের নিচে।",
+      "minOrderAmount": "ব্যবহার করতে {amount} অর্ডার করুন",
+      "deliveryOnly": "শুধু ডেলিভারি অর্ডারে।",
+      "needsTwoItems": "ব্যবহার করতে আরেকটি আইটেম যোগ করুন।",
+      "noSaving": "এই অর্ডারে এটি কোনো ছাড় দেবে না।"
+    },
+    "merchantTitle": "কুপন",
+    "merchantSubtitle": "আপনার দেওয়া কোড এবং সেগুলো যা এনেছে।",
+    "newCoupon": "নতুন কুপন",
+    "newCouponHint": "গ্রাহক কোড লিখে এটি নেবেন। প্ল্যাটফর্মের অফার পাতায় এটি দেখাবে না।",
+    "createCoupon": "কুপন তৈরি করুন",
+    "cancel": "বাতিল",
+    "created": "কুপন {code} চালু হয়েছে",
+    "ended": "কুপন {code} বন্ধ হয়েছে",
+    "endNow": "এখনই বন্ধ করুন",
+    "statLive": "চালু কুপন",
+    "statLiveHint": "{count, plural, =1 {মোট ১টি} other {মোট #টি}}",
+    "statRedemptions": "ব্যবহার",
+    "statDiscount": "দেওয়া ছাড়",
+    "statRevenue": "আয়",
+    "statRevenueHint": "কোড ব্যবহার করা অর্ডার",
+    "merchantEmptyTitle": "এখনো কোনো কুপন নেই",
+    "merchantEmptyBody": "অলস দুপুরে গ্রাহক ফেরাতে একটি কোড চালু করুন।",
+    "colCoupon": "কুপন",
+    "colStatus": "অবস্থা",
+    "colRedemptions": "ব্যবহৃত",
+    "colDiscount": "ছাড়",
+    "colRevenue": "আয়",
+    "colActions": "অ্যাকশন",
+    "fieldCode": "কোড",
+    "fieldTitle": "শিরোনাম",
+    "fieldDescription": "বিবরণ",
+    "fieldKind": "ধরন",
+    "fieldPercent": "শতাংশ ছাড়",
+    "fieldAmount": "ছাড়ের অঙ্ক",
+    "fieldMaxDiscount": "সর্বোচ্চ ছাড়",
+    "fieldNoCap": "সীমা নেই",
+    "fieldMinOrder": "সর্বনিম্ন অর্ডার",
+    "fieldUsageLimit": "প্রতি গ্রাহকে ব্যবহার",
+    "fieldDuration": "চলবে (দিন)",
+    "errors": {
+      "emptyCode": "একটি কোড লিখুন।",
+      "unknownCode": "কোডটি সঠিক নয়।",
+      "alreadyHeld": "কুপনটি ইতিমধ্যেই আপনার কাছে আছে।",
+      "expiredCode": "কোডটির মেয়াদ শেষ।",
+      "notStartedCode": "কোডটি এখনো সক্রিয় নয়।",
+      "notHeld": "কুপনটি আপনার কাছে নেই।",
+      "badCode": "কোড ৪–১৬টি অক্ষর ও সংখ্যার হতে হবে।",
+      "codeTaken": "কোডটি ইতিমধ্যেই ব্যবহৃত।",
+      "titleRequired": "কুপনের একটি শিরোনাম দিন।",
+      "badPercent": "১ থেকে ১০০-এর মধ্যে শতাংশ দিন।",
+      "badValue": "শূন্যের বেশি অঙ্ক দিন।",
+      "badDuration": "অন্তত এক দিন চালান।",
+      "badLimit": "অন্তত একবার ব্যবহারের সুযোগ দিন।",
+      "alreadyEnded": "কুপনটি ইতিমধ্যেই বন্ধ হয়েছে।",
+      "generic": "কিছু একটা ভুল হয়েছে।"
+    }
+  },
   "blog": {
     "metaTitle": "FoodOra ব্লগ",
     "metaDescription": "ফুড ইকোসিস্টেম যাঁরা বানাচ্ছেন আর যেসব কিচেন এতে আছে — তাদের গাইড, সাক্ষাৎকার ও প্রোডাক্ট নোট।",
@@ -448,7 +588,8 @@
       "favorites": "পছন্দ",
       "addresses": "ঠিকানা",
       "wallet": "ওয়ালেট",
-      "settings": "সেটিংস"
+      "settings": "সেটিংস",
+      "coupons": "কুপন"
     },
     "role": {
       "guest": "অতিথি",
@@ -528,7 +669,9 @@
     "addFundsHint": "ওয়ালেটে যোগ করার পরিমাণ নির্বাচন করুন। সিমুলেটেড — প্রকৃত পেমেন্ট নেওয়া হয় না।",
     "confirmTopUp": "ওয়ালেটে যোগ করুন",
     "topUpSuccess": "আপনার ওয়ালেটে {amount} যোগ হয়েছে",
-    "riderApp": "রাইডার অ্যাপ"
+    "riderApp": "রাইডার অ্যাপ",
+    "coupons": "কুপন",
+    "viewInvoice": "ইনভয়েস দেখুন"
   },
   "favorites": {
     "title": "পছন্দের তালিকা",
@@ -712,13 +855,6 @@
     "notesPlaceholder": "রেস্তোরাঁ বা রাইডারের জানা দরকার এমন কিছু? (ঐচ্ছিক)",
     "summaryTitle": "অর্ডার সারসংক্ষেপ",
     "items": "{count, plural, =0 {কোনো আইটেম নেই} one {# আইটেম} other {# আইটেম}}",
-    "promoTitle": "প্রোমো কোড",
-    "promoPlaceholder": "কোড লিখুন",
-    "apply": "প্রয়োগ করুন",
-    "promoApplied": "{code} কোড প্রয়োগ হয়েছে",
-    "removePromo": "সরান",
-    "promoInvalid": "এই কোডটি সঠিক নয়।",
-    "promoMinNotMet": "এই কোডের জন্য আপনার অর্ডার খুব ছোট।",
     "tipTitle": "আপনার রাইডারের জন্য টিপ যোগ করুন",
     "tipNone": "নেই",
     "subtotal": "সাবটোটাল",
@@ -750,8 +886,10 @@
       "cityRequired": "শহর লিখুন।",
       "selectTime": "একটি সময় বেছে নিন।",
       "emptyCart": "আপনার কার্ট খালি।",
-      "generic": "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।"
-    }
+      "generic": "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।",
+      "paymentDeclined": "আপনার পেমেন্ট বাতিল হয়েছে। অন্য পদ্ধতি ব্যবহার করুন।"
+    },
+    "discountWithCode": "ছাড় ({code})"
   },
   "order": {
     "confirmedTitle": "অর্ডার দেওয়া হয়েছে!",
@@ -773,20 +911,69 @@
     "notFoundHint": "আমরা সেই অর্ডারটি খুঁজে পাইনি — এটি এই ডিভাইস থেকে মুছে যেতে পারে।",
     "items": "{count, plural, =0 {কোনো আইটেম নেই} one {# আইটেম} other {# আইটেম}}",
     "status": {
-      "placed": "অর্ডার দেওয়া হয়েছে",
-      "confirmed": "নিশ্চিত",
+      "placed": "রেস্তোরাঁর অপেক্ষায়",
+      "confirmed": "অর্ডার গৃহীত",
       "preparing": "প্রস্তুত হচ্ছে",
-      "ready": "প্রস্তুত",
+      "ready": "পিকআপের জন্য প্রস্তুত",
       "picked-up": "সংগ্রহ করা হয়েছে",
-      "on-the-way": "পথে আছে",
+      "on-the-way": "ডেলিভারির পথে",
       "delivered": "পৌঁছে দেওয়া হয়েছে",
-      "cancelled": "বাতিল"
+      "cancelled": "বাতিল",
+      "packing": "প্যাক করা হচ্ছে",
+      "rider-assigned": "রাইডার নিযুক্ত",
+      "arrived": "রাইডার পৌঁছেছেন",
+      "completed": "সম্পূর্ণ",
+      "rejected": "প্রত্যাখ্যাত",
+      "delivery-failed": "ডেলিভারি ব্যর্থ",
+      "returned": "ফেরত পাঠানো হয়েছে",
+      "refunded": "রিফান্ড হয়েছে"
     },
     "payment": {
       "cash": "ক্যাশ অন ডেলিভারি",
       "card": "কার্ড শেষ {last4}",
       "wallet": "ফুডওরা ওয়ালেট"
-    }
+    },
+    "actor": {
+      "customer": "গ্রাহক",
+      "restaurant": "রেস্তোরাঁ",
+      "rider": "রাইডার",
+      "system": "স্বয়ংক্রিয়",
+      "admin": "সাপোর্ট"
+    },
+    "reason": {
+      "out-of-stock": "আইটেম শেষ",
+      "too-busy": "রান্নাঘর অতিরিক্ত ব্যস্ত",
+      "closing-soon": "শীঘ্রই বন্ধ হচ্ছে",
+      "cannot-deliver": "এই ঠিকানায় ডেলিভারি সম্ভব নয়",
+      "changed-mind": "মত পরিবর্তন করেছি",
+      "too-slow": "অনেক দেরি হচ্ছে",
+      "ordered-by-mistake": "ভুলবশত অর্ডার",
+      "duplicate": "একই অর্ডার দুইবার",
+      "customer-unavailable": "গ্রাহককে পাওয়া যায়নি",
+      "wrong-address": "ভুল ঠিকানা",
+      "refused-delivery": "গ্রাহক নিতে অস্বীকার করেছেন",
+      "other": "অন্য কারণ"
+    },
+    "paymentStatus": {
+      "pending": "পেমেন্ট বাকি",
+      "paid": "পরিশোধিত",
+      "failed": "পেমেন্ট ব্যর্থ",
+      "refunded": "রিফান্ড হয়েছে"
+    },
+    "note": {
+      "delay": "রেস্তোরাঁ আরও {minutes} মিনিট চেয়েছে",
+      "otpFailed": "{count, plural, one {# বার ভুল কোড} other {# বার ভুল কোড}}",
+      "refundRequested": "রিফান্ডের অনুরোধ করা হয়েছে"
+    },
+    "now": "এখন",
+    "back": "ফিরে যান",
+    "reasonNoteLabel": "আরও জানান",
+    "reasonNotePlaceholder": "সংক্ষিপ্ত নোট (ঐচ্ছিক)",
+    "invoiceTitle": "ইনভয়েস",
+    "invoiceSub": "অর্ডার {number} নিষ্পন্ন — সম্পূর্ণ বিবরণ নিচে।",
+    "deliveredAt": "ডেলিভারি হয়েছে",
+    "viewTimeline": "অর্ডার টাইমলাইন দেখুন",
+    "collectedTitle": "সংগ্রহ করা হয়েছে"
   },
   "tracking": {
     "title": "আপনার অর্ডার ট্র্যাক করুন",
@@ -805,12 +992,17 @@
     "cancelledTitle": "অর্ডার বাতিল হয়েছে",
     "cancelledSub": "এই অর্ডারটি বাতিল করা হয়েছে এবং কোনো চার্জ নেওয়া হবে না।",
     "hint": {
-      "placed": "আমরা আপনার অর্ডার পেয়েছি এবং রেস্টুরেন্টে পাঠিয়েছি।",
-      "confirmed": "{vendor} আপনার অর্ডার গ্রহণ করেছে।",
+      "placed": "আপনার অর্ডার {vendor}-এ পাঠানো হয়েছে। তারা এখনই নিশ্চিত করবে।",
+      "confirmed": "{vendor} আপনার অর্ডার গ্রহণ করেছে এবং রান্না শুরু করতে যাচ্ছে।",
       "preparing": "রান্নাঘরে আপনার খাবার তৈরি হচ্ছে।",
-      "ready": "আপনার অর্ডার প্যাক করে প্রস্তুত করা হয়েছে।",
-      "picked-up": "আপনার কুরিয়ার অর্ডারটি সংগ্রহ করেছে।",
-      "on-the-way": "আপনার কুরিয়ার আপনার দিকে আসছে।"
+      "ready": "আপনার অর্ডার প্যাক হয়ে রাইডারের অপেক্ষায়।",
+      "picked-up": "{rider} আপনার অর্ডার নিয়ে রওনা দিচ্ছেন।",
+      "on-the-way": "{rider} আপনার দিকে আসছেন।",
+      "packing": "খাবার তৈরি — এখন প্যাক করা হচ্ছে।",
+      "rider-assigned": "{rider} অর্ডার নিতে {vendor}-এর পথে।",
+      "arrived": "{rider} আপনার দরজায় — নিচের কোডটি জানান।",
+      "delivered": "ডেলিভারি সম্পন্ন। উপভোগ করুন!",
+      "completed": "এই অর্ডারটি সম্পূর্ণ হয়েছে।"
     },
     "courierTitle": "আপনার কুরিয়ার",
     "vehicle": {
@@ -834,7 +1026,23 @@
     "cancelError": "আমরা আপনার অর্ডার বাতিল করতে পারিনি। আবার চেষ্টা করুন।",
     "simulatedNote": "এই প্রোটোটাইপে লাইভ ট্র্যাকিং সিমুলেটেড।",
     "handoffCodeTitle": "আপনার হ্যান্ডওভার কোড",
-    "handoffCodeHint": "রাইডারকে কোডটি বলুন — ডেলিভারি সম্পন্ন করতে এটি প্রয়োজন।"
+    "handoffCodeHint": "রাইডারকে কোডটি বলুন — ডেলিভারি সম্পন্ন করতে এটি প্রয়োজন।",
+    "failed": {
+      "rejected": "{vendor} এই অর্ডারটি নিতে পারেনি।",
+      "cancelled": "অর্ডারটি বাতিল হয়েছে, কোনো টাকা কাটা হবে না।",
+      "delivery-failed": "হস্তান্তর সম্পন্ন করা যায়নি।",
+      "returned": "আপনার অর্ডার {vendor}-এ ফেরত গেছে।",
+      "refunded": "এই অর্ডারের টাকা ফেরত দেওয়া হয়েছে।"
+    },
+    "prepProgress": "রান্নার অগ্রগতি",
+    "runningLate": "দেরি হচ্ছে",
+    "delayNotice": "রেস্তোরাঁ অনুমানে {minutes} মিনিট যোগ করেছে।",
+    "collectedTitle": "সংগ্রহ সম্পন্ন — উপভোগ করুন!",
+    "allOrders": "সব অর্ডার",
+    "viewInvoice": "ইনভয়েস দেখুন",
+    "requestRefund": "রিফান্ড চান",
+    "refundRequested": "রিফান্ডের অনুরোধ পেয়েছি — আমরা যোগাযোগ করব।",
+    "refundPending": "{amount} রিফান্ডের অনুরোধ পর্যালোচনায় আছে।"
   },
   "dashboard": {
     "brand": "FoodOra মার্চেন্ট",
@@ -859,7 +1067,9 @@
       "reservations": "রিজার্ভেশন",
       "menu": "মেনু",
       "pos": "পিওএস",
-      "qr": "কিউআর"
+      "qr": "কিউআর",
+      "coupons": "কুপন",
+      "kitchen": "রান্নাঘর"
     },
     "overviewTitle": "সারসংক্ষেপ",
     "overviewSubtitle": "আজ আপনার রেস্তোরাঁ কেমন চলছে।",
@@ -884,10 +1094,10 @@
     "ordersSubtitle": "আসা অর্ডার গ্রহণ, প্রস্তুত ও হস্তান্তর করুন।",
     "tab": {
       "new": "নতুন",
-      "preparing": "প্রস্তুত হচ্ছে",
-      "ready": "প্রস্তুত",
+      "preparing": "রান্নাঘরে",
+      "ready": "ডেলিভারিতে",
       "completed": "সম্পন্ন",
-      "cancelled": "বাতিল"
+      "cancelled": "সমস্যা"
     },
     "noOrdersInTab": "এখন এখানে কোনো অর্ডার নেই।",
     "payment": {
@@ -898,7 +1108,8 @@
     "paymentStatus": {
       "pending": "পেমেন্ট বাকি",
       "paid": "পরিশোধিত",
-      "failed": "পেমেন্ট ব্যর্থ"
+      "failed": "পেমেন্ট ব্যর্থ",
+      "refunded": "রিফান্ড হয়েছে"
     },
     "reject": "প্রত্যাখ্যান",
     "accept": "গ্রহণ করুন",
@@ -919,7 +1130,73 @@
     "soldOut": "শেষ",
     "toggleAvailability": "{name} এর লভ্যতা টগল করুন",
     "itemBackOn": "{name} আবার মেনুতে এসেছে",
-    "item86ed": "{name} শেষ হিসেবে চিহ্নিত"
+    "item86ed": "{name} শেষ হিসেবে চিহ্নিত",
+    "back": "ফিরে যান",
+    "minutesShort": "মিনিট",
+    "startPacking": "প্যাকিং শুরু",
+    "needMoreTime": "আরও সময় দরকার",
+    "assignRider": "রাইডার নিয়োগ",
+    "cancelOrder": "অর্ডার বাতিল",
+    "awaitingResponse": "{count, plural, one {# অর্ডার আপনার উত্তরের অপেক্ষায়} other {# অর্ডার আপনার উত্তরের অপেক্ষায়}}",
+    "readyInShort": "{minutes} মিনিট বাকি",
+    "overdueBy": "{minutes} মিনিট দেরি",
+    "delayedBy": "+{minutes} মিনিট",
+    "delayAdded": "অনুমানে {minutes} মিনিট যোগ হয়েছে।",
+    "addMinutes": "{minutes} মিনিট যোগ করুন",
+    "showDetail": "বিস্তারিত দেখুন",
+    "hideDetail": "বিস্তারিত লুকান",
+    "historyTitle": "অর্ডারের ইতিহাস",
+    "riderOnJob": "{name} · {vehicle}",
+    "prepTitle": "কত সময় লাগবে?",
+    "prepBody": "অর্ডার {number} · {count, plural, one {# আইটেম} other {# আইটেম}}",
+    "prepHint": "গ্রাহক এই প্রতিশ্রুতির বিপরীতে লাইভ কাউন্টডাউন দেখেন।",
+    "acceptWithTime": "গ্রহণ · {minutes} মিনিট",
+    "rejectTitle": "এই অর্ডার প্রত্যাখ্যান করবেন?",
+    "rejectBody": "অর্ডার {number} এখানেই শেষ হবে, এবং গ্রাহককে কারণ জানানো হবে।",
+    "confirmReject": "অর্ডার প্রত্যাখ্যান",
+    "cancelTitle": "এই অর্ডার বাতিল করবেন?",
+    "cancelBody": "অর্ডার {number} ইতিমধ্যে গৃহীত। গ্রাহককে কারণ জানানো হবে।",
+    "confirmCancel": "অর্ডার বাতিল",
+    "assignTitle": "রাইডার নিয়োগ করুন",
+    "assignBody": "অর্ডার {number} প্যাক হয়ে বেরোনোর জন্য প্রস্তুত।",
+    "autoAssign": "স্বয়ংক্রিয়ভাবে নিয়োগ",
+    "autoAssignHint": "এই জোনের সেরা রেটিংয়ের উপলব্ধ রাইডার বেছে নেয়।",
+    "orAssignManually": "অথবা রাইডার বেছে নিন",
+    "assignSelected": "রাইডার নিয়োগ",
+    "riderDeclined": "প্রত্যাখ্যান করেছেন",
+    "riderAssignedToast": "{name} রওনা দিয়েছেন।",
+    "tripsCount": "{count, plural, one {# ট্রিপ} other {# ট্রিপ}}",
+    "vehicle": {
+      "bike": "মোটরবাইক",
+      "scooter": "স্কুটার",
+      "bicycle": "সাইকেল",
+      "car": "গাড়ি"
+    },
+    "kitchenTitle": "রান্নাঘরের সারি",
+    "kitchenSubtitle": "কী চলছে আর কী দেরি হচ্ছে। এগিয়ে নিতে টিকিটে ট্যাপ করুন।",
+    "kitchen": {
+      "queued": "সারিতে",
+      "cooking": "রান্না হচ্ছে",
+      "packing": "প্যাকিং",
+      "pass": "পাসে প্রস্তুত"
+    },
+    "kitchenAdvance": {
+      "queued": "রান্না শুরু",
+      "cooking": "প্যাকিং শুরু",
+      "packing": "প্রস্তুত চিহ্নিত করুন"
+    },
+    "kitchenEmpty": "এখানে কিছু নেই।",
+    "kitchenPassEmpty": "বেরোনোর অপেক্ষায় কিছু নেই।",
+    "errors": {
+      "illegalTransition": "এই অর্ডারের জন্য এটি বৈধ পরবর্তী ধাপ নয়।",
+      "notPermitted": "এই ধাপটি আপনার করার নয়।",
+      "prepTimeRequired": "আগে প্রস্তুতির সময় বেছে নিন।",
+      "riderRequired": "আগে একজন রাইডার নিয়োগ করুন।",
+      "otpLocked": "বারবার ভুল কোডের কারণে হস্তান্তর আটকে গেছে।",
+      "notFound": "অর্ডারটি খুঁজে পাওয়া যায়নি।",
+      "noRiderAvailable": "এই মুহূর্তে কোনো রাইডার উপলব্ধ নেই।",
+      "generic": "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।"
+    }
   },
   "catering": {
     "metaTitle": "ইভেন্ট ক্যাটারিং",
@@ -1895,7 +2172,272 @@
       "remitTooMuch": "এটি আপনার হাতে থাকা নগদের চেয়ে বেশি।",
       "belowMinimum": "এটি সর্বনিম্ন উত্তোলনের চেয়ে কম।",
       "withdrawTooMuch": "এটি আপনার উপলব্ধ ব্যালেন্সের চেয়ে বেশি।",
-      "generic": "কিছু ভুল হয়েছে। আবার চেষ্টা করুন।"
+      "generic": "কিছু ভুল হয়েছে। আবার চেষ্টা করুন।",
+      "illegalTransition": "এই অর্ডারের জন্য এটি বৈধ পরবর্তী ধাপ নয়।",
+      "notPermitted": "এই ধাপটি আপনার করার নয়।",
+      "prepTimeRequired": "রেস্তোরাঁ এখনও প্রস্তুতির সময় নির্ধারণ করেনি।",
+      "riderRequired": "এই অর্ডারে কোনো রাইডার নিযুক্ত নেই।",
+      "otpLocked": "বারবার ভুল কোডের কারণে হস্তান্তর আটকে গেছে।",
+      "notFound": "অর্ডারটি খুঁজে পাওয়া যায়নি।",
+      "otpMismatch": "কোডটি মিলছে না। গ্রাহককে আবার পড়তে বলুন।"
+    },
+    "confirmPickup": "পিকআপ নিশ্চিত করুন",
+    "handBack": "কাজটি ফিরিয়ে দিন",
+    "startDelivery": "ডেলিভারি শুরু",
+    "markArrived": "আমি পৌঁছেছি",
+    "reportProblem": "সমস্যা জানান",
+    "verifyOtp": "কোড যাচাই করুন",
+    "retryDelivery": "আবার চেষ্টা করুন",
+    "returnToVendor": "রেস্তোরাঁয় ফেরত",
+    "liveActiveTitle": "আপনার ডেলিভারি",
+    "liveOffersTitle": "পিকআপের জন্য প্রস্তুত",
+    "liveOffersEmpty": "এই মুহূর্তে পাসে কিছু নেই — একটু পরে দেখুন।",
+    "continueDelivery": "ডেলিভারি চালিয়ে যান",
+    "acceptDelivery": "ডেলিভারি গ্রহণ করুন",
+    "deliveryAccepted": "অর্ডার {number} এখন আপনার।",
+    "collectFromCounter": "রাইডার কাউন্টার থেকে সংগ্রহ করুন",
+    "waitingMinutes": "{count, plural, =0 {এইমাত্র} one {# মিনিট পাসে} other {# মিনিট পাসে}}",
+    "tipIncluded": "{amount} টিপ",
+    "orderValue": "অর্ডারের মূল্য",
+    "assignedTo": "{name}-কে নিয়োগ করা হয়েছে",
+    "handedBack": "ফিরিয়ে দেওয়া হয়েছে — ডিসপ্যাচ অন্য কাউকে খুঁজবে।",
+    "advanced": {
+      "picked-up": "রেস্তোরাঁ থেকে সংগ্রহ করা হয়েছে।",
+      "on-the-way": "রওনা হয়েছেন — গ্রাহক আপনাকে দেখতে পাচ্ছেন।",
+      "arrived": "পৌঁছানো চিহ্নিত। গ্রাহকের কোড এখন দৃশ্যমান।",
+      "delivery-failed": "জানানো হয়েছে। এরপর কী হবে বেছে নিন।",
+      "returned": "রেস্তোরাঁয় ফেরত দেওয়া হয়েছে।",
+      "ready": "ফিরিয়ে দেওয়া হয়েছে।"
+    },
+    "otpTitle": "হস্তান্তর যাচাই করুন",
+    "otpBody": "{name}-এর কাছ থেকে অর্ডার {number}-এর ৪ সংখ্যার কোড চান।",
+    "otpAttemptsLeft": "{count, plural, one {# বার বাকি} other {# বার বাকি}}",
+    "otpLocked": "বারবার ভুল কোড। চালিয়ে যেতে সমস্যা জানান।",
+    "confirmDelivery": "ডেলিভারি সম্পন্ন করুন",
+    "paymentSettled": "পেমেন্ট নিষ্পন্ন",
+    "handoffDoneTitle": "ডেলিভারি সম্পন্ন",
+    "handoffDoneBody": "{name}-কে হস্তান্তর ও যাচাই সম্পন্ন।",
+    "failTitle": "কী সমস্যা হয়েছে?",
+    "failBody": "গ্রাহক ও রেস্তোরাঁ দুজনকেই জানানো হবে।",
+    "confirmFail": "সমস্যা জানান"
+  },
+  "notifications": {
+    "title": "নোটিফিকেশন",
+    "empty": "এখনও কিছু নেই। অর্ডারের আপডেট এখানে আসবে।",
+    "markAllRead": "সব পড়া হয়েছে",
+    "unread": "অপঠিত",
+    "customer": {
+      "placed": {
+        "title": "অর্ডার দেওয়া হয়েছে",
+        "body": "{vendor} আপনার অর্ডার {order} পেয়েছে।"
+      },
+      "confirmed": {
+        "title": "অর্ডার গৃহীত",
+        "body": "{vendor} প্রায় {minutes} মিনিটে প্রস্তুত করবে।"
+      },
+      "preparing": {
+        "title": "খাবার তৈরি হচ্ছে",
+        "body": "রান্নাঘর {order} নিয়ে কাজ শুরু করেছে।"
+      },
+      "packing": {
+        "title": "প্রায় প্রস্তুত",
+        "body": "খাবার তৈরি — এখন প্যাক করা হচ্ছে।"
+      },
+      "ready": {
+        "title": "প্রস্তুত",
+        "body": "{order} প্যাক হয়ে রাইডারের অপেক্ষায়।"
+      },
+      "rider-assigned": {
+        "title": "রাইডার নিযুক্ত",
+        "body": "{rider} আপনার অর্ডার সংগ্রহ করছেন।"
+      },
+      "picked-up": {
+        "title": "সংগ্রহ হয়েছে",
+        "body": "{rider} খাবার নিয়ে রওনা দিচ্ছেন।"
+      },
+      "on-the-way": {
+        "title": "পথে আছে",
+        "body": "{rider} আপনার দিকে আসছেন।"
+      },
+      "nearYou": {
+        "title": "প্রায় পৌঁছে গেছে",
+        "body": "{rider} আপনার দরজার কাছাকাছি।"
+      },
+      "arrived": {
+        "title": "আপনার কোড প্রস্তুত",
+        "body": "{rider} দরজায় — ৪ সংখ্যার কোডটি জানান।"
+      },
+      "delivered": {
+        "title": "ডেলিভারি সম্পন্ন",
+        "body": "উপভোগ করুন! অর্ডার {order} হস্তান্তর হয়েছে।"
+      },
+      "completed": {
+        "title": "অর্ডার সম্পূর্ণ",
+        "body": "{order}-এর ইনভয়েস প্রস্তুত।"
+      },
+      "rejected": {
+        "title": "অর্ডার প্রত্যাখ্যাত",
+        "body": "{vendor} অর্ডার {order} নিতে পারেনি।"
+      },
+      "cancelled": {
+        "title": "অর্ডার বাতিল",
+        "body": "অর্ডার {order} বাতিল হয়েছে।"
+      },
+      "delivery-failed": {
+        "title": "ডেলিভারিতে সমস্যা",
+        "body": "অর্ডার {order} হস্তান্তর করা যায়নি।"
+      },
+      "returned": {
+        "title": "অর্ডার ফেরত",
+        "body": "অর্ডার {order} {vendor}-এ ফেরত গেছে।"
+      },
+      "refunded": {
+        "title": "রিফান্ড হয়েছে",
+        "body": "{order}-এর রিফান্ড পাঠানো হচ্ছে।"
+      }
+    },
+    "restaurant": {
+      "newOrder": {
+        "title": "নতুন অর্ডার",
+        "body": "{customer}-এর {order} আপনার উত্তরের অপেক্ষায়।"
+      },
+      "riderAssigned": {
+        "title": "রাইডার নিযুক্ত",
+        "body": "{rider} {order} সংগ্রহ করছেন।"
+      },
+      "deliveryCompleted": {
+        "title": "ডেলিভারি সম্পন্ন",
+        "body": "{order} {customer}-কে পৌঁছে দেওয়া হয়েছে।"
+      },
+      "orderCancelled": {
+        "title": "অর্ডার বাতিল",
+        "body": "{customer} {order} বাতিল করেছেন।"
+      },
+      "deliveryFailed": {
+        "title": "ডেলিভারি ব্যর্থ",
+        "body": "{order} হস্তান্তর করা যায়নি।"
+      },
+      "orderReturned": {
+        "title": "অর্ডার ফেরত",
+        "body": "{order} আপনার কাছে ফিরে আসছে।"
+      }
+    },
+    "rider": {
+      "pickupReady": {
+        "title": "পিকআপ প্রস্তুত",
+        "body": "{vendor}-এর পাসে {order} প্রস্তুত।"
+      },
+      "deliveryAssigned": {
+        "title": "ডেলিভারি নিযুক্ত",
+        "body": "{vendor} থেকে {order} সংগ্রহ করুন।"
+      },
+      "otpNeeded": {
+        "title": "হস্তান্তর যাচাই করুন",
+        "body": "{customer}-এর কাছে {order}-এর কোড চান।"
+      },
+      "otpVerified": {
+        "title": "কোড যাচাই হয়েছে",
+        "body": "{order} ডেলিভারি সম্পন্ন — চমৎকার।"
+      }
+    },
+    "admin": {
+      "placed": {
+        "title": "নতুন অর্ডার",
+        "body": "{vendor}-এ {order} দেওয়া হয়েছে।"
+      },
+      "confirmed": {
+        "title": "অর্ডার গৃহীত",
+        "body": "{vendor} {order} গ্রহণ করেছে।"
+      },
+      "rider-assigned": {
+        "title": "রাইডার নিযুক্ত",
+        "body": "{rider} {order} নিয়েছেন।"
+      },
+      "delivered": {
+        "title": "ডেলিভারি সম্পন্ন",
+        "body": "{rider} {order} পৌঁছে দিয়েছেন।"
+      },
+      "completed": {
+        "title": "অর্ডার সম্পূর্ণ",
+        "body": "{order} নিষ্পন্ন।"
+      },
+      "rejected": {
+        "title": "অর্ডার প্রত্যাখ্যাত",
+        "body": "{vendor} {order} প্রত্যাখ্যান করেছে।"
+      },
+      "cancelled": {
+        "title": "অর্ডার বাতিল",
+        "body": "{order} বাতিল হয়েছে।"
+      },
+      "delivery-failed": {
+        "title": "ডেলিভারি ব্যর্থ",
+        "body": "{order} পৌঁছানো যায়নি।"
+      },
+      "returned": {
+        "title": "অর্ডার ফেরত",
+        "body": "{order} {vendor}-এ ফেরত গেছে।"
+      },
+      "refunded": {
+        "title": "রিফান্ড ইস্যু",
+        "body": "{order} রিফান্ড করা হয়েছে।"
+      }
     }
+  },
+  "admin": {
+    "brand": "ফুডঅরা অপস",
+    "tagline": "প্ল্যাটফর্ম অপারেশনস",
+    "gateTitle": "চালিয়ে যেতে সাইন ইন করুন",
+    "gateBody": "প্ল্যাটফর্ম অপারেশনস শুধু অ্যাডমিন অ্যাকাউন্টের জন্য। admin@foodora.dev দিয়ে সাইন ইন করুন।",
+    "gateSignIn": "সাইন ইন",
+    "noAccessTitle": "প্রবেশাধিকার নেই",
+    "noAccessBody": "এই অ্যাকাউন্টের প্ল্যাটফর্ম অপারেশনসে প্রবেশাধিকার নেই।",
+    "backToSite": "সাইটে ফিরুন",
+    "viewSite": "সাইট দেখুন",
+    "signOut": "সাইন আউট",
+    "signedOut": "সাইন আউট হয়েছে।",
+    "liveTitle": "লাইভ অপারেশনস",
+    "liveSubtitle": "সব রেস্তোরাঁর চলমান প্রতিটি অর্ডার।",
+    "liveBadge": "লাইভ",
+    "statLive": "চলমান অর্ডার",
+    "statLiveHint": "{kitchen} রান্নাঘরে · {road} রাস্তায়",
+    "statRevenue": "আজকের আয়",
+    "statRevenueHint": "{count, plural, one {# অর্ডার নিষ্পন্ন} other {# অর্ডার নিষ্পন্ন}}",
+    "statRiders": "কাজে থাকা রাইডার",
+    "statRidersHint": "মোট বহরের মধ্যে ব্যস্ত",
+    "statFailures": "আজ ব্যর্থ",
+    "statFailuresHint": "সম্পন্ন অর্ডারের {percent}%",
+    "attentionTitle": "{count, plural, one {# অর্ডারে নজর দিন} other {# অর্ডারে নজর দিন}}",
+    "stuckOverdue": "প্রতিশ্রুতির {minutes} মিনিট পর",
+    "stuckNoRider": "{minutes} মিনিট রাইডার ছাড়া",
+    "stuckUnanswered": "{minutes} মিনিট উত্তরহীন",
+    "stuckFailed": "ডেলিভারি ব্যর্থ",
+    "feedTitle": "লাইভ অর্ডার",
+    "feedEmpty": "এই মুহূর্তে কিছু চলমান নেই।",
+    "view": "দেখুন",
+    "kitchensTitle": "রান্নাঘরের চাপ",
+    "kitchensEmpty": "কোনো লাইভ অর্ডার নেই।",
+    "overdueCount": "{count} দেরি",
+    "vendorsOnPlatform": "প্ল্যাটফর্মে {count}টি রেস্তোরাঁ",
+    "fleetTitle": "বহর",
+    "riderBusy": "কাজে আছেন",
+    "riderFree": "উপলব্ধ"
+  },
+  "demo": {
+    "badge": "ডেমো",
+    "autopilotOn": "অটোপাইলট চালু",
+    "autopilotOff": "অটোপাইলট বন্ধ",
+    "pausedToast": "অটোপাইলট থামানো হয়েছে — এখন আপনি চালাচ্ছেন।",
+    "resumedToast": "অটোপাইলট আবার চালু।",
+    "speed": "গতি",
+    "liveCount": "{count, plural, one {# লাইভ অর্ডার} other {# লাইভ অর্ডার}}",
+    "surfaces": "স্ক্রিন",
+    "surfaceCustomer": "গ্রাহক",
+    "surfaceRestaurant": "রেস্তোরাঁ",
+    "surfaceRider": "রাইডার",
+    "surfaceAdmin": "অ্যাডমিন",
+    "reset": "ডেমো ডেটা রিসেট",
+    "resetToast": "ডেমো ডেটা রিসেট হয়েছে।",
+    "hide": "ডেমো কন্ট্রোল লুকান",
+    "show": "ডেমো কন্ট্রোল দেখান"
   }
 }

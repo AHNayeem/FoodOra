@@ -14,6 +14,7 @@ import {
   Heart,
   MapPin,
   Wallet,
+  Ticket,
   LayoutDashboard,
   Settings,
   LogOut,
@@ -69,6 +70,7 @@ export function AccountMenu({ user }: { user: User }) {
     { href: "/account/addresses", label: t("addresses"), icon: MapPin },
     { href: "/account/favorites", label: t("favorites"), icon: Heart },
     { href: "/account/wallet", label: t("wallet"), icon: Wallet },
+    { href: "/account/coupons", label: t("coupons"), icon: Ticket },
     ...(isRider ? [{ href: "/delivery", label: t("riderApp"), icon: Bike }] : []),
     ...(isStaff
       ? [{ href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard }]

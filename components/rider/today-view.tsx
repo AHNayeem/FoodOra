@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { useRiderApp } from "./rider-context";
 import { OfferCard } from "./offer-card";
+import { LiveDeliveries } from "./live-deliveries";
 
 /** Countdown tick for the offer cards. */
 const TICK_MS = 1000;
@@ -201,6 +202,11 @@ export function TodayView() {
 
       {/* A trip in progress owns the screen. */}
       {activeJob && <ActiveTripCard job={activeJob} />}
+
+      {/* Real customer orders waiting on a courier. These sit above the
+          synthesised offer pool because they are the live flow: taking one
+          names this rider on the customer's tracker. */}
+      <LiveDeliveries online={online} />
 
       {/* Cash the rider is carrying, once it matters. */}
       {cash && cash.overLimit && (

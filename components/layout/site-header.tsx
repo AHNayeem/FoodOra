@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { AccountMenu } from "@/components/layout/account-menu";
 import { CartButton } from "@/components/cart/cart-button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { useAuth } from "@/stores/auth";
 import { useFavorites } from "@/stores/favorites";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,8 @@ export function SiteHeader() {
         <div className="ms-auto flex items-center gap-1">
           <LocaleSwitcher className="hidden sm:inline-flex" />
           <ThemeToggle />
+          {/* Order updates the customer would otherwise only see on the tracker. */}
+          {user && <NotificationBell audience="customer" />}
           <CartButton />
           {signedIn && user ? (
             <AccountMenu user={user} />

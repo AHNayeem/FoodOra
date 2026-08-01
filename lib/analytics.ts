@@ -6,6 +6,7 @@ import type {
   Vendor,
   VendorStats,
 } from "@/types";
+import { isFailure } from "./order-machine";
 
 /**
  * analytics.ts — pure derivations for the vendor dashboard (Phase C10).
@@ -21,9 +22,16 @@ const DAY = 86_400_000;
 /** getDay() (0 = Sunday) → the short key the UI translates via `days.*`. */
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
-/** Cancelled orders never count toward revenue or item sales. */
+/**
+ * Which orders count toward revenue and item sales.
+ *
+ * "Not cancelled" was sufficient when `cancelled` was the only bad ending. With
+ * rejection, failed delivery, return and refund now modelled separately, the
+ * rule has to be stated properly — otherwise a rejected order still counts as
+ * takings, which is the sort of quiet error a dashboard is judged on.
+ */
 function isRevenue(order: Order): boolean {
-  return order.status !== "cancelled";
+  return !isFailure(order.status);
 }
 
 /** Midnight (local) of the day containing `ms`. */
@@ -52,10 +60,15 @@ export function vendorStats(orders: Order[], vendor: Vendor, now: number): Vendo
 
   for (const order of orders) {
     const placed = Date.parse(order.placedAt);
+    // "Pending" is anything the restaurant still owes work on — through
+    // packing, not just preparing, and including orders on the pass with no
+    // courier yet.
     if (
       order.status === "placed" ||
       order.status === "confirmed" ||
-      order.status === "preparing"
+      order.status === "preparing" ||
+      order.status === "packing" ||
+      order.status === "ready"
     ) {
       pendingOrders++;
     }
