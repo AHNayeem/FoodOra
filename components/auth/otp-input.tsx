@@ -77,6 +77,9 @@ export function OtpInput({
           value={value[i] ?? ""}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
+          // Selecting the digit on focus makes a click into a filled cell
+          // retypeable — `maxLength={1}` would otherwise swallow the keystroke.
+          onFocus={(e) => e.currentTarget.select()}
           aria-label={`${ariaLabel} ${i + 1}`}
           className={cn(
             "h-12 w-full rounded-field border border-line bg-surface text-center text-lg font-semibold text-ink",

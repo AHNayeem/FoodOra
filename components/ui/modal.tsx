@@ -24,12 +24,22 @@ export function Modal({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Escape reads the handler through a ref so the setup effect below can depend
+  // on `open` alone. Consumers pass an inline `onClose`, so keeping it in the
+  // deps would re-run the effect on every parent render — and re-running it
+  // means another `panelRef.focus()`, which yanks the caret out of whatever the
+  // user was typing in (the OTP cells, most visibly) on each tick of a clock.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     }
     document.addEventListener("keydown", onKey);
     panelRef.current?.focus();
@@ -37,7 +47,7 @@ export function Modal({
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
