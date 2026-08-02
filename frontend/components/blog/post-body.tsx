@@ -1,4 +1,4 @@
-import type { BlogBlock } from "@/frontend/types";
+import type { BlogBlock } from "@/types";
 
 /**
  * PostBody — renders structured article content. Switching on the discriminated

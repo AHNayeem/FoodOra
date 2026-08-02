@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * CopyCode — a promo code presented as a dashed voucher stub that copies to the

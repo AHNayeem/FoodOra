@@ -9,17 +9,17 @@ import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, Mail, KeyRound } from "lucide-react";
-import { login, requestOtp, verifyOtp } from "@/frontend/services/auth";
-import { DEMO_OTP, DEMO_PASSWORD } from "@/frontend/lib/mock";
-import { useAuth } from "@/frontend/stores/auth";
-import { Button } from "@/frontend/components/ui/button";
-import { Input } from "@/frontend/components/ui/input";
-import { Field } from "@/frontend/components/ui/field";
-import { AuthDivider } from "@/frontend/components/auth/auth-card";
-import { SocialButtons } from "@/frontend/components/auth/social-buttons";
-import { OtpInput } from "@/frontend/components/auth/otp-input";
+import { login, requestOtp, verifyOtp } from "@/services/auth";
+import { DEMO_OTP, DEMO_PASSWORD } from "@/lib/mock";
+import { useAuth } from "@/stores/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
+import { AuthDivider } from "@/components/auth/auth-card";
+import { SocialButtons } from "@/components/auth/social-buttons";
+import { OtpInput } from "@/components/auth/otp-input";
 import { DEMO_LOGIN_EMAIL } from "./demo-accounts";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
   email: z.string().min(1, "errors.emailRequired").email("errors.emailInvalid"),
@@ -70,7 +70,7 @@ export function LoginForm({ next = "/" }: { next?: string }) {
 
 type ModeProps = {
   next: string;
-  signIn: (u: import("@/frontend/types").User) => void;
+  signIn: (u: import("@/types").User) => void;
   t: ReturnType<typeof useTranslations>;
   tc: ReturnType<typeof useTranslations>;
   router: ReturnType<typeof useRouter>;

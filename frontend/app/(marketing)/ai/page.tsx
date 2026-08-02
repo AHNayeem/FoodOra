@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { AssistantHub } from "@/frontend/components/ai/assistant-hub";
+import { AssistantHub } from "@/components/ai/assistant-hub";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("ai");

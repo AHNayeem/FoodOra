@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Search, Plus } from "lucide-react";
-import type { FoodItem } from "@/frontend/types";
-import type { MenuSectionWithItems } from "@/frontend/services/catalog";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { FoodItem } from "@/types";
+import type { MenuSectionWithItems } from "@/services/catalog";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * PosProductGrid — the sellable-menu pane of the terminal. A sticky search +

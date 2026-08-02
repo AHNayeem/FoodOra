@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { MapPin, Search } from "lucide-react";
-import type { CmsBanner } from "@/frontend/types";
-import { useCmsBanners } from "@/frontend/components/cms/use-cms-content";
-import { Button } from "@/frontend/components/ui/button";
+import type { CmsBanner } from "@/types";
+import { useCmsBanners } from "@/components/cms/use-cms-content";
+import { Button } from "@/components/ui/button";
 
 /**
  * Hero — the landing headline + address search. Submitting routes to the

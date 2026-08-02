@@ -2,14 +2,14 @@ import {
   countries,
   defaultCountry,
   type CountryCode,
-} from "@/frontend/config/regions";
+} from "@/config/regions";
 import type {
   CateringAddOn,
   CateringPricing,
   EventType,
   QuoteAddOnLine,
   ServiceStyle,
-} from "@/frontend/types";
+} from "@/types";
 import { roundMoney } from "./checkout";
 
 /**

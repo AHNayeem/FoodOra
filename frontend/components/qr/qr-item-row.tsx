@@ -5,13 +5,13 @@ import Image from "next/image";
 import { Flame, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import type { CartLine, CartVendor, FoodItem } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { buildCartLine } from "@/frontend/lib/cart";
-import { ItemCustomizer } from "@/frontend/components/cart/item-customizer";
-import { Badge } from "@/frontend/components/ui/badge";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { CartLine, CartVendor, FoodItem } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { buildCartLine } from "@/lib/cart";
+import { ItemCustomizer } from "@/components/cart/item-customizer";
+import { Badge } from "@/components/ui/badge";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * QrItemRow — one dish on the scanned table menu (Phase C12).

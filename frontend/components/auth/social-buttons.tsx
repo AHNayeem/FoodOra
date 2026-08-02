@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { socialLogin, type SocialProvider } from "@/frontend/services/auth";
-import { useAuth } from "@/frontend/stores/auth";
-import { cn } from "@/frontend/lib/utils";
+import { socialLogin, type SocialProvider } from "@/services/auth";
+import { useAuth } from "@/stores/auth";
+import { cn } from "@/lib/utils";
 
 /** Brand marks — lucide has no logos, so these are minimal inline SVGs. */
 function ProviderIcon({ provider }: { provider: SocialProvider }) {

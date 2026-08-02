@@ -1,8 +1,8 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import type { BestSeller } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
+import type { BestSeller } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
 
 /**
  * BestSellers — ranked list of the top menu items by units sold over the

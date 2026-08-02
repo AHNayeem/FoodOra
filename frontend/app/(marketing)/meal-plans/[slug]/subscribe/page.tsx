@@ -5,8 +5,8 @@ import {
   getMealPlanBySlug,
   getPlanTiers,
   getPlanVendor,
-} from "@/frontend/services/subscriptions";
-import { SubscribeBuilder } from "@/frontend/components/subscriptions/subscribe-builder";
+} from "@/services/subscriptions";
+import { SubscribeBuilder } from "@/components/subscriptions/subscribe-builder";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;

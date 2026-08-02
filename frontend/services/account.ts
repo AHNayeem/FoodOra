@@ -1,5 +1,5 @@
-import type { SavedAddress, User } from "@/frontend/types";
-import { savedAddresses } from "@/frontend/lib/mock";
+import type { SavedAddress, User } from "@/types";
+import { savedAddresses } from "@/lib/mock";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

@@ -1,4 +1,4 @@
-import type { WalletTransaction, WalletTransactionType } from "@/frontend/types";
+import type { WalletTransaction, WalletTransactionType } from "@/types";
 
 /**
  * wallet.ts — the wallet rules, in one place (Phase C19).

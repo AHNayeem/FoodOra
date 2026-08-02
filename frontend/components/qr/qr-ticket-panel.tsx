@@ -4,14 +4,14 @@ import { useState } from "react";
 import { Send, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import type { CartVendor, QrMenuConfig } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useDineIn } from "@/frontend/stores/dine-in";
-import { sendRound } from "@/frontend/services/qr";
-import { computeQrTotals } from "@/frontend/lib/qr";
-import { formatPrice } from "@/frontend/lib/format";
-import { Modal } from "@/frontend/components/ui/modal";
-import { QuantityStepper } from "@/frontend/components/cart/quantity-stepper";
+import type { CartVendor, QrMenuConfig } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useDineIn } from "@/stores/dine-in";
+import { sendRound } from "@/services/qr";
+import { computeQrTotals } from "@/lib/qr";
+import { formatPrice } from "@/lib/format";
+import { Modal } from "@/components/ui/modal";
+import { QuantityStepper } from "@/components/cart/quantity-stepper";
 import { QrTotals } from "./qr-totals";
 
 /**

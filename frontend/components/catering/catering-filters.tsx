@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import type { EventType } from "@/frontend/types";
-import { EVENT_TYPES, EVENT_TYPE_EMOJI } from "@/frontend/lib/catering";
-import { cn } from "@/frontend/lib/utils";
+import type { EventType } from "@/types";
+import { EVENT_TYPES, EVENT_TYPE_EMOJI } from "@/lib/catering";
+import { cn } from "@/lib/utils";
 
 export type CateringSortKey = "recommended" | "rating" | "price-low" | "capacity";
 

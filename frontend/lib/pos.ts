@@ -2,8 +2,8 @@ import {
   countries,
   defaultCountry,
   type CountryCode,
-} from "@/frontend/config/regions";
-import type { PosDiscount, PosPricing, PosTicketLine } from "@/frontend/types";
+} from "@/config/regions";
+import type { PosDiscount, PosPricing, PosTicketLine } from "@/types";
 import { roundMoney } from "./checkout";
 
 /**

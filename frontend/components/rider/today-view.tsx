@@ -16,10 +16,10 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
-import type { DeliveryJob } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useAuth } from "@/frontend/stores/auth";
-import { useRider } from "@/frontend/stores/rider";
+import type { DeliveryJob } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useAuth } from "@/stores/auth";
+import { useRider } from "@/stores/rider";
 import {
   acceptJob,
   declineJob,
@@ -27,10 +27,10 @@ import {
   getRiderDay,
   OFFER_REFRESH_MS,
   type RiderDay,
-} from "@/frontend/services/delivery";
-import { formatDistance, formatPrice, formatRating } from "@/frontend/lib/format";
-import { Button } from "@/frontend/components/ui/button";
-import { StatCard } from "@/frontend/components/dashboard/stat-card";
+} from "@/services/delivery";
+import { formatDistance, formatPrice, formatRating } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/dashboard/stat-card";
 import { useRiderApp } from "./rider-context";
 import { OfferCard } from "./offer-card";
 import { LiveDeliveries } from "./live-deliveries";

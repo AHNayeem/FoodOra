@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { FileText } from "lucide-react";
-import type { BlogPost } from "@/frontend/types";
-import { useCmsPosts } from "@/frontend/components/cms/use-cms-content";
-import { PostCard } from "@/frontend/components/blog/post-card";
+import type { BlogPost } from "@/types";
+import { useCmsPosts } from "@/components/cms/use-cms-content";
+import { PostCard } from "@/components/blog/post-card";
 
 /**
  * PostList — the blog index's filter chips, featured card and grid.

@@ -1,4 +1,4 @@
-import type { Order, OrderEvent, OrderStatus } from "@/frontend/types";
+import type { Order, OrderEvent, OrderStatus } from "@/types";
 import {
   isFailure,
   isTerminal,

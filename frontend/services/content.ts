@@ -1,5 +1,5 @@
-import { posts, testimonials } from "@/frontend/lib/mock";
-import type { BlogPost, Testimonial } from "@/frontend/types";
+import { posts, testimonials } from "@/lib/mock";
+import type { BlogPost, Testimonial } from "@/types";
 import { cmsPosts, emptyCmsContext, readOptions, type CmsContext } from "./cms";
 import { mockDelay } from "./http";
 

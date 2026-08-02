@@ -1,4 +1,4 @@
-import type { MenuSection } from "@/frontend/types";
+import type { MenuSection } from "@/types";
 import { SEED_NOW } from "./cuisines";
 
 const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };

@@ -1,4 +1,4 @@
-import type { NextConfig } from "@/frontend/node_modules/next";
+import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 // next-intl reads request-scoped locale config from this file.

@@ -5,15 +5,15 @@ import {
   getMealPlanKitchens,
   getMealPlans,
   planFromPrice,
-} from "@/frontend/services/subscriptions";
-import { isMealSlot, isPlanGoal } from "@/frontend/lib/subscriptions";
-import type { MealSlot, PlanGoal } from "@/frontend/types";
-import { HowPlansWork, MealPlansHero } from "@/frontend/components/subscriptions/meal-plans-hero";
+} from "@/services/subscriptions";
+import { isMealSlot, isPlanGoal } from "@/lib/subscriptions";
+import type { MealSlot, PlanGoal } from "@/types";
+import { HowPlansWork, MealPlansHero } from "@/components/subscriptions/meal-plans-hero";
 import {
   MealPlanFilters,
   type PlanSortKey,
-} from "@/frontend/components/subscriptions/meal-plan-filters";
-import { MealPlanCard } from "@/frontend/components/subscriptions/meal-plan-card";
+} from "@/components/subscriptions/meal-plan-filters";
+import { MealPlanCard } from "@/components/subscriptions/meal-plan-card";
 
 const SORTS = new Set<PlanSortKey>(["recommended", "rating", "price-low", "calories-low"]);
 

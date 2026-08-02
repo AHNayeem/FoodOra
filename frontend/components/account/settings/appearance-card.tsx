@@ -4,20 +4,20 @@ import { useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Laptop, Moon, Palette, Sun } from "lucide-react";
-import { setLocale } from "@/frontend/config/i18n/actions";
-import { localeMeta, locales, type Locale } from "@/frontend/config/i18n/config";
-import { currencies, type CurrencyCode } from "@/frontend/config/regions";
-import { useAuth } from "@/frontend/stores/auth";
-import { updateProfile } from "@/frontend/services/account";
+import { setLocale } from "@/config/i18n/actions";
+import { localeMeta, locales, type Locale } from "@/config/i18n/config";
+import { currencies, type CurrencyCode } from "@/config/regions";
+import { useAuth } from "@/stores/auth";
+import { updateProfile } from "@/services/account";
 import {
   applyThemePreference,
   readThemePreference,
   subscribeToThemePreference,
   type ThemePreference,
-} from "@/frontend/lib/theme-preference";
+} from "@/lib/theme-preference";
 import { SettingsSection } from "./settings-primitives";
-import { Field } from "@/frontend/components/ui/field";
-import { cn } from "@/frontend/lib/utils";
+import { Field } from "@/components/ui/field";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const THEME_OPTIONS: { value: ThemePreference; icon: typeof Sun }[] = [

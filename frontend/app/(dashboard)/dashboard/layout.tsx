@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DashboardShell } from "@/frontend/components/dashboard/dashboard-shell";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 /**
  * Dashboard layout (Phase C10). Lives in its own `(dashboard)` route group, so

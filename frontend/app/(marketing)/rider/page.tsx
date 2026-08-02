@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getRiderContent } from "@/frontend/services/pages";
-import { getRouteMetadata, readOptions } from "@/frontend/services/cms";
-import { PitchPage } from "@/frontend/components/marketing/pitch-page";
+import { getRiderContent } from "@/services/pages";
+import { getRouteMetadata, readOptions } from "@/services/cms";
+import { PitchPage } from "@/components/marketing/pitch-page";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);

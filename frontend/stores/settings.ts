@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CustomerSettings } from "@/frontend/types";
+import type { CustomerSettings } from "@/types";
 
 /**
  * settings store — the customer's account settings (Phase C28).

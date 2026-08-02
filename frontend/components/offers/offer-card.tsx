@@ -2,15 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ArrowRight, Store, Tag, Timer } from "lucide-react";
-import type { OfferWithVendors } from "@/frontend/services/offers";
-import { daysRemaining } from "@/frontend/services/offers";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { Badge } from "@/frontend/components/ui/badge";
+import type { OfferWithVendors } from "@/services/offers";
+import { daysRemaining } from "@/services/offers";
+import type { CurrencyCode } from "@/config/regions";
+import { Badge } from "@/components/ui/badge";
 import { ClaimCoupon } from "./claim-coupon";
 import { CopyCode } from "./copy-code";
 import { OfferTerms } from "./offer-terms";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * OfferCard — one promotion. Flash deals additionally show a scarcity meter and

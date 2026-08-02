@@ -4,13 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, Flame, Store } from "lucide-react";
-import type { Allergen, FoodItem, Vendor } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { AddToCartButton } from "@/frontend/components/menu/add-to-cart-button";
-import { toCartVendor } from "@/frontend/lib/cart";
-import { formatPrice } from "@/frontend/lib/format";
-import { allergenConflicts, estimateNutrition } from "@/frontend/lib/nutrition";
-import { cn } from "@/frontend/lib/utils";
+import type { Allergen, FoodItem, Vendor } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { AddToCartButton } from "@/components/menu/add-to-cart-button";
+import { toCartVendor } from "@/lib/cart";
+import { formatPrice } from "@/lib/format";
+import { allergenConflicts, estimateNutrition } from "@/lib/nutrition";
+import { cn } from "@/lib/utils";
 
 /**
  * DishSuggestion — a dish the assistant offered.

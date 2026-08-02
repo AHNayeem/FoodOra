@@ -5,25 +5,25 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Bike, Camera, Loader2, X } from "lucide-react";
-import type { FoodItem, Order, Review, ReviewAspect, ReviewDraft, ReviewMedia, ReviewTag } from "@/frontend/types";
+import type { FoodItem, Order, Review, ReviewAspect, ReviewDraft, ReviewMedia, ReviewTag } from "@/types";
 import {
   MAX_COMMENT_LENGTH,
   MAX_REVIEW_MEDIA,
   emptyDraft,
   ratingBandKey,
   tagsForRating,
-} from "@/frontend/lib/reviews";
+} from "@/lib/reviews";
 import {
   getPhotoLibrary,
   getReviewableDishes,
   submitReview,
   updateReview,
-} from "@/frontend/services/reviews";
-import { useReviewContext, useReviews } from "@/frontend/stores/reviews";
-import { useAuth } from "@/frontend/stores/auth";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+} from "@/services/reviews";
+import { useReviewContext, useReviews } from "@/stores/reviews";
+import { useAuth } from "@/stores/auth";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { StarInput } from "./stars";
 
 /**

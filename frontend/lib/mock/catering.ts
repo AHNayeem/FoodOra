@@ -2,7 +2,7 @@ import type {
   CateringAddOn,
   CateringPackage,
   CateringService,
-} from "@/frontend/types";
+} from "@/types";
 import { SEED_NOW } from "./cuisines";
 
 /**

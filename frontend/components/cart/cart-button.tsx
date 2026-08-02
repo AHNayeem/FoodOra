@@ -2,9 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { ShoppingBag } from "lucide-react";
-import { useCart } from "@/frontend/stores/cart";
-import { cartCount } from "@/frontend/lib/cart";
-import { cn } from "@/frontend/lib/utils";
+import { useCart } from "@/stores/cart";
+import { cartCount } from "@/lib/cart";
+import { cn } from "@/lib/utils";
 
 /**
  * CartButton — header entry point to the cart. Shows a live item-count badge

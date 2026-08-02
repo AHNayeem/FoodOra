@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DocumentEditor } from "@/frontend/components/admin/cms/document-editor";
+import { DocumentEditor } from "@/components/admin/cms/document-editor";
 
 /** Private surface — never indexed. */
 export const metadata: Metadata = {

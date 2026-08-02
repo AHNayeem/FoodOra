@@ -17,15 +17,15 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
-import type { DeliveryZone, Rider, UserRole } from "@/frontend/types";
-import { useAuth } from "@/frontend/stores/auth";
-import { useRider } from "@/frontend/stores/rider";
-import { getRiderProfile, getRiderZone, nextStopOf } from "@/frontend/services/delivery";
-import { ThemeToggle } from "@/frontend/components/ui/theme-toggle";
-import { LocaleSwitcher } from "@/frontend/components/ui/locale-switcher";
-import { NotificationBell } from "@/frontend/components/notifications/notification-bell";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import type { DeliveryZone, Rider, UserRole } from "@/types";
+import { useAuth } from "@/stores/auth";
+import { useRider } from "@/stores/rider";
+import { getRiderProfile, getRiderZone, nextStopOf } from "@/services/delivery";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { RiderProvider } from "./rider-context";
 
 /** Roles allowed into the rider app. Support/admin can look; customers cannot. */

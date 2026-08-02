@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { siteConfig } from "@/frontend/constants/site";
+import { siteConfig } from "@/constants/site";
 
 /** PWA manifest (spec: PWA). Icons resolve from app/icon.svg. */
 export default function manifest(): MetadataRoute.Manifest {

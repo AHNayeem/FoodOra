@@ -3,7 +3,7 @@ import type {
   CartSelectedOption,
   CartVendor,
   FoodItem,
-} from "@/frontend/types";
+} from "@/types";
 
 /**
  * cart.ts — pure cart math, kept out of the store so it is trivially testable

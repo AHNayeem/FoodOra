@@ -3,9 +3,9 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { BadgeCheck, Flag, MessageSquareQuote, Pencil, ThumbsUp } from "lucide-react";
-import type { Review } from "@/frontend/types";
-import { wasEdited } from "@/frontend/lib/reviews";
-import { cn } from "@/frontend/lib/utils";
+import type { Review } from "@/types";
+import { wasEdited } from "@/lib/reviews";
+import { cn } from "@/lib/utils";
 import { Stars } from "./stars";
 import { ReviewMediaStrip } from "./review-media";
 import { useTimeAgo } from "./use-time-ago";

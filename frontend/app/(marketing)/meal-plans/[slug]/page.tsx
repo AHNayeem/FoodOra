@@ -10,13 +10,13 @@ import {
   getPlanVendor,
   getPlanWeeklyMenu,
   planFromPrice,
-} from "@/frontend/services/subscriptions";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { computeSubscriptionPricing } from "@/frontend/lib/subscriptions";
-import { PlanHero } from "@/frontend/components/subscriptions/plan-hero";
-import { WeeklyMenu } from "@/frontend/components/subscriptions/weekly-menu";
-import { NutritionStrip } from "@/frontend/components/subscriptions/nutrition-strip";
+} from "@/services/subscriptions";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { computeSubscriptionPricing } from "@/lib/subscriptions";
+import { PlanHero } from "@/components/subscriptions/plan-hero";
+import { WeeklyMenu } from "@/components/subscriptions/weekly-menu";
+import { NutritionStrip } from "@/components/subscriptions/nutrition-strip";
 
 type Params = Promise<{ slug: string }>;
 

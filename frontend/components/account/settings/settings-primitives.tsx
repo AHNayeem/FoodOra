@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * Shared building blocks for the settings page (Phase C28). Every section is the

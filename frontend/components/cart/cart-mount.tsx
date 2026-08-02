@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useCart } from "@/frontend/stores/cart";
-import { CartDrawer } from "@/frontend/components/cart/cart-drawer";
-import { CartConflictDialog } from "@/frontend/components/cart/cart-conflict-dialog";
+import { useCart } from "@/stores/cart";
+import { CartDrawer } from "@/components/cart/cart-drawer";
+import { CartConflictDialog } from "@/components/cart/cart-conflict-dialog";
 
 /**
  * CartMount — one global mount point for the cart overlays. Rehydrates the

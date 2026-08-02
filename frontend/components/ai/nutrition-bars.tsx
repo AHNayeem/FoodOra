@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { NutritionFacts } from "@/frontend/types";
-import { macroShares } from "@/frontend/lib/nutrition";
-import { cn } from "@/frontend/lib/utils";
+import type { NutritionFacts } from "@/types";
+import { macroShares } from "@/lib/nutrition";
+import { cn } from "@/lib/utils";
 
 /**
  * NutritionBars — calories plus the protein/carbs/fat split (spec: Nutrition

@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import type { AssistantContext } from "@/frontend/types";
-import { useAssistant } from "@/frontend/stores/assistant";
-import { useFavorites } from "@/frontend/stores/favorites";
-import { useOrders, liveOrders } from "@/frontend/stores/orders";
-import { useSettings } from "@/frontend/stores/settings";
+import type { AssistantContext } from "@/types";
+import { useAssistant } from "@/stores/assistant";
+import { useFavorites } from "@/stores/favorites";
+import { useOrders, liveOrders } from "@/stores/orders";
+import { useSettings } from "@/stores/settings";
 
 /**
  * Assemble what this device knows about the customer into the seam's

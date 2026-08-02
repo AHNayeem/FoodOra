@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { MapPin, X } from "lucide-react";
 import { SearchBox } from "./search-box";
 import { facetsToQuery, SEARCH_SORTS, type SearchFacets } from "./search-filters";
-import type { SearchSort } from "@/frontend/services/search";
+import type { SearchSort } from "@/services/search";
 
 /**
  * SearchToolbar — the search field, the "delivering to" chip and the sort

@@ -4,9 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import { QrCode, Utensils } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { QrMenuConfig, Vendor } from "@/frontend/types";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Input } from "@/frontend/components/ui/input";
+import type { QrMenuConfig, Vendor } from "@/types";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
 
 /**
  * QrWelcomeDialog — the first thing a guest sees after scanning (Phase C12).

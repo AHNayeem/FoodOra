@@ -5,7 +5,7 @@ import type {
   PlanMeal,
   PlanTier,
   Weekday,
-} from "@/frontend/types";
+} from "@/types";
 import { SEED_NOW } from "./cuisines";
 
 /**

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useOrders } from "@/frontend/stores/orders";
-import { useNotifications } from "@/frontend/stores/notifications";
-import { useDemo } from "@/frontend/stores/demo";
-import { nextMove, shouldNudgeNearby } from "@/frontend/lib/order-sim";
+import { useOrders } from "@/stores/orders";
+import { useNotifications } from "@/stores/notifications";
+import { useDemo } from "@/stores/demo";
+import { nextMove, shouldNudgeNearby } from "@/lib/order-sim";
 
 /** How often the autopilot looks at the board. */
 const TICK_MS = 3000;

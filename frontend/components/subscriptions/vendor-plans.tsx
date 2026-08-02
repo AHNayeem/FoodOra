@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { getPlansByVendor, planFromPrice } from "@/frontend/services/subscriptions";
+import { getPlansByVendor, planFromPrice } from "@/services/subscriptions";
 import { MealPlanCard } from "./meal-plan-card";
 
 /**

@@ -5,14 +5,14 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import type { CartLine, CartSelectedOption, CartVendor, FoodItem } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useCart } from "@/frontend/stores/cart";
-import { buildCartLine, lineUnitPrice } from "@/frontend/lib/cart";
-import { formatPrice } from "@/frontend/lib/format";
-import { Modal } from "@/frontend/components/ui/modal";
-import { QuantityStepper } from "@/frontend/components/cart/quantity-stepper";
-import { cn } from "@/frontend/lib/utils";
+import type { CartLine, CartSelectedOption, CartVendor, FoodItem } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useCart } from "@/stores/cart";
+import { buildCartLine, lineUnitPrice } from "@/lib/cart";
+import { formatPrice } from "@/lib/format";
+import { Modal } from "@/components/ui/modal";
+import { QuantityStepper } from "@/components/cart/quantity-stepper";
+import { cn } from "@/lib/utils";
 
 /**
  * ItemCustomizer — the "configure then add" sheet for dishes with option

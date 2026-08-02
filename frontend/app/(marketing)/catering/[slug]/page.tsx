@@ -9,11 +9,11 @@ import {
   getServiceAddOns,
   getServiceCuisines,
   getServicePackages,
-} from "@/frontend/services/catering";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { ServiceHero } from "@/frontend/components/catering/service-hero";
-import { PackageCard } from "@/frontend/components/catering/package-card";
+} from "@/services/catering";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { ServiceHero } from "@/components/catering/service-hero";
+import { PackageCard } from "@/components/catering/package-card";
 
 type Params = Promise<{ slug: string }>;
 

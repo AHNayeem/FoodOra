@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * OfferTerms — the small print, collapsed by default. Kept as a disclosure

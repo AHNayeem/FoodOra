@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Mic, Square } from "lucide-react";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * VoiceButton — dictation for the composer (spec: Voice Search).

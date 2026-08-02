@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CartLine, CartVendor } from "@/frontend/types";
+import type { CartLine, CartVendor } from "@/types";
 
 /**
  * cart store — the single-vendor shopping cart (Phase C7).

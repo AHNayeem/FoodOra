@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { ArrowRight, Clock } from "lucide-react";
 import { SectionHeading } from "./section-heading";
-import type { BlogPost } from "@/frontend/types";
+import type { BlogPost } from "@/types";
 
 /**
  * BlogTeaser — "from the blog" row (server component). Cards link to

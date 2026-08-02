@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 type Tone = "neutral" | "primary" | "accent" | "fresh" | "danger";
 

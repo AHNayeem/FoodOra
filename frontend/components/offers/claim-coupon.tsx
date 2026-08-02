@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Check, Loader2, Ticket } from "lucide-react";
-import { claimCoupon, getGrantedClaims } from "@/frontend/services/coupons";
-import { useCoupons } from "@/frontend/stores/coupons";
+import { claimCoupon, getGrantedClaims } from "@/services/coupons";
+import { useCoupons } from "@/stores/coupons";
 
 /**
  * ClaimCoupon — the "save this code to my coupons" button beside a coupon code

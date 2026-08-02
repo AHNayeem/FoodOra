@@ -18,10 +18,10 @@ import {
   Settings,
   Lock,
 } from "lucide-react";
-import { useAuth } from "@/frontend/stores/auth";
-import { unreadCount, useNotifications } from "@/frontend/stores/notifications";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import { useAuth } from "@/stores/auth";
+import { unreadCount, useNotifications } from "@/stores/notifications";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/account", key: "profile", icon: UserIcon },

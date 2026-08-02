@@ -4,7 +4,7 @@ import {
   cateringServiceBySlug,
   cateringServices,
   cuisineById,
-} from "@/frontend/lib/mock";
+} from "@/lib/mock";
 import type {
   CateringAddOn,
   CateringPackage,
@@ -18,7 +18,7 @@ import type {
   QuoteService,
   QuoteVenue,
   ServiceStyle,
-} from "@/frontend/types";
+} from "@/types";
 import { mockDelay, ok, paginate, type Paginated, type Result } from "./http";
 
 /**

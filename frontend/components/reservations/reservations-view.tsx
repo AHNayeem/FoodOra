@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CalendarClock } from "lucide-react";
-import type { BookingPolicy } from "@/frontend/types";
-import { useReservations } from "@/frontend/stores/reservations";
-import { isUpcoming, sortPast, sortUpcoming } from "@/frontend/lib/reservations";
+import type { BookingPolicy } from "@/types";
+import { useReservations } from "@/stores/reservations";
+import { isUpcoming, sortPast, sortUpcoming } from "@/lib/reservations";
 import { ReservationCard } from "./reservation-card";
 
 /**

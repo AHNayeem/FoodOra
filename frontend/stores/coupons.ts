@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Coupon, CouponClaim, CouponRedemption } from "@/frontend/types";
-import { couponClaimedNotification } from "@/frontend/lib/notifications";
+import type { Coupon, CouponClaim, CouponRedemption } from "@/types";
+import { couponClaimedNotification } from "@/lib/notifications";
 import { emitNotifications } from "./notifications";
 
 /**

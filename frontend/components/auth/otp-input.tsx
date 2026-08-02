@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * OtpInput — a segmented 6-digit code entry. Controlled: holds the whole code

@@ -1,10 +1,10 @@
-import type { Review, ReviewAspects, ReviewMedia, ReviewTag, StarValue } from "@/frontend/types";
+import type { Review, ReviewAspects, ReviewMedia, ReviewTag, StarValue } from "@/types";
 import {
   NEGATIVE_TAGS,
   POSITIVE_TAGS,
   distributionFromAggregate,
   toStar,
-} from "@/frontend/lib/reviews";
+} from "@/lib/reviews";
 import { foodsByVendor } from "./foods";
 import { hashSeed, mulberry32, pick } from "./rng";
 import { riderById } from "./riders";

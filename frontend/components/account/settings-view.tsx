@@ -9,23 +9,23 @@ import type {
   CustomerSettings,
   NotificationChannels,
   NotificationTopic,
-} from "@/frontend/types";
+} from "@/types";
 import {
   getSettings,
   REQUIRED_NOTIFICATIONS,
   updateSettings,
-} from "@/frontend/services/settings";
-import { useSettings } from "@/frontend/stores/settings";
-import { AppearanceCard } from "@/frontend/components/account/settings/appearance-card";
-import { DangerZoneCard } from "@/frontend/components/account/settings/danger-zone-card";
-import { PasswordCard } from "@/frontend/components/account/settings/password-card";
-import { PushCard } from "@/frontend/components/notifications/push-card";
+} from "@/services/settings";
+import { useSettings } from "@/stores/settings";
+import { AppearanceCard } from "@/components/account/settings/appearance-card";
+import { DangerZoneCard } from "@/components/account/settings/danger-zone-card";
+import { PasswordCard } from "@/components/account/settings/password-card";
+import { PushCard } from "@/components/notifications/push-card";
 import {
   RowGroup,
   SettingsSection,
   SwitchRow,
-} from "@/frontend/components/account/settings/settings-primitives";
-import { cn } from "@/frontend/lib/utils";
+} from "@/components/account/settings/settings-primitives";
+import { cn } from "@/lib/utils";
 
 const TOPICS: NotificationTopic[] = [
   "orderUpdates",

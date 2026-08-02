@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { CalendarCheck, CheckCircle2, Users } from "lucide-react";
-import { bookableVenueCount } from "@/frontend/services/reservations";
+import { bookableVenueCount } from "@/services/reservations";
 
 /** Directory hero for `/reservations` (Phase C16). */
 export async function ReservationsHero() {

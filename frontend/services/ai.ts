@@ -5,7 +5,7 @@ import {
   foods,
   vendorById,
   vendors,
-} from "@/frontend/lib/mock";
+} from "@/lib/mock";
 import type {
   AiReviewSummary,
   Allergen,
@@ -21,7 +21,7 @@ import type {
   FoodProfile,
   ParsedRequest,
   Vendor,
-} from "@/frontend/types";
+} from "@/types";
 import {
   LOW_CONFIDENCE,
   MAX_INPUT_LENGTH,
@@ -39,7 +39,7 @@ import {
   summariseReviews,
   type ParseVocabulary,
   type RankSignals,
-} from "@/frontend/lib/ai";
+} from "@/lib/ai";
 import {
   GOAL_DIETARY,
   allergenConflicts,
@@ -51,8 +51,8 @@ import {
   targetCalories,
   totalNutrition,
   type PlannerCandidate,
-} from "@/frontend/lib/nutrition";
-import { POSITIVE_TAGS } from "@/frontend/lib/reviews";
+} from "@/lib/nutrition";
+import { POSITIVE_TAGS } from "@/lib/reviews";
 import {
   getVendorReviews,
   emptyContext as emptyReviewContext,

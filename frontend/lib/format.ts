@@ -2,7 +2,7 @@ import {
   currencies,
   defaultCurrency,
   type CurrencyCode,
-} from "@/frontend/config/regions";
+} from "@/config/regions";
 
 /**
  * format.ts — locale/region-aware presentation helpers.

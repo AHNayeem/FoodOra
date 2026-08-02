@@ -1,4 +1,4 @@
-import { BookView } from "@/frontend/components/dashboard/reservations/book-view";
+import { BookView } from "@/components/dashboard/reservations/book-view";
 
 /**
  * Reservation Management (Phase C16). The venue's book for one service day,

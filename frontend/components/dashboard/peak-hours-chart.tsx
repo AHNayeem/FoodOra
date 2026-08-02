@@ -9,7 +9,7 @@ import {
   Tooltip,
   XAxis,
 } from "recharts";
-import type { HourlyPoint } from "@/frontend/types";
+import type { HourlyPoint } from "@/types";
 
 const AXIS = "#948d85";
 const BRAND = "#f24822";

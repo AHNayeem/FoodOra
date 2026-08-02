@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { CalendarX } from "lucide-react";
-import { getCateringServices } from "@/frontend/services/catering";
-import { isEventType } from "@/frontend/lib/catering";
-import type { EventType } from "@/frontend/types";
-import { CateringHero } from "@/frontend/components/catering/catering-hero";
+import { getCateringServices } from "@/services/catering";
+import { isEventType } from "@/lib/catering";
+import type { EventType } from "@/types";
+import { CateringHero } from "@/components/catering/catering-hero";
 import {
   CateringFilters,
   type CateringSortKey,
-} from "@/frontend/components/catering/catering-filters";
-import { CateringServiceCard } from "@/frontend/components/catering/catering-service-card";
-import { HowCateringWorks } from "@/frontend/components/catering/how-catering-works";
+} from "@/components/catering/catering-filters";
+import { CateringServiceCard } from "@/components/catering/catering-service-card";
+import { HowCateringWorks } from "@/components/catering/how-catering-works";
 
 const SORTS = new Set<CateringSortKey>(["recommended", "rating", "price-low", "capacity"]);
 

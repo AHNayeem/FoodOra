@@ -4,9 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Clock, Star } from "lucide-react";
-import type { Vendor } from "@/frontend/types";
-import { formatDistance, formatEta, formatRating } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { Vendor } from "@/types";
+import { formatDistance, formatEta, formatRating } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * VendorSuggestion — a restaurant inside a reply.

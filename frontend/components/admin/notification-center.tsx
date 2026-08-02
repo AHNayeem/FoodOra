@@ -18,26 +18,26 @@ import type {
   NotificationDispatch,
   NotificationSegment,
   SegmentId,
-} from "@/frontend/types";
-import { DELIVERY_CHANNELS, SMS_LIMIT } from "@/frontend/lib/notifications";
+} from "@/types";
+import { DELIVERY_CHANNELS, SMS_LIMIT } from "@/lib/notifications";
 import {
   TITLE_LIMIT,
   campaignTotals,
   getOutbox,
   getSegments,
   sendBroadcast,
-} from "@/frontend/services/notifications";
-import { emitNotifications, useNotifications } from "@/frontend/stores/notifications";
+} from "@/services/notifications";
+import { emitNotifications, useNotifications } from "@/stores/notifications";
 import {
   CHANNEL_ICON,
   DISPATCH_CLASS,
-} from "@/frontend/components/notifications/notification-meta";
+} from "@/components/notifications/notification-meta";
 import {
   dispatchRenderable,
   useNotificationCopy,
-} from "@/frontend/components/notifications/notification-text";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+} from "@/components/notifications/notification-text";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Tab = "compose" | "campaigns" | "log";
 

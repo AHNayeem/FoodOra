@@ -1,4 +1,4 @@
-import { THEME_STORAGE_KEY } from "@/frontend/lib/theme-preference";
+import { THEME_STORAGE_KEY } from "@/lib/theme-preference";
 
 /**
  * ThemeScript — a tiny blocking script injected in <head> so the correct theme

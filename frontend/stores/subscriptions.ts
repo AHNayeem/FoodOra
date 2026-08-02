@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Subscription } from "@/frontend/types";
-import { subscriptionNotification } from "@/frontend/lib/notifications";
+import type { Subscription } from "@/types";
+import { subscriptionNotification } from "@/lib/notifications";
 import { emitNotifications } from "./notifications";
 
 /** Tell the customer a plan changed state (C25) — after the write, not inside it. */

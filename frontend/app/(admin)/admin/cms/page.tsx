@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CmsOverview } from "@/frontend/components/admin/cms/cms-overview";
+import { CmsOverview } from "@/components/admin/cms/cms-overview";
 
 /** Private surface — never indexed. */
 export const metadata: Metadata = {

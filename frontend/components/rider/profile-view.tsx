@@ -13,16 +13,16 @@ import {
   MapPin,
   Star,
 } from "lucide-react";
-import type { DeliveryZone, RiderVehicle } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useAuth } from "@/frontend/stores/auth";
-import { useRider } from "@/frontend/stores/rider";
-import { getDeliveryZones, updateRiderProfile } from "@/frontend/services/delivery";
-import { VEHICLES } from "@/frontend/lib/delivery";
-import { formatPrice, formatRating } from "@/frontend/lib/format";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Input } from "@/frontend/components/ui/input";
-import { cn } from "@/frontend/lib/utils";
+import type { DeliveryZone, RiderVehicle } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useAuth } from "@/stores/auth";
+import { useRider } from "@/stores/rider";
+import { getDeliveryZones, updateRiderProfile } from "@/services/delivery";
+import { VEHICLES } from "@/lib/delivery";
+import { formatPrice, formatRating } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
 import { RiderFeedback } from "./rider-feedback";
 

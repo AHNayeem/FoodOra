@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getLegalDoc } from "@/frontend/services/pages";
-import { getRouteMetadata, readOptions } from "@/frontend/services/cms";
-import { LegalDocument } from "@/frontend/components/marketing/legal-document";
+import { getLegalDoc } from "@/services/pages";
+import { getRouteMetadata, readOptions } from "@/services/cms";
+import { LegalDocument } from "@/components/marketing/legal-document";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);

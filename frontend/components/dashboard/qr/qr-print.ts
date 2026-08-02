@@ -1,5 +1,5 @@
-import type { QrTarget } from "@/frontend/types";
-import { qrSvgMarkup } from "@/frontend/components/qr/qr-code";
+import type { QrTarget } from "@/types";
+import { qrSvgMarkup } from "@/components/qr/qr-code";
 
 /**
  * qr-print.ts — turning codes into paper (Phase C12).

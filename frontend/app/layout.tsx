@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
-import { siteConfig } from "@/frontend/constants/site";
-import { dirFor, type Locale } from "@/frontend/config/i18n/config";
-import { Toaster } from "@/frontend/components/ui/toaster";
-import { ThemeScript } from "@/frontend/components/ui/theme-script";
-import { DemoEngine } from "@/frontend/components/demo/demo-engine";
-import { PushBridge } from "@/frontend/components/notifications/push-bridge";
-import { DemoBar } from "@/frontend/components/demo/demo-bar";
+import { siteConfig } from "@/constants/site";
+import { dirFor, type Locale } from "@/config/i18n/config";
+import { Toaster } from "@/components/ui/toaster";
+import { ThemeScript } from "@/components/ui/theme-script";
+import { DemoEngine } from "@/components/demo/demo-engine";
+import { PushBridge } from "@/components/notifications/push-bridge";
+import { DemoBar } from "@/components/demo/demo-bar";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({

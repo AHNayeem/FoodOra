@@ -16,7 +16,7 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import { localeMeta, locales, type Locale } from "@/frontend/config/i18n/config";
+import { localeMeta, locales, type Locale } from "@/config/i18n/config";
 import type {
   CmsCollectionDef,
   CmsDocumentView,
@@ -24,8 +24,8 @@ import type {
   CmsRevision,
   CmsValue,
   CmsValues,
-} from "@/frontend/types";
-import { coverageOf, fieldsOf, titleOf, validateValues } from "@/frontend/lib/cms";
+} from "@/types";
+import { coverageOf, fieldsOf, titleOf, validateValues } from "@/lib/cms";
 import {
   discardDraft,
   getDocument,
@@ -35,14 +35,14 @@ import {
   saveDocument,
   setArchived,
   unpublishDocument,
-} from "@/frontend/services/cms";
-import { cmsCollectionById } from "@/frontend/lib/mock/cms";
-import { useAuth } from "@/frontend/stores/auth";
-import { useCms, useCmsContext } from "@/frontend/stores/cms";
-import { DocumentFields } from "@/frontend/components/admin/cms/field-editors";
-import { DraftChip, StatusChip } from "@/frontend/components/admin/cms/status-chip";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+} from "@/services/cms";
+import { cmsCollectionById } from "@/lib/mock/cms";
+import { useAuth } from "@/stores/auth";
+import { useCms, useCmsContext } from "@/stores/cms";
+import { DocumentFields } from "@/components/admin/cms/field-editors";
+import { DraftChip, StatusChip } from "@/components/admin/cms/status-chip";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * DocumentEditor — the one editor every collection uses.

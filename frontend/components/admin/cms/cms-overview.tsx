@@ -5,15 +5,15 @@ import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowRight, Inbox, Info, RotateCcw } from "lucide-react";
-import type { CmsAuditEntry, CmsDocumentView } from "@/frontend/types";
-import type { CmsCollectionSummary } from "@/frontend/services/cms";
-import { titleOf } from "@/frontend/lib/cms";
-import { getAuditLog, getCollections, getPendingDrafts } from "@/frontend/services/cms";
-import { cmsCollectionById } from "@/frontend/lib/mock/cms";
-import { useCms, useCmsContext } from "@/frontend/stores/cms";
-import { DraftChip, StatusChip } from "@/frontend/components/admin/cms/status-chip";
-import { DashIcon } from "@/frontend/components/directory/dash-icon";
-import { Button } from "@/frontend/components/ui/button";
+import type { CmsAuditEntry, CmsDocumentView } from "@/types";
+import type { CmsCollectionSummary } from "@/services/cms";
+import { titleOf } from "@/lib/cms";
+import { getAuditLog, getCollections, getPendingDrafts } from "@/services/cms";
+import { cmsCollectionById } from "@/lib/mock/cms";
+import { useCms, useCmsContext } from "@/stores/cms";
+import { DraftChip, StatusChip } from "@/components/admin/cms/status-chip";
+import { DashIcon } from "@/components/directory/dash-icon";
+import { Button } from "@/components/ui/button";
 
 /**
  * CmsOverview — the content desk's front page (spec: Admin Panel → CMS,

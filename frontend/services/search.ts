@@ -5,7 +5,7 @@ import {
   foods,
   vendorById,
   vendors,
-} from "@/frontend/lib/mock";
+} from "@/lib/mock";
 import type {
   Category,
   Cuisine,
@@ -13,7 +13,7 @@ import type {
   FoodItem,
   Vendor,
   VendorType,
-} from "@/frontend/types";
+} from "@/types";
 import { mockDelay } from "./http";
 
 /**

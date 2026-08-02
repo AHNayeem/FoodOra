@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
-import type { FaqGroup, HowStep, JobOpening, StatItem, TimelineEntry, ValueProp } from "@/frontend/types";
+import type { FaqGroup, HowStep, JobOpening, StatItem, TimelineEntry, ValueProp } from "@/types";
 import {
   toJobs,
   toPageHero,
@@ -11,10 +11,10 @@ import {
   toTimeline,
   toValueProps,
   liveReader,
-} from "@/frontend/lib/cms";
-import { useCmsFaqGroups, useCmsPageDoc } from "@/frontend/components/cms/use-cms-content";
-import { DashIcon } from "@/frontend/components/directory/dash-icon";
-import { cn } from "@/frontend/lib/utils";
+} from "@/lib/cms";
+import { useCmsFaqGroups, useCmsPageDoc } from "@/components/cms/use-cms-content";
+import { DashIcon } from "@/components/directory/dash-icon";
+import { cn } from "@/lib/utils";
 
 /**
  * marketing-blocks.tsx — the reusable bands the marketing and legal pages are

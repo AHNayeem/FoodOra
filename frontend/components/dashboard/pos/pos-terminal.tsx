@@ -13,17 +13,17 @@ import type {
   PosSale,
   PosTicketLine,
   RestaurantTable,
-} from "@/frontend/types";
-import type { MenuSectionWithItems } from "@/frontend/services/catalog";
-import { getPosCatalog, getPosTables, completeSale } from "@/frontend/services/pos";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { computePosTotals, ticketCount } from "@/frontend/lib/pos";
-import { useAuth } from "@/frontend/stores/auth";
-import { useMerchant } from "@/frontend/stores/merchant";
-import { usePos } from "@/frontend/stores/pos";
-import { Modal } from "@/frontend/components/ui/modal";
-import { useDashboard } from "@/frontend/components/dashboard/dashboard-context";
+} from "@/types";
+import type { MenuSectionWithItems } from "@/services/catalog";
+import { getPosCatalog, getPosTables, completeSale } from "@/services/pos";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { computePosTotals, ticketCount } from "@/lib/pos";
+import { useAuth } from "@/stores/auth";
+import { useMerchant } from "@/stores/merchant";
+import { usePos } from "@/stores/pos";
+import { Modal } from "@/components/ui/modal";
+import { useDashboard } from "@/components/dashboard/dashboard-context";
 import { PosProductGrid } from "./pos-product-grid";
 import { PosTicketPanel } from "./pos-ticket-panel";
 import { PosChargeDialog } from "./pos-charge-dialog";

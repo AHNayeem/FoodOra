@@ -1,4 +1,4 @@
-import type { Coupon, CouponClaim, Offer } from "@/frontend/types";
+import type { Coupon, CouponClaim, Offer } from "@/types";
 import { SEED_NOW } from "./cuisines";
 import { buildOffers } from "./offers";
 import { hashSeed, mulberry32 } from "./rng";

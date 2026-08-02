@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User } from "@/frontend/types";
+import type { User } from "@/types";
 
 /**
  * auth store — the client-side session. In the prototype the "session" is just

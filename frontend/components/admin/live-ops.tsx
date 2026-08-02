@@ -14,17 +14,17 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import type { Order, Rider, Vendor } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useOrders, liveOrders } from "@/frontend/stores/orders";
-import { getFleet } from "@/frontend/services/delivery";
-import { getVendors } from "@/frontend/services/catalog";
-import { isFailure, isWithRider, isInKitchen } from "@/frontend/lib/order-machine";
-import { readyInMs, toMinutes } from "@/frontend/lib/order-lifecycle";
-import { formatPrice } from "@/frontend/lib/format";
-import { OrderStatusChip } from "@/frontend/components/orders/order-status-chip";
-import { StatCard } from "@/frontend/components/dashboard/stat-card";
-import { cn } from "@/frontend/lib/utils";
+import type { Order, Rider, Vendor } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useOrders, liveOrders } from "@/stores/orders";
+import { getFleet } from "@/services/delivery";
+import { getVendors } from "@/services/catalog";
+import { isFailure, isWithRider, isInKitchen } from "@/lib/order-machine";
+import { readyInMs, toMinutes } from "@/lib/order-lifecycle";
+import { formatPrice } from "@/lib/format";
+import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { cn } from "@/lib/utils";
 
 const TICK_MS = 2000;
 

@@ -15,10 +15,10 @@ import {
   TrendingUp,
   Wallet as WalletIcon,
 } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { WalletTransactionType } from "@/frontend/types";
-import { useWallet } from "@/frontend/stores/wallet";
-import { getWallet, topUpWallet } from "@/frontend/services/wallet";
+import type { CurrencyCode } from "@/config/regions";
+import type { WalletTransactionType } from "@/types";
+import { useWallet } from "@/stores/wallet";
+import { getWallet, topUpWallet } from "@/services/wallet";
 import {
   MAX_TOP_UP,
   MIN_TOP_UP,
@@ -32,12 +32,12 @@ import {
   isLowBalance,
   summarise,
   windowStart,
-} from "@/frontend/lib/wallet";
-import { formatPrice } from "@/frontend/lib/format";
-import { Button } from "@/frontend/components/ui/button";
-import { Input } from "@/frontend/components/ui/input";
-import { Modal } from "@/frontend/components/ui/modal";
-import { cn } from "@/frontend/lib/utils";
+} from "@/lib/wallet";
+import { formatPrice } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
+import { cn } from "@/lib/utils";
 
 const TXN_ICON: Record<WalletTransactionType, typeof ArrowUpRight> = {
   "top-up": ArrowDownLeft,

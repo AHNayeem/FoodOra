@@ -2,12 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Bike, Clock, MapPin, ShoppingBag } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import type { Cuisine, Vendor } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Rating } from "@/frontend/components/ui/rating";
-import { FavoriteButton } from "@/frontend/components/favorites/favorite-button";
-import { formatDistance, formatEta, formatPrice } from "@/frontend/lib/format";
+import type { Cuisine, Vendor } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { Badge } from "@/components/ui/badge";
+import { Rating } from "@/components/ui/rating";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
+import { formatDistance, formatEta, formatPrice } from "@/lib/format";
 
 /**
  * VendorHero — the restaurant detail header (Phase C5): cover image, logo,

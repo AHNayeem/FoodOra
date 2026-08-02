@@ -2,11 +2,11 @@
 
 import { useTranslations, useFormatter } from "next-intl";
 import { PauseCircle, RotateCcw, Trash2, X } from "lucide-react";
-import type { PosHeldTicket } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { ticketCount, ticketSubtotal } from "@/frontend/lib/pos";
-import { Modal } from "@/frontend/components/ui/modal";
+import type { PosHeldTicket } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { ticketCount, ticketSubtotal } from "@/lib/pos";
+import { Modal } from "@/components/ui/modal";
 
 /**
  * PosHeldTicketsDialog — the parked-orders drawer. Lists held tickets so the

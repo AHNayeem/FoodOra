@@ -1,5 +1,5 @@
-import type { OrderStatus } from "@/frontend/types";
-import { OrderStatusChip } from "@/frontend/components/orders/order-status-chip";
+import type { OrderStatus } from "@/types";
+import { OrderStatusChip } from "@/components/orders/order-status-chip";
 
 /**
  * OrderStatusBadge — the dashboard's status pill.

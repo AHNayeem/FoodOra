@@ -7,9 +7,9 @@ import type {
   NotificationCampaign,
   NotificationDispatch,
   NotifyAudience,
-} from "@/frontend/types";
-import { channelsFor, dispatchesFor } from "@/frontend/lib/notifications";
-import { REQUIRED_NOTIFICATIONS } from "@/frontend/services/settings";
+} from "@/types";
+import { channelsFor, dispatchesFor } from "@/lib/notifications";
+import { REQUIRED_NOTIFICATIONS } from "@/services/settings";
 import { useAuth } from "./auth";
 import { useSettings } from "./settings";
 

@@ -3,8 +3,8 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Camera, ScanText } from "lucide-react";
-import { ACCEPTED_IMAGE_TYPES, type ImageFingerprint } from "@/frontend/services/ai";
-import { cn } from "@/frontend/lib/utils";
+import { ACCEPTED_IMAGE_TYPES, type ImageFingerprint } from "@/services/ai";
+import { cn } from "@/lib/utils";
 
 /**
  * ImageScanButton — the camera door (spec: Image Search, Food Recognition, OCR

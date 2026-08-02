@@ -13,7 +13,7 @@ import {
   Tag,
   Wallet,
 } from "lucide-react";
-import type { DeliveryChannel, NotifyCategory, NotifyTone } from "@/frontend/types";
+import type { DeliveryChannel, NotifyCategory, NotifyTone } from "@/types";
 
 /**
  * notification-meta.ts — one icon per category and one accent per tone.

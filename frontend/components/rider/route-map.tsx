@@ -1,9 +1,9 @@
 "use client";
 
 import { Bike, MapPin, Store } from "lucide-react";
-import type { DeliveryStop } from "@/frontend/types";
-import type { LatLng } from "@/frontend/lib/delivery";
-import { cn } from "@/frontend/lib/utils";
+import type { DeliveryStop } from "@/types";
+import type { LatLng } from "@/lib/delivery";
+import { cn } from "@/lib/utils";
 
 /**
  * RouteMap — the trip's stops on a stylised map (Phase C18).

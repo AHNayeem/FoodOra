@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ArrowRight, Bell, BellOff, CheckCheck } from "lucide-react";
-import type { NotifyAudience } from "@/frontend/types";
+import type { NotifyAudience } from "@/types";
 import {
   useNotifications,
   selectFor,
   unreadCount,
-} from "@/frontend/stores/notifications";
+} from "@/stores/notifications";
 import { NotificationRow } from "./notification-row";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /** How many rows the glance shows before "see all" is the better answer. */
 const PEEK = 8;

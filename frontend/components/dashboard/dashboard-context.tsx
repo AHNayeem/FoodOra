@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Vendor } from "@/frontend/types";
+import type { Vendor } from "@/types";
 
 /**
  * DashboardContext — carries the resolved "my restaurant" vendor from the shell

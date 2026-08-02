@@ -2,8 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
-import { applyThemePreference, subscribeToThemePreference } from "@/frontend/lib/theme-preference";
-import { cn } from "@/frontend/lib/utils";
+import { applyThemePreference, subscribeToThemePreference } from "@/lib/theme-preference";
+import { cn } from "@/lib/utils";
 
 /** Subscribe to `.dark` changes on <html>, so the icon tracks the real theme. */
 function subscribe(onChange: () => void): () => void {

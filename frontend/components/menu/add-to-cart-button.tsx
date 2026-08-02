@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import type { CartVendor, FoodItem } from "@/frontend/types";
-import { useCart } from "@/frontend/stores/cart";
-import { buildCartLine } from "@/frontend/lib/cart";
-import { ItemCustomizer } from "@/frontend/components/cart/item-customizer";
-import { cn } from "@/frontend/lib/utils";
+import type { CartVendor, FoodItem } from "@/types";
+import { useCart } from "@/stores/cart";
+import { buildCartLine } from "@/lib/cart";
+import { ItemCustomizer } from "@/components/cart/item-customizer";
+import { cn } from "@/lib/utils";
 
 /**
  * AddToCartButton — the menu's cart action (Phase C7). Dishes with option

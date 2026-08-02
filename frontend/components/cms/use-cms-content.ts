@@ -14,7 +14,7 @@ import type {
   FaqGroup,
   LegalDoc,
   SupportChannel,
-} from "@/frontend/types";
+} from "@/types";
 import {
   isLive,
   toBanner,
@@ -28,9 +28,9 @@ import {
   toSupportChannels,
   faqSurfaceOf,
   type CmsReadOptions,
-} from "@/frontend/lib/cms";
-import { allDocuments } from "@/frontend/services/cms";
-import { hasLocalEdits, useCms, useCmsContext } from "@/frontend/stores/cms";
+} from "@/lib/cms";
+import { allDocuments } from "@/services/cms";
+import { hasLocalEdits, useCms, useCmsContext } from "@/stores/cms";
 
 /**
  * use-cms-content — how an edit made in `/admin/cms` reaches the public site.

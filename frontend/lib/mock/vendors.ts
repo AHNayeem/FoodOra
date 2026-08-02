@@ -1,4 +1,4 @@
-import type { Vendor, WeeklyHours } from "@/frontend/types";
+import type { Vendor, WeeklyHours } from "@/types";
 import { SEED_NOW } from "./cuisines";
 
 // `ownerId: null` by default — most demo vendors are unclaimed. Bella Napoli

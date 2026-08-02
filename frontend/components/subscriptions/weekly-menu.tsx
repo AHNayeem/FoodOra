@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CalendarOff } from "lucide-react";
-import type { MealPlan, PlanMeal, Weekday } from "@/frontend/types";
-import { MEAL_SLOTS, menuByDay, sumNutrition } from "@/frontend/lib/subscriptions";
-import { WEEKDAYS } from "@/frontend/lib/dates";
+import type { MealPlan, PlanMeal, Weekday } from "@/types";
+import { MEAL_SLOTS, menuByDay, sumNutrition } from "@/lib/subscriptions";
+import { WEEKDAYS } from "@/lib/dates";
 import { NutritionStrip } from "./nutrition-strip";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * WeeklyMenu — a plan's rotating week (Phase C15; the home-chef "Weekly Menu"

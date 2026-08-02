@@ -3,10 +3,10 @@
 import { useMemo } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CmsAuditEntry, CmsContactMessage, CmsDocument, CmsRevision } from "@/frontend/types";
-import type { CmsDocPatch } from "@/frontend/lib/cms";
-import type { CmsContext, CmsMutation } from "@/frontend/services/cms";
-import { contactMessageNotification } from "@/frontend/lib/notifications";
+import type { CmsAuditEntry, CmsContactMessage, CmsDocument, CmsRevision } from "@/types";
+import type { CmsDocPatch } from "@/lib/cms";
+import type { CmsContext, CmsMutation } from "@/services/cms";
+import { contactMessageNotification } from "@/lib/notifications";
 import { useNotifications } from "./notifications";
 
 /**

@@ -2,13 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Flame, Store } from "lucide-react";
-import type { FoodItem, Vendor } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { Badge } from "@/frontend/components/ui/badge";
-import { AddToCartButton } from "@/frontend/components/menu/add-to-cart-button";
-import { FavoriteButton } from "@/frontend/components/favorites/favorite-button";
-import { toCartVendor } from "@/frontend/lib/cart";
-import { formatPrice } from "@/frontend/lib/format";
+import type { FoodItem, Vendor } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { Badge } from "@/components/ui/badge";
+import { AddToCartButton } from "@/components/menu/add-to-cart-button";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
+import { toCartVendor } from "@/lib/cart";
+import { formatPrice } from "@/lib/format";
 
 /**
  * FoodResultCard — a dish result outside its own menu page (search, offers,

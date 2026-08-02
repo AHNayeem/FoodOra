@@ -21,15 +21,15 @@ import {
   ShieldAlert,
   Lock,
 } from "lucide-react";
-import type { UserRole, Vendor } from "@/frontend/types";
-import { useAuth } from "@/frontend/stores/auth";
-import { useMerchant } from "@/frontend/stores/merchant";
-import { getDashboardVendor } from "@/frontend/services/vendor";
-import { ThemeToggle } from "@/frontend/components/ui/theme-toggle";
-import { LocaleSwitcher } from "@/frontend/components/ui/locale-switcher";
-import { NotificationBell } from "@/frontend/components/notifications/notification-bell";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import type { UserRole, Vendor } from "@/types";
+import { useAuth } from "@/stores/auth";
+import { useMerchant } from "@/stores/merchant";
+import { getDashboardVendor } from "@/services/vendor";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { DashboardProvider } from "./dashboard-context";
 
 /** Roles allowed into the restaurant dashboard (riders/customers are not). */

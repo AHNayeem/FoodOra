@@ -1,5 +1,5 @@
-import { buildOffers, couponIdForOffer, vendorById } from "@/frontend/lib/mock";
-import type { Offer, OfferPlacement, Vendor } from "@/frontend/types";
+import { buildOffers, couponIdForOffer, vendorById } from "@/lib/mock";
+import type { Offer, OfferPlacement, Vendor } from "@/types";
 import { mockDelay } from "./http";
 
 /**

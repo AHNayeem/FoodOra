@@ -4,12 +4,12 @@ import { useState } from "react";
 import { BellRing, CupSoda, ReceiptText, Utensils, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import type { QrMenuConfig, ServiceRequestKind } from "@/frontend/types";
-import { useDineIn } from "@/frontend/stores/dine-in";
-import { requestService } from "@/frontend/services/qr";
-import { isRequestAcknowledged, SERVICE_REQUEST_KINDS } from "@/frontend/lib/qr";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Badge } from "@/frontend/components/ui/badge";
+import type { QrMenuConfig, ServiceRequestKind } from "@/types";
+import { useDineIn } from "@/stores/dine-in";
+import { requestService } from "@/services/qr";
+import { isRequestAcknowledged, SERVICE_REQUEST_KINDS } from "@/lib/qr";
+import { Modal } from "@/components/ui/modal";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * QrServiceSheet — raising a hand from the table (Phase C12).

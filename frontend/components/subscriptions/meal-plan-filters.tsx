@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import type { MealSlot, PlanGoal } from "@/frontend/types";
-import { MEAL_SLOTS, PLAN_GOALS, PLAN_GOAL_EMOJI } from "@/frontend/lib/subscriptions";
-import { cn } from "@/frontend/lib/utils";
+import type { MealSlot, PlanGoal } from "@/types";
+import { MEAL_SLOTS, PLAN_GOALS, PLAN_GOAL_EMOJI } from "@/lib/subscriptions";
+import { cn } from "@/lib/utils";
 
 export type PlanSortKey = "recommended" | "rating" | "price-low" | "calories-low";
 

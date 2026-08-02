@@ -1,11 +1,11 @@
-import type { User, UserRole } from "@/frontend/types";
+import type { User, UserRole } from "@/types";
 import {
   DEMO_OTP,
   DEMO_PASSWORD,
   SEED_NOW,
   userByEmail,
   users,
-} from "@/frontend/lib/mock";
+} from "@/lib/mock";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

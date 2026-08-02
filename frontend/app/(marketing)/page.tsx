@@ -1,16 +1,16 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { Hero } from "@/frontend/components/sections/hero";
-import { CategoryRail } from "@/frontend/components/sections/category-rail";
-import { HowItWorks } from "@/frontend/components/sections/how-it-works";
-import { Testimonials } from "@/frontend/components/sections/testimonials";
-import { AppDownload } from "@/frontend/components/sections/app-download";
-import { BlogTeaser } from "@/frontend/components/sections/blog-teaser";
-import { SectionHeading } from "@/frontend/components/sections/section-heading";
-import { PromoStrip } from "@/frontend/components/cms/promo-strip";
-import { VendorCard } from "@/frontend/components/cards/vendor-card";
-import { getCategories, getCuisines, getTrendingVendors } from "@/frontend/services/catalog";
-import { getBlogPosts, getTestimonials } from "@/frontend/services/content";
-import { getBanners, readOptions } from "@/frontend/services/cms";
+import { Hero } from "@/components/sections/hero";
+import { CategoryRail } from "@/components/sections/category-rail";
+import { HowItWorks } from "@/components/sections/how-it-works";
+import { Testimonials } from "@/components/sections/testimonials";
+import { AppDownload } from "@/components/sections/app-download";
+import { BlogTeaser } from "@/components/sections/blog-teaser";
+import { SectionHeading } from "@/components/sections/section-heading";
+import { PromoStrip } from "@/components/cms/promo-strip";
+import { VendorCard } from "@/components/cards/vendor-card";
+import { getCategories, getCuisines, getTrendingVendors } from "@/services/catalog";
+import { getBlogPosts, getTestimonials } from "@/services/content";
+import { getBanners, readOptions } from "@/services/cms";
 
 /**
  * Home (Phase C1 — landing). Server component: all data is fetched through the

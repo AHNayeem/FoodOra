@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { ArrowLeft, Clock } from "lucide-react";
-import type { BlogPost } from "@/frontend/types";
-import { useCmsPost } from "@/frontend/components/cms/use-cms-content";
-import { PostBody } from "@/frontend/components/blog/post-body";
-import { PostCard } from "@/frontend/components/blog/post-card";
-import { SectionHeading } from "@/frontend/components/sections/section-heading";
+import type { BlogPost } from "@/types";
+import { useCmsPost } from "@/components/cms/use-cms-content";
+import { PostBody } from "@/components/blog/post-body";
+import { PostCard } from "@/components/blog/post-card";
+import { SectionHeading } from "@/components/sections/section-heading";
 
 /**
  * ArticleView — the reader for one article (spec: Food Blog / CMS Blogs).

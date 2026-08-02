@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CalendarCheck, Clock, Users } from "lucide-react";
-import { getBookingPolicy } from "@/frontend/services/reservations";
+import { getBookingPolicy } from "@/services/reservations";
 
 /**
  * VenueBookingBand — the "reserve a table" band on a vendor page (Phase C16).

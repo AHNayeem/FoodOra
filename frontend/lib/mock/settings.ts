@@ -1,4 +1,4 @@
-import type { CustomerSettings } from "@/frontend/types";
+import type { CustomerSettings } from "@/types";
 
 /**
  * Default account settings for a new customer (Phase C28).

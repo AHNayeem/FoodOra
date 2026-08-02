@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Maximize2, Sparkles, Trash2, X } from "lucide-react";
-import { useAssistant } from "@/frontend/stores/assistant";
+import { useAssistant } from "@/stores/assistant";
 import { AssistantConversation } from "./assistant-conversation";
 import { AssistantComposer } from "./assistant-composer";
 import { useAssistantChat } from "./use-assistant-chat";

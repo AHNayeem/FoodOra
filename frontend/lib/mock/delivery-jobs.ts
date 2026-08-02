@@ -7,10 +7,10 @@ import type {
   Rider,
   RiderRemittance,
   Vendor,
-} from "@/frontend/types";
-import { buildCartLine } from "@/frontend/lib/cart";
-import { computeTotals } from "@/frontend/lib/checkout";
-import { fromDateKey, toDateKey } from "@/frontend/lib/dates";
+} from "@/types";
+import { buildCartLine } from "@/lib/cart";
+import { computeTotals } from "@/lib/checkout";
+import { fromDateKey, toDateKey } from "@/lib/dates";
 import {
   computePayout,
   haversineKm,
@@ -19,7 +19,7 @@ import {
   routeDistanceKm,
   routeMinutes,
   type UnroutedStop,
-} from "@/frontend/lib/delivery";
+} from "@/lib/delivery";
 import { zoneById } from "./delivery-zones";
 import { foodsByVendor } from "./foods";
 import { riderById } from "./riders";

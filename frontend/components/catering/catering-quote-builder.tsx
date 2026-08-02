@@ -23,16 +23,16 @@ import type {
   EventType,
   QuoteService,
   ServiceStyle,
-} from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useAuth } from "@/frontend/stores/auth";
-import { useCatering } from "@/frontend/stores/catering";
-import { requestQuote } from "@/frontend/services/catering";
-import { estimateQuote, toAddOnLine, EVENT_TYPE_EMOJI } from "@/frontend/lib/catering";
-import { formatPrice } from "@/frontend/lib/format";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
-import { cn } from "@/frontend/lib/utils";
+} from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useAuth } from "@/stores/auth";
+import { useCatering } from "@/stores/catering";
+import { requestQuote } from "@/services/catering";
+import { estimateQuote, toAddOnLine, EVENT_TYPE_EMOJI } from "@/lib/catering";
+import { formatPrice } from "@/lib/format";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type FieldKey =
   | "date"

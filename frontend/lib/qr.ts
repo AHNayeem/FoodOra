@@ -2,7 +2,7 @@ import {
   countries,
   defaultCountry,
   type CountryCode,
-} from "@/frontend/config/regions";
+} from "@/config/regions";
 import type {
   CartLine,
   DineInRound,
@@ -10,7 +10,7 @@ import type {
   QrPricing,
   ServiceRequest,
   ServiceRequestKind,
-} from "@/frontend/types";
+} from "@/types";
 import { cartSubtotal } from "./cart";
 import { roundMoney } from "./checkout";
 

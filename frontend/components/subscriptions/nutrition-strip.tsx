@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
-import type { NutritionFacts } from "@/frontend/types";
-import { cn } from "@/frontend/lib/utils";
+import type { NutritionFacts } from "@/types";
+import { cn } from "@/lib/utils";
 
 /**
  * NutritionStrip — the four macros, shown identically wherever they appear

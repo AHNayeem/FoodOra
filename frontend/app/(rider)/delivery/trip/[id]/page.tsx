@@ -1,4 +1,4 @@
-import { TripView } from "@/frontend/components/rider/trip-view";
+import { TripView } from "@/components/rider/trip-view";
 
 type Params = Promise<{ id: string }>;
 

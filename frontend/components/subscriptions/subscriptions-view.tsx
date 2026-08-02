@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CalendarClock, CheckCircle2 } from "lucide-react";
-import { useSubscriptions } from "@/frontend/stores/subscriptions";
-import { effectiveStatus } from "@/frontend/lib/subscriptions";
+import { useSubscriptions } from "@/stores/subscriptions";
+import { effectiveStatus } from "@/lib/subscriptions";
 import { SubscriptionCard } from "./subscription-card";
 
 /**

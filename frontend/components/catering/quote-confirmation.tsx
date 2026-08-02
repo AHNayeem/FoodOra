@@ -11,13 +11,13 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import type { CateringQuote } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useCatering } from "@/frontend/stores/catering";
-import { formatPrice } from "@/frontend/lib/format";
-import { EVENT_TYPE_EMOJI } from "@/frontend/lib/catering";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Button } from "@/frontend/components/ui/button";
+import type { CateringQuote } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useCatering } from "@/stores/catering";
+import { formatPrice } from "@/lib/format";
+import { EVENT_TYPE_EMOJI } from "@/lib/catering";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 /**
  * QuoteConfirmation — the post-request confirmation + status screen (Phase C17).

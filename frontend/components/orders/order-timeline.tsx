@@ -2,10 +2,10 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, Check } from "lucide-react";
-import type { Order } from "@/frontend/types";
-import { trackingProgress, type TrackStep } from "@/frontend/lib/tracking";
-import { isFailure } from "@/frontend/lib/order-machine";
-import { cn } from "@/frontend/lib/utils";
+import type { Order } from "@/types";
+import { trackingProgress, type TrackStep } from "@/lib/tracking";
+import { isFailure } from "@/lib/order-machine";
+import { cn } from "@/lib/utils";
 import { ACTOR_KEY, STATUS_ICON, STATUS_TONE, TONE_SOLID } from "./order-status-meta";
 
 /**

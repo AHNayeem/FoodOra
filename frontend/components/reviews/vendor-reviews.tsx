@@ -5,19 +5,19 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Camera, MessageSquare, PenLine, Star } from "lucide-react";
-import type { Order, Review, ReviewSort, StarValue } from "@/frontend/types";
-import type { ReviewPage } from "@/frontend/services/reviews";
+import type { Order, Review, ReviewSort, StarValue } from "@/types";
+import type { ReviewPage } from "@/services/reviews";
 import {
   getPendingReviews,
   getVendorReviews,
   markHelpful,
   reportReview,
-} from "@/frontend/services/reviews";
-import { useReviewContext, useReviews } from "@/frontend/stores/reviews";
-import { useOrders } from "@/frontend/stores/orders";
-import { formatRating } from "@/frontend/lib/format";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+} from "@/services/reviews";
+import { useReviewContext, useReviews } from "@/stores/reviews";
+import { useOrders } from "@/stores/orders";
+import { formatRating } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { RatingSummary } from "./rating-summary";
 import { ReviewCard } from "./review-card";
 import { WriteReviewDialog } from "./write-review-dialog";

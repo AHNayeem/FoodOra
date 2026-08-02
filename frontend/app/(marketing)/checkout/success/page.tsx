@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { OrderConfirmation } from "@/frontend/components/checkout/order-confirmation";
+import { OrderConfirmation } from "@/components/checkout/order-confirmation";
 
 type SearchParams = Promise<{ order?: string }>;
 

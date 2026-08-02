@@ -18,9 +18,9 @@ import type {
   CmsRevision,
   CmsRow,
   CmsValues,
-} from "@/frontend/types";
-import { locales, type Locale } from "@/frontend/config/i18n/config";
-import { buildCmsDocuments, cmsCollections, cmsCollectionById } from "@/frontend/lib/mock/cms";
+} from "@/types";
+import { locales, type Locale } from "@/config/i18n/config";
+import { buildCmsDocuments, cmsCollections, cmsCollectionById } from "@/lib/mock/cms";
 import {
   applyPatch,
   coverageOf,
@@ -44,7 +44,7 @@ import {
   validateValues,
   validateWindow,
   type CmsDocPatch,
-} from "@/frontend/lib/cms";
+} from "@/lib/cms";
 import {
   allDocuments,
   createDocument,
@@ -68,11 +68,11 @@ import {
   unpublishDocument,
   type CmsContext,
   type CmsMutation,
-} from "@/frontend/services/cms";
-import { getAboutContent, getCareersContent, getHelpContent, getPartnerContent } from "@/frontend/services/pages";
-import { getBlogPosts, getBlogCategories } from "@/frontend/services/content";
-import { getCategories } from "@/frontend/services/catalog";
-import { contactMessageNotification } from "@/frontend/lib/notifications";
+} from "@/services/cms";
+import { getAboutContent, getCareersContent, getHelpContent, getPartnerContent } from "@/services/pages";
+import { getBlogPosts, getBlogCategories } from "@/services/content";
+import { getCategories } from "@/services/catalog";
+import { contactMessageNotification } from "@/lib/notifications";
 
 let passed = 0;
 const failures: string[] = [];
@@ -558,7 +558,7 @@ console.log("8. Unpublish, archive, create, reorder");
 
   // Reordering swaps two neighbours rather than renumbering the collection.
   const categoriesBefore = allDocuments(ctx, NOW).filter((d) => d.collection === "categories");
-  const move = await import("@/frontend/services/cms").then((m) =>
+  const move = await import("@/services/cms").then((m) =>
     m.moveDocument(categoriesBefore[1].id, "up", ctx, "Tester"),
   );
   check("a reorder is accepted", move.data?.length === 2);
@@ -570,7 +570,7 @@ console.log("8. Unpublish, archive, create, reorder");
       categoriesAfter[1].id === categoriesBefore[0].id,
   );
 
-  const notOrderable = await import("@/frontend/services/cms").then((m) =>
+  const notOrderable = await import("@/services/cms").then((m) =>
     m.moveDocument(doc("terms").id, "up", ctx, "Tester"),
   );
   check("an unordered collection refuses a move", notOrderable.error === "cms.errors.notOrderable");

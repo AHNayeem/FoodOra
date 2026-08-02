@@ -8,7 +8,7 @@ import {
   riderByUserId,
   riders,
   zoneById,
-} from "@/frontend/lib/mock";
+} from "@/lib/mock";
 import type {
   DeliveryJob,
   DeliveryStop,
@@ -22,7 +22,7 @@ import type {
   RiderVehicle,
   RiderWallet,
   RiderWithdrawal,
-} from "@/frontend/types";
+} from "@/types";
 import {
   acceptanceRate,
   cashPosition,
@@ -33,9 +33,9 @@ import {
   jobsWithinDays,
   otpMatches,
   statusFromProgress,
-} from "@/frontend/lib/delivery";
-import { roundMoney } from "@/frontend/lib/checkout";
-import { toDateKey } from "@/frontend/lib/dates";
+} from "@/lib/delivery";
+import { roundMoney } from "@/lib/checkout";
+import { toDateKey } from "@/lib/dates";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

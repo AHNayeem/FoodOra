@@ -6,11 +6,11 @@ import type {
   OrderEvent,
   OrderStatus,
   PaymentMethod,
-} from "@/frontend/types";
-import { buildCartLine } from "@/frontend/lib/cart";
-import { computeTotals } from "@/frontend/lib/checkout";
-import { createLifecycle, riderSnapshot } from "@/frontend/lib/order-lifecycle";
-import { RIDE_ALLOWANCE_MIN, stagesFor } from "@/frontend/lib/order-machine";
+} from "@/types";
+import { buildCartLine } from "@/lib/cart";
+import { computeTotals } from "@/lib/checkout";
+import { createLifecycle, riderSnapshot } from "@/lib/order-lifecycle";
+import { RIDE_ALLOWANCE_MIN, stagesFor } from "@/lib/order-machine";
 import { foodsByVendor } from "./foods";
 import { riders } from "./riders";
 import { hashSeed, mulberry32, pick } from "./rng";

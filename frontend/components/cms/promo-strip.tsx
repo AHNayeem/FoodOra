@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import type { CmsBanner, CmsBannerPlacement } from "@/frontend/types";
-import { useCmsBanners } from "@/frontend/components/cms/use-cms-content";
-import { DashIcon } from "@/frontend/components/directory/dash-icon";
-import { cn } from "@/frontend/lib/utils";
+import type { CmsBanner, CmsBannerPlacement } from "@/types";
+import { useCmsBanners } from "@/components/cms/use-cms-content";
+import { DashIcon } from "@/components/directory/dash-icon";
+import { cn } from "@/lib/utils";
 
 /**
  * PromoStrip — the promotional banners of one placement (spec: CMS —

@@ -19,11 +19,11 @@ import type {
   DietPlan,
   DishInsight,
   RecognitionResult,
-} from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { fromDateKey } from "@/frontend/lib/dates";
-import { cn } from "@/frontend/lib/utils";
+} from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { fromDateKey } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 import { DishSuggestion } from "./dish-suggestion";
 import { VendorSuggestion } from "./vendor-suggestion";
 import { NutritionBars } from "./nutrition-bars";

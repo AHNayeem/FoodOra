@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { SavedAddress } from "@/frontend/types";
+import type { SavedAddress } from "@/types";
 
 /**
  * addresses store — the customer's address book (Phase C3). In the prototype

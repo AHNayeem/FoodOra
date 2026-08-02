@@ -4,9 +4,9 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { SlidersHorizontal, X } from "lucide-react";
-import type { Cuisine, DietaryTag, VendorType } from "@/frontend/types";
-import type { SearchSort } from "@/frontend/services/search";
-import { cn } from "@/frontend/lib/utils";
+import type { Cuisine, DietaryTag, VendorType } from "@/types";
+import type { SearchSort } from "@/services/search";
+import { cn } from "@/lib/utils";
 
 /** The facet state the results page keeps in the URL. */
 export interface SearchFacets {

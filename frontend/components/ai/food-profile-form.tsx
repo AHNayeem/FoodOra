@@ -3,10 +3,10 @@
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
-import type { Allergen, DietaryTag, FoodProfile, PlanGoal } from "@/frontend/types";
-import { useAssistant } from "@/frontend/stores/assistant";
-import { ALLERGENS, GOAL_CALORIES } from "@/frontend/lib/nutrition";
-import { cn } from "@/frontend/lib/utils";
+import type { Allergen, DietaryTag, FoodProfile, PlanGoal } from "@/types";
+import { useAssistant } from "@/stores/assistant";
+import { ALLERGENS, GOAL_CALORIES } from "@/lib/nutrition";
+import { cn } from "@/lib/utils";
 
 /** The dietary tags worth declaring standing — "spicy" is a mood, not a diet. */
 const DIETARY_CHOICES: DietaryTag[] = ["halal", "vegetarian", "vegan", "gluten-free", "keto"];

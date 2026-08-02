@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Heart } from "lucide-react";
-import { useAuth } from "@/frontend/stores/auth";
-import { useFavorites } from "@/frontend/stores/favorites";
-import { cn } from "@/frontend/lib/utils";
+import { useAuth } from "@/stores/auth";
+import { useFavorites } from "@/stores/favorites";
+import { cn } from "@/lib/utils";
 
 /**
  * FavoriteButton — the heart that saves a vendor or a dish (Phase C23).

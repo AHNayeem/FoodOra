@@ -10,7 +10,7 @@ import type {
   ReviewTag,
   ReviewTagCount,
   StarValue,
-} from "@/frontend/types";
+} from "@/types";
 import { timeOf } from "./order-lifecycle";
 
 /**

@@ -15,15 +15,15 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import type { UserRole } from "@/frontend/types";
-import { useAuth } from "@/frontend/stores/auth";
-import { useOrders } from "@/frontend/stores/orders";
-import { useCms } from "@/frontend/stores/cms";
-import { ThemeToggle } from "@/frontend/components/ui/theme-toggle";
-import { LocaleSwitcher } from "@/frontend/components/ui/locale-switcher";
-import { NotificationBell } from "@/frontend/components/notifications/notification-bell";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import type { UserRole } from "@/types";
+import { useAuth } from "@/stores/auth";
+import { useOrders } from "@/stores/orders";
+import { useCms } from "@/stores/cms";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /** Roles allowed into platform admin. */
 const ADMIN_ROLES: readonly UserRole[] = [

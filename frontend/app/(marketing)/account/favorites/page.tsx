@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { FavoritesView } from "@/frontend/components/account/favorites-view";
+import { FavoritesView } from "@/components/account/favorites-view";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("favorites");

@@ -1,13 +1,13 @@
 import Image from "next/image";
 import { Flame } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import type { CartVendor, FoodItem } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { Badge } from "@/frontend/components/ui/badge";
-import { AddToCartButton } from "@/frontend/components/menu/add-to-cart-button";
-import { FavoriteButton } from "@/frontend/components/favorites/favorite-button";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { CartVendor, FoodItem } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { Badge } from "@/components/ui/badge";
+import { AddToCartButton } from "@/components/menu/add-to-cart-button";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * FoodItemCard — a single dish row on a restaurant menu (Phase C5/C6). Server

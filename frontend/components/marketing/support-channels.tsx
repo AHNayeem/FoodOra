@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import type { SupportChannel } from "@/frontend/types";
-import { useCmsSupportChannels } from "@/frontend/components/cms/use-cms-content";
-import { DashIcon } from "@/frontend/components/directory/dash-icon";
+import type { SupportChannel } from "@/types";
+import { useCmsSupportChannels } from "@/components/cms/use-cms-content";
+import { DashIcon } from "@/components/directory/dash-icon";
 
 /**
  * SupportChannels — the "talk to someone" cards.

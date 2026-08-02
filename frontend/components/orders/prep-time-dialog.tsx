@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Clock, Loader2 } from "lucide-react";
-import { PREP_TIME_OPTIONS } from "@/frontend/lib/order-lifecycle";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import { PREP_TIME_OPTIONS } from "@/lib/order-lifecycle";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * PrepTimeDialog — accepting an order (spec §2).

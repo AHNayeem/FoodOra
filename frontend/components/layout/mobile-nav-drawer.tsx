@@ -6,16 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ChevronRight, LogOut, User as UserIcon, X } from "lucide-react";
-import type { CmsMenuItem, User } from "@/frontend/types";
-import { navGroups } from "@/frontend/constants/navigation";
-import { Button } from "@/frontend/components/ui/button";
-import { LocaleSwitcher } from "@/frontend/components/ui/locale-switcher";
-import { ThemeToggle } from "@/frontend/components/ui/theme-toggle";
-import { isNavActive } from "@/frontend/components/layout/primary-nav";
-import { useCmsMenu } from "@/frontend/components/cms/use-cms-content";
-import { DashIcon } from "@/frontend/components/directory/dash-icon";
-import { useAuth } from "@/frontend/stores/auth";
-import { cn } from "@/frontend/lib/utils";
+import type { CmsMenuItem, User } from "@/types";
+import { navGroups } from "@/constants/navigation";
+import { Button } from "@/components/ui/button";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { isNavActive } from "@/components/layout/primary-nav";
+import { useCmsMenu } from "@/components/cms/use-cms-content";
+import { DashIcon } from "@/components/directory/dash-icon";
+import { useAuth } from "@/stores/auth";
+import { cn } from "@/lib/utils";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';

@@ -6,18 +6,18 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { X, ShoppingBag } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useCart } from "@/frontend/stores/cart";
+import type { CurrencyCode } from "@/config/regions";
+import { useCart } from "@/stores/cart";
 import {
   amountToFreeDelivery,
   amountToMinOrder,
   cartCount,
   cartSubtotal,
   deliveryFeeFor,
-} from "@/frontend/lib/cart";
-import { formatPrice } from "@/frontend/lib/format";
-import { QuantityStepper } from "@/frontend/components/cart/quantity-stepper";
-import { cn } from "@/frontend/lib/utils";
+} from "@/lib/cart";
+import { formatPrice } from "@/lib/format";
+import { QuantityStepper } from "@/components/cart/quantity-stepper";
+import { cn } from "@/lib/utils";
 
 /**
  * CartDrawer — the primary cart surface (Phase C7): a side-sheet listing the

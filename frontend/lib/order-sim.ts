@@ -1,4 +1,4 @@
-import type { Order, OrderActor, OrderStatus } from "@/frontend/types";
+import type { Order, OrderActor, OrderStatus } from "@/types";
 import { PREP_TIME_OPTIONS } from "./order-lifecycle";
 import type { TransitionPatch } from "./order-machine";
 

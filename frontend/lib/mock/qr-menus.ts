@@ -1,4 +1,4 @@
-import type { QrMenuConfig } from "@/frontend/types";
+import type { QrMenuConfig } from "@/types";
 import { SEED_NOW } from "./cuisines";
 
 /**

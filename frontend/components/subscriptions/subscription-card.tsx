@@ -14,22 +14,22 @@ import {
   Undo2,
   X,
 } from "lucide-react";
-import type { PlannedDelivery, Subscription } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useSubscriptions } from "@/frontend/stores/subscriptions";
-import { buildSchedule, deliveredCount, effectiveStatus } from "@/frontend/lib/subscriptions";
-import { addDays, fromDateKey, toDateKey } from "@/frontend/lib/dates";
+import type { PlannedDelivery, Subscription } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useSubscriptions } from "@/stores/subscriptions";
+import { buildSchedule, deliveredCount, effectiveStatus } from "@/lib/subscriptions";
+import { addDays, fromDateKey, toDateKey } from "@/lib/dates";
 import {
   cancelSubscription,
   pauseSubscription,
   resumeSubscription,
   skipDelivery,
   unskipDelivery,
-} from "@/frontend/services/subscriptions";
-import { formatPrice } from "@/frontend/lib/format";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Modal } from "@/frontend/components/ui/modal";
-import { cn } from "@/frontend/lib/utils";
+} from "@/services/subscriptions";
+import { formatPrice } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { Modal } from "@/components/ui/modal";
+import { cn } from "@/lib/utils";
 
 /** How many upcoming deliveries the calendar shows before "see the rest". */
 const VISIBLE_DELIVERIES = 4;

@@ -8,9 +8,9 @@ import type {
   AppNotification,
   NotificationDispatch,
   NotifyCategory,
-} from "@/frontend/types";
-import { getFeed, getOutbox, type CategoryFacet } from "@/frontend/services/notifications";
-import { useNotifications } from "@/frontend/stores/notifications";
+} from "@/types";
+import { getFeed, getOutbox, type CategoryFacet } from "@/services/notifications";
+import { useNotifications } from "@/stores/notifications";
 import { NotificationRow } from "./notification-row";
 import {
   CATEGORY_ICON,
@@ -20,8 +20,8 @@ import {
 } from "./notification-meta";
 import { dispatchRenderable, useNotificationCopy } from "./notification-text";
 import { PushCard } from "./push-card";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Tab = "inbox" | "log";
 

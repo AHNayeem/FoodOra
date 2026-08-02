@@ -1,5 +1,5 @@
-import { qrMenuConfigByVendor, tablesByVendor } from "@/frontend/lib/mock";
-import { qrMenuPath, DEFAULT_SERVICE_CHARGE_RATE } from "@/frontend/lib/qr";
+import { qrMenuConfigByVendor, tablesByVendor } from "@/lib/mock";
+import { qrMenuPath, DEFAULT_SERVICE_CHARGE_RATE } from "@/lib/qr";
 import type {
   CartLine,
   DineInRound,
@@ -9,7 +9,7 @@ import type {
   ServiceRequest,
   ServiceRequestKind,
   Vendor,
-} from "@/frontend/types";
+} from "@/types";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

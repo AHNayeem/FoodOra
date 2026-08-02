@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { NotificationCenter } from "@/frontend/components/notifications/notification-center";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("account");

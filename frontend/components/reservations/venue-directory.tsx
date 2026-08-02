@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Minus, Plus, Search, SlidersHorizontal, Users, X } from "lucide-react";
-import type { BookingPolicy, Vendor } from "@/frontend/types";
-import { useReservations } from "@/frontend/stores/reservations";
-import { cn } from "@/frontend/lib/utils";
+import type { BookingPolicy, Vendor } from "@/types";
+import { useReservations } from "@/stores/reservations";
+import { cn } from "@/lib/utils";
 import { VenueCard } from "./venue-card";
 
 export type VenueSortKey = "recommended" | "rating" | "price-low" | "party-large";

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Search, X } from "lucide-react";
-import { getSearchSuggestions } from "@/frontend/services/search";
-import { cn } from "@/frontend/lib/utils";
+import { getSearchSuggestions } from "@/services/search";
+import { cn } from "@/lib/utils";
 
 /**
  * SearchBox — the results-page search field with type-ahead. Suggestions are

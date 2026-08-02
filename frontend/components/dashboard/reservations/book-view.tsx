@@ -11,18 +11,18 @@ import {
   Users,
   UtensilsCrossed,
 } from "lucide-react";
-import type { Reservation, ReservationStatus, TableStatus } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useDashboard } from "@/frontend/components/dashboard/dashboard-context";
-import { useReservations } from "@/frontend/stores/reservations";
-import { getVendorBook, setReservationStatus, type VendorBook } from "@/frontend/services/reservations";
-import { effectiveReservationStatus, reservationTimeRange } from "@/frontend/lib/reservations";
-import { addDays, fromDateKey, toDateKey } from "@/frontend/lib/dates";
-import { formatPrice } from "@/frontend/lib/format";
-import { Badge } from "@/frontend/components/ui/badge";
-import { StatCard } from "@/frontend/components/dashboard/stat-card";
-import { useDateLabel } from "@/frontend/components/reservations/use-date-label";
-import { cn } from "@/frontend/lib/utils";
+import type { Reservation, ReservationStatus, TableStatus } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useDashboard } from "@/components/dashboard/dashboard-context";
+import { useReservations } from "@/stores/reservations";
+import { getVendorBook, setReservationStatus, type VendorBook } from "@/services/reservations";
+import { effectiveReservationStatus, reservationTimeRange } from "@/lib/reservations";
+import { addDays, fromDateKey, toDateKey } from "@/lib/dates";
+import { formatPrice } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { useDateLabel } from "@/components/reservations/use-date-label";
+import { cn } from "@/lib/utils";
 
 const TONE: Record<ReservationStatus, "primary" | "accent" | "fresh" | "neutral" | "danger"> = {
   pending: "accent",

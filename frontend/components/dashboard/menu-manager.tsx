@@ -5,12 +5,12 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Star, Flame } from "lucide-react";
-import type { MenuSectionWithItems } from "@/frontend/services/catalog";
-import { getVendorMenu } from "@/frontend/services/catalog";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { useMerchant } from "@/frontend/stores/merchant";
-import { cn } from "@/frontend/lib/utils";
+import type { MenuSectionWithItems } from "@/services/catalog";
+import { getVendorMenu } from "@/services/catalog";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { useMerchant } from "@/stores/merchant";
+import { cn } from "@/lib/utils";
 import { useDashboard } from "./dashboard-context";
 
 /**

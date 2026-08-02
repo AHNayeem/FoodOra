@@ -7,8 +7,8 @@ import type {
   CartVendor,
   DineInRound,
   ServiceRequest,
-} from "@/frontend/types";
-import { sessionKey } from "@/frontend/lib/qr";
+} from "@/types";
+import { sessionKey } from "@/lib/qr";
 
 /**
  * dine-in store — one guest's sitting at one table (Phase C12).

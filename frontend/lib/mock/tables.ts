@@ -1,4 +1,4 @@
-import type { RestaurantTable, TableZone } from "@/frontend/types";
+import type { RestaurantTable, TableZone } from "@/types";
 import { SEED_NOW } from "./cuisines";
 
 /**

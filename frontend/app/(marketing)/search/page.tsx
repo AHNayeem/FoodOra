@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { SearchX } from "lucide-react";
-import { search, popularSearchTerms, type SearchSort } from "@/frontend/services/search";
-import { getCategories, getCuisines } from "@/frontend/services/catalog";
-import { SearchToolbar } from "@/frontend/components/search/search-toolbar";
-import { SearchFilters, type SearchFacets } from "@/frontend/components/search/search-filters";
-import { VendorCard } from "@/frontend/components/cards/vendor-card";
-import { FoodResultCard } from "@/frontend/components/cards/food-result-card";
-import { AiSearchNote } from "@/frontend/components/ai/ai-search-note";
-import type { DietaryTag, VendorType } from "@/frontend/types";
+import { search, popularSearchTerms, type SearchSort } from "@/services/search";
+import { getCategories, getCuisines } from "@/services/catalog";
+import { SearchToolbar } from "@/components/search/search-toolbar";
+import { SearchFilters, type SearchFacets } from "@/components/search/search-filters";
+import { VendorCard } from "@/components/cards/vendor-card";
+import { FoodResultCard } from "@/components/cards/food-result-card";
+import { AiSearchNote } from "@/components/ai/ai-search-note";
+import type { DietaryTag, VendorType } from "@/types";
 
 const VENDOR_TYPES = new Set<VendorType>([
   "restaurant",

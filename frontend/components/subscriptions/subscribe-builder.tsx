@@ -21,13 +21,13 @@ import type {
   SavedAddress,
   Vendor,
   Weekday,
-} from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useAuth } from "@/frontend/stores/auth";
-import { useAddresses } from "@/frontend/stores/addresses";
-import { useSubscriptions } from "@/frontend/stores/subscriptions";
-import { getAddressBook } from "@/frontend/services/account";
-import { createSubscription, toPlanRef } from "@/frontend/services/subscriptions";
+} from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useAuth } from "@/stores/auth";
+import { useAddresses } from "@/stores/addresses";
+import { useSubscriptions } from "@/stores/subscriptions";
+import { getAddressBook } from "@/services/account";
+import { createSubscription, toPlanRef } from "@/services/subscriptions";
 import {
   DELIVERY_WINDOWS,
   MEAL_SLOTS,
@@ -35,13 +35,13 @@ import {
   buildSchedule,
   computeSubscriptionPricing,
   earliestStartDate,
-} from "@/frontend/lib/subscriptions";
-import { fromDateKey } from "@/frontend/lib/dates";
-import { formatPrice } from "@/frontend/lib/format";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
-import { AddressFields, emptyAddress, type NewAddress } from "@/frontend/components/checkout/address-fields";
-import { cn } from "@/frontend/lib/utils";
+} from "@/lib/subscriptions";
+import { fromDateKey } from "@/lib/dates";
+import { formatPrice } from "@/lib/format";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { AddressFields, emptyAddress, type NewAddress } from "@/components/checkout/address-fields";
+import { cn } from "@/lib/utils";
 
 type FieldKey = "start" | "days" | "address" | "recipient" | "line1" | "area" | "city";
 type FieldErrors = Partial<Record<FieldKey, string>>;

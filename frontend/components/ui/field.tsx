@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * Field — labels a form control and renders its validation error, wiring the

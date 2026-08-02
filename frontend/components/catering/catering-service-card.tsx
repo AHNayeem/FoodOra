@@ -2,13 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Users } from "lucide-react";
-import type { CateringService } from "@/frontend/types";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Rating } from "@/frontend/components/ui/rating";
-import { formatCompact, formatPrice } from "@/frontend/lib/format";
-import { EVENT_TYPE_EMOJI } from "@/frontend/lib/catering";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { cn } from "@/frontend/lib/utils";
+import type { CateringService } from "@/types";
+import { Badge } from "@/components/ui/badge";
+import { Rating } from "@/components/ui/rating";
+import { formatCompact, formatPrice } from "@/lib/format";
+import { EVENT_TYPE_EMOJI } from "@/lib/catering";
+import type { CurrencyCode } from "@/config/regions";
+import { cn } from "@/lib/utils";
 
 /**
  * CateringServiceCard — the listing card for a caterer (Phase C17). Reused on

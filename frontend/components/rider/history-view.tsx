@@ -3,15 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Banknote, Bike, Layers, Route } from "lucide-react";
-import type { DeliveryJob } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useRider } from "@/frontend/stores/rider";
-import { getRiderJobs } from "@/frontend/services/delivery";
-import { isBatch } from "@/frontend/lib/delivery";
-import { toDateKey } from "@/frontend/lib/dates";
-import { formatDistance, formatPrice } from "@/frontend/lib/format";
-import { Badge } from "@/frontend/components/ui/badge";
-import { useDateLabel } from "@/frontend/components/reservations/use-date-label";
+import type { DeliveryJob } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useRider } from "@/stores/rider";
+import { getRiderJobs } from "@/services/delivery";
+import { isBatch } from "@/lib/delivery";
+import { toDateKey } from "@/lib/dates";
+import { formatDistance, formatPrice } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { useDateLabel } from "@/components/reservations/use-date-label";
 import { useRiderApp } from "./rider-context";
 
 /**

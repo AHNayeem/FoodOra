@@ -3,9 +3,9 @@ import type {
   OccasionType,
   Reservation,
   ReservationStatus,
-} from "@/frontend/types";
-import { addDays, fromDateKey, toDateKey, toMinutes, weekdayOf } from "@/frontend/lib/dates";
-import { allocateTables, bookableTables, tablesBusyAt, turnMinutesFor } from "@/frontend/lib/reservations";
+} from "@/types";
+import { addDays, fromDateKey, toDateKey, toMinutes, weekdayOf } from "@/lib/dates";
+import { allocateTables, bookableTables, tablesBusyAt, turnMinutesFor } from "@/lib/reservations";
 import { SEED_NOW } from "./cuisines";
 import { hashSeed, mulberry32, pick } from "./rng";
 import { tablesByVendor } from "./tables";

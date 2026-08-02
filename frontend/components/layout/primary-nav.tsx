@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
-import type { CmsMenuItem } from "@/frontend/types";
-import { useCmsMenu } from "@/frontend/components/cms/use-cms-content";
-import { DashIcon } from "@/frontend/components/directory/dash-icon";
-import { cn } from "@/frontend/lib/utils";
+import type { CmsMenuItem } from "@/types";
+import { useCmsMenu } from "@/components/cms/use-cms-content";
+import { DashIcon } from "@/components/directory/dash-icon";
+import { cn } from "@/lib/utils";
 
 /** True when `href` is the current route or one of its children. */
 export function isNavActive(pathname: string, href: string): boolean {

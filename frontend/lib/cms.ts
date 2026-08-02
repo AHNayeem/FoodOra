@@ -14,7 +14,7 @@
  * *translated until someone overrides it*, which is the only way a CMS can take
  * over copy that lives in three message catalogs without duplicating it.
  */
-import { defaultLocale, locales, type Locale } from "@/frontend/config/i18n/config";
+import { defaultLocale, locales, type Locale } from "@/config/i18n/config";
 import type {
   BlogBlock,
   BlogPost,
@@ -48,7 +48,7 @@ import type {
   SupportChannel,
   TimelineEntry,
   ValueProp,
-} from "@/frontend/types";
+} from "@/types";
 
 /** A translator — `useTranslations()` / `getTranslations()` without a namespace. */
 export type CmsTranslate = (key: string) => string;

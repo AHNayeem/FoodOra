@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AdminNotificationCenter } from "@/frontend/components/admin/notification-center";
+import { AdminNotificationCenter } from "@/components/admin/notification-center";
 
 /** Private surface — never indexed. */
 export const metadata: Metadata = {

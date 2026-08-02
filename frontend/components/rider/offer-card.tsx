@@ -2,12 +2,12 @@
 
 import { useTranslations } from "next-intl";
 import { Banknote, Layers, MapPin, Route, Store, Timer } from "lucide-react";
-import type { DeliveryJob } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { isBatch, offerSecondsLeft } from "@/frontend/lib/delivery";
-import { formatDistance, formatPrice } from "@/frontend/lib/format";
-import { Badge } from "@/frontend/components/ui/badge";
-import { cn } from "@/frontend/lib/utils";
+import type { DeliveryJob } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { isBatch, offerSecondsLeft } from "@/lib/delivery";
+import { formatDistance, formatPrice } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 /**
  * OfferCard — one trip on offer (Phase C18).

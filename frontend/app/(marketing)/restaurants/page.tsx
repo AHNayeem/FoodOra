@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { SearchX } from "lucide-react";
-import { getVendors } from "@/frontend/services/catalog";
-import { VendorFilters, type SortKey } from "@/frontend/components/filters/vendor-filters";
-import { VendorCard } from "@/frontend/components/cards/vendor-card";
-import type { VendorType } from "@/frontend/types";
+import { getVendors } from "@/services/catalog";
+import { VendorFilters, type SortKey } from "@/components/filters/vendor-filters";
+import { VendorCard } from "@/components/cards/vendor-card";
+import type { VendorType } from "@/types";
 
 const VENDOR_TYPES = new Set<VendorType>([
   "restaurant",

@@ -7,10 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Loader2, MailCheck } from "lucide-react";
-import { requestPasswordReset } from "@/frontend/services/auth";
-import { Button } from "@/frontend/components/ui/button";
-import { Input } from "@/frontend/components/ui/input";
-import { Field } from "@/frontend/components/ui/field";
+import { requestPasswordReset } from "@/services/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 
 const schema = z.object({
   email: z.string().min(1, "errors.emailRequired").email("errors.emailInvalid"),

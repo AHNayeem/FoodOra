@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Check } from "lucide-react";
-import type { CateringPackage } from "@/frontend/types";
-import { Badge } from "@/frontend/components/ui/badge";
-import { formatPrice } from "@/frontend/lib/format";
-import { EVENT_TYPE_EMOJI } from "@/frontend/lib/catering";
-import type { CurrencyCode } from "@/frontend/config/regions";
+import type { CateringPackage } from "@/types";
+import { Badge } from "@/components/ui/badge";
+import { formatPrice } from "@/lib/format";
+import { EVENT_TYPE_EMOJI } from "@/lib/catering";
+import type { CurrencyCode } from "@/config/regions";
 
 /**
  * PackageCard — a per-guest catering package (Phase C17). Shows the menu

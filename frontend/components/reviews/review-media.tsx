@@ -4,8 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Play, X } from "lucide-react";
-import type { ReviewMedia } from "@/frontend/types";
-import { Modal } from "@/frontend/components/ui/modal";
+import type { ReviewMedia } from "@/types";
+import { Modal } from "@/components/ui/modal";
 
 /**
  * ReviewMediaStrip — the photos (and videos) attached to a review, plus the

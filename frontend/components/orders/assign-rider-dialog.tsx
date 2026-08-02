@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Sparkles, Star } from "lucide-react";
-import type { Order, Rider } from "@/frontend/types";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import type { Order, Rider } from "@/types";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * AssignRiderDialog — dispatch (spec §4).

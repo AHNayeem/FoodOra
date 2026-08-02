@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { BadgePercent, TicketPercent, Zap } from "lucide-react";
-import { getOffers, getPromoVendors } from "@/frontend/services/offers";
-import { getBanners, getRouteMetadata, readOptions } from "@/frontend/services/cms";
-import { PromoStrip } from "@/frontend/components/cms/promo-strip";
-import { OfferCard } from "@/frontend/components/offers/offer-card";
-import { VendorCard } from "@/frontend/components/cards/vendor-card";
-import { SectionHeading } from "@/frontend/components/sections/section-heading";
+import { getOffers, getPromoVendors } from "@/services/offers";
+import { getBanners, getRouteMetadata, readOptions } from "@/services/cms";
+import { PromoStrip } from "@/components/cms/promo-strip";
+import { OfferCard } from "@/components/offers/offer-card";
+import { VendorCard } from "@/components/cards/vendor-card";
+import { SectionHeading } from "@/components/sections/section-heading";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);

@@ -1,4 +1,4 @@
-import type { Courier } from "@/frontend/types";
+import type { Courier } from "@/types";
 import { SEED_NOW } from "./cuisines";
 
 const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };

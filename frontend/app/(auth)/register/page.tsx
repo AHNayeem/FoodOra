@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { AuthCard } from "@/frontend/components/auth/auth-card";
-import { RegisterForm } from "@/frontend/components/auth/register-form";
+import { AuthCard } from "@/components/auth/auth-card";
+import { RegisterForm } from "@/components/auth/register-form";
 
 type SearchParams = Promise<{ next?: string }>;
 

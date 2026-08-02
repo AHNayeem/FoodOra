@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { addDays, fromDateKey, toDateKey } from "@/frontend/lib/dates";
+import { addDays, fromDateKey, toDateKey } from "@/lib/dates";
 
 /**
  * Formats a plain "YYYY-MM-DD" key for display, saying "Today"/"Tomorrow" where

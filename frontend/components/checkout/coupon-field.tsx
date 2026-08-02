@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Loader2, Sparkles, Ticket, X } from "lucide-react";
-import type { AppliedCoupon, CouponEvaluation } from "@/frontend/types";
-import type { CouponOption } from "@/frontend/lib/coupons";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { CouponTicket } from "@/frontend/components/coupons/coupon-ticket";
-import { Input } from "@/frontend/components/ui/input";
-import { Modal } from "@/frontend/components/ui/modal";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { AppliedCoupon, CouponEvaluation } from "@/types";
+import type { CouponOption } from "@/lib/coupons";
+import type { CurrencyCode } from "@/config/regions";
+import { CouponTicket } from "@/components/coupons/coupon-ticket";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * CouponField — the coupon step of the checkout summary (Phase C21), replacing

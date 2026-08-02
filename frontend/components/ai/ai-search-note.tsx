@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { interpretSearch } from "@/frontend/services/ai";
+import { interpretSearch } from "@/services/ai";
 import { resolveSayValues } from "./vocabulary";
 
 /**

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { AuthCard } from "@/frontend/components/auth/auth-card";
-import { ForgotPasswordForm } from "@/frontend/components/auth/forgot-password-form";
+import { AuthCard } from "@/components/auth/auth-card";
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth");

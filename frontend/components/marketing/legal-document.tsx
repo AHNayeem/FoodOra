@@ -1,8 +1,8 @@
 "use client";
 
 import { useFormatter, useTranslations } from "next-intl";
-import type { LegalDoc } from "@/frontend/types";
-import { useCmsLegalDoc } from "@/frontend/components/cms/use-cms-content";
+import type { LegalDoc } from "@/types";
+import { useCmsLegalDoc } from "@/components/cms/use-cms-content";
 
 /**
  * LegalDocument — renders a {@link LegalDoc}: title, effective date, intro, an

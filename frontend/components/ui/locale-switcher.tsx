@@ -4,9 +4,9 @@ import { useTransition } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Globe } from "lucide-react";
-import { setLocale } from "@/frontend/config/i18n/actions";
-import { localeMeta, locales, type Locale } from "@/frontend/config/i18n/config";
-import { cn } from "@/frontend/lib/utils";
+import { setLocale } from "@/config/i18n/actions";
+import { localeMeta, locales, type Locale } from "@/config/i18n/config";
+import { cn } from "@/lib/utils";
 
 /**
  * LocaleSwitcher — persists the chosen locale via a server action, then

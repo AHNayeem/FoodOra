@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * Input — the shared text-field primitive used by every form (auth, checkout,

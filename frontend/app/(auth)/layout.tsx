@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { UtensilsCrossed, ArrowLeft } from "lucide-react";
-import { ThemeToggle } from "@/frontend/components/ui/theme-toggle";
-import { LocaleSwitcher } from "@/frontend/components/ui/locale-switcher";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 
 /**
  * Auth group layout (Phase C2). A focused, chrome-free split screen: a branded

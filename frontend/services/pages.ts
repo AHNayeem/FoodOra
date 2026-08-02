@@ -7,7 +7,7 @@ import type {
   SupportChannel,
   TimelineEntry,
   ValueProp,
-} from "@/frontend/types";
+} from "@/types";
 import {
   liveReader,
   toJobs,
@@ -18,7 +18,7 @@ import {
   toTimeline,
   toValueProps,
   type CmsPageHero,
-} from "@/frontend/lib/cms";
+} from "@/lib/cms";
 import {
   emptyCmsContext,
   getFaqGroupsFor,

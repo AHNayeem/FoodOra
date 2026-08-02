@@ -1,4 +1,4 @@
-import { LiveOps } from "@/frontend/components/admin/live-ops";
+import { LiveOps } from "@/components/admin/live-ops";
 
 /**
  * Platform operations — live orders, restaurant load, fleet status and today's

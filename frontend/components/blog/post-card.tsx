@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { ArrowRight, Clock } from "lucide-react";
-import type { BlogPost } from "@/frontend/types";
-import { cn } from "@/frontend/lib/utils";
+import type { BlogPost } from "@/types";
+import { cn } from "@/lib/utils";
 
 /**
  * PostCard — a blog teaser. `featured` renders the wide, side-by-side variant

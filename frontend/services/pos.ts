@@ -1,4 +1,4 @@
-import { foodsByVendor, menuSectionsByVendor, tablesByVendor } from "@/frontend/lib/mock";
+import { foodsByVendor, menuSectionsByVendor, tablesByVendor } from "@/lib/mock";
 import type {
   PosOrderType,
   PosPayment,
@@ -6,8 +6,8 @@ import type {
   PosSale,
   PosTicketLine,
   RestaurantTable,
-} from "@/frontend/types";
-import { saleNumberFrom } from "@/frontend/lib/pos";
+} from "@/types";
+import { saleNumberFrom } from "@/lib/pos";
 import type { MenuSectionWithItems } from "./catalog";
 import { mockDelay, ok, type Result } from "./http";
 

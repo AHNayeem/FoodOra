@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AssistantEntities, AssistantMessage, FoodProfile } from "@/frontend/types";
+import type { AssistantEntities, AssistantMessage, FoodProfile } from "@/types";
 
 /**
  * assistant store — the conversation and the food profile (Phase C24).

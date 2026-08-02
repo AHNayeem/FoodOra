@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { Category } from "@/frontend/types";
-import { useCmsCategories } from "@/frontend/components/cms/use-cms-content";
+import type { Category } from "@/types";
+import { useCmsCategories } from "@/components/cms/use-cms-content";
 
 /**
  * CategoryRail — horizontally scrollable "What are you craving?" rail.

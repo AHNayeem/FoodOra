@@ -4,9 +4,9 @@ import {
   planMealsByPlan,
   planTiersByPlan,
   vendorById,
-} from "@/frontend/lib/mock";
-import { MEAL_SLOTS, MIN_DELIVERY_DAYS, canSkipDelivery, renewalDate } from "@/frontend/lib/subscriptions";
-import { fromDateKey, toDateKey } from "@/frontend/lib/dates";
+} from "@/lib/mock";
+import { MEAL_SLOTS, MIN_DELIVERY_DAYS, canSkipDelivery, renewalDate } from "@/lib/subscriptions";
+import { fromDateKey, toDateKey } from "@/lib/dates";
 import type {
   DeliveryAddress,
   DietaryTag,
@@ -20,7 +20,7 @@ import type {
   SubscriptionPricing,
   Vendor,
   Weekday,
-} from "@/frontend/types";
+} from "@/types";
 import { mockDelay, ok, paginate, type Paginated, type Result } from "./http";
 
 /**

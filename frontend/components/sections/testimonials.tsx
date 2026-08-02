@@ -1,8 +1,8 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Quote, Star } from "lucide-react";
-import { cn } from "@/frontend/lib/utils";
-import type { Testimonial } from "@/frontend/types";
+import { cn } from "@/lib/utils";
+import type { Testimonial } from "@/types";
 
 /** Five stars, filled up to `value`. Decorative — rating is conveyed in text too. */
 function Stars({ value }: { value: number }) {

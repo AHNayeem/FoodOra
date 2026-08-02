@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { UtensilsCrossed } from "lucide-react";
-import type { CmsMenuItem, CmsSite } from "@/frontend/types";
-import { useCmsMenu, useCmsSite } from "@/frontend/components/cms/use-cms-content";
+import type { CmsMenuItem, CmsSite } from "@/types";
+import { useCmsMenu, useCmsSite } from "@/components/cms/use-cms-content";
 
 /**
  * SiteFooter — the marketing footer.

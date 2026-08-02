@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg" | "icon";

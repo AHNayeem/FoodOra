@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { getVendorBySlug, getVendorMenu } from "@/frontend/services/catalog";
-import { getQrMenuConfig, getQrTable } from "@/frontend/services/qr";
-import { QR_TABLE_PARAM } from "@/frontend/lib/qr";
-import { QrMenuView } from "@/frontend/components/qr/qr-menu-view";
-import type { CartVendor } from "@/frontend/types";
+import { getVendorBySlug, getVendorMenu } from "@/services/catalog";
+import { getQrMenuConfig, getQrTable } from "@/services/qr";
+import { QR_TABLE_PARAM } from "@/lib/qr";
+import { QrMenuView } from "@/components/qr/qr-menu-view";
+import type { CartVendor } from "@/types";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;

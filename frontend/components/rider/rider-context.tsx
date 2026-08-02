@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { DeliveryZone, Rider } from "@/frontend/types";
+import type { DeliveryZone, Rider } from "@/types";
 
 /**
  * RiderContext — carries the resolved rider and their zone from the shell (which

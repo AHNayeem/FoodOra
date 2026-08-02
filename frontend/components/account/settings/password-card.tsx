@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
-import { changePassword, MIN_PASSWORD_LENGTH } from "@/frontend/services/settings";
+import { changePassword, MIN_PASSWORD_LENGTH } from "@/services/settings";
 import { SettingsSection } from "./settings-primitives";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
-import { Button } from "@/frontend/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const EMPTY = { current: "", next: "", confirm: "" };
 

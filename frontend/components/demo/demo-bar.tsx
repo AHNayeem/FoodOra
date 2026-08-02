@@ -16,9 +16,9 @@ import {
   Store,
   X,
 } from "lucide-react";
-import { useDemo, SPEED_OPTIONS } from "@/frontend/stores/demo";
-import { useOrders, liveOrders } from "@/frontend/stores/orders";
-import { cn } from "@/frontend/lib/utils";
+import { useDemo, SPEED_OPTIONS } from "@/stores/demo";
+import { useOrders, liveOrders } from "@/stores/orders";
+import { cn } from "@/lib/utils";
 
 /**
  * DemoBar — the presenter's controls.

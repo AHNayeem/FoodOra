@@ -1,5 +1,5 @@
 import { Bike, Home, Store } from "lucide-react";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * TrackingMap — a stylised, self-contained "live map" for the tracker (Phase

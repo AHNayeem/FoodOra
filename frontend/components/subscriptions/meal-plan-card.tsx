@@ -2,13 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CalendarDays, Flame } from "lucide-react";
-import type { MealPlan } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Rating } from "@/frontend/components/ui/rating";
-import { formatPrice } from "@/frontend/lib/format";
-import { PLAN_GOAL_EMOJI } from "@/frontend/lib/subscriptions";
-import { cn } from "@/frontend/lib/utils";
+import type { MealPlan } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { Badge } from "@/components/ui/badge";
+import { Rating } from "@/components/ui/rating";
+import { formatPrice } from "@/lib/format";
+import { PLAN_GOAL_EMOJI } from "@/lib/subscriptions";
+import { cn } from "@/lib/utils";
 
 /**
  * MealPlanCard — the listing card for a subscription plan (Phase C15). Reused

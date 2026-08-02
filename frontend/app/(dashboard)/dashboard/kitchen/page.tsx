@@ -1,4 +1,4 @@
-import { KitchenQueue } from "@/frontend/components/dashboard/kitchen-queue";
+import { KitchenQueue } from "@/components/dashboard/kitchen-queue";
 
 /**
  * Kitchen queue — the pass view. Reads the same live order store as the order

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
-import type { Locale } from "@/frontend/config/i18n/config";
+import type { Locale } from "@/config/i18n/config";
 import type {
   CmsFieldDef,
   CmsLocalizedText,
@@ -10,10 +10,10 @@ import type {
   CmsScalar,
   CmsValue,
   CmsValues,
-} from "@/frontend/types";
-import { iconNames, DashIcon } from "@/frontend/components/directory/dash-icon";
-import { Input } from "@/frontend/components/ui/input";
-import { cn } from "@/frontend/lib/utils";
+} from "@/types";
+import { iconNames, DashIcon } from "@/components/directory/dash-icon";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 /**
  * field-editors — one control per {@link CmsFieldDef} type, and one repeater that

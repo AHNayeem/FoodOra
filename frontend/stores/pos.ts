@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { PosHeldTicket, PosSale } from "@/frontend/types";
+import type { PosHeldTicket, PosSale } from "@/types";
 
 /**
  * pos store — the terminal's local register (Phase C11).

@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
-import { cn } from "@/frontend/lib/utils";
-import { formatRating, formatCompact } from "@/frontend/lib/format";
+import { cn } from "@/lib/utils";
+import { formatRating, formatCompact } from "@/lib/format";
 
 /**
  * Rating — compact star + numeric rating with optional review count.

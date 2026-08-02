@@ -6,15 +6,15 @@ import {
   getVendorCuisines,
   getVendorMenu,
   getVendorSlugs,
-} from "@/frontend/services/catalog";
-import { VendorHero } from "@/frontend/components/vendor/vendor-hero";
-import { OpeningHours } from "@/frontend/components/vendor/opening-hours";
-import { FoodItemCard } from "@/frontend/components/cards/food-item-card";
-import { VendorPlans } from "@/frontend/components/subscriptions/vendor-plans";
-import { VenueBookingBand } from "@/frontend/components/reservations/venue-booking-band";
-import { VendorReviews } from "@/frontend/components/reviews/vendor-reviews";
-import { AiReviewSummary } from "@/frontend/components/ai/ai-review-summary";
-import type { CartVendor } from "@/frontend/types";
+} from "@/services/catalog";
+import { VendorHero } from "@/components/vendor/vendor-hero";
+import { OpeningHours } from "@/components/vendor/opening-hours";
+import { FoodItemCard } from "@/components/cards/food-item-card";
+import { VendorPlans } from "@/components/subscriptions/vendor-plans";
+import { VenueBookingBand } from "@/components/reservations/venue-booking-band";
+import { VendorReviews } from "@/components/reviews/vendor-reviews";
+import { AiReviewSummary } from "@/components/ai/ai-review-summary";
+import type { CartVendor } from "@/types";
 
 type Params = Promise<{ slug: string }>;
 

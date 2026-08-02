@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Review } from "@/frontend/types";
-import type { ReviewContext } from "@/frontend/services/reviews";
+import type { Review } from "@/types";
+import type { ReviewContext } from "@/services/reviews";
 import { useMerchant } from "./merchant";
 
 /**

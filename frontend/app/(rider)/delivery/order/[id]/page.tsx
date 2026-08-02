@@ -1,4 +1,4 @@
-import { LiveTripView } from "@/frontend/components/rider/live-trip-view";
+import { LiveTripView } from "@/components/rider/live-trip-view";
 
 /**
  * Running one real customer order — the delivery half of the lifecycle

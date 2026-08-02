@@ -20,10 +20,10 @@ import type {
   CouponSource,
   CouponStatus,
   CouponVendorRef,
-} from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+} from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * CouponTicket — the one way a coupon is drawn anywhere in the app: the wallet,

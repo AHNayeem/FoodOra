@@ -9,10 +9,10 @@ import type {
   NotifyAudience,
   NotifyCategory,
   SegmentId,
-} from "@/frontend/types";
-import { riders, vendors } from "@/frontend/lib/mock";
-import { hashSeed, mulberry32 } from "@/frontend/lib/mock/rng";
-import { DELIVERY_CHANNELS, SMS_LIMIT, broadcastNotification } from "@/frontend/lib/notifications";
+} from "@/types";
+import { riders, vendors } from "@/lib/mock";
+import { hashSeed, mulberry32 } from "@/lib/mock/rng";
+import { DELIVERY_CHANNELS, SMS_LIMIT, broadcastNotification } from "@/lib/notifications";
 import { mockDelay, ok, paginate, type Paginated, type Result } from "./http";
 
 /**

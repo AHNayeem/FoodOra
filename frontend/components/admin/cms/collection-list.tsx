@@ -6,17 +6,17 @@ import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, ExternalLink, FileQuestion, Plus } from "lucide-react";
-import { locales } from "@/frontend/config/i18n/config";
-import type { CmsCollectionId, CmsDocumentView, CmsStatus } from "@/frontend/types";
-import { titleOf, translationGaps } from "@/frontend/lib/cms";
-import { createDocument, listDocuments, moveDocument } from "@/frontend/services/cms";
-import { cmsCollectionById } from "@/frontend/lib/mock/cms";
-import { useAuth } from "@/frontend/stores/auth";
-import { useCms, useCmsContext } from "@/frontend/stores/cms";
-import { DraftChip, StatusChip } from "@/frontend/components/admin/cms/status-chip";
-import { Button } from "@/frontend/components/ui/button";
-import { Input } from "@/frontend/components/ui/input";
-import { cn } from "@/frontend/lib/utils";
+import { locales } from "@/config/i18n/config";
+import type { CmsCollectionId, CmsDocumentView, CmsStatus } from "@/types";
+import { titleOf, translationGaps } from "@/lib/cms";
+import { createDocument, listDocuments, moveDocument } from "@/services/cms";
+import { cmsCollectionById } from "@/lib/mock/cms";
+import { useAuth } from "@/stores/auth";
+import { useCms, useCmsContext } from "@/stores/cms";
+import { DraftChip, StatusChip } from "@/components/admin/cms/status-chip";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const STATUSES: (CmsStatus | null)[] = [null, "published", "draft", "scheduled", "archived"];
 

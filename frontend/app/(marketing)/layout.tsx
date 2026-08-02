@@ -1,9 +1,9 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { getMenu, getSiteContent, readOptions } from "@/frontend/services/cms";
-import { SiteHeader } from "@/frontend/components/layout/site-header";
-import { SiteFooter } from "@/frontend/components/layout/site-footer";
-import { CartMount } from "@/frontend/components/cart/cart-mount";
-import { AssistantMount } from "@/frontend/components/ai/assistant-mount";
+import { getMenu, getSiteContent, readOptions } from "@/services/cms";
+import { SiteHeader } from "@/components/layout/site-header";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { CartMount } from "@/components/cart/cart-mount";
+import { AssistantMount } from "@/components/ai/assistant-mount";
 
 /**
  * Marketing group layout — public site chrome (header + footer) + cart overlays.

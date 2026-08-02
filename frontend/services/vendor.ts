@@ -5,14 +5,14 @@ import type {
   RevenuePoint,
   Vendor,
   VendorStats,
-} from "@/frontend/types";
-import { buildVendorOrders, vendorById, vendors } from "@/frontend/lib/mock";
+} from "@/types";
+import { buildVendorOrders, vendorById, vendors } from "@/lib/mock";
 import {
   bestSellers,
   peakHours,
   revenueSeries,
   vendorStats,
-} from "@/frontend/lib/analytics";
+} from "@/lib/analytics";
 import { mockDelay } from "./http";
 
 /**

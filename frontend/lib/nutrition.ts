@@ -9,7 +9,7 @@ import type {
   NutritionEstimate,
   NutritionFacts,
   PlanGoal,
-} from "@/frontend/types";
+} from "@/types";
 import { addDays, toDateKey } from "./dates";
 
 /**

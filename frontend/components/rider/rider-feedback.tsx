@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { ReviewPage } from "@/frontend/services/reviews";
-import { getRiderReviews } from "@/frontend/services/reviews";
-import { useReviewContext, useReviews } from "@/frontend/stores/reviews";
-import { formatRating } from "@/frontend/lib/format";
-import { Stars } from "@/frontend/components/reviews/stars";
-import { ReviewCard } from "@/frontend/components/reviews/review-card";
+import type { ReviewPage } from "@/services/reviews";
+import { getRiderReviews } from "@/services/reviews";
+import { useReviewContext, useReviews } from "@/stores/reviews";
+import { formatRating } from "@/lib/format";
+import { Stars } from "@/components/reviews/stars";
+import { ReviewCard } from "@/components/reviews/review-card";
 
 /**
  * RiderFeedback — what customers said about this courier (Phase C22).

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { CouponsView } from "@/frontend/components/account/coupons-view";
+import { CouponsView } from "@/components/account/coupons-view";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("account");

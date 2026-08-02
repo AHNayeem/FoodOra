@@ -10,14 +10,14 @@ import type {
   ReviewReply,
   ReviewSort,
   ReviewSummary,
-} from "@/frontend/types";
+} from "@/types";
 import {
   SAMPLE_REVIEW_PHOTOS,
   buildRiderReviews,
   buildVendorReviews,
   foodById,
   vendorById,
-} from "@/frontend/lib/mock";
+} from "@/lib/mock";
 import {
   MAX_COMMENT_LENGTH,
   MAX_REPLY_LENGTH,
@@ -35,7 +35,7 @@ import {
   sortReviews,
   summarise,
   summariseVendor,
-} from "@/frontend/lib/reviews";
+} from "@/lib/reviews";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

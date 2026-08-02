@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
-import type { AssistantMessage } from "@/frontend/types";
-import { useAssistant } from "@/frontend/stores/assistant";
-import { STARTER_PROMPTS } from "@/frontend/lib/ai";
-import { cn } from "@/frontend/lib/utils";
+import type { AssistantMessage } from "@/types";
+import { useAssistant } from "@/stores/assistant";
+import { STARTER_PROMPTS } from "@/lib/ai";
+import { cn } from "@/lib/utils";
 import { AssistantBlocks } from "./assistant-blocks";
 import { resolveSayValues } from "./vocabulary";
 

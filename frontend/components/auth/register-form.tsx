@@ -9,14 +9,14 @@ import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, User as UserIcon, Store } from "lucide-react";
-import { register as registerAccount } from "@/frontend/services/auth";
-import { useAuth } from "@/frontend/stores/auth";
-import { Button } from "@/frontend/components/ui/button";
-import { Input } from "@/frontend/components/ui/input";
-import { Field } from "@/frontend/components/ui/field";
-import { AuthDivider } from "@/frontend/components/auth/auth-card";
-import { SocialButtons } from "@/frontend/components/auth/social-buttons";
-import { cn } from "@/frontend/lib/utils";
+import { register as registerAccount } from "@/services/auth";
+import { useAuth } from "@/stores/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
+import { AuthDivider } from "@/components/auth/auth-card";
+import { SocialButtons } from "@/components/auth/social-buttons";
+import { cn } from "@/lib/utils";
 
 const registerSchema = z.object({
   name: z.string().min(2, "errors.nameRequired"),

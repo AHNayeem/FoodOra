@@ -18,25 +18,25 @@ import {
   Timer,
   XCircle,
 } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { OrderCancelReason } from "@/frontend/types";
-import { useOrders } from "@/frontend/stores/orders";
-import { cancelOrder } from "@/frontend/services/orders";
-import { remainingMinutes, trackingProgress, type TrackingProgress } from "@/frontend/lib/tracking";
+import type { CurrencyCode } from "@/config/regions";
+import type { OrderCancelReason } from "@/types";
+import { useOrders } from "@/stores/orders";
+import { cancelOrder } from "@/services/orders";
+import { remainingMinutes, trackingProgress, type TrackingProgress } from "@/lib/tracking";
 import {
   canCustomerCancel,
   isOtpRevealed,
   isTerminal,
-} from "@/frontend/lib/order-machine";
-import { CUSTOMER_CANCEL_REASONS, toMinutes } from "@/frontend/lib/order-lifecycle";
-import { cartCount } from "@/frontend/lib/cart";
-import { formatPrice } from "@/frontend/lib/format";
-import { Button } from "@/frontend/components/ui/button";
-import { OrderTimeline } from "@/frontend/components/orders/order-timeline";
-import { ReasonDialog } from "@/frontend/components/orders/reason-dialog";
-import { STATUS_ICON } from "@/frontend/components/orders/order-status-meta";
-import { TrackingMap } from "@/frontend/components/tracking/tracking-map";
-import { cn } from "@/frontend/lib/utils";
+} from "@/lib/order-machine";
+import { CUSTOMER_CANCEL_REASONS, toMinutes } from "@/lib/order-lifecycle";
+import { cartCount } from "@/lib/cart";
+import { formatPrice } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { OrderTimeline } from "@/components/orders/order-timeline";
+import { ReasonDialog } from "@/components/orders/reason-dialog";
+import { STATUS_ICON } from "@/components/orders/order-status-meta";
+import { TrackingMap } from "@/components/tracking/tracking-map";
+import { cn } from "@/lib/utils";
 
 /**
  * Re-render cadence. One second, not ten: the screen now shows a live

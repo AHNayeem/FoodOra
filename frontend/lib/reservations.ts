@@ -11,7 +11,7 @@ import type {
   TimeSlot,
   SlotBlockReason,
   WeeklyHours,
-} from "@/frontend/types";
+} from "@/types";
 import { atTime, fromMinutes, toDateKey, toMinutes, weekdayOf } from "./dates";
 
 /**

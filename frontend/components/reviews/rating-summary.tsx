@@ -2,10 +2,10 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { BadgeCheck, Camera } from "lucide-react";
-import type { ReviewSummary, StarValue } from "@/frontend/types";
-import { REVIEW_ASPECTS, STAR_VALUES } from "@/frontend/lib/reviews";
-import { formatRating } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { ReviewSummary, StarValue } from "@/types";
+import { REVIEW_ASPECTS, STAR_VALUES } from "@/lib/reviews";
+import { formatRating } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Stars } from "./stars";
 
 /**

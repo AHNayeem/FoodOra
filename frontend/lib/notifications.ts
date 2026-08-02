@@ -19,7 +19,7 @@ import type {
   Reservation,
   Subscription,
   WalletTransaction,
-} from "@/frontend/types";
+} from "@/types";
 
 /**
  * notifications.ts — who hears about what, and on which channel (Phase C25).

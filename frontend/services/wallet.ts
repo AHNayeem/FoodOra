@@ -1,6 +1,6 @@
-import type { Wallet } from "@/frontend/types";
-import { wallet } from "@/frontend/lib/mock";
-import { MAX_TOP_UP, MIN_TOP_UP, coversAmount, type TopUpMethod } from "@/frontend/lib/wallet";
+import type { Wallet } from "@/types";
+import { wallet } from "@/lib/mock";
+import { MAX_TOP_UP, MIN_TOP_UP, coversAmount, type TopUpMethod } from "@/lib/wallet";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

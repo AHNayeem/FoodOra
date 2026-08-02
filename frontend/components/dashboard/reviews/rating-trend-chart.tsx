@@ -10,8 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { RatingPoint } from "@/frontend/types";
-import { formatRating } from "@/frontend/lib/format";
+import type { RatingPoint } from "@/types";
+import { formatRating } from "@/lib/format";
 
 const AXIS = "#948d85"; // --color-muted, readable on both themes
 const GRID = "rgba(148,141,133,0.18)";

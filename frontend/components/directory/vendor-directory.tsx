@@ -1,10 +1,10 @@
 import { getTranslations } from "next-intl/server";
 import { SearchX } from "lucide-react";
-import { getVendors } from "@/frontend/services/catalog";
-import { VendorFilters, type SortKey } from "@/frontend/components/filters/vendor-filters";
-import { VendorCard } from "@/frontend/components/cards/vendor-card";
-import { DashIcon } from "@/frontend/components/directory/dash-icon";
-import type { VendorType } from "@/frontend/types";
+import { getVendors } from "@/services/catalog";
+import { VendorFilters, type SortKey } from "@/components/filters/vendor-filters";
+import { VendorCard } from "@/components/cards/vendor-card";
+import { DashIcon } from "@/components/directory/dash-icon";
+import type { VendorType } from "@/types";
 
 /** A single "why this vertical" bullet shown under the directory hero. */
 export interface DirectoryFeature {

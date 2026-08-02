@@ -4,7 +4,7 @@ import type {
   OrderActor,
   OrderEvent,
   OrderStatus,
-} from "@/frontend/types";
+} from "@/types";
 
 /**
  * order-machine.ts — the one place an order's lifecycle is defined.

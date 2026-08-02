@@ -19,8 +19,8 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import type { User } from "@/frontend/types";
-import { useAuth } from "@/frontend/stores/auth";
+import type { User } from "@/types";
+import { useAuth } from "@/stores/auth";
 
 /**
  * AccountMenu — the signed-in dropdown shown in the header once a session

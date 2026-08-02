@@ -6,18 +6,18 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ArrowLeft, Bike, Check, Clock, MapPin, Pencil, Store } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { AppliedCoupon, DeliveryAddress, PaymentMethod, SavedAddress } from "@/frontend/types";
-import type { CouponOption } from "@/frontend/lib/coupons";
-import { useCart } from "@/frontend/stores/cart";
-import { useAuth } from "@/frontend/stores/auth";
-import { useOrders } from "@/frontend/stores/orders";
-import { useAddresses } from "@/frontend/stores/addresses";
-import { useCoupons } from "@/frontend/stores/coupons";
-import { useWallet } from "@/frontend/stores/wallet";
-import { authorisePayment, placeOrder } from "@/frontend/services/orders";
-import { getAddressBook } from "@/frontend/services/account";
-import { authoriseWalletPayment, getWallet } from "@/frontend/services/wallet";
+import type { CurrencyCode } from "@/config/regions";
+import type { AppliedCoupon, DeliveryAddress, PaymentMethod, SavedAddress } from "@/types";
+import type { CouponOption } from "@/lib/coupons";
+import { useCart } from "@/stores/cart";
+import { useAuth } from "@/stores/auth";
+import { useOrders } from "@/stores/orders";
+import { useAddresses } from "@/stores/addresses";
+import { useCoupons } from "@/stores/coupons";
+import { useWallet } from "@/stores/wallet";
+import { authorisePayment, placeOrder } from "@/services/orders";
+import { getAddressBook } from "@/services/account";
+import { authoriseWalletPayment, getWallet } from "@/services/wallet";
 import {
   applyCoupon,
   applyCouponCode,
@@ -25,22 +25,22 @@ import {
   getGrantedClaims,
   redeemCoupon,
   type BasketInput,
-} from "@/frontend/services/coupons";
-import { amountToMinOrder, cartSubtotal } from "@/frontend/lib/cart";
-import { computeTotals } from "@/frontend/lib/checkout";
-import { coversAmount } from "@/frontend/lib/wallet";
-import { formatPrice } from "@/frontend/lib/format";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
-import { CouponField } from "@/frontend/components/checkout/coupon-field";
-import { OrderSummary } from "@/frontend/components/checkout/order-summary";
+} from "@/services/coupons";
+import { amountToMinOrder, cartSubtotal } from "@/lib/cart";
+import { computeTotals } from "@/lib/checkout";
+import { coversAmount } from "@/lib/wallet";
+import { formatPrice } from "@/lib/format";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { CouponField } from "@/components/checkout/coupon-field";
+import { OrderSummary } from "@/components/checkout/order-summary";
 import {
   PaymentMethods,
   DEMO_CARD_LAST4,
   DEMO_CARD_NUMBER,
-} from "@/frontend/components/checkout/payment-methods";
-import { AddressFields, emptyAddress, type NewAddress } from "@/frontend/components/checkout/address-fields";
-import { cn } from "@/frontend/lib/utils";
+} from "@/components/checkout/payment-methods";
+import { AddressFields, emptyAddress, type NewAddress } from "@/components/checkout/address-fields";
+import { cn } from "@/lib/utils";
 
 type Fulfillment = "delivery" | "pickup";
 type AddressMode = "saved" | "new";

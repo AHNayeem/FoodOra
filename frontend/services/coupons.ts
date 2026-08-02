@@ -12,7 +12,7 @@ import type {
   Order,
   Vendor,
   VendorCouponRow,
-} from "@/frontend/types";
+} from "@/types";
 import {
   buildCouponClaims,
   buildCouponPerformance,
@@ -20,8 +20,8 @@ import {
   categories,
   foodById,
   vendorById,
-} from "@/frontend/lib/mock";
-import { cartSubtotal, deliveryFeeFor } from "@/frontend/lib/cart";
+} from "@/lib/mock";
+import { cartSubtotal, deliveryFeeFor } from "@/lib/cart";
 import {
   couponStatus,
   daysLeft,
@@ -32,7 +32,7 @@ import {
   sortHeld,
   toHeldCoupon,
   type CouponOption,
-} from "@/frontend/lib/coupons";
+} from "@/lib/coupons";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

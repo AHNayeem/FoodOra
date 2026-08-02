@@ -4,10 +4,10 @@ import { useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { BellRing, ShieldOff, Smartphone } from "lucide-react";
-import { pushPermission, requestPush, type PushPermission } from "@/frontend/lib/push";
-import { useNotifications } from "@/frontend/stores/notifications";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import { pushPermission, requestPush, type PushPermission } from "@/lib/push";
+import { useNotifications } from "@/stores/notifications";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * PushCard — turning on real browser notifications (Phase C25).

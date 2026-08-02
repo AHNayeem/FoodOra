@@ -1,7 +1,7 @@
-import type { CartVendor, Order, OrderStatus, PaymentMethod } from "@/frontend/types";
-import { buildCartLine } from "@/frontend/lib/cart";
-import { computeTotals } from "@/frontend/lib/checkout";
-import { synthesiseLifecycle } from "@/frontend/lib/order-lifecycle";
+import type { CartVendor, Order, OrderStatus, PaymentMethod } from "@/types";
+import { buildCartLine } from "@/lib/cart";
+import { computeTotals } from "@/lib/checkout";
+import { synthesiseLifecycle } from "@/lib/order-lifecycle";
 import { foodsByVendor } from "./foods";
 import { hashSeed, mulberry32 } from "./rng";
 import { vendorById } from "./vendors";

@@ -5,16 +5,16 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Loader2, PenLine, Star, Trash2 } from "lucide-react";
-import type { Order, Review } from "@/frontend/types";
-import type { PendingReview } from "@/frontend/services/reviews";
-import { deleteReview, getMyReviews, getPendingReviews } from "@/frontend/services/reviews";
-import { useOrders } from "@/frontend/stores/orders";
-import { useReviewContext, useReviews } from "@/frontend/stores/reviews";
-import { canEditReview } from "@/frontend/lib/reviews";
-import { Button } from "@/frontend/components/ui/button";
-import { ReviewCard, EditReviewButton } from "@/frontend/components/reviews/review-card";
-import { Stars } from "@/frontend/components/reviews/stars";
-import { WriteReviewDialog } from "@/frontend/components/reviews/write-review-dialog";
+import type { Order, Review } from "@/types";
+import type { PendingReview } from "@/services/reviews";
+import { deleteReview, getMyReviews, getPendingReviews } from "@/services/reviews";
+import { useOrders } from "@/stores/orders";
+import { useReviewContext, useReviews } from "@/stores/reviews";
+import { canEditReview } from "@/lib/reviews";
+import { Button } from "@/components/ui/button";
+import { ReviewCard, EditReviewButton } from "@/components/reviews/review-card";
+import { Stars } from "@/components/reviews/stars";
+import { WriteReviewDialog } from "@/components/reviews/write-review-dialog";
 
 /**
  * ReviewsView — the customer's own reviews (`/account/reviews`, Phase C22).

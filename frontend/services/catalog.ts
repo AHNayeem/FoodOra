@@ -6,7 +6,7 @@ import {
   menuSectionsByVendor,
   vendorBySlug,
   vendors,
-} from "@/frontend/lib/mock";
+} from "@/lib/mock";
 import type {
   Category,
   Cuisine,
@@ -14,7 +14,7 @@ import type {
   MenuSection,
   Vendor,
   VendorType,
-} from "@/frontend/types";
+} from "@/types";
 import { cmsCategories, emptyCmsContext, readOptions } from "./cms";
 import type { CmsPageOptions } from "./pages";
 import { mockDelay, paginate, type Paginated } from "./http";

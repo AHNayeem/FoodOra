@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { AppNotification, NotificationDispatch } from "@/frontend/types";
+import type { AppNotification, NotificationDispatch } from "@/types";
 
 /** The two halves of a notification, however it stores them. */
 export interface NotificationCopy {

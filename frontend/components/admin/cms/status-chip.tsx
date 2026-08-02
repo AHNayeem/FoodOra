@@ -1,8 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { CmsStatus } from "@/frontend/types";
-import { cn } from "@/frontend/lib/utils";
+import type { CmsStatus } from "@/types";
+import { cn } from "@/lib/utils";
 
 const TONE: Record<CmsStatus, string> = {
   published: "bg-success/10 text-success",

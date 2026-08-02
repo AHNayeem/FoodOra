@@ -3,11 +3,11 @@
 import { useTranslations, useFormatter } from "next-intl";
 import { toast } from "sonner";
 import { CheckCircle2, Printer, Plus } from "lucide-react";
-import type { PosSale } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Button } from "@/frontend/components/ui/button";
+import type { PosSale } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 
 /**
  * PosReceiptDialog — the post-sale receipt. Confirms the tender, itemises the

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getBlogPost, getBlogPostSlugs, getRelatedPosts } from "@/frontend/services/content";
-import { ArticleView } from "@/frontend/components/blog/article-view";
+import { getBlogPost, getBlogPostSlugs, getRelatedPosts } from "@/services/content";
+import { ArticleView } from "@/components/blog/article-view";
 
 type Params = Promise<{ slug: string }>;
 

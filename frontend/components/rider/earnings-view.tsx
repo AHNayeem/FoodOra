@@ -12,14 +12,14 @@ import {
   YAxis,
 } from "recharts";
 import { Banknote, Bike, Route, Wallet } from "lucide-react";
-import type { RiderEarningsPoint, RiderEarningsSummary } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useRider } from "@/frontend/stores/rider";
-import { getRiderEarnings, type EarningsRange } from "@/frontend/services/delivery";
-import { fromDateKey, weekdayOf } from "@/frontend/lib/dates";
-import { formatCompact, formatDistance, formatPrice } from "@/frontend/lib/format";
-import { StatCard } from "@/frontend/components/dashboard/stat-card";
-import { cn } from "@/frontend/lib/utils";
+import type { RiderEarningsPoint, RiderEarningsSummary } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useRider } from "@/stores/rider";
+import { getRiderEarnings, type EarningsRange } from "@/services/delivery";
+import { fromDateKey, weekdayOf } from "@/lib/dates";
+import { formatCompact, formatDistance, formatPrice } from "@/lib/format";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
 
 const RANGES: EarningsRange[] = ["today", "week", "month"];

@@ -35,8 +35,8 @@ import type {
   SupportChannel,
   TimelineEntry,
   ValueProp,
-} from "@/frontend/types";
-import { footerNav, primaryNav } from "@/frontend/constants/navigation";
+} from "@/types";
+import { footerNav, primaryNav } from "@/constants/navigation";
 import { SEED_NOW } from "./cuisines";
 import { categories } from "./categories";
 import { posts } from "./posts";

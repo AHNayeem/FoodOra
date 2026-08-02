@@ -25,8 +25,8 @@ import type {
   Reservation,
   Subscription,
   WalletTransaction,
-} from "@/frontend/types";
-import { buildCoupons, buildDemoOrders, defaultCustomerSettings } from "@/frontend/lib/mock";
+} from "@/types";
+import { buildCoupons, buildDemoOrders, defaultCustomerSettings } from "@/lib/mock";
 import {
   CATEGORY_TOPIC,
   DELIVERY_CHANNELS,
@@ -43,8 +43,8 @@ import {
   reservationNotifications,
   subscriptionNotification,
   walletNotification,
-} from "@/frontend/lib/notifications";
-import { REQUIRED_NOTIFICATIONS } from "@/frontend/services/settings";
+} from "@/lib/notifications";
+import { REQUIRED_NOTIFICATIONS } from "@/services/settings";
 import {
   TITLE_LIMIT,
   campaignTotals,
@@ -52,7 +52,7 @@ import {
   getOutbox,
   getSegments,
   sendBroadcast,
-} from "@/frontend/services/notifications";
+} from "@/services/notifications";
 
 let passed = 0;
 const failures: string[] = [];
@@ -556,10 +556,10 @@ let segments: NotificationSegment[] = [];
 // `skipHydration` contract working as intended.)
 
 {
-  const { useNotifications } = await import("@/frontend/stores/notifications");
-  const { useSettings } = await import("@/frontend/stores/settings");
-  const { useAuth } = await import("@/frontend/stores/auth");
-  const { users } = await import("@/frontend/lib/mock");
+  const { useNotifications } = await import("@/stores/notifications");
+  const { useSettings } = await import("@/stores/settings");
+  const { useAuth } = await import("@/stores/auth");
+  const { users } = await import("@/lib/mock");
 
   useAuth.setState({ user: users[0], hydrated: true } as never);
   useSettings.getState().seed(defaultCustomerSettings);

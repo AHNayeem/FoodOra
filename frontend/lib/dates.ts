@@ -1,4 +1,4 @@
-import type { Weekday } from "@/frontend/types";
+import type { Weekday } from "@/types";
 
 /**
  * dates.ts — plain local calendar + clock-time primitives.

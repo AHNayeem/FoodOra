@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useNotifications } from "@/frontend/stores/notifications";
-import { showPush } from "@/frontend/lib/push";
+import { useNotifications } from "@/stores/notifications";
+import { showPush } from "@/lib/push";
 import { useNotificationCopy } from "./notification-text";
 
 /**

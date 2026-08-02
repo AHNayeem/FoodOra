@@ -7,7 +7,7 @@
  * Every assertion is a claim the phase makes in prose somewhere; this is where
  * those claims are checked against the code rather than against confidence.
  */
-import { foodById, foods, vendorById, vendors } from "@/frontend/lib/mock";
+import { foodById, foods, vendorById, vendors } from "@/lib/mock";
 import {
   LOW_CONFIDENCE,
   PROMPTS,
@@ -16,7 +16,7 @@ import {
   parseRequest,
   recogniseDish,
   searchHref,
-} from "@/frontend/lib/ai";
+} from "@/lib/ai";
 import {
   ALLERGENS,
   allergenConflicts,
@@ -28,7 +28,7 @@ import {
   targetCalories,
   totalNutrition,
   type PlannerCandidate,
-} from "@/frontend/lib/nutrition";
+} from "@/lib/nutrition";
 import {
   ask,
   buildDietPlan,
@@ -41,8 +41,8 @@ import {
   recommend,
   blockIds,
   resolveEntities,
-} from "@/frontend/services/ai";
-import type { AssistantBlock, AssistantContext, AssistantReply, FoodProfile } from "@/frontend/types";
+} from "@/services/ai";
+import type { AssistantBlock, AssistantContext, AssistantReply, FoodProfile } from "@/types";
 
 let passed = 0;
 const failures: string[] = [];

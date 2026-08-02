@@ -4,18 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { ShoppingBag, Star } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { Order } from "@/frontend/types";
-import { useOrders } from "@/frontend/stores/orders";
-import { useReviews } from "@/frontend/stores/reviews";
-import { cartCount } from "@/frontend/lib/cart";
-import { isActive, splitOrders } from "@/frontend/lib/order-lifecycle";
-import { isTerminal } from "@/frontend/lib/order-machine";
-import { canReviewOrder } from "@/frontend/lib/reviews";
-import { formatPrice } from "@/frontend/lib/format";
-import { Button } from "@/frontend/components/ui/button";
-import { OrderStatusChip } from "@/frontend/components/orders/order-status-chip";
-import { WriteReviewDialog } from "@/frontend/components/reviews/write-review-dialog";
+import type { CurrencyCode } from "@/config/regions";
+import type { Order } from "@/types";
+import { useOrders } from "@/stores/orders";
+import { useReviews } from "@/stores/reviews";
+import { cartCount } from "@/lib/cart";
+import { isActive, splitOrders } from "@/lib/order-lifecycle";
+import { isTerminal } from "@/lib/order-machine";
+import { canReviewOrder } from "@/lib/reviews";
+import { formatPrice } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { WriteReviewDialog } from "@/components/reviews/write-review-dialog";
 
 /**
  * OrderHistory — the customer's active & past orders (Phase C3).

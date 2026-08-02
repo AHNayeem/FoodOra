@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import type { WeeklyHours } from "@/frontend/types";
+import type { WeeklyHours } from "@/types";
 
 const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 

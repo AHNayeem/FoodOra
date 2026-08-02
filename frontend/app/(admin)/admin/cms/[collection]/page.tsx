@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import type { CmsCollectionId } from "@/frontend/types";
-import { cmsCollectionById } from "@/frontend/lib/mock/cms";
-import { CollectionList } from "@/frontend/components/admin/cms/collection-list";
+import type { CmsCollectionId } from "@/types";
+import { cmsCollectionById } from "@/lib/mock/cms";
+import { CollectionList } from "@/components/admin/cms/collection-list";
 
 /** Private surface — never indexed. */
 export const metadata: Metadata = {

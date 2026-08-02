@@ -9,13 +9,13 @@ import type {
   PosPricing,
   PosTicketLine,
   RestaurantTable,
-} from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { POS_ORDER_TYPES, POS_QUICK_DISCOUNTS, ticketCount } from "@/frontend/lib/pos";
-import { QuantityStepper } from "@/frontend/components/cart/quantity-stepper";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+} from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { POS_ORDER_TYPES, POS_QUICK_DISCOUNTS, ticketCount } from "@/lib/pos";
+import { QuantityStepper } from "@/components/cart/quantity-stepper";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * PosTicketPanel — the live order pane. Order type + table, the running line

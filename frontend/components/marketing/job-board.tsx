@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Briefcase, MapPin, Users } from "lucide-react";
-import type { JobOpening } from "@/frontend/types";
-import { useCmsJobs } from "@/frontend/components/marketing/marketing-blocks";
-import { SectionHeading } from "@/frontend/components/sections/section-heading";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Button } from "@/frontend/components/ui/button";
+import type { JobOpening } from "@/types";
+import { useCmsJobs } from "@/components/marketing/marketing-blocks";
+import { SectionHeading } from "@/components/sections/section-heading";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 /**
  * JobBoard — the open roles on `/careers`, with the team filter.

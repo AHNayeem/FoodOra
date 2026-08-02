@@ -3,8 +3,8 @@
 import { useId, useState } from "react";
 import { Star } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { cn } from "@/frontend/lib/utils";
-import { STAR_VALUES } from "@/frontend/lib/reviews";
+import { cn } from "@/lib/utils";
+import { STAR_VALUES } from "@/lib/reviews";
 
 /**
  * stars.tsx — the two star widgets every review surface uses (Phase C22).

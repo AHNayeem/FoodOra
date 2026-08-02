@@ -16,7 +16,7 @@ import {
   XCircle,
   Wallet,
 } from "lucide-react";
-import type { OrderActor, OrderStatus } from "@/frontend/types";
+import type { OrderActor, OrderStatus } from "@/types";
 
 /**
  * order-status-meta.ts — one icon and one tone per lifecycle state.

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import type { AppNotification, DeliveryChannel } from "@/frontend/types";
-import { DELIVERY_CHANNELS } from "@/frontend/lib/notifications";
+import type { AppNotification, DeliveryChannel } from "@/types";
+import { DELIVERY_CHANNELS } from "@/lib/notifications";
 import { CATEGORY_ICON, CHANNEL_ICON, TONE_CLASS } from "./notification-meta";
 import { useNotificationCopy } from "./notification-text";
-import { cn } from "@/frontend/lib/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * NotificationRow — one notification, drawn the one way.

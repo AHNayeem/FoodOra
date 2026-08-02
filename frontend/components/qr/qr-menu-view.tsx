@@ -11,16 +11,16 @@ import type {
   QrMenuConfig,
   RestaurantTable,
   Vendor,
-} from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { MenuSectionWithItems } from "@/frontend/services/catalog";
-import { useDineIn } from "@/frontend/stores/dine-in";
-import { cartCount } from "@/frontend/lib/cart";
-import { computeQrTotals, roundsLines, roundStatus, sessionKey } from "@/frontend/lib/qr";
-import { formatPrice } from "@/frontend/lib/format";
-import { Badge } from "@/frontend/components/ui/badge";
-import { ThemeToggle } from "@/frontend/components/ui/theme-toggle";
-import { LocaleSwitcher } from "@/frontend/components/ui/locale-switcher";
+} from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import type { MenuSectionWithItems } from "@/services/catalog";
+import { useDineIn } from "@/stores/dine-in";
+import { cartCount } from "@/lib/cart";
+import { computeQrTotals, roundsLines, roundStatus, sessionKey } from "@/lib/qr";
+import { formatPrice } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { QrItemRow } from "./qr-item-row";
 import { QrWelcomeDialog } from "./qr-welcome-dialog";
 import { QrTicketPanel } from "./qr-ticket-panel";

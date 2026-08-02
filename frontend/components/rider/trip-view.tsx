@@ -20,15 +20,15 @@ import {
   Store,
   Timer,
 } from "lucide-react";
-import type { DeliveryJob, DeliveryStop } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useRider } from "@/frontend/stores/rider";
-import { cancelJob, completeStop } from "@/frontend/services/delivery";
-import { cashOutstanding, isBatch, jobProgress } from "@/frontend/lib/delivery";
-import { formatDistance, formatPrice } from "@/frontend/lib/format";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import type { DeliveryJob, DeliveryStop } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useRider } from "@/stores/rider";
+import { cancelJob, completeStop } from "@/services/delivery";
+import { cashOutstanding, isBatch, jobProgress } from "@/lib/delivery";
+import { formatDistance, formatPrice } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
 import { RouteMap } from "./route-map";
 import { HandoffDialog } from "./handoff-dialog";

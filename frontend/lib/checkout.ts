@@ -4,8 +4,8 @@ import {
   defaultCountry,
   type CountryCode,
   type CurrencyCode,
-} from "@/frontend/config/regions";
-import type { AppliedCoupon, CartLine, CartVendor, OrderPricing } from "@/frontend/types";
+} from "@/config/regions";
+import type { AppliedCoupon, CartLine, CartVendor, OrderPricing } from "@/types";
 import { cartSubtotal, deliveryFeeFor } from "./cart";
 
 /**

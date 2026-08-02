@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { OrderTracking } from "@/frontend/components/tracking/order-tracking";
+import { OrderTracking } from "@/components/tracking/order-tracking";
 
 type Params = Promise<{ id: string }>;
 

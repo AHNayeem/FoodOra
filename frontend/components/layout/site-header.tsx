@@ -4,18 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Menu, UtensilsCrossed } from "lucide-react";
-import { Button } from "@/frontend/components/ui/button";
-import { ThemeToggle } from "@/frontend/components/ui/theme-toggle";
-import { LocaleSwitcher } from "@/frontend/components/ui/locale-switcher";
-import { AccountMenu } from "@/frontend/components/layout/account-menu";
-import { PrimaryNav } from "@/frontend/components/layout/primary-nav";
-import { MobileNavDrawer } from "@/frontend/components/layout/mobile-nav-drawer";
-import { CartButton } from "@/frontend/components/cart/cart-button";
-import { NotificationBell } from "@/frontend/components/notifications/notification-bell";
-import type { CmsMenuItem } from "@/frontend/types";
-import { useAuth } from "@/frontend/stores/auth";
-import { useFavorites } from "@/frontend/stores/favorites";
-import { cn } from "@/frontend/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { AccountMenu } from "@/components/layout/account-menu";
+import { PrimaryNav } from "@/components/layout/primary-nav";
+import { MobileNavDrawer } from "@/components/layout/mobile-nav-drawer";
+import { CartButton } from "@/components/cart/cart-button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import type { CmsMenuItem } from "@/types";
+import { useAuth } from "@/stores/auth";
+import { useFavorites } from "@/stores/favorites";
+import { cn } from "@/lib/utils";
 
 /**
  * SiteHeader — sticky marketing header.

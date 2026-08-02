@@ -6,7 +6,7 @@ import {
   tablesByVendor,
   vendorById,
   vendorBySlug,
-} from "@/frontend/lib/mock";
+} from "@/lib/mock";
 import type {
   BookingPolicy,
   Cuisine,
@@ -19,8 +19,8 @@ import type {
   RestaurantTable,
   TableStatus,
   Vendor,
-} from "@/frontend/types";
-import { addDays, toDateKey, toMinutes } from "@/frontend/lib/dates";
+} from "@/types";
+import { addDays, toDateKey, toMinutes } from "@/lib/dates";
 import {
   allocateTables,
   bookableTables,
@@ -33,7 +33,7 @@ import {
   summariseDay,
   tablesBusyAt,
   turnMinutesFor,
-} from "@/frontend/lib/reservations";
+} from "@/lib/reservations";
 import { mockDelay, ok, paginate, type Paginated, type Result } from "./http";
 
 /**

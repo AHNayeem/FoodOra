@@ -2,9 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { useCart } from "@/frontend/stores/cart";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Button } from "@/frontend/components/ui/button";
+import { useCart } from "@/stores/cart";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 
 /**
  * CartConflictDialog — surfaced when an item from a different vendor is added

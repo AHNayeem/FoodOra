@@ -1,5 +1,5 @@
-import type { FoodItem, Vendor } from "@/frontend/types";
-import { foodById, vendorById } from "@/frontend/lib/mock";
+import type { FoodItem, Vendor } from "@/types";
+import { foodById, vendorById } from "@/lib/mock";
 import { mockDelay } from "./http";
 
 /**

@@ -9,9 +9,9 @@ import type {
   RiderEarningsSummary,
   RiderRemittance,
   RiderVehicle,
-} from "@/frontend/types";
-import { roundMoney } from "@/frontend/lib/checkout";
-import { toDateKey } from "@/frontend/lib/dates";
+} from "@/types";
+import { roundMoney } from "@/lib/checkout";
+import { toDateKey } from "@/lib/dates";
 
 /**
  * delivery.ts — the arithmetic behind the rider app (Phase C18). Pure and

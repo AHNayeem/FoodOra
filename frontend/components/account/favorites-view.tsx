@@ -5,16 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Heart, Store, Trash2, UtensilsCrossed } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { FavoriteDish, FavoritesBoard } from "@/frontend/services/favorites";
-import { getFavorites } from "@/frontend/services/favorites";
-import { useFavorites } from "@/frontend/stores/favorites";
-import { VendorCard } from "@/frontend/components/cards/vendor-card";
-import { AddToCartButton } from "@/frontend/components/menu/add-to-cart-button";
-import { Button } from "@/frontend/components/ui/button";
-import { toCartVendor } from "@/frontend/lib/cart";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { CurrencyCode } from "@/config/regions";
+import type { FavoriteDish, FavoritesBoard } from "@/services/favorites";
+import { getFavorites } from "@/services/favorites";
+import { useFavorites } from "@/stores/favorites";
+import { VendorCard } from "@/components/cards/vendor-card";
+import { AddToCartButton } from "@/components/menu/add-to-cart-button";
+import { Button } from "@/components/ui/button";
+import { toCartVendor } from "@/lib/cart";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 type Tab = "vendors" | "dishes";
 

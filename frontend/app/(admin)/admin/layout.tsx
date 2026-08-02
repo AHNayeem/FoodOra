@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AdminShell } from "@/frontend/components/admin/admin-shell";
+import { AdminShell } from "@/components/admin/admin-shell";
 
 /** Private surface — never indexed, never prerendered with data. */
 export const metadata: Metadata = {

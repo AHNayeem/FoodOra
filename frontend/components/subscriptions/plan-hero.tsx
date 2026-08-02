@@ -2,12 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CalendarDays, ChefHat, Flame, Sparkles, Timer } from "lucide-react";
-import type { MealPlan, Vendor } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Rating } from "@/frontend/components/ui/rating";
-import { formatPrice } from "@/frontend/lib/format";
-import { PLAN_GOAL_EMOJI } from "@/frontend/lib/subscriptions";
+import type { MealPlan, Vendor } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { Badge } from "@/components/ui/badge";
+import { Rating } from "@/components/ui/rating";
+import { formatPrice } from "@/lib/format";
+import { PLAN_GOAL_EMOJI } from "@/lib/subscriptions";
 
 /**
  * PlanHero — the header of a meal-plan detail page (Phase C15). Four stats sit

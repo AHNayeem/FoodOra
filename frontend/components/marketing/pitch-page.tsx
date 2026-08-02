@@ -1,16 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import type { PitchContent } from "@/frontend/services/pages";
+import type { PitchContent } from "@/services/pages";
 import {
   FaqAccordion,
   HowSteps,
   PageHero,
   StatsBand,
   ValueGrid,
-} from "@/frontend/components/marketing/marketing-blocks";
-import { SectionHeading } from "@/frontend/components/sections/section-heading";
-import { Button } from "@/frontend/components/ui/button";
+} from "@/components/marketing/marketing-blocks";
+import { SectionHeading } from "@/components/sections/section-heading";
+import { Button } from "@/components/ui/button";
 
 /** The translated chrome a pitch page needs; the page owns its namespace. */
 export interface PitchCopy {

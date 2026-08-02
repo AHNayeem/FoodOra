@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import type { VendorType } from "@/frontend/types";
-import { cn } from "@/frontend/lib/utils";
+import type { VendorType } from "@/types";
+import { cn } from "@/lib/utils";
 
 export type SortKey = "recommended" | "rating" | "delivery-time" | "distance";
 

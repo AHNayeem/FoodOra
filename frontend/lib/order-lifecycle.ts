@@ -5,7 +5,7 @@ import type {
   OrderRider,
   OrderStatus,
   Rider,
-} from "@/frontend/types";
+} from "@/types";
 import { otpFor } from "./delivery";
 import { isFailure, isTerminal, stagesFor, stageIndex } from "./order-machine";
 

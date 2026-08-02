@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
-import { useAssistant } from "@/frontend/stores/assistant";
-import { useSettings } from "@/frontend/stores/settings";
+import { useAssistant } from "@/stores/assistant";
+import { useSettings } from "@/stores/settings";
 import { AssistantPanel } from "./assistant-panel";
 
 /**

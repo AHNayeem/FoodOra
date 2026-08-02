@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { locales, localeMeta } from "@/frontend/config/i18n/config";
-import { currencies, type CurrencyCode } from "@/frontend/config/regions";
-import { useAuth } from "@/frontend/stores/auth";
-import { updateProfile, type ProfilePatch } from "@/frontend/services/account";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
-import { Button } from "@/frontend/components/ui/button";
+import { locales, localeMeta } from "@/config/i18n/config";
+import { currencies, type CurrencyCode } from "@/config/regions";
+import { useAuth } from "@/stores/auth";
+import { updateProfile, type ProfilePatch } from "@/services/account";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const selectClass =
   "h-11 w-full rounded-field border border-line bg-surface px-3.5 text-sm text-ink outline-none transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30";

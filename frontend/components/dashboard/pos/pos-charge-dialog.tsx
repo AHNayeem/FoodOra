@@ -3,13 +3,13 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Banknote, CreditCard, Wallet, Loader2, X } from "lucide-react";
-import type { PaymentMethod, PosPayment, PosPricing } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatPrice } from "@/frontend/lib/format";
-import { cashTenderPresets, changeDue } from "@/frontend/lib/pos";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Button } from "@/frontend/components/ui/button";
-import { cn } from "@/frontend/lib/utils";
+import type { PaymentMethod, PosPayment, PosPricing } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { formatPrice } from "@/lib/format";
+import { cashTenderPresets, changeDue } from "@/lib/pos";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const METHODS: { key: PaymentMethod; icon: typeof Banknote }[] = [
   { key: "cash", icon: Banknote },

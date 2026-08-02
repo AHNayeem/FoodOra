@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getHelpContent } from "@/frontend/services/pages";
-import { getRouteMetadata, readOptions } from "@/frontend/services/cms";
-import { FaqAccordion, PageHero } from "@/frontend/components/marketing/marketing-blocks";
-import { SupportChannels } from "@/frontend/components/marketing/support-channels";
-import { DashIcon } from "@/frontend/components/directory/dash-icon";
-import { SectionHeading } from "@/frontend/components/sections/section-heading";
+import { getHelpContent } from "@/services/pages";
+import { getRouteMetadata, readOptions } from "@/services/cms";
+import { FaqAccordion, PageHero } from "@/components/marketing/marketing-blocks";
+import { SupportChannels } from "@/components/marketing/support-channels";
+import { DashIcon } from "@/components/directory/dash-icon";
+import { SectionHeading } from "@/components/sections/section-heading";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);

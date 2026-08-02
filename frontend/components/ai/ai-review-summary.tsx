@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { AiReviewSummary as Summary } from "@/frontend/types";
-import { getReviewSummary } from "@/frontend/services/ai";
-import { useReviewContext, useReviews } from "@/frontend/stores/reviews";
+import type { AiReviewSummary as Summary } from "@/types";
+import { getReviewSummary } from "@/services/ai";
+import { useReviewContext, useReviews } from "@/stores/reviews";
 import { ReviewSummaryBody } from "./assistant-blocks";
 import { AskAssistantButton } from "./assistant-mount";
 

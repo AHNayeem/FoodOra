@@ -1,8 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 /** The editable shape of a new delivery address entered at checkout. */
 export interface NewAddress {

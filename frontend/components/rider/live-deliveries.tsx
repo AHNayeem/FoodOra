@@ -14,17 +14,17 @@ import {
   Store,
   Timer,
 } from "lucide-react";
-import type { Order } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
+import type { Order } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
 import {
   useOrders,
   activeOrderForRider,
   dispatchableOrders,
-} from "@/frontend/stores/orders";
-import { toMinutes } from "@/frontend/lib/order-lifecycle";
-import { formatPrice } from "@/frontend/lib/format";
-import { OrderStatusChip } from "@/frontend/components/orders/order-status-chip";
-import { cn } from "@/frontend/lib/utils";
+} from "@/stores/orders";
+import { toMinutes } from "@/lib/order-lifecycle";
+import { formatPrice } from "@/lib/format";
+import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
 
 /**

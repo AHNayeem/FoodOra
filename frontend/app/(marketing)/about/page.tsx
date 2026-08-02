@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getAboutContent } from "@/frontend/services/pages";
-import { getRouteMetadata, readOptions } from "@/frontend/services/cms";
+import { getAboutContent } from "@/services/pages";
+import { getRouteMetadata, readOptions } from "@/services/cms";
 import {
   PageHero,
   Paragraphs,
   StatsBand,
   TimelineBand,
   ValueGrid,
-} from "@/frontend/components/marketing/marketing-blocks";
-import { SectionHeading } from "@/frontend/components/sections/section-heading";
-import { Button } from "@/frontend/components/ui/button";
+} from "@/components/marketing/marketing-blocks";
+import { SectionHeading } from "@/components/sections/section-heading";
+import { Button } from "@/components/ui/button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);

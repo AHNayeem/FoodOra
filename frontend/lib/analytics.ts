@@ -5,7 +5,7 @@ import type {
   RevenuePoint,
   Vendor,
   VendorStats,
-} from "@/frontend/types";
+} from "@/types";
 import { isFailure } from "./order-machine";
 
 /**

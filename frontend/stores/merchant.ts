@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Coupon, ReviewReply } from "@/frontend/types";
+import type { Coupon, ReviewReply } from "@/types";
 
 /**
  * merchant store — the vendor desk's local, simulated control state (Phase C10).

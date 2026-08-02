@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Banknote, ShieldCheck, X } from "lucide-react";
-import type { DeliveryStop } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { Modal } from "@/frontend/components/ui/modal";
-import { OtpInput } from "@/frontend/components/auth/otp-input";
-import { formatPrice } from "@/frontend/lib/format";
+import type { DeliveryStop } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { Modal } from "@/components/ui/modal";
+import { OtpInput } from "@/components/auth/otp-input";
+import { formatPrice } from "@/lib/format";
 
 /** Digits in a handoff code — matches `lib/delivery.otpFor`. */
 const OTP_LENGTH = 4;

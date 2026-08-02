@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
-import type { OrderStatus } from "@/frontend/types";
-import { cn } from "@/frontend/lib/utils";
+import type { OrderStatus } from "@/types";
+import { cn } from "@/lib/utils";
 import { STATUS_ICON, STATUS_TONE, TONE_CLASS } from "./order-status-meta";
 
 /**

@@ -4,24 +4,24 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { BadgePercent, Plus, Ticket, TrendingUp, Wallet } from "lucide-react";
-import type { Coupon, CouponKind } from "@/frontend/types";
-import type { VendorCouponBoard } from "@/frontend/services/coupons";
+import type { Coupon, CouponKind } from "@/types";
+import type { VendorCouponBoard } from "@/services/coupons";
 import {
   createVendorCoupon,
   endVendorCoupon,
   getVendorCoupons,
   type NewVendorCoupon,
-} from "@/frontend/services/coupons";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useMerchant } from "@/frontend/stores/merchant";
-import { couponValueLabel } from "@/frontend/components/coupons/coupon-ticket";
-import { StatCard } from "@/frontend/components/dashboard/stat-card";
-import { Button } from "@/frontend/components/ui/button";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
-import { Modal } from "@/frontend/components/ui/modal";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+} from "@/services/coupons";
+import type { CurrencyCode } from "@/config/regions";
+import { useMerchant } from "@/stores/merchant";
+import { couponValueLabel } from "@/components/coupons/coupon-ticket";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { useDashboard } from "../dashboard-context";
 
 const KINDS: CouponKind[] = ["percentage", "fixed", "free-delivery"];

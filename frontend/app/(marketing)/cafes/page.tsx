@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { VendorDirectory } from "@/frontend/components/directory/vendor-directory";
-import type { SortKey } from "@/frontend/components/filters/vendor-filters";
+import { VendorDirectory } from "@/components/directory/vendor-directory";
+import type { SortKey } from "@/components/filters/vendor-filters";
 
 const SORTS = new Set<SortKey>(["recommended", "rating", "delivery-time", "distance"]);
 

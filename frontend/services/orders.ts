@@ -8,9 +8,9 @@ import type {
   OrderPricing,
   PaymentMethod,
   SavedAddress,
-} from "@/frontend/types";
-import { savedAddresses } from "@/frontend/lib/mock";
-import { createLifecycle } from "@/frontend/lib/order-lifecycle";
+} from "@/types";
+import { savedAddresses } from "@/lib/mock";
+import { createLifecycle } from "@/lib/order-lifecycle";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

@@ -2,7 +2,7 @@ import {
   countries,
   defaultCountry,
   type CountryCode,
-} from "@/frontend/config/regions";
+} from "@/config/regions";
 import type {
   BillingCycle,
   MealSlot,
@@ -14,7 +14,7 @@ import type {
   SubscriptionPricing,
   SubscriptionStatus,
   Weekday,
-} from "@/frontend/types";
+} from "@/types";
 import { WEEKDAYS, addDays, fromDateKey, toDateKey, weekdayOf } from "./dates";
 import { totalNutrition } from "./nutrition";
 import { roundMoney } from "./checkout";

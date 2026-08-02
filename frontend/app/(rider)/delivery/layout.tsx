@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RiderShell } from "@/frontend/components/rider/rider-shell";
+import { RiderShell } from "@/components/rider/rider-shell";
 
 /**
  * Rider app layout (Phase C18). Its own `(rider)` route group, so the delivery

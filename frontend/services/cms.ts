@@ -21,7 +21,7 @@
  * signature is already shaped for it.
  */
 import type { Metadata } from "next";
-import { defaultLocale, locales, type Locale } from "@/frontend/config/i18n/config";
+import { defaultLocale, locales, type Locale } from "@/config/i18n/config";
 import type {
   Category,
   BlogPost,
@@ -46,8 +46,8 @@ import type {
   FaqGroup,
   LegalDoc,
   SupportChannel,
-} from "@/frontend/types";
-import { buildCmsDocuments, cmsCollectionById, cmsCollections } from "@/frontend/lib/mock/cms";
+} from "@/types";
+import { buildCmsDocuments, cmsCollectionById, cmsCollections } from "@/lib/mock/cms";
 import {
   applyPatch,
   coverageOf,
@@ -70,8 +70,8 @@ import {
   validateWindow,
   type CmsDocPatch,
   type CmsReadOptions,
-} from "@/frontend/lib/cms";
-import { slugify } from "@/frontend/lib/utils";
+} from "@/lib/cms";
+import { slugify } from "@/lib/utils";
 import { mockDelay, ok, type Result } from "./http";
 
 /** What the device holds. Empty is legal — that is a fresh browser. */

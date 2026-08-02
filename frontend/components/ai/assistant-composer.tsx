@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Send } from "lucide-react";
-import { MAX_INPUT_LENGTH } from "@/frontend/lib/ai";
-import type { ImageFingerprint } from "@/frontend/services/ai";
-import { cn } from "@/frontend/lib/utils";
+import { MAX_INPUT_LENGTH } from "@/lib/ai";
+import type { ImageFingerprint } from "@/services/ai";
+import { cn } from "@/lib/utils";
 import { VoiceButton } from "./voice-button";
 import { ImageScanButton } from "./image-scan-button";
 

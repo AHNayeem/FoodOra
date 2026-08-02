@@ -14,28 +14,28 @@ import {
   StickyNote,
   Timer,
 } from "lucide-react";
-import type { Order, OrderCancelReason, OrderStatus, Rider } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useOrders, ordersForVendor } from "@/frontend/stores/orders";
-import { getFleet } from "@/frontend/services/delivery";
+import type { Order, OrderCancelReason, OrderStatus, Rider } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useOrders, ordersForVendor } from "@/stores/orders";
+import { getFleet } from "@/services/delivery";
 import {
   restaurantActions,
   isTerminal,
   type OrderAction,
-} from "@/frontend/lib/order-machine";
+} from "@/lib/order-machine";
 import {
   DELAY_OPTIONS,
   REJECT_REASONS,
   readyInMs,
   toMinutes,
-} from "@/frontend/lib/order-lifecycle";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
-import { OrderStatusChip } from "@/frontend/components/orders/order-status-chip";
-import { OrderTimeline } from "@/frontend/components/orders/order-timeline";
-import { PrepTimeDialog } from "@/frontend/components/orders/prep-time-dialog";
-import { ReasonDialog } from "@/frontend/components/orders/reason-dialog";
-import { AssignRiderDialog } from "@/frontend/components/orders/assign-rider-dialog";
+} from "@/lib/order-lifecycle";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { OrderTimeline } from "@/components/orders/order-timeline";
+import { PrepTimeDialog } from "@/components/orders/prep-time-dialog";
+import { ReasonDialog } from "@/components/orders/reason-dialog";
+import { AssignRiderDialog } from "@/components/orders/assign-rider-dialog";
 import { useDashboard } from "./dashboard-context";
 
 /** Countdown cadence for the kitchen timers. */

@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { MapPin, Pencil, Plus, Star, Trash2 } from "lucide-react";
-import type { SavedAddress } from "@/frontend/types";
-import { useAuth } from "@/frontend/stores/auth";
-import { useAddresses } from "@/frontend/stores/addresses";
-import { getAddressBook } from "@/frontend/services/account";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
-import { Button } from "@/frontend/components/ui/button";
-import { Modal } from "@/frontend/components/ui/modal";
+import type { SavedAddress } from "@/types";
+import { useAuth } from "@/stores/auth";
+import { useAddresses } from "@/stores/addresses";
+import { getAddressBook } from "@/services/account";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 
 interface AddressForm {
   label: string;

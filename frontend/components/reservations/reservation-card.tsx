@@ -6,19 +6,19 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { CalendarDays, Clock, MapPin, Table2, Users } from "lucide-react";
-import type { Reservation, ReservationStatus } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useReservations } from "@/frontend/stores/reservations";
-import { cancelReservation } from "@/frontend/services/reservations";
+import type { Reservation, ReservationStatus } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useReservations } from "@/stores/reservations";
+import { cancelReservation } from "@/services/reservations";
 import {
   canCancelReservation,
   effectiveReservationStatus,
   reservationTimeRange,
-} from "@/frontend/lib/reservations";
-import { formatPrice } from "@/frontend/lib/format";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Modal } from "@/frontend/components/ui/modal";
-import { cn } from "@/frontend/lib/utils";
+} from "@/lib/reservations";
+import { formatPrice } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { Modal } from "@/components/ui/modal";
+import { cn } from "@/lib/utils";
 import { useDateLabel } from "./use-date-label";
 
 /** Badge tone per derived status. */

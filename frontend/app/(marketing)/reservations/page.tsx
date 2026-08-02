@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import type { BookingPolicy } from "@/frontend/types";
-import { getBookableVenues, getBookingPolicy } from "@/frontend/services/reservations";
+import type { BookingPolicy } from "@/types";
+import { getBookableVenues, getBookingPolicy } from "@/services/reservations";
 import {
   HowBookingWorks,
   ReservationsHero,
-} from "@/frontend/components/reservations/reservations-hero";
+} from "@/components/reservations/reservations-hero";
 import {
   VenueDirectory,
   type VenueSortKey,
-} from "@/frontend/components/reservations/venue-directory";
+} from "@/components/reservations/venue-directory";
 
 const SORTS = new Set<VenueSortKey>(["recommended", "rating", "price-low", "party-large"]);
 

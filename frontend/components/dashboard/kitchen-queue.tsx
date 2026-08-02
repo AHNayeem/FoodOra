@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ChefHat, CookingPot, PackageCheck, ShoppingBag, Timer } from "lucide-react";
-import type { Order, OrderStatus } from "@/frontend/types";
-import { useOrders, ordersForVendor } from "@/frontend/stores/orders";
-import { readyInMs, toMinutes } from "@/frontend/lib/order-lifecycle";
-import { cn } from "@/frontend/lib/utils";
+import type { Order, OrderStatus } from "@/types";
+import { useOrders, ordersForVendor } from "@/stores/orders";
+import { readyInMs, toMinutes } from "@/lib/order-lifecycle";
+import { cn } from "@/lib/utils";
 import { useDashboard } from "./dashboard-context";
 
 const TICK_MS = 1000;

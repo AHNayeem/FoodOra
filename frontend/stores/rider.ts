@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { DeliveryJob, RiderRemittance, RiderWithdrawal } from "@/frontend/types";
+import type { DeliveryJob, RiderRemittance, RiderWithdrawal } from "@/types";
 
 /**
  * rider store — the delivery partner's device state (Phase C18).

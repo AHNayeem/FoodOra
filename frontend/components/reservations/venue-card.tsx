@@ -5,12 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CheckCheck, Clock, Users } from "lucide-react";
-import type { BookingPolicy, Vendor } from "@/frontend/types";
-import { getNextAvailableTimes } from "@/frontend/services/reservations";
-import { useReservations } from "@/frontend/stores/reservations";
-import { Badge } from "@/frontend/components/ui/badge";
-import { Rating } from "@/frontend/components/ui/rating";
-import { cn } from "@/frontend/lib/utils";
+import type { BookingPolicy, Vendor } from "@/types";
+import { getNextAvailableTimes } from "@/services/reservations";
+import { useReservations } from "@/stores/reservations";
+import { Badge } from "@/components/ui/badge";
+import { Rating } from "@/components/ui/rating";
+import { cn } from "@/lib/utils";
 import { useDateLabel } from "./use-date-label";
 
 /**

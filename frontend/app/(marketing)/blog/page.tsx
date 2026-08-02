@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getBlogPosts } from "@/frontend/services/content";
-import { getRouteMetadata, readOptions } from "@/frontend/services/cms";
-import { PostList } from "@/frontend/components/blog/post-list";
+import { getBlogPosts } from "@/services/content";
+import { getRouteMetadata, readOptions } from "@/services/cms";
+import { PostList } from "@/components/blog/post-list";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);

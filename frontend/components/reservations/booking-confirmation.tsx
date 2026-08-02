@@ -5,10 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CalendarClock, CheckCircle2, Clock3, MapPin, Table2, Users } from "lucide-react";
-import type { BookingPolicy } from "@/frontend/types";
-import { useReservations } from "@/frontend/stores/reservations";
-import { effectiveReservationStatus, reservationTimeRange } from "@/frontend/lib/reservations";
-import { Badge } from "@/frontend/components/ui/badge";
+import type { BookingPolicy } from "@/types";
+import { useReservations } from "@/stores/reservations";
+import { effectiveReservationStatus, reservationTimeRange } from "@/lib/reservations";
+import { Badge } from "@/components/ui/badge";
 import { useDateLabel } from "./use-date-label";
 
 /**

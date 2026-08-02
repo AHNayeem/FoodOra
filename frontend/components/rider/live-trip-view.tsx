@@ -18,19 +18,19 @@ import {
   Store,
   StickyNote,
 } from "lucide-react";
-import type { Order, OrderCancelReason, OrderStatus } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useOrders } from "@/frontend/stores/orders";
-import { verifyOtp } from "@/frontend/services/orders";
-import { riderActions, isTerminal, type OrderAction } from "@/frontend/lib/order-machine";
-import { DELIVERY_FAIL_REASONS } from "@/frontend/lib/order-lifecycle";
-import { formatPrice } from "@/frontend/lib/format";
-import { Button } from "@/frontend/components/ui/button";
-import { OrderStatusChip } from "@/frontend/components/orders/order-status-chip";
-import { OrderTimeline } from "@/frontend/components/orders/order-timeline";
-import { OtpDialog } from "@/frontend/components/orders/otp-dialog";
-import { ReasonDialog } from "@/frontend/components/orders/reason-dialog";
-import { cn } from "@/frontend/lib/utils";
+import type { Order, OrderCancelReason, OrderStatus } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useOrders } from "@/stores/orders";
+import { verifyOtp } from "@/services/orders";
+import { riderActions, isTerminal, type OrderAction } from "@/lib/order-machine";
+import { DELIVERY_FAIL_REASONS } from "@/lib/order-lifecycle";
+import { formatPrice } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { OrderTimeline } from "@/components/orders/order-timeline";
+import { OtpDialog } from "@/components/orders/otp-dialog";
+import { ReasonDialog } from "@/components/orders/reason-dialog";
+import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
 
 const TICK_MS = 1000;

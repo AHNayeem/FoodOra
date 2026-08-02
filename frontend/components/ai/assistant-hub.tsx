@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles, Trash2 } from "lucide-react";
-import { useAssistant } from "@/frontend/stores/assistant";
-import { useSettings } from "@/frontend/stores/settings";
+import { useAssistant } from "@/stores/assistant";
+import { useSettings } from "@/stores/settings";
 import { AssistantConversation } from "./assistant-conversation";
 import { AssistantComposer } from "./assistant-composer";
 import { DietPlanner } from "./diet-planner";

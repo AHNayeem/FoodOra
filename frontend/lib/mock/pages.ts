@@ -7,7 +7,7 @@ import type {
   SupportChannel,
   TimelineEntry,
   ValueProp,
-} from "@/frontend/types";
+} from "@/types";
 import { SEED_NOW } from "./cuisines";
 
 const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };

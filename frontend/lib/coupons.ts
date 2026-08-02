@@ -7,7 +7,7 @@ import type {
   CouponStatus,
   CouponVendorRef,
   HeldCoupon,
-} from "@/frontend/types";
+} from "@/types";
 import { roundMoney } from "./checkout";
 
 /**

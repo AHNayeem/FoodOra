@@ -11,18 +11,18 @@ import {
   ThumbsUp,
   TriangleAlert,
 } from "lucide-react";
-import type { Review, ReviewSort, StarValue } from "@/frontend/types";
-import type { VendorReviewBoard } from "@/frontend/services/reviews";
-import { getVendorReviewBoard, replyToReview } from "@/frontend/services/reviews";
-import { MAX_REPLY_LENGTH } from "@/frontend/lib/reviews";
-import { formatRating } from "@/frontend/lib/format";
-import { useMerchant } from "@/frontend/stores/merchant";
-import { useReviewContext, useReviews } from "@/frontend/stores/reviews";
-import { cn } from "@/frontend/lib/utils";
-import { Button } from "@/frontend/components/ui/button";
-import { RatingSummary } from "@/frontend/components/reviews/rating-summary";
-import { ReviewCard } from "@/frontend/components/reviews/review-card";
-import { Stars } from "@/frontend/components/reviews/stars";
+import type { Review, ReviewSort, StarValue } from "@/types";
+import type { VendorReviewBoard } from "@/services/reviews";
+import { getVendorReviewBoard, replyToReview } from "@/services/reviews";
+import { MAX_REPLY_LENGTH } from "@/lib/reviews";
+import { formatRating } from "@/lib/format";
+import { useMerchant } from "@/stores/merchant";
+import { useReviewContext, useReviews } from "@/stores/reviews";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { RatingSummary } from "@/components/reviews/rating-summary";
+import { ReviewCard } from "@/components/reviews/review-card";
+import { Stars } from "@/components/reviews/stars";
 import { useDashboard } from "../dashboard-context";
 import { StatCard } from "../stat-card";
 import { RatingTrendChart } from "./rating-trend-chart";

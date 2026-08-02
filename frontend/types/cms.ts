@@ -26,7 +26,7 @@
  *    duplicating a single translated string, and it keeps Bangla and Arabic
  *    correct until someone deliberately overrides them.
  */
-import type { Locale } from "@/frontend/config/i18n/config";
+import type { Locale } from "@/config/i18n/config";
 import type { BaseEntity, ISODate } from "./common";
 
 /** The content groups the admin lists (spec: Content Management). */

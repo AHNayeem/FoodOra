@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { getBookableVenueSlugs, getVenueBooking } from "@/frontend/services/reservations";
-import { BookingForm } from "@/frontend/components/reservations/booking-form";
+import { getBookableVenueSlugs, getVenueBooking } from "@/services/reservations";
+import { BookingForm } from "@/components/reservations/booking-form";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;

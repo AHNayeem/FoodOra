@@ -10,9 +10,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { RevenuePoint } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { formatCompact, formatPrice } from "@/frontend/lib/format";
+import type { RevenuePoint } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { formatCompact, formatPrice } from "@/lib/format";
 
 const AXIS = "#948d85"; // --color-muted, readable on both themes
 const GRID = "rgba(148,141,133,0.18)";

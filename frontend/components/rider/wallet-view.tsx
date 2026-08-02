@@ -13,15 +13,15 @@ import {
   Wallet as WalletIcon,
   X,
 } from "lucide-react";
-import type { RemittanceMethod, RiderLedgerEntry, RiderWallet } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useRider } from "@/frontend/stores/rider";
-import { getRiderWallet, remitCash, withdrawEarnings } from "@/frontend/services/delivery";
-import { REMITTANCE_METHODS } from "@/frontend/lib/delivery";
-import { formatPrice } from "@/frontend/lib/format";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Input } from "@/frontend/components/ui/input";
-import { cn } from "@/frontend/lib/utils";
+import type { RemittanceMethod, RiderLedgerEntry, RiderWallet } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useRider } from "@/stores/rider";
+import { getRiderWallet, remitCash, withdrawEarnings } from "@/services/delivery";
+import { REMITTANCE_METHODS } from "@/lib/delivery";
+import { formatPrice } from "@/lib/format";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
 
 const METHOD_ICON: Record<RemittanceMethod, typeof Landmark> = {

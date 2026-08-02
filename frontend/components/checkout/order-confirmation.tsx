@@ -3,16 +3,16 @@
 import { useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2, Clock, CreditCard, MapPin, PackageX, Store } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { Order } from "@/frontend/types";
-import { useOrders } from "@/frontend/stores/orders";
-import { cartCount } from "@/frontend/lib/cart";
-import { isActive } from "@/frontend/lib/order-lifecycle";
-import { isFailure } from "@/frontend/lib/order-machine";
-import { formatPrice } from "@/frontend/lib/format";
-import { Button } from "@/frontend/components/ui/button";
-import { OrderStatusChip } from "@/frontend/components/orders/order-status-chip";
-import { cn } from "@/frontend/lib/utils";
+import type { CurrencyCode } from "@/config/regions";
+import type { Order } from "@/types";
+import { useOrders } from "@/stores/orders";
+import { cartCount } from "@/lib/cart";
+import { isActive } from "@/lib/order-lifecycle";
+import { isFailure } from "@/lib/order-machine";
+import { formatPrice } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { cn } from "@/lib/utils";
 
 /**
  * OrderConfirmation — the receipt, and later the invoice (Phase C8; spec §8).

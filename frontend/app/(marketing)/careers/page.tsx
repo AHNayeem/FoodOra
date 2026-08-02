@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { getCareersContent } from "@/frontend/services/pages";
-import { getRouteMetadata, readOptions } from "@/frontend/services/cms";
-import { PageHero, ValueGrid } from "@/frontend/components/marketing/marketing-blocks";
-import { JobBoard } from "@/frontend/components/marketing/job-board";
-import { SectionHeading } from "@/frontend/components/sections/section-heading";
+import { getCareersContent } from "@/services/pages";
+import { getRouteMetadata, readOptions } from "@/services/cms";
+import { PageHero, ValueGrid } from "@/components/marketing/marketing-blocks";
+import { JobBoard } from "@/components/marketing/job-board";
+import { SectionHeading } from "@/components/sections/section-heading";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getTranslations(), getLocale()]);

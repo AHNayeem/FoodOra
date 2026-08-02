@@ -1,4 +1,4 @@
-import { AccountShell } from "@/frontend/components/account/account-shell";
+import { AccountShell } from "@/components/account/account-shell";
 
 /**
  * Account section layout (Phase C3). Wraps every `/account/*` page in the shared

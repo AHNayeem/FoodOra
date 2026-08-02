@@ -2,12 +2,12 @@
 
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { CartLine, CartVendor, OrderPricing } from "@/frontend/types";
-import { TIP_PRESETS } from "@/frontend/lib/checkout";
-import { cartCount } from "@/frontend/lib/cart";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { CurrencyCode } from "@/config/regions";
+import type { CartLine, CartVendor, OrderPricing } from "@/types";
+import { TIP_PRESETS } from "@/lib/checkout";
+import { cartCount } from "@/lib/cart";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * OrderSummary — the sticky right rail of the checkout: the itemised cart, the

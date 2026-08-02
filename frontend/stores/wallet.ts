@@ -2,10 +2,10 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Wallet, WalletTransaction, WalletTransactionType } from "@/frontend/types";
-import { wallet as seedWallet } from "@/frontend/lib/mock";
-import { coversAmount, isSettled } from "@/frontend/lib/wallet";
-import { walletNotification } from "@/frontend/lib/notifications";
+import type { Wallet, WalletTransaction, WalletTransactionType } from "@/types";
+import { wallet as seedWallet } from "@/lib/mock";
+import { coversAmount, isSettled } from "@/lib/wallet";
+import { walletNotification } from "@/lib/notifications";
 import { emitNotifications } from "./notifications";
 
 /**

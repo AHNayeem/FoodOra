@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Reservation, ReservationStatus } from "@/frontend/types";
-import { reservationNotifications } from "@/frontend/lib/notifications";
+import type { Reservation, ReservationStatus } from "@/types";
+import { reservationNotifications } from "@/lib/notifications";
 import { emitNotifications } from "./notifications";
 
 /**

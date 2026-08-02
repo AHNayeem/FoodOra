@@ -2,8 +2,8 @@ import type {
   CustomerSettings,
   NotificationChannels,
   NotificationTopic,
-} from "@/frontend/types";
-import { DEMO_PASSWORD, defaultCustomerSettings } from "@/frontend/lib/mock";
+} from "@/types";
+import { DEMO_PASSWORD, defaultCustomerSettings } from "@/lib/mock";
 import { mockDelay, ok, type Result } from "./http";
 
 /**

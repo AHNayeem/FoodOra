@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { siteConfig } from "@/frontend/constants/site";
-import { cateringServices, mealPlans, posts, vendors } from "@/frontend/lib/mock";
+import { siteConfig } from "@/constants/site";
+import { cateringServices, mealPlans, posts, vendors } from "@/lib/mock";
 
 /**
  * Sitemap — every indexable route: the marketing and legal pages, each vertical

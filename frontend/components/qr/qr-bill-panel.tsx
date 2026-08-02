@@ -3,13 +3,13 @@
 import { CheckCircle2, ReceiptText, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import type { CartVendor, QrMenuConfig } from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useDineIn } from "@/frontend/stores/dine-in";
-import { computeQrTotals, roundsLines, roundStatus } from "@/frontend/lib/qr";
-import { formatPrice } from "@/frontend/lib/format";
-import { Modal } from "@/frontend/components/ui/modal";
-import { Badge } from "@/frontend/components/ui/badge";
+import type { CartVendor, QrMenuConfig } from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useDineIn } from "@/stores/dine-in";
+import { computeQrTotals, roundsLines, roundStatus } from "@/lib/qr";
+import { formatPrice } from "@/lib/format";
+import { Modal } from "@/components/ui/modal";
+import { Badge } from "@/components/ui/badge";
 import { QrTotals } from "./qr-totals";
 
 /**

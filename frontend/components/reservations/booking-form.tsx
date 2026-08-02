@@ -22,22 +22,22 @@ import type {
   OccasionType,
   TimeSlot,
   Vendor,
-} from "@/frontend/types";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import { useAuth } from "@/frontend/stores/auth";
-import { useReservations } from "@/frontend/stores/reservations";
+} from "@/types";
+import type { CurrencyCode } from "@/config/regions";
+import { useAuth } from "@/stores/auth";
+import { useReservations } from "@/stores/reservations";
 import {
   createReservation,
   getAvailability,
   getAvailabilityOutlook,
   type DayOutlook,
-} from "@/frontend/services/reservations";
-import { OCCASIONS, depositFor } from "@/frontend/lib/reservations";
-import { addDays, toDateKey, toMinutes } from "@/frontend/lib/dates";
-import { formatPrice } from "@/frontend/lib/format";
-import { Field } from "@/frontend/components/ui/field";
-import { Input } from "@/frontend/components/ui/input";
-import { cn } from "@/frontend/lib/utils";
+} from "@/services/reservations";
+import { OCCASIONS, depositFor } from "@/lib/reservations";
+import { addDays, toDateKey, toMinutes } from "@/lib/dates";
+import { formatPrice } from "@/lib/format";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { useDateLabel } from "./use-date-label";
 
 /** How many days the date rail shows at once. */

@@ -2,11 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import { Banknote, CreditCard, Wallet } from "lucide-react";
-import type { CurrencyCode } from "@/frontend/config/regions";
-import type { PaymentMethod } from "@/frontend/types";
-import { coversAmount, shortfall } from "@/frontend/lib/wallet";
-import { formatPrice } from "@/frontend/lib/format";
-import { cn } from "@/frontend/lib/utils";
+import type { CurrencyCode } from "@/config/regions";
+import type { PaymentMethod } from "@/types";
+import { coversAmount, shortfall } from "@/lib/wallet";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /** Demo payment fixtures — simulated only, no real gateway or stored card. */
 export const DEMO_CARD_LAST4 = "4242";

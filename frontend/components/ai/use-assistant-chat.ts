@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { useAssistant } from "@/frontend/stores/assistant";
+import { useAssistant } from "@/stores/assistant";
 import {
   ask,
   blockIds,
@@ -14,7 +14,7 @@ import {
   userAction,
   userMessage,
   type ImageFingerprint,
-} from "@/frontend/services/ai";
+} from "@/services/ai";
 import { useAssistantContext } from "./use-assistant-context";
 
 /**

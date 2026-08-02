@@ -7,9 +7,9 @@ import type {
   OrderActor,
   OrderStatus,
   Rider,
-} from "@/frontend/types";
-import { buildDemoOrders, riders } from "@/frontend/lib/mock";
-import { notificationsFor, nearYouNotification } from "@/frontend/lib/notifications";
+} from "@/types";
+import { buildDemoOrders, riders } from "@/lib/mock";
+import { notificationsFor, nearYouNotification } from "@/lib/notifications";
 import {
   addDelay,
   isTerminal,
@@ -18,12 +18,12 @@ import {
   transition,
   type TransitionError,
   type TransitionPatch,
-} from "@/frontend/lib/order-machine";
+} from "@/lib/order-machine";
 import {
   dispatchRider,
   ensureLifecycle,
   riderSnapshot,
-} from "@/frontend/lib/order-lifecycle";
+} from "@/lib/order-lifecycle";
 import { emitNotifications, useNotifications } from "./notifications";
 import { useWallet } from "./wallet";
 

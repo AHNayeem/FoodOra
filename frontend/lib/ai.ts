@@ -13,7 +13,7 @@ import type {
   ReviewSummary,
   Vendor,
   VendorType,
-} from "@/frontend/types";
+} from "@/types";
 import { ALLERGENS, allergenConflicts } from "./nutrition";
 
 /**

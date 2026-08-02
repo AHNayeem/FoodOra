@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Check, Copy, Loader2, Plus, Ticket } from "lucide-react";
-import type { Coupon, HeldCoupon } from "@/frontend/types";
-import type { ClaimableCoupon, CouponBook } from "@/frontend/services/coupons";
-import { claimById, claimCoupon, getClaimableCoupons, getCouponBook, getGrantedClaims } from "@/frontend/services/coupons";
-import { useCoupons } from "@/frontend/stores/coupons";
-import { CouponTicket } from "@/frontend/components/coupons/coupon-ticket";
-import { Button } from "@/frontend/components/ui/button";
-import { Input } from "@/frontend/components/ui/input";
-import { cn } from "@/frontend/lib/utils";
+import type { Coupon, HeldCoupon } from "@/types";
+import type { ClaimableCoupon, CouponBook } from "@/services/coupons";
+import { claimById, claimCoupon, getClaimableCoupons, getCouponBook, getGrantedClaims } from "@/services/coupons";
+import { useCoupons } from "@/stores/coupons";
+import { CouponTicket } from "@/components/coupons/coupon-ticket";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type Tab = "available" | "used" | "expired";
 

@@ -5,8 +5,8 @@ import {
   getCateringServiceBySlug,
   getServiceAddOns,
   getServicePackages,
-} from "@/frontend/services/catering";
-import { CateringQuoteBuilder } from "@/frontend/components/catering/catering-quote-builder";
+} from "@/services/catering";
+import { CateringQuoteBuilder } from "@/components/catering/catering-quote-builder";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<{ package?: string }>;

@@ -1,11 +1,11 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { CalendarClock, Star, Users, Utensils } from "lucide-react";
-import type { CateringService, Cuisine } from "@/frontend/types";
-import { Button } from "@/frontend/components/ui/button";
-import { formatCompact, formatPrice, formatRating } from "@/frontend/lib/format";
-import { EVENT_TYPE_EMOJI } from "@/frontend/lib/catering";
-import type { CurrencyCode } from "@/frontend/config/regions";
+import type { CateringService, Cuisine } from "@/types";
+import { Button } from "@/components/ui/button";
+import { formatCompact, formatPrice, formatRating } from "@/lib/format";
+import { EVENT_TYPE_EMOJI } from "@/lib/catering";
+import type { CurrencyCode } from "@/config/regions";
 
 /**
  * ServiceHero — the caterer detail header (Phase C17). Server component: cover
