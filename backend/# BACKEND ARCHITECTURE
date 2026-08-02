@@ -1,0 +1,658 @@
+# ==========================================================
+# PHASE D — BACKEND ARCHITECTURE (CURRENT PHASE)
+# ==========================================================
+
+IMPORTANT
+
+Phase A (Product Planning),
+Phase B (Design System),
+and Phase C (Frontend Prototype)
+are already completed and approved.
+
+DO NOT redesign or rebuild any frontend.
+
+DO NOT modify UI unless backend integration requires a very small adjustment.
+
+Your responsibility now is to design a production-ready backend architecture that will gradually replace the current mock layer.
+
+The backend must remain fully compatible with the existing Next.js frontend.
+
+Every backend module should expose interfaces that match the current mock data structure to minimize frontend refactoring.
+
+Use:
+
+- NestJS
+- GraphQL (Apollo)
+- PostgreSQL
+- Prisma ORM
+- Redis
+- BullMQ
+- Firebase Cloud Messaging
+- WebSocket
+- JWT Authentication
+- Refresh Tokens
+- Docker
+- Object Storage (S3 Compatible)
+
+Use Clean Architecture + Modular Monolith.
+
+Every module must be independently maintainable.
+
+Avoid tightly coupled business logic.
+
+===================================
+Phase D1
+Backend Project Architecture
+===================================
+
+Design complete folder architecture.
+
+Include:
+
+- modules
+- common
+- auth
+- graphql
+- prisma
+- config
+- cache
+- queue
+- websocket
+- notification
+- storage
+- payment
+- audit
+- logger
+- health
+- shared
+- utilities
+
+===================================
+Phase D2
+Database Design
+===================================
+
+Design complete PostgreSQL relational database.
+
+Include
+
+- normalization
+- constraints
+- indexes
+- composite indexes
+- soft delete
+- audit fields
+- optimistic locking
+- timestamps
+- enums
+- lookup tables
+
+Support:
+
+- multi country
+- multi currency
+- timezone
+- language
+- tax
+- configurable settings
+
+===================================
+Phase D3
+ER Diagram
+===================================
+
+Generate complete ER diagram.
+
+Include all relationships.
+
+Examples:
+
+Users
+
+Restaurants
+
+Branches
+
+Menus
+
+Categories
+
+Foods
+
+Orders
+
+Order Items
+
+Payments
+
+Wallet
+
+Coupons
+
+Offers
+
+Reviews
+
+Delivery
+
+Riders
+
+Inventory
+
+Reservations
+
+Blogs
+
+CMS
+
+Subscriptions
+
+Notifications
+
+Audit Logs
+
+Feature Flags
+
+Roles
+
+Permissions
+
+Settings
+
+Countries
+
+Currencies
+
+Taxes
+
+===================================
+Phase D4
+Prisma Schema
+===================================
+
+Generate enterprise-grade Prisma schema.
+
+Requirements
+
+- relation names
+- indexes
+- enums
+- constraints
+- soft delete
+- reusable base model
+- pagination friendly
+- performance optimized
+
+===================================
+Phase D5
+GraphQL Architecture
+===================================
+
+Design
+
+Queries
+
+Mutations
+
+Subscriptions
+
+Filtering
+
+Sorting
+
+Pagination
+
+Cursor Pagination
+
+Search
+
+Authorization
+
+Error Handling
+
+Validation
+
+Upload
+
+===================================
+Phase D6
+Authentication Architecture
+===================================
+
+Design authentication flow.
+
+Support
+
+Email
+
+Phone OTP
+
+Google
+
+Apple
+
+Facebook
+
+Refresh Token Rotation
+
+Session Management
+
+Remember Me
+
+Device Management
+
+Role Based Access Control (RBAC)
+
+Permission Based Access Control (PBAC)
+
+===================================
+Phase D7
+Payment Architecture
+===================================
+
+Design provider-independent payment architecture.
+
+Support
+
+Stripe
+
+SSLCommerz
+
+bKash
+
+Nagad
+
+Rocket
+
+PayPal
+
+Apple Pay
+
+Google Pay
+
+Support
+
+Refund
+
+Partial Refund
+
+Webhook
+
+Payment Retry
+
+Payment Status Sync
+
+===================================
+Phase D8
+Notification Architecture
+===================================
+
+Support
+
+Push
+
+Email
+
+SMS
+
+In App
+
+WebSocket
+
+Firebase
+
+Notification Preferences
+
+Templates
+
+===================================
+Phase D9
+Real-time Architecture
+===================================
+
+Design
+
+Live Order Status
+
+Kitchen Status
+
+Rider Tracking
+
+Restaurant Dashboard
+
+Live Analytics
+
+Chat
+
+Presence
+
+Typing
+
+===================================
+Phase D10
+Deployment Architecture
+===================================
+
+Design deployment.
+
+Include
+
+Docker
+
+Nginx
+
+CDN
+
+Object Storage
+
+Redis
+
+PostgreSQL
+
+Monitoring
+
+Logging
+
+CI/CD
+
+Environment Strategy
+
+Scaling Strategy
+
+Backup Strategy
+
+Disaster Recovery
+
+Health Checks
+
+==========================================================
+PHASE E — BACKEND IMPLEMENTATION
+==========================================================
+
+IMPORTANT
+
+DO NOT implement everything at once.
+
+Replace the frontend mock layer module-by-module.
+
+Each implementation must preserve existing frontend functionality.
+
+The frontend should continue to work after every phase.
+
+Implement modules incrementally.
+
+===================================
+E1
+Backend Foundation
+===================================
+
+Initialize NestJS.
+
+Configure
+
+GraphQL
+
+Prisma
+
+Environment
+
+Logging
+
+Validation
+
+Exception Filters
+
+Health Checks
+
+Docker
+
+===================================
+E2
+Authentication
+===================================
+
+Implement
+
+JWT
+
+Refresh Token
+
+OTP
+
+Google Login
+
+Apple Login
+
+Facebook Login
+
+RBAC
+
+PBAC
+
+===================================
+E3
+Core Modules
+===================================
+
+Users
+
+Roles
+
+Permissions
+
+Countries
+
+Languages
+
+Currencies
+
+Settings
+
+===================================
+E4
+Restaurant Modules
+===================================
+
+Restaurants
+
+Branches
+
+Menus
+
+Categories
+
+Foods
+
+Inventory
+
+POS Lite
+
+QR Menu
+
+===================================
+E5
+Ordering System
+===================================
+
+Cart
+
+Checkout
+
+Orders
+
+Order Items
+
+Coupons
+
+Offers
+
+Taxes
+
+Wallet
+
+Invoice
+
+===================================
+E6
+Delivery System
+===================================
+
+Riders
+
+Assignments
+
+Tracking
+
+OTP Delivery
+
+Fleet
+
+Zones
+
+===================================
+E7
+Payments
+===================================
+
+Integrate payment abstraction layer.
+
+Implement
+
+SSLCommerz
+
+Stripe
+
+bKash
+
+Nagad
+
+Rocket
+
+PayPal
+
+Webhook
+
+Refund
+
+===================================
+E8
+Communication
+===================================
+
+Notifications
+
+Email
+
+SMS
+
+Firebase
+
+WebSocket
+
+Chat
+
+===================================
+E9
+Analytics
+===================================
+
+Revenue
+
+Orders
+
+Heatmaps
+
+Customer Insights
+
+Forecast
+
+Restaurant Insights
+
+===================================
+E10
+Security
+===================================
+
+Rate Limiting
+
+CSRF
+
+XSS
+
+SQL Injection Protection
+
+Input Validation
+
+Encryption
+
+Audit Logs
+
+===================================
+E11
+Testing
+===================================
+
+Unit Tests
+
+Integration Tests
+
+E2E Tests
+
+GraphQL Testing
+
+Load Testing
+
+===================================
+E12
+Production Deployment
+===================================
+
+Docker
+
+CI/CD
+
+Database Migration
+
+Seeders
+
+Monitoring
+
+Logging
+
+Backup
+
+Production Checklist
+
+==========================================================
+IMPLEMENTATION RULES
+==========================================================
+
+Before implementing any backend module:
+
+1. Analyze the existing frontend implementation.
+2. Preserve all current UI behavior.
+3. Replace only the corresponding mock layer.
+4. Do not break existing routes.
+5. Keep TypeScript types synchronized.
+6. Generate production-quality code only.
+7. Follow Clean Architecture and SOLID principles.
+8. Use dependency injection throughout.
+9. Write reusable, scalable, and well-documented code.
+10. After completing each phase, stop and wait for approval before proceeding to the next phase.
+
+
+# Follow Current Project Structure
+
+foodora/
+|
+├── frontend/
+│   └── Next.js
+│
+├── backend/
+│   └── NestJS
+│
+├── database/
+│
+├── docs/
+│
+└── docker/
