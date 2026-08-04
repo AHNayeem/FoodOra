@@ -1,0 +1,490 @@
+// =============================================================================
+// ORDERING — cart, checkout, orders, the lifecycle log and invoices.
+//
+// Serves `types/cart.ts` and `types/order.ts`. `Order.lifecycle` is a nested
+// object on the read model; here it is flattened into columns plus the
+// `OrderEvent` log, and `OrderResolver.lifecycle()` recomposes it. Flattening
+// is what makes "every order a rider declined" or "orders that blew their
+// promised time" an indexed query instead of a JSON scan.
+//
+// The status machine itself is domain code (`modules/orders/domain/
+// order.machine.ts`), ported from `frontend/lib/order-machine.ts` so both
+// sides agree on legal transitions. The database only stores where the order
+// got to and who moved it.
+// =============================================================================
+
+enum OrderStatusKind {
+  PLACED          @map("placed")
+  CONFIRMED       @map("confirmed")
+  PREPARING       @map("preparing")
+  PACKING         @map("packing")
+  READY           @map("ready")
+  RIDER_ASSIGNED  @map("rider-assigned")
+  PICKED_UP       @map("picked-up")
+  ON_THE_WAY      @map("on-the-way")
+  ARRIVED         @map("arrived")
+  DELIVERED       @map("delivered")
+  COMPLETED       @map("completed")
+  REJECTED        @map("rejected")
+  CANCELLED       @map("cancelled")
+  DELIVERY_FAILED @map("delivery-failed")
+  RETURNED        @map("returned")
+  REFUNDED        @map("refunded")
+
+  @@map("order_status_kind")
+}
+
+enum OrderActorKind {
+  CUSTOMER   @map("customer")
+  RESTAURANT @map("restaurant")
+  RIDER      @map("rider")
+  SYSTEM     @map("system")
+  ADMIN      @map("admin")
+
+  @@map("order_actor_kind")
+}
+
+enum FulfillmentKind {
+  DELIVERY @map("delivery")
+  PICKUP   @map("pickup")
+
+  @@map("fulfillment_kind")
+}
+
+enum PaymentMethodKind {
+  CASH       @map("cash")
+  CARD       @map("card")
+  WALLET     @map("wallet")
+  MFS        @map("mfs")
+  NETBANKING @map("netbanking")
+
+  @@map("payment_method_kind")
+}
+
+enum PaymentStatusKind {
+  PENDING  @map("pending")
+  PAID     @map("paid")
+  FAILED   @map("failed")
+  REFUNDED @map("refunded")
+
+  @@map("payment_status_kind")
+}
+
+enum OrderCancelReasonKind {
+  OUT_OF_STOCK         @map("out-of-stock")
+  TOO_BUSY             @map("too-busy")
+  CLOSING_SOON         @map("closing-soon")
+  CANNOT_DELIVER       @map("cannot-deliver")
+  CHANGED_MIND         @map("changed-mind")
+  TOO_SLOW             @map("too-slow")
+  ORDERED_BY_MISTAKE   @map("ordered-by-mistake")
+  DUPLICATE            @map("duplicate")
+  CUSTOMER_UNAVAILABLE @map("customer-unavailable")
+  WRONG_ADDRESS        @map("wrong-address")
+  REFUSED_DELIVERY     @map("refused-delivery")
+  OTHER                @map("other")
+
+  @@map("order_cancel_reason_kind")
+}
+
+enum RefundStatusKind {
+  NONE      @map("none")
+  REQUESTED @map("requested")
+  APPROVED  @map("approved")
+  REJECTED  @map("rejected")
+
+  @@map("refund_status_kind")
+}
+
+enum AssignmentKind {
+  AUTO   @map("auto")
+  MANUAL @map("manual")
+
+  @@map("assignment_kind")
+}
+
+enum OrderChannel {
+  WEB   @map("web")
+  APP   @map("app")
+  QR    @map("qr")
+  POS   @map("pos")
+  PHONE @map("phone")
+
+  @@map("order_channel")
+}
+
+/// A server-side cart. Phase C keeps this in Zustand; persisting it is what
+/// makes "add on your phone, check out on your laptop" work and gives the
+/// pricing engine one place to run. A cart is single-vendor by construction.
+model Cart {
+  id       String  @id @db.VarChar(40)
+  userId   String? @db.VarChar(40)
+  /// Anonymous cart key from the client cookie, so a guest keeps their basket.
+  guestKey String? @db.VarChar(60)
+  vendorId String  @db.VarChar(40)
+  branchId String? @db.VarChar(40)
+  currency String  @db.Char(3)
+
+  fulfillment  FulfillmentKind @default(DELIVERY)
+  addressId    String?         @db.VarChar(40)
+  scheduledFor DateTime?       @db.Timestamptz(3)
+  notes        String?         @db.VarChar(500)
+  tip          Decimal         @default(0) @db.Decimal(14, 2)
+  /// Applied coupon; re-evaluated on every read, never trusted from the client.
+  couponId     String?         @db.VarChar(40)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  expiresAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  user    User?         @relation("CartUser", fields: [userId], references: [id], onDelete: Cascade)
+  vendor  Vendor        @relation("CartVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  branch  VendorBranch? @relation("CartBranch", fields: [branchId], references: [id], onDelete: SetNull)
+  address Address?      @relation("CartAddress", fields: [addressId], references: [id], onDelete: SetNull)
+  coupon  Coupon?       @relation("CartCoupon", fields: [couponId], references: [id], onDelete: SetNull)
+  items   CartItem[]    @relation("CartItems")
+
+  @@unique([userId, vendorId])
+  @@index([guestKey])
+  @@index([expiresAt])
+  @@map("carts")
+}
+
+model CartItem {
+  /// The composite cart-line id: food id + sorted option ids, so identical
+  /// configurations merge instead of stacking (`types/cart.ts::CartLine.id`).
+  ///
+  /// TEMPORARY: that value is unique only *within* a cart, so a global `@id` let two
+  /// baskets collide on the same dish. Rows are therefore stored as
+  /// `<cartId>#<lineId>` — a workaround the application enforces and the database does
+  /// not. Scheduled for replacement by `@@id([cartId, id])`; see DSC-1 in
+  /// `docs/backend/deferred-schema-changes.md`.
+  id        String  @id @db.VarChar(120)
+  cartId    String  @db.VarChar(40)
+  foodId    String  @db.VarChar(40)
+  /// Snapshots, so a menu edit never silently reprices a live basket.
+  name      String  @db.VarChar(160)
+  image     String  @default("") @db.VarChar(500)
+  basePrice Decimal @db.Decimal(14, 2)
+  /// basePrice + Σ option deltas.
+  unitPrice Decimal @db.Decimal(14, 2)
+  quantity  Int     @db.SmallInt
+  note      String? @db.VarChar(240)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  cart    Cart             @relation("CartItems", fields: [cartId], references: [id], onDelete: Cascade)
+  food    FoodItem         @relation("CartItemFood", fields: [foodId], references: [id], onDelete: Cascade)
+  options CartItemOption[] @relation("CartItemOptions")
+
+  @@index([cartId])
+  @@index([foodId])
+  @@map("cart_items")
+}
+
+model CartItemOption {
+  cartItemId String  @db.VarChar(120)
+  groupId    String  @db.VarChar(40)
+  optionId   String  @db.VarChar(40)
+  name       String  @db.VarChar(120)
+  priceDelta Decimal @default(0) @db.Decimal(14, 2)
+
+  cartItem CartItem   @relation("CartItemOptions", fields: [cartItemId], references: [id], onDelete: Cascade)
+  option   FoodOption @relation("CartOptionRef", fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@id([cartItemId, optionId])
+  @@index([optionId])
+  @@map("cart_item_options")
+}
+
+/// The immutable record produced at checkout.
+model Order {
+  id          String @id @db.VarChar(40)
+  /// Human-facing reference, e.g. "FO-8F3A21". Unique across the platform.
+  orderNumber String @unique @db.VarChar(24)
+
+  userId   String?      @db.VarChar(40)
+  vendorId String       @db.VarChar(40)
+  branchId String?      @db.VarChar(40)
+  channel  OrderChannel @default(WEB)
+
+  /// `CartVendor` verbatim — id, slug, name, currency, countryCode,
+  /// deliveryFee, minOrder, freeDeliveryOver. Served straight to the frontend.
+  vendorSnapshot  Json
+  /// `DeliveryAddress` verbatim; null for pickup.
+  addressSnapshot Json?
+  /// Resolved at placement, for zone analytics and dispatch.
+  addressId       String?  @db.VarChar(40)
+  deliveryLat     Decimal? @db.Decimal(10, 7)
+  deliveryLng     Decimal? @db.Decimal(10, 7)
+  deliveryArea    String?  @db.VarChar(120)
+  deliveryCity    String?  @db.VarChar(120)
+
+  fulfillment  FulfillmentKind
+  scheduledFor DateTime?       @db.Timestamptz(3)
+  contactName  String          @db.VarChar(120)
+  contactPhone String          @db.VarChar(24)
+  notes        String?         @db.VarChar(500)
+
+  // --- payment (OrderPayment) ------------------------------------------------
+  paymentMethod PaymentMethodKind
+  paymentStatus PaymentStatusKind @default(PENDING)
+  cardLast4     String?           @db.Char(4)
+
+  // --- pricing (OrderPricing) ------------------------------------------------
+  currency      String  @db.Char(3)
+  subtotal      Decimal @db.Decimal(14, 2)
+  deliveryFee   Decimal @default(0) @db.Decimal(14, 2)
+  discount      Decimal @default(0) @db.Decimal(14, 2)
+  couponCode    String? @db.VarChar(40)
+  couponId      String? @db.VarChar(40)
+  tax           Decimal @default(0) @db.Decimal(14, 2)
+  taxLabel      String  @default("VAT") @db.VarChar(40)
+  taxRate       Decimal @default(0) @db.Decimal(6, 4)
+  tip           Decimal @default(0) @db.Decimal(14, 2)
+  serviceCharge Decimal @default(0) @db.Decimal(14, 2)
+  packagingFee  Decimal @default(0) @db.Decimal(14, 2)
+  total         Decimal @db.Decimal(14, 2)
+  /// Platform commission on this order — settlement input, not shown to the
+  /// customer.
+  commission    Decimal @default(0) @db.Decimal(14, 2)
+
+  status              OrderStatusKind @default(PLACED)
+  placedAt            DateTime        @db.Timestamptz(3)
+  estimatedDeliveryAt DateTime        @db.Timestamptz(3)
+
+  // --- lifecycle (OrderLifecycle, flattened) ---------------------------------
+  prepMinutes     Int?                   @db.SmallInt
+  promisedReadyAt DateTime?              @db.Timestamptz(3)
+  delayMinutes    Int                    @default(0) @db.SmallInt
+  rejectionReason OrderCancelReasonKind?
+  cancelReason    OrderCancelReasonKind?
+  cancelledBy     OrderActorKind?
+  failureReason   OrderCancelReasonKind?
+  /// `OrderRider` snapshot — id, name, phone, vehicle, plate, rating, trips,
+  /// photo. Frozen at assignment so a later profile edit cannot rewrite it.
+  riderSnapshot   Json?
+  riderId         String?                @db.VarChar(40)
+  assignment      AssignmentKind?
+  assignedAt      DateTime?              @db.Timestamptz(3)
+  /// Hashed at rest; the plaintext is only re-derivable by the customer's own
+  /// query and by the rider's verify call. See D6 §Delivery OTP.
+  otpHash         String                 @db.Char(64)
+  otpAttempts     Int                    @default(0) @db.SmallInt
+  otpVerifiedAt   DateTime?              @db.Timestamptz(3)
+  refundStatus    RefundStatusKind       @default(NONE)
+  refundAmount    Decimal                @default(0) @db.Decimal(14, 2)
+  /// Customer's 1–5 rating of the completed order; null until they rate.
+  rating          Int?                   @db.SmallInt
+
+  /// Denormalised for the kitchen board and dispatch filters.
+  itemCount   Int       @default(0) @db.SmallInt
+  acceptedAt  DateTime? @db.Timestamptz(3)
+  readyAt     DateTime? @db.Timestamptz(3)
+  pickedUpAt  DateTime? @db.Timestamptz(3)
+  deliveredAt DateTime? @db.Timestamptz(3)
+  completedAt DateTime? @db.Timestamptz(3)
+  cancelledAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  user   User?         @relation("OrderCustomer", fields: [userId], references: [id], onDelete: SetNull)
+  vendor Vendor        @relation("OrderVendor", fields: [vendorId], references: [id], onDelete: Restrict)
+  branch VendorBranch? @relation("OrderBranch", fields: [branchId], references: [id], onDelete: SetNull)
+  rider  Rider?        @relation("OrderRider", fields: [riderId], references: [id], onDelete: SetNull)
+  coupon Coupon?       @relation("OrderCoupon", fields: [couponId], references: [id], onDelete: SetNull)
+
+  items             OrderItem[]         @relation("OrderItems")
+  events            OrderEvent[]        @relation("OrderEvents")
+  riderDeclines     OrderRiderDecline[] @relation("OrderDeclines")
+  payments          PaymentIntent[]     @relation("PaymentOrder")
+  refunds           Refund[]            @relation("RefundOrder")
+  refundRequests    RefundRequest[]     @relation("RefundRequestOrder")
+  invoice           Invoice?            @relation("InvoiceOrder")
+  jobOrders         DeliveryJobOrder[]  @relation("JobOrderOrder")
+  couponRedemptions CouponRedemption[]  @relation("RedemptionOrder")
+  reviews           Review[]            @relation("ReviewOrder")
+  walletTxns        WalletTransaction[] @relation("WalletTxnOrder")
+  ledgerEntries     LedgerEntry[]       @relation("LedgerOrder")
+  notifications     Notification[]      @relation("NotificationOrder")
+
+  /// The workhorse index: the merchant board, the customer's history and the
+  /// admin ops list are all (scope, status, recency).
+  @@index([vendorId, status, placedAt(sort: Desc)])
+  @@index([userId, placedAt(sort: Desc)])
+  @@index([branchId, status, placedAt(sort: Desc)])
+  @@index([status, placedAt(sort: Desc)])
+  @@index([riderId, status])
+  @@index([paymentStatus, placedAt(sort: Desc)])
+  @@index([scheduledFor])
+  @@index([deletedAt])
+  @@map("orders")
+}
+
+/// A `CartLine` frozen onto the order. Prices are snapshots — re-reading the
+/// menu to render an old receipt would be wrong.
+model OrderItem {
+  id        String  @id @db.VarChar(40)
+  orderId   String  @db.VarChar(40)
+  foodId    String? @db.VarChar(40)
+  /// The composite cart-line id (food + sorted option ids), preserved so the
+  /// read model's `CartLine.id` is byte-identical to what checkout produced.
+  lineKey   String  @db.VarChar(120)
+  name      String  @db.VarChar(160)
+  image     String  @default("") @db.VarChar(500)
+  basePrice Decimal @db.Decimal(14, 2)
+  unitPrice Decimal @db.Decimal(14, 2)
+  quantity  Int     @db.SmallInt
+  lineTotal Decimal @db.Decimal(14, 2)
+  note      String? @db.VarChar(240)
+  sort      Int     @default(0) @db.SmallInt
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  order   Order             @relation("OrderItems", fields: [orderId], references: [id], onDelete: Cascade)
+  food    FoodItem?         @relation("OrderItemFood", fields: [foodId], references: [id], onDelete: SetNull)
+  options OrderItemOption[] @relation("OrderItemOptions")
+
+  @@index([orderId, sort])
+  @@index([foodId])
+  @@map("order_items")
+}
+
+model OrderItemOption {
+  id          String  @id @db.VarChar(40)
+  orderItemId String  @db.VarChar(40)
+  groupId     String  @db.VarChar(40)
+  optionId    String? @db.VarChar(40)
+  name        String  @db.VarChar(120)
+  priceDelta  Decimal @default(0) @db.Decimal(14, 2)
+
+  orderItem OrderItem   @relation("OrderItemOptions", fields: [orderItemId], references: [id], onDelete: Cascade)
+  option    FoodOption? @relation("OrderOptionRef", fields: [optionId], references: [id], onDelete: SetNull)
+
+  @@index([orderItemId])
+  @@map("order_item_options")
+}
+
+/// The append-only lifecycle log. This is the only honest source for the
+/// timeline: a status alone cannot say who set it, when, or why.
+model OrderEvent {
+  id      String          @id @db.VarChar(40)
+  orderId String          @db.VarChar(40)
+  /// The status the order moved *into*.
+  status  OrderStatusKind
+  at      DateTime        @default(now()) @db.Timestamptz(3)
+  actor   OrderActorKind
+  /// Account behind `actor`, when there was one (null for `system`).
+  actorId String?         @db.VarChar(40)
+  /// Free-text detail shown under the timeline entry.
+  note    String?         @db.VarChar(500)
+  /// Structured payload for events that carry more than a note (delay
+  /// minutes, the rejected rider id, the failed OTP attempt).
+  meta    Json?
+
+  order Order @relation("OrderEvents", fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, at])
+  @@index([status, at(sort: Desc)])
+  @@map("order_events")
+}
+
+/// `OrderLifecycle.rejectedRiderIds` — a table, so dispatch can exclude riders
+/// with an anti-join instead of scanning an array.
+model OrderRiderDecline {
+  orderId    String   @db.VarChar(40)
+  riderId    String   @db.VarChar(40)
+  declinedAt DateTime @default(now()) @db.Timestamptz(3)
+  reason     String?  @db.VarChar(120)
+
+  order Order @relation("OrderDeclines", fields: [orderId], references: [id], onDelete: Cascade)
+  rider Rider @relation("RiderDeclines", fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@id([orderId, riderId])
+  @@index([riderId])
+  @@map("order_rider_declines")
+}
+
+enum RefundRequestStatus {
+  REQUESTED @map("requested")
+  APPROVED  @map("approved")
+  REJECTED  @map("rejected")
+  CANCELLED @map("cancelled")
+
+  @@map("refund_request_status")
+}
+
+/// A customer's claim against an order. Distinct from `Refund`, which is the
+/// money actually moving at a provider: a request can be rejected, and an
+/// approved request can produce several partial refunds.
+model RefundRequest {
+  id           String                @id @db.VarChar(40)
+  orderId      String                @db.VarChar(40)
+  userId       String?               @db.VarChar(40)
+  status       RefundRequestStatus   @default(REQUESTED)
+  /// Amount claimed, in the order currency.
+  amount       Decimal               @db.Decimal(14, 2)
+  currency     String                @db.Char(3)
+  reason       OrderCancelReasonKind
+  comment      String?               @db.VarChar(1000)
+  /// Photo evidence.
+  evidence     Json?
+  decidedById  String?               @db.VarChar(40)
+  decidedAt    DateTime?             @db.Timestamptz(3)
+  decisionNote String?               @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  order Order @relation("RefundRequestOrder", fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("refund_requests")
+}
+
+/// A generated tax invoice. Numbering is per-country and gap-free, which is a
+/// legal requirement in several of them — hence a sequence table rather than
+/// `count(*) + 1`.
+model Invoice {
+  id            String   @id @db.VarChar(40)
+  orderId       String   @unique @db.VarChar(40)
+  /// e.g. "BD-2026-000148".
+  invoiceNumber String   @unique @db.VarChar(32)
+  countryCode   String   @db.Char(2)
+  currency      String   @db.Char(3)
+  subtotal      Decimal  @db.Decimal(14, 2)
+  tax           Decimal  @db.Decimal(14, 2)
+  total         Decimal  @db.Decimal(14, 2)
+  /// Frozen copy of the seller's legal details at issue time.
+  sellerDetails Json
+  buyerDetails  Json
+  /// Rendered PDF in object storage.
+  pdfFileId     String?  @db.VarChar(40)
+  issuedAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  order Order @relation("InvoiceOrder", fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([countryCode, issuedAt(sort: Desc)])
+  @@map("invoices")
+}
+
+/// Gap-free per-scope counters (invoice numbers, order numbers per day).
+/// Incremented with `UPDATE … RETURNING` inside the issuing transaction.
+model NumberSequence {
+  scope     String   @id @db.VarChar(60)
+  current   BigInt   @default(0)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@map("number_sequences")
+}

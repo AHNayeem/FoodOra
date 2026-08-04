@@ -1,0 +1,28 @@
+{
+  "name": "@foodora/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FoodOra PostgreSQL schema, migrations and seeders (Phase D4).",
+  "prisma": {
+    "schema": "./prisma/schema",
+    "seed": "cd ../backend && bun run seed:reference"
+  },
+  "scripts": {
+    "validate": "prisma validate",
+    "format": "prisma format",
+    "generate": "prisma generate",
+    "migrate:baseline": "prisma migrate diff --from-empty --to-schema-datamodel ./prisma/schema --script",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:status": "prisma migrate status",
+    "migrate:dev": "prisma migrate dev",
+    "studio": "prisma studio",
+    "seed": "prisma db seed",
+    "erd": "prisma generate --generator erd"
+  },
+  "devDependencies": {
+    "prisma": "^6.16.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2"
+  }
+}

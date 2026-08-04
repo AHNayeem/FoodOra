@@ -1,0 +1,712 @@
+// =============================================================================
+// CATALOG — the discoverable food catalog and the merchant that owns it.
+//
+// Serves `types/catalog.ts` (Cuisine, Category, Vendor, MenuSection, FoodItem,
+// FoodOptionGroup, FoodOption).
+//
+// ONE DELIBERATE STRUCTURAL CHANGE: the spec's ER list asks for Restaurants
+// AND Branches, while Phase C's `Vendor` is a single flat storefront with one
+// `location`. Both are honoured by splitting brand from location:
+//
+//     Vendor        the brand — name, slug, type, owner, cuisines, dietary
+//     VendorBranch  a location — address, hours, fees, zone, timezone
+//
+// A vendor always has exactly one branch flagged `isPrimary`, and
+// `CatalogService.toVendorModel(vendor, branch)` flattens the pair back into
+// the exact `Vendor` shape the frontend already renders. Multi-branch merchants
+// then need no second migration, and `services/catalog.ts` keeps its signature.
+//
+// DERIVED, NEVER STORED: `Vendor.distanceKm` (needs the caller's coordinates)
+// and `Vendor.isOpen` (needs the branch's hours in the branch's timezone) are
+// computed fields on the GraphQL type. `rating` / `reviewCount` ARE stored —
+// they are the denormalised counters `types/review.ts` already documents as
+// living beside the table (see `RatingAggregate`).
+// =============================================================================
+
+enum VendorTypeKind {
+  RESTAURANT    @map("restaurant")
+  CAFE          @map("cafe")
+  CLOUD_KITCHEN @map("cloud-kitchen")
+  HOME_CHEF     @map("home-chef")
+  CATERING      @map("catering")
+
+  @@map("vendor_type_kind")
+}
+
+enum DietaryTagKind {
+  HALAL       @map("halal")
+  VEGETARIAN  @map("vegetarian")
+  VEGAN       @map("vegan")
+  GLUTEN_FREE @map("gluten-free")
+  KETO        @map("keto")
+  HEALTHY     @map("healthy")
+  SPICY       @map("spicy")
+
+  @@map("dietary_tag_kind")
+}
+
+enum WeekdayKind {
+  MON @map("mon")
+  TUE @map("tue")
+  WED @map("wed")
+  THU @map("thu")
+  FRI @map("fri")
+  SAT @map("sat")
+  SUN @map("sun")
+
+  @@map("weekday_kind")
+}
+
+enum VendorStatus {
+  DRAFT     @map("draft")
+  PENDING   @map("pending")
+  ACTIVE    @map("active")
+  PAUSED    @map("paused")
+  SUSPENDED @map("suspended")
+
+  @@map("vendor_status")
+}
+
+model Cuisine {
+  id    String @id @db.VarChar(40)
+  slug  String @unique @db.VarChar(80)
+  name  String @db.VarChar(80)
+  emoji String @db.VarChar(16)
+  image String @db.VarChar(500)
+  sort  Int    @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendors  VendorCuisine[]          @relation("CuisineVendors")
+  caterers CateringServiceCuisine[] @relation("CuisineCaterers")
+
+  @@index([deletedAt, sort])
+  @@map("cuisines")
+}
+
+/// Browse category on the home grid. `keywords` is normalised into
+/// `CategoryKeyword` (the frontend's `keywords: string[]` is the resolver's
+/// projection) so search can index and score the terms.
+model Category {
+  id       String  @id @db.VarChar(40)
+  slug     String  @unique @db.VarChar(80)
+  name     String  @db.VarChar(80)
+  emoji    String  @db.VarChar(16)
+  image    String  @db.VarChar(500)
+  sort     Int     @default(0) @db.SmallInt
+  /// Self-reference for a future two-level browse tree.
+  parentId String? @db.VarChar(40)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+
+  keywords CategoryKeyword[] @relation("CategoryKeywords")
+  foods    FoodCategory[]    @relation("CategoryFoods")
+  offers   OfferCategory[]   @relation("CategoryOffers")
+  coupons  CouponCategory[]  @relation("CategoryCoupons")
+
+  @@index([deletedAt, sort])
+  @@index([parentId])
+  @@map("categories")
+}
+
+/// A match term that resolves a category to dishes and vendors during search.
+model CategoryKeyword {
+  categoryId String @db.VarChar(40)
+  /// Lower-cased, unaccented at write time.
+  term       String @db.VarChar(80)
+  /// Ranking weight when several categories match one query.
+  weight     Int    @default(1) @db.SmallInt
+
+  category Category @relation("CategoryKeywords", fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, term])
+  @@index([term])
+  @@map("category_keywords")
+}
+
+/// The brand. Storefront-level facts that do not vary by location.
+model Vendor {
+  id          String         @id @db.VarChar(40)
+  slug        String         @unique @db.VarChar(120)
+  type        VendorTypeKind
+  ownerId     String?        @db.VarChar(40)
+  name        String         @db.VarChar(160)
+  tagline     String         @default("") @db.VarChar(240)
+  description String         @default("") @db.Text
+  logo        String         @default("") @db.VarChar(500)
+  cover       String         @default("") @db.VarChar(500)
+  priceLevel  Int            @default(2) @db.SmallInt
+  currency    String         @db.Char(3)
+  status      VendorStatus   @default(ACTIVE)
+
+  /// Denormalised review counters — the frontend reads these directly.
+  /// Maintained transactionally with `RatingAggregate`.
+  rating      Decimal @default(0) @db.Decimal(3, 2)
+  reviewCount Int     @default(0)
+
+  isFeatured Boolean @default(false)
+  isTrending Boolean @default(false)
+  /// Active promo headline, e.g. "20% off over ৳500". Editorial, not derived.
+  promoLabel String? @db.VarChar(120)
+
+  /// Commission the platform takes, 0–1. Overridable per branch.
+  commissionRate      Decimal @default(0.15) @db.Decimal(6, 4)
+  /// Booking is offered when a `BookingPolicy` exists; this is the master
+  /// switch a merchant can flip without deleting their policy.
+  acceptsReservations Boolean @default(false)
+  acceptsCatering     Boolean @default(false)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  createdBy String?   @db.VarChar(40)
+  updatedBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  owner    User?           @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  branches VendorBranch[]  @relation("VendorBranches")
+  cuisines VendorCuisine[] @relation("VendorCuisines")
+  dietary  VendorDietary[] @relation("VendorDietaryTags")
+  staff    VendorStaff[]   @relation("VendorStaffVendor")
+
+  menus            Menu[]               @relation("VendorMenus")
+  menuSections     MenuSection[]        @relation("VendorMenuSections")
+  foods            FoodItem[]           @relation("VendorFoods")
+  inventoryItems   InventoryItem[]      @relation("VendorInventory")
+  tables           RestaurantTable[]    @relation("VendorTables")
+  qrConfig         QrMenuConfig?        @relation("VendorQrConfig")
+  posShifts        PosShift[]           @relation("VendorPosShifts")
+  posSales         PosSale[]            @relation("VendorPosSales")
+  heldTickets      PosHeldTicket[]      @relation("VendorHeldTickets")
+  bookingPolicy    BookingPolicy?       @relation("VendorBookingPolicy")
+  reservations     Reservation[]        @relation("VendorReservations")
+  carts            Cart[]               @relation("CartVendor")
+  orders           Order[]              @relation("OrderVendor")
+  offers           OfferVendor[]        @relation("VendorOffers")
+  coupons          Coupon[]             @relation("CouponIssuer")
+  couponScopes     CouponVendor[]       @relation("VendorCoupons")
+  reviews          Review[]             @relation("ReviewVendor")
+  ratingAggregates RatingAggregate[]    @relation("AggregateVendor")
+  mealPlans        MealPlan[]           @relation("VendorMealPlans")
+  taxRules         TaxRule[]            @relation("VendorTaxRules")
+  payoutAccounts   PayoutAccount[]      @relation("PayoutAccountVendor")
+  payouts          Payout[]             @relation("PayoutVendor")
+  memberships      VendorMembership[]   @relation("MembershipVendor")
+  roleAssignments  UserRoleAssignment[] @relation("VendorRoleAssignments")
+
+  @@index([type, status, deletedAt])
+  @@index([isFeatured, deletedAt])
+  @@index([isTrending, deletedAt])
+  @@index([ownerId])
+  @@index([rating(sort: Desc)])
+  @@map("vendors")
+}
+
+/// A physical (or virtual, for a cloud kitchen) location. Everything the
+/// frontend's flat `Vendor` carries that is location-specific lives here.
+model VendorBranch {
+  id        String  @id @db.VarChar(40)
+  vendorId  String  @db.VarChar(40)
+  /// Exactly one per vendor is true; enforced by a partial unique index in the
+  /// migration (Prisma cannot express `WHERE is_primary`).
+  isPrimary Boolean @default(true)
+  name      String  @db.VarChar(160)
+  slug      String  @db.VarChar(120)
+  phone     String? @db.VarChar(24)
+
+  /// `GeoPoint`.
+  lat         Decimal @db.Decimal(10, 7)
+  lng         Decimal @db.Decimal(10, 7)
+  address     String  @db.VarChar(300)
+  area        String? @db.VarChar(120)
+  city        String  @db.VarChar(120)
+  countryCode String  @db.Char(2)
+  postcode    String? @db.VarChar(24)
+  /// IANA zone — the only honest basis for "is it open right now".
+  timezone    String  @db.VarChar(64)
+
+  /// `etaMinutes: [min, max]`.
+  etaMinMinutes Int @default(25) @db.SmallInt
+  etaMaxMinutes Int @default(40) @db.SmallInt
+
+  deliveryFee       Decimal  @default(0) @db.Decimal(14, 2)
+  minOrder          Decimal  @default(0) @db.Decimal(14, 2)
+  freeDeliveryOver  Decimal? @db.Decimal(14, 2)
+  /// Max straight-line distance served, km. Beyond it the branch is not listed.
+  deliveryRadiusKm  Decimal  @default(8) @db.Decimal(6, 2)
+  packagingFee      Decimal  @default(0) @db.Decimal(14, 2)
+  serviceChargeRate Decimal  @default(0) @db.Decimal(6, 4)
+
+  supportsDelivery Boolean @default(true)
+  supportsPickup   Boolean @default(true)
+  supportsDineIn   Boolean @default(false)
+
+  /// Merchant kill switch: closes the branch regardless of opening hours.
+  /// `isOpen` on the read model is `acceptingOrders AND within hours`.
+  acceptingOrders Boolean      @default(true)
+  pausedUntil     DateTime?    @db.Timestamptz(3)
+  status          VendorStatus @default(ACTIVE)
+
+  /// Home delivery zone, for rider dispatch and fare rules.
+  zoneId String? @db.VarChar(40)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  updatedBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  vendor    Vendor          @relation("VendorBranches", fields: [vendorId], references: [id], onDelete: Cascade)
+  country   Country         @relation("BranchCountry", fields: [countryCode], references: [code], onDelete: Restrict)
+  zone      DeliveryZone?   @relation("ZoneBranches", fields: [zoneId], references: [id], onDelete: SetNull)
+  hours     BranchHour[]    @relation("BranchHours")
+  closures  BranchClosure[] @relation("BranchClosures")
+  amenities BranchAmenity[] @relation("BranchAmenities")
+  orders    Order[]         @relation("OrderBranch")
+  carts     Cart[]          @relation("CartBranch")
+
+  @@unique([vendorId, slug])
+  @@index([city, countryCode, deletedAt])
+  @@index([vendorId, isPrimary])
+  @@index([zoneId])
+  @@index([lat, lng])
+  @@map("vendor_branches")
+}
+
+/// One opening window for one weekday. Several rows per day express a split
+/// service (lunch, then dinner) — which a single `DayHours` cannot, and which
+/// is why this is a table rather than the frontend's `WeeklyHours` JSON.
+/// `CatalogService` folds it back into `WeeklyHours` for the read model.
+model BranchHour {
+  id        String      @id @db.VarChar(40)
+  branchId  String      @db.VarChar(40)
+  weekday   WeekdayKind
+  /// Local "HH:mm". Null/null = closed that day.
+  openTime  String?     @db.VarChar(5)
+  closeTime String?     @db.VarChar(5)
+  /// True when `closeTime` falls after midnight (a 23:00–02:00 service).
+  overnight Boolean     @default(false)
+  sort      Int         @default(0) @db.SmallInt
+
+  branch VendorBranch @relation("BranchHours", fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, weekday, sort])
+  @@map("branch_hours")
+}
+
+/// A dated exception to the weekly grid — a public holiday, a refit week.
+model BranchClosure {
+  id       String   @id @db.VarChar(40)
+  branchId String   @db.VarChar(40)
+  /// Local dates, inclusive.
+  fromDate DateTime @db.Date
+  toDate   DateTime @db.Date
+  reason   String?  @db.VarChar(160)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  branch VendorBranch @relation("BranchClosures", fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([branchId, fromDate, toDate])
+  @@map("branch_closures")
+}
+
+model VendorCuisine {
+  vendorId  String @db.VarChar(40)
+  cuisineId String @db.VarChar(40)
+  sort      Int    @default(0) @db.SmallInt
+
+  vendor  Vendor  @relation("VendorCuisines", fields: [vendorId], references: [id], onDelete: Cascade)
+  cuisine Cuisine @relation("CuisineVendors", fields: [cuisineId], references: [id], onDelete: Cascade)
+
+  @@id([vendorId, cuisineId])
+  @@index([cuisineId])
+  @@map("vendor_cuisines")
+}
+
+model VendorDietary {
+  vendorId String         @db.VarChar(40)
+  tag      DietaryTagKind
+
+  vendor Vendor @relation("VendorDietaryTags", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@id([vendorId, tag])
+  @@index([tag])
+  @@map("vendor_dietary")
+}
+
+/// A staff member on a merchant account (spec: Staff Management). The role is
+/// held in `UserRoleAssignment` scoped to the vendor; this row adds the
+/// employment facts the dashboard shows.
+model VendorStaff {
+  id       String  @id @db.VarChar(40)
+  vendorId String  @db.VarChar(40)
+  userId   String  @db.VarChar(40)
+  /// Branch the person works at; null = all branches.
+  branchId String? @db.VarChar(40)
+  jobTitle String  @default("") @db.VarChar(80)
+  /// POS sign-in PIN (hashed) for the shared counter terminal.
+  pinHash  String? @db.Char(64)
+  isActive Boolean @default(true)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  vendor Vendor @relation("VendorStaffVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User   @relation("VendorStaffUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, userId])
+  @@index([userId])
+  @@map("vendor_staff")
+}
+
+/// Smart-search facets from the spec (WiFi, Rooftop, Parking, Live Music,
+/// Wheelchair Accessible…). A lookup table, so adding one is a row.
+model Amenity {
+  id    String @id @db.VarChar(40)
+  slug  String @unique @db.VarChar(60)
+  name  String @db.VarChar(80)
+  icon  String @default("") @db.VarChar(60)
+  group String @default("facilities") @db.VarChar(40)
+  sort  Int    @default(0) @db.SmallInt
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  branches BranchAmenity[] @relation("AmenityBranches")
+
+  @@map("amenities")
+}
+
+model BranchAmenity {
+  branchId  String @db.VarChar(40)
+  amenityId String @db.VarChar(40)
+
+  branch  VendorBranch @relation("BranchAmenities", fields: [branchId], references: [id], onDelete: Cascade)
+  amenity Amenity      @relation("AmenityBranches", fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([branchId, amenityId])
+  @@index([amenityId])
+  @@map("branch_amenities")
+}
+
+enum MenuKind {
+  DELIVERY @map("delivery")
+  DINE_IN  @map("dine-in")
+  QR       @map("qr")
+  POS      @map("pos")
+  CATERING @map("catering")
+
+  @@map("menu_kind")
+}
+
+/// A published menu. Phase C has one implicit menu per vendor; this makes the
+/// spec's separate QR / POS / dine-in menus expressible. `MenuSection.vendorId`
+/// stays denormalised so `getVendorMenu(vendorId)` remains a single-index read.
+model Menu {
+  id            String   @id @db.VarChar(40)
+  vendorId      String   @db.VarChar(40)
+  kind          MenuKind @default(DELIVERY)
+  name          String   @db.VarChar(120)
+  isDefault     Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  /// Optional availability window, e.g. a breakfast menu.
+  availableFrom String?  @db.VarChar(5)
+  availableTo   String?  @db.VarChar(5)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor   Vendor        @relation("VendorMenus", fields: [vendorId], references: [id], onDelete: Cascade)
+  sections MenuSection[] @relation("MenuSections")
+
+  @@unique([vendorId, kind, name])
+  @@index([vendorId, isActive])
+  @@map("menus")
+}
+
+model MenuSection {
+  id          String  @id @db.VarChar(40)
+  menuId      String  @db.VarChar(40)
+  /// Denormalised from `menu.vendorId` — the frontend's `MenuSection.vendorId`.
+  vendorId    String  @db.VarChar(40)
+  name        String  @db.VarChar(120)
+  description String? @db.VarChar(300)
+  sort        Int     @default(0) @db.SmallInt
+  isActive    Boolean @default(true)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  menu   Menu       @relation("MenuSections", fields: [menuId], references: [id], onDelete: Cascade)
+  vendor Vendor     @relation("VendorMenuSections", fields: [vendorId], references: [id], onDelete: Cascade)
+  foods  FoodItem[] @relation("SectionFoods")
+
+  @@index([vendorId, deletedAt, sort])
+  @@index([menuId, sort])
+  @@map("menu_sections")
+}
+
+model FoodItem {
+  id             String   @id @db.VarChar(40)
+  slug           String   @unique @db.VarChar(140)
+  vendorId       String   @db.VarChar(40)
+  sectionId      String   @db.VarChar(40)
+  name           String   @db.VarChar(160)
+  description    String   @default("") @db.Text
+  image          String   @default("") @db.VarChar(500)
+  price          Decimal  @db.Decimal(14, 2)
+  /// Original price when discounted (strike-through).
+  compareAtPrice Decimal? @db.Decimal(14, 2)
+  /// 0–3.
+  spicyLevel     Int      @default(0) @db.SmallInt
+  calories       Int?
+
+  rating      Decimal @default(0) @db.Decimal(3, 2)
+  reviewCount Int     @default(0)
+
+  isPopular   Boolean @default(false)
+  /// Merchant availability switch. The read model ANDs this with stock:
+  /// `isAvailable = isAvailable AND (inventory is null OR inventory.inStock)`.
+  isAvailable Boolean @default(true)
+  /// Kitchen prep contribution, minutes — feeds the ETA estimator.
+  prepMinutes Int     @default(0) @db.SmallInt
+  sort        Int     @default(0) @db.SmallInt
+  /// SKU/PLU for POS and inventory.
+  sku         String? @db.VarChar(60)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  updatedBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  vendor  Vendor      @relation("VendorFoods", fields: [vendorId], references: [id], onDelete: Cascade)
+  section MenuSection @relation("SectionFoods", fields: [sectionId], references: [id], onDelete: Cascade)
+
+  dietary      FoodDietary[]       @relation("FoodDietaryTags")
+  categories   FoodCategory[]      @relation("FoodCategories")
+  optionGroups FoodOptionGroup[]   @relation("FoodOptionGroups")
+  nutrition    FoodNutrition?      @relation("FoodNutritionFacts")
+  allergens    FoodAllergen[]      @relation("FoodAllergens")
+  inventory    InventoryItem?      @relation("InventoryFood")
+  cartItems    CartItem[]          @relation("CartItemFood")
+  orderItems   OrderItem[]         @relation("OrderItemFood")
+  posSaleItems PosSaleItem[]       @relation("PosSaleItemFood")
+  heldLines    PosHeldTicketLine[] @relation("HeldLineFood")
+  roundItems   DineInRoundItem[]   @relation("RoundItemFood")
+  reviewDishes ReviewDish[]        @relation("ReviewDishFood")
+
+  @@index([vendorId, deletedAt, isAvailable])
+  @@index([sectionId, sort])
+  @@index([isPopular, deletedAt])
+  @@index([price])
+  @@map("food_items")
+}
+
+model FoodDietary {
+  foodId String         @db.VarChar(40)
+  tag    DietaryTagKind
+
+  food FoodItem @relation("FoodDietaryTags", fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@id([foodId, tag])
+  @@index([tag])
+  @@map("food_dietary")
+}
+
+/// Explicit dish → browse-category mapping. Replaces keyword guessing for
+/// category-scoped coupons and offers, which need a definite answer.
+model FoodCategory {
+  foodId     String @db.VarChar(40)
+  categoryId String @db.VarChar(40)
+
+  food     FoodItem @relation("FoodCategories", fields: [foodId], references: [id], onDelete: Cascade)
+  category Category @relation("CategoryFoods", fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([foodId, categoryId])
+  @@index([categoryId])
+  @@map("food_categories")
+}
+
+model FoodOptionGroup {
+  id       String  @id @db.VarChar(40)
+  foodId   String  @db.VarChar(40)
+  name     String  @db.VarChar(120)
+  required Boolean @default(false)
+  /// Selection bounds — `min: 1, max: 1` is a radio group.
+  min      Int     @default(0) @db.SmallInt
+  max      Int     @default(1) @db.SmallInt
+  sort     Int     @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  food    FoodItem     @relation("FoodOptionGroups", fields: [foodId], references: [id], onDelete: Cascade)
+  options FoodOption[] @relation("GroupOptions")
+
+  @@index([foodId, sort])
+  @@map("food_option_groups")
+}
+
+model FoodOption {
+  id          String  @id @db.VarChar(40)
+  groupId     String  @db.VarChar(40)
+  name        String  @db.VarChar(120)
+  /// Added to the base price; may be negative.
+  priceDelta  Decimal @default(0) @db.Decimal(14, 2)
+  isDefault   Boolean @default(false)
+  isAvailable Boolean @default(true)
+  sort        Int     @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  group            FoodOptionGroup   @relation("GroupOptions", fields: [groupId], references: [id], onDelete: Cascade)
+  cartItemOptions  CartItemOption[]  @relation("CartOptionRef")
+  orderItemOptions OrderItemOption[] @relation("OrderOptionRef")
+
+  @@index([groupId, sort])
+  @@map("food_options")
+}
+
+/// `types/subscription.ts::NutritionFacts` for a dish (spec: Nutrition
+/// Analysis / Calories / Protein / Carbs / Fat). Split from `FoodItem` because
+/// most rows have none and the AI module writes it independently.
+model FoodNutrition {
+  foodId      String   @id @db.VarChar(40)
+  calories    Int
+  protein     Decimal  @db.Decimal(8, 2)
+  carbs       Decimal  @db.Decimal(8, 2)
+  fat         Decimal  @db.Decimal(8, 2)
+  fibre       Decimal? @db.Decimal(8, 2)
+  sodiumMg    Int?
+  servingSize String?  @db.VarChar(40)
+  /// "merchant" | "ai-estimate" | "lab".
+  source      String   @default("merchant") @db.VarChar(24)
+  /// `EstimateConfidence` when `source = ai-estimate`.
+  confidence  String?  @db.VarChar(12)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  food FoodItem @relation("FoodNutritionFacts", fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@map("food_nutrition")
+}
+
+enum AllergenKind {
+  PEANUTS   @map("peanuts")
+  TREE_NUTS @map("tree-nuts")
+  DAIRY     @map("dairy")
+  EGG       @map("egg")
+  GLUTEN    @map("gluten")
+  SOY       @map("soy")
+  FISH      @map("fish")
+  SHELLFISH @map("shellfish")
+  SESAME    @map("sesame")
+  MUSTARD   @map("mustard")
+
+  @@map("allergen_kind")
+}
+
+/// Drives the spec's Allergy Warning. `mayContain` distinguishes an ingredient
+/// from a shared-kitchen risk, which is the difference between a warning and a
+/// block.
+model FoodAllergen {
+  foodId     String       @db.VarChar(40)
+  allergen   AllergenKind
+  mayContain Boolean      @default(false)
+
+  food FoodItem @relation("FoodAllergens", fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@id([foodId, allergen])
+  @@index([allergen])
+  @@map("food_allergens")
+}
+
+enum StockMovementKind {
+  RECEIVED    @map("received")
+  SOLD        @map("sold")
+  WASTED      @map("wasted")
+  ADJUSTED    @map("adjusted")
+  RETURNED    @map("returned")
+  TRANSFERRED @map("transferred")
+
+  @@map("stock_movement_kind")
+}
+
+/// Inventory (Phase E4). Stock is a *balance plus a movement log*, never a
+/// bare number that someone overwrote: `onHand` is the running total and
+/// `StockMovement` is why.
+model InventoryItem {
+  id       String  @id @db.VarChar(40)
+  vendorId String  @db.VarChar(40)
+  /// One inventory row per sellable dish; null for a raw ingredient.
+  foodId   String? @unique @db.VarChar(40)
+  branchId String? @db.VarChar(40)
+  name     String  @db.VarChar(160)
+  sku      String? @db.VarChar(60)
+  unit     String  @default("pcs") @db.VarChar(16)
+
+  onHand     Decimal  @default(0) @db.Decimal(14, 3)
+  /// Held by unfulfilled orders — available = onHand − reserved.
+  reserved   Decimal  @default(0) @db.Decimal(14, 3)
+  lowStockAt Decimal  @default(0) @db.Decimal(14, 3)
+  /// When false the dish never auto-disables on zero stock.
+  trackStock Boolean  @default(true)
+  unitCost   Decimal? @db.Decimal(14, 2)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor    Vendor          @relation("VendorInventory", fields: [vendorId], references: [id], onDelete: Cascade)
+  food      FoodItem?       @relation("InventoryFood", fields: [foodId], references: [id], onDelete: Cascade)
+  movements StockMovement[] @relation("ItemMovements")
+
+  @@unique([vendorId, sku])
+  @@index([vendorId, deletedAt])
+  @@index([branchId])
+  @@map("inventory_items")
+}
+
+/// Append-only. Never soft-deleted — a correction is a new movement.
+model StockMovement {
+  id         String            @id @db.VarChar(40)
+  itemId     String            @db.VarChar(40)
+  kind       StockMovementKind
+  /// Signed: received > 0, sold < 0.
+  quantity   Decimal           @db.Decimal(14, 3)
+  /// Balance after this movement, so a ledger read needs no window function.
+  balance    Decimal           @db.Decimal(14, 3)
+  /// Order / sale / adjustment that caused it.
+  refEntity  String?           @db.VarChar(40)
+  refId      String?           @db.VarChar(40)
+  note       String?           @db.VarChar(240)
+  actorId    String?           @db.VarChar(40)
+  occurredAt DateTime          @default(now()) @db.Timestamptz(3)
+
+  item InventoryItem @relation("ItemMovements", fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, occurredAt(sort: Desc)])
+  @@index([refEntity, refId])
+  @@map("stock_movements")
+}

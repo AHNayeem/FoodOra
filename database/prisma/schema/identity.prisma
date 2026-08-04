@@ -1,0 +1,577 @@
+// =============================================================================
+// IDENTITY — accounts, RBAC/PBAC, credentials, sessions, devices, addresses.
+//
+// Serves `types/user.ts::User`, `types/settings.ts::CustomerSettings` and
+// `types/order.ts::SavedAddress` unchanged.
+//
+// The frontend's `User.role` is a single string and `User.permissions` a flat
+// `string[]`. Both survive: `primaryRole` backs the first, and the second is a
+// *resolved* array (role grants ∪ direct grants − direct denials) computed by
+// `PermissionsService` and cached in Redis. The real model underneath is a
+// proper many-to-many so a user can hold several roles.
+// =============================================================================
+
+enum UserRoleSlug {
+  GUEST             @map("guest")
+  CUSTOMER          @map("customer")
+  RESTAURANT_OWNER  @map("restaurant-owner")
+  CAFE_OWNER        @map("cafe-owner")
+  HOME_CHEF         @map("home-chef")
+  CLOUD_KITCHEN     @map("cloud-kitchen")
+  CATERING_COMPANY  @map("catering-company")
+  DELIVERY_RIDER    @map("delivery-rider")
+  VENDOR_MANAGER    @map("vendor-manager")
+  CUSTOMER_SUPPORT  @map("customer-support")
+  MODERATOR         @map("moderator")
+  FINANCE_MANAGER   @map("finance-manager")
+  MARKETING_MANAGER @map("marketing-manager")
+  SUPER_ADMIN       @map("super-admin")
+
+  @@map("user_role_slug")
+}
+
+enum UserStatus {
+  ACTIVE    @map("active")
+  PENDING   @map("pending")
+  SUSPENDED @map("suspended")
+  BANNED    @map("banned")
+
+  @@map("user_status")
+}
+
+model User {
+  id     String  @id @db.VarChar(40)
+  name   String  @db.VarChar(120)
+  /// Case-insensitive; `citext` makes the unique index behave the way people
+  /// expect without lower() gymnastics in every query.
+  email  String  @unique @db.Citext
+  /// E.164. Unique when present — the OTP flow resolves an account from it.
+  phone  String? @unique @db.VarChar(24)
+  avatar String  @default("") @db.VarChar(500)
+
+  /// Backs `User.role`. The authoritative set lives in `roles`.
+  primaryRole UserRoleSlug @default(CUSTOMER)
+  status      UserStatus   @default(ACTIVE)
+
+  countryCode String  @db.Char(2)
+  currency    String  @db.Char(3)
+  locale      String  @default("en") @db.VarChar(8)
+  /// IANA zone; falls back to the country's when null.
+  timezone    String? @db.VarChar(64)
+
+  emailVerifiedAt DateTime? @db.Timestamptz(3)
+  phoneVerifiedAt DateTime? @db.Timestamptz(3)
+  /// Backs `User.isVerified` — true once either channel is verified.
+  isVerified      Boolean   @default(false)
+
+  lastLoginAt    DateTime? @db.Timestamptz(3)
+  /// Marketing consent, distinct from the per-topic notification matrix.
+  marketingOptIn Boolean   @default(false)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  deletedBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  country Country @relation("UserCountry", fields: [countryCode], references: [code], onDelete: Restrict)
+
+  credential        Credential?
+  settings          UserSettings?
+  wallet            Wallet?                  @relation("UserWallet")
+  foodProfile       FoodProfile?             @relation("UserFoodProfile")
+  roles             UserRoleAssignment[]     @relation("UserRoles")
+  permissionGrants  UserPermission[]         @relation("UserPermissionGrants")
+  identities        SocialIdentity[]         @relation("UserIdentities")
+  sessions          Session[]                @relation("UserSessions")
+  devices           Device[]                 @relation("UserDevices")
+  otpChallenges     OtpChallenge[]           @relation("UserOtpChallenges")
+  passwordResets    PasswordReset[]          @relation("UserPasswordResets")
+  addresses         Address[]                @relation("UserAddresses")
+  notifyPreferences NotificationPreference[] @relation("UserNotifyPrefs")
+
+  ownedVendors    Vendor[]             @relation("VendorOwner")
+  staffOf         VendorStaff[]        @relation("VendorStaffUser")
+  riderProfile    Rider?               @relation("RiderUser")
+  carts           Cart[]               @relation("CartUser")
+  orders          Order[]              @relation("OrderCustomer")
+  reservations    Reservation[]        @relation("ReservationUser")
+  subscriptions   Subscription[]       @relation("SubscriptionUser")
+  cateringQuotes  CateringQuote[]      @relation("QuoteUser")
+  couponClaims    CouponClaim[]        @relation("CouponClaimUser")
+  reviews         Review[]             @relation("ReviewAuthor")
+  reviewVotes     ReviewVote[]         @relation("ReviewVoteUser")
+  reviewReports   ReviewReport[]       @relation("ReviewReportUser")
+  favorites       Favorite[]           @relation("FavoriteUser")
+  notifications   Notification[]       @relation("NotificationUser")
+  aiConversations AiConversation[]     @relation("AiConversationUser")
+  searchLogs      SearchQueryLog[]     @relation("SearchLogUser")
+  savedMethods    SavedPaymentMethod[] @relation("SavedMethodUser")
+  uploads         FileAsset[]          @relation("UserUploads")
+  auditLogs       AuditLog[]           @relation("UserAuditLogs")
+  posSales        PosSale[]            @relation("PosSaleCashier")
+
+  @@index([primaryRole, status])
+  @@index([countryCode])
+  @@index([createdAt(sort: Desc)])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+/// Password material, split off `User` so a `SELECT *` on the account table
+/// can never leak a hash and so rotation is a separate write.
+model Credential {
+  userId       String    @id @db.VarChar(40)
+  /// Argon2id.
+  passwordHash String    @db.VarChar(255)
+  algorithm    String    @default("argon2id") @db.VarChar(24)
+  /// Bumped on every password change; refresh tokens minted before it die.
+  tokenEpoch   Int       @default(0)
+  changedAt    DateTime  @default(now()) @db.Timestamptz(3)
+  /// Consecutive failures; feeds the lockout policy.
+  failedCount  Int       @default(0) @db.SmallInt
+  lockedUntil  DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credentials")
+}
+
+/// A named role. Seeded from `UserRoleSlug`, but `isSystem: false` rows let an
+/// operator define custom roles without a schema change (spec: Custom Roles).
+model Role {
+  id          String        @id @db.VarChar(40)
+  slug        String        @unique @db.VarChar(60)
+  name        String        @db.VarChar(80)
+  description String        @default("") @db.VarChar(240)
+  /// Set for the fourteen built-ins so the UI can map role → slug directly.
+  builtin     UserRoleSlug?
+  /// System roles cannot be renamed or deleted.
+  isSystem    Boolean       @default(false)
+  /// Higher wins when two roles disagree; also gates "can edit this role".
+  rank        Int           @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  permissions RolePermission[]     @relation("RolePermissions")
+  users       UserRoleAssignment[] @relation("RoleUsers")
+
+  @@index([rank])
+  @@map("roles")
+}
+
+/// A single capability, e.g. "orders:cancel". `resource` + `action` are kept
+/// as columns so the admin can group the matrix without parsing the slug.
+model Permission {
+  id          String @id @db.VarChar(40)
+  slug        String @unique @db.VarChar(80)
+  resource    String @db.VarChar(40)
+  action      String @db.VarChar(40)
+  description String @default("") @db.VarChar(240)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  roles RolePermission[] @relation("PermissionRoles")
+  users UserPermission[] @relation("PermissionUsers")
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @db.VarChar(40)
+  permissionId String @db.VarChar(40)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  role       Role       @relation("RolePermissions", fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation("PermissionRoles", fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+/// A role held by a user, optionally scoped to one vendor — this is what makes
+/// "manager of *this* branch" expressible without a second permission system.
+model UserRoleAssignment {
+  id       String  @id @db.VarChar(40)
+  userId   String  @db.VarChar(40)
+  roleId   String  @db.VarChar(40)
+  /// Null = platform-wide.
+  vendorId String? @db.VarChar(40)
+
+  grantedAt DateTime  @default(now()) @db.Timestamptz(3)
+  grantedBy String?   @db.VarChar(40)
+  expiresAt DateTime? @db.Timestamptz(3)
+
+  user   User    @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
+  role   Role    @relation("RoleUsers", fields: [roleId], references: [id], onDelete: Cascade)
+  vendor Vendor? @relation("VendorRoleAssignments", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  /// Postgres treats NULLs as distinct, so this unique index only guards the
+  /// vendor-scoped case. The migration adds a partial unique index for the
+  /// platform-wide one:
+  ///   CREATE UNIQUE INDEX user_role_assignments_platform_uq
+  ///     ON user_role_assignments (user_id, role_id) WHERE vendor_id IS NULL;
+  @@unique([userId, roleId, vendorId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([vendorId])
+  @@map("user_role_assignments")
+}
+
+/// A direct grant or denial on one user, layered over their roles (PBAC).
+/// A denial always beats a grant.
+model UserPermission {
+  id           String  @id @db.VarChar(40)
+  userId       String  @db.VarChar(40)
+  permissionId String  @db.VarChar(40)
+  /// false = explicit denial.
+  effect       Boolean @default(true)
+  vendorId     String? @db.VarChar(40)
+
+  grantedAt DateTime  @default(now()) @db.Timestamptz(3)
+  grantedBy String?   @db.VarChar(40)
+  expiresAt DateTime? @db.Timestamptz(3)
+
+  user       User       @relation("UserPermissionGrants", fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation("PermissionUsers", fields: [permissionId], references: [id], onDelete: Cascade)
+
+  /// Same NULL caveat as `UserRoleAssignment`; the migration adds
+  ///   CREATE UNIQUE INDEX user_permissions_platform_uq
+  ///     ON user_permissions (user_id, permission_id) WHERE vendor_id IS NULL;
+  @@unique([userId, permissionId, vendorId])
+  @@index([userId])
+  @@index([permissionId])
+  @@map("user_permissions")
+}
+
+enum SocialProviderKind {
+  GOOGLE   @map("google")
+  APPLE    @map("apple")
+  FACEBOOK @map("facebook")
+
+  @@map("social_provider_kind")
+}
+
+/// A linked social account. One user may link all three; a provider subject is
+/// unique per provider, which is what makes "sign in with Apple then Google on
+/// the same email" resolve to one account instead of two.
+model SocialIdentity {
+  id          String             @id @db.VarChar(40)
+  userId      String             @db.VarChar(40)
+  provider    SocialProviderKind
+  /// The provider's stable subject claim (`sub`).
+  providerUid String             @db.VarChar(191)
+  email       String?            @db.Citext
+  displayName String?            @db.VarChar(120)
+  avatar      String?            @db.VarChar(500)
+  /// Raw claims, kept for support and for re-verification.
+  profile     Json?
+  linkedAt    DateTime           @default(now()) @db.Timestamptz(3)
+  lastLoginAt DateTime?          @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation("UserIdentities", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUid])
+  @@index([userId])
+  @@map("social_identities")
+}
+
+enum SessionRevokeReason {
+  LOGOUT          @map("logout")
+  ROTATION_REUSE  @map("rotation-reuse")
+  PASSWORD_CHANGE @map("password-change")
+  ADMIN           @map("admin")
+  EXPIRED         @map("expired")
+  DEVICE_REMOVED  @map("device-removed")
+
+  @@map("session_revoke_reason")
+}
+
+/// One sign-in on one device. The access token is stateless (JWT, ~15 min);
+/// the *session* is what "sign out everywhere" and the device list act on.
+model Session {
+  id           String               @id @db.VarChar(40)
+  userId       String               @db.VarChar(40)
+  deviceId     String?              @db.VarChar(40)
+  /// "Remember me" extends the refresh family's absolute lifetime.
+  rememberMe   Boolean              @default(false)
+  ip           String?              @db.Inet
+  userAgent    String?              @db.VarChar(400)
+  /// Coarse geo for the "new sign-in" alert, resolved at creation.
+  location     String?              @db.VarChar(120)
+  createdAt    DateTime             @default(now()) @db.Timestamptz(3)
+  lastSeenAt   DateTime             @default(now()) @db.Timestamptz(3)
+  expiresAt    DateTime             @db.Timestamptz(3)
+  revokedAt    DateTime?            @db.Timestamptz(3)
+  revokeReason SessionRevokeReason?
+
+  user          User           @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+  device        Device?        @relation("DeviceSessions", fields: [deviceId], references: [id], onDelete: SetNull)
+  refreshTokens RefreshToken[] @relation("SessionRefreshTokens")
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+/// One link in a refresh-token rotation chain. Only the SHA-256 of the token
+/// is stored. Presenting an already-rotated token is treated as theft: the
+/// whole session is revoked (`rotation-reuse`). See D6 §Rotation.
+model RefreshToken {
+  id        String    @id @db.VarChar(40)
+  sessionId String    @db.VarChar(40)
+  tokenHash String    @unique @db.Char(64)
+  /// The token this one replaced — the chain the reuse check walks.
+  parentId  String?   @unique @db.VarChar(40)
+  issuedAt  DateTime  @default(now()) @db.Timestamptz(3)
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  ip        String?   @db.Inet
+
+  session Session       @relation("SessionRefreshTokens", fields: [sessionId], references: [id], onDelete: Cascade)
+  parent  RefreshToken? @relation("TokenChain", fields: [parentId], references: [id], onDelete: SetNull)
+  child   RefreshToken? @relation("TokenChain")
+
+  @@index([sessionId, revokedAt])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+enum DevicePlatform {
+  WEB     @map("web")
+  IOS     @map("ios")
+  ANDROID @map("android")
+
+  @@map("device_platform")
+}
+
+/// A known device (spec: Device Management) and its FCM registration. One row
+/// serves both the security screen and push delivery, because they are the
+/// same fact.
+model Device {
+  id          String         @id @db.VarChar(40)
+  userId      String         @db.VarChar(40)
+  /// Stable client-generated installation id.
+  installId   String         @db.VarChar(120)
+  platform    DevicePlatform @default(WEB)
+  name        String?        @db.VarChar(120)
+  model       String?        @db.VarChar(120)
+  appVersion  String?        @db.VarChar(24)
+  /// FCM registration token; null when push was never granted.
+  pushToken   String?        @db.VarChar(400)
+  pushEnabled Boolean        @default(false)
+  locale      String?        @db.VarChar(8)
+  timezone    String?        @db.VarChar(64)
+  lastSeenAt  DateTime       @default(now()) @db.Timestamptz(3)
+  trustedAt   DateTime?      @db.Timestamptz(3)
+  revokedAt   DateTime?      @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user     User      @relation("UserDevices", fields: [userId], references: [id], onDelete: Cascade)
+  sessions Session[] @relation("DeviceSessions")
+
+  @@unique([userId, installId])
+  @@index([pushToken])
+  @@map("devices")
+}
+
+enum OtpPurpose {
+  LOGIN          @map("login")
+  REGISTER       @map("register")
+  PHONE_VERIFY   @map("phone-verify")
+  PASSWORD_RESET @map("password-reset")
+  TWO_FACTOR     @map("two-factor")
+  DELIVERY       @map("delivery")
+
+  @@map("otp_purpose")
+}
+
+enum OtpChannel {
+  SMS   @map("sms")
+  EMAIL @map("email")
+
+  @@map("otp_channel")
+}
+
+/// A one-time code in flight. The code itself is hashed; `attempts` and
+/// `expiresAt` are the whole security model, so both are enforced in the
+/// database rather than in a Redis key that can quietly vanish.
+model OtpChallenge {
+  id          String     @id @db.VarChar(40)
+  userId      String?    @db.VarChar(40)
+  purpose     OtpPurpose
+  channel     OtpChannel @default(SMS)
+  /// Phone in E.164 or email, depending on `channel`.
+  destination String     @db.VarChar(191)
+  codeHash    String     @db.Char(64)
+  attempts    Int        @default(0) @db.SmallInt
+  maxAttempts Int        @default(5) @db.SmallInt
+  /// Set once consumed, so a code cannot be replayed.
+  consumedAt  DateTime?  @db.Timestamptz(3)
+  expiresAt   DateTime   @db.Timestamptz(3)
+  ip          String?    @db.Inet
+  createdAt   DateTime   @default(now()) @db.Timestamptz(3)
+
+  user User? @relation("UserOtpChallenges", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([destination, purpose, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("otp_challenges")
+}
+
+model PasswordReset {
+  id         String    @id @db.VarChar(40)
+  userId     String    @db.VarChar(40)
+  tokenHash  String    @unique @db.Char(64)
+  expiresAt  DateTime  @db.Timestamptz(3)
+  consumedAt DateTime? @db.Timestamptz(3)
+  ip         String?   @db.Inet
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation("UserPasswordResets", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("password_resets")
+}
+
+/// Every authentication attempt, successful or not. Feeds the lockout policy,
+/// the "new device" alert and the abuse dashboard. Append-only.
+model LoginAttempt {
+  id         String   @id @db.VarChar(40)
+  /// Email/phone as typed — an attempt on a non-existent account still logs.
+  identifier String   @db.VarChar(191)
+  userId     String?  @db.VarChar(40)
+  method     String   @db.VarChar(24)
+  success    Boolean
+  /// i18n key under `errors.*` when it failed.
+  reason     String?  @db.VarChar(60)
+  ip         String?  @db.Inet
+  userAgent  String?  @db.VarChar(400)
+  at         DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([identifier, at(sort: Desc)])
+  @@index([ip, at(sort: Desc)])
+  @@map("login_attempts")
+}
+
+/// `types/settings.ts::CustomerSettings` minus the notification matrix, which
+/// is a table of its own so a topic can be added without a migration of every
+/// row's JSON.
+model UserSettings {
+  userId String @id @db.VarChar(40)
+
+  personalizedRecommendations Boolean @default(true)
+  shareOrderActivity          Boolean @default(true)
+  saveSearchHistory           Boolean @default(true)
+
+  loginAlerts Boolean @default(true)
+  twoFactor   Boolean @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+enum NotificationTopicKey {
+  ORDER_UPDATES   @map("orderUpdates")
+  DELIVERY_ALERTS @map("deliveryAlerts")
+  PROMOTIONS      @map("promotions")
+  NEW_VENDORS     @map("newVendors")
+  WEEKLY_DIGEST   @map("weeklyDigest")
+
+  @@map("notification_topic_key")
+}
+
+/// One row per user per topic — the C28 preference matrix. `inApp` is always
+/// on for required topics; the gate lives in `notifications/channels.ts`.
+model NotificationPreference {
+  userId String               @db.VarChar(40)
+  topic  NotificationTopicKey
+
+  email Boolean @default(true)
+  push  Boolean @default(true)
+  sms   Boolean @default(false)
+
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation("UserNotifyPrefs", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, topic])
+  @@map("notification_preferences")
+}
+
+/// `types/order.ts::SavedAddress`. The same column set is snapshotted onto
+/// `Order.addressSnapshot` as JSON at checkout.
+model Address {
+  id           String   @id @db.VarChar(40)
+  userId       String   @db.VarChar(40)
+  label        String   @db.VarChar(60)
+  recipient    String   @db.VarChar(120)
+  phone        String   @db.VarChar(24)
+  line1        String   @db.VarChar(240)
+  line2        String?  @db.VarChar(240)
+  area         String   @db.VarChar(120)
+  city         String   @db.VarChar(120)
+  countryCode  String   @db.Char(2)
+  instructions String?  @db.VarChar(400)
+  lat          Decimal? @db.Decimal(10, 7)
+  lng          Decimal? @db.Decimal(10, 7)
+  isDefault    Boolean  @default(false)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  user          User           @relation("UserAddresses", fields: [userId], references: [id], onDelete: Cascade)
+  carts         Cart[]         @relation("CartAddress")
+  subscriptions Subscription[] @relation("SubscriptionAddress")
+
+  @@index([userId, deletedAt])
+  @@index([city, area])
+  @@map("addresses")
+}
+
+enum FavoriteKind {
+  VENDOR @map("vendor")
+  FOOD   @map("food")
+
+  @@map("favorite_kind")
+}
+
+/// Backs `services/favorites.ts`, which today reads a device store. One table
+/// for both kinds — the frontend already splits them into `vendorIds` /
+/// `foodIds` on read.
+model Favorite {
+  userId    String       @db.VarChar(40)
+  kind      FavoriteKind
+  /// Vendor id or food id, per `kind`.
+  targetId  String       @db.VarChar(40)
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+
+  user User @relation("FavoriteUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, kind, targetId])
+  @@index([kind, targetId])
+  @@map("favorites")
+}

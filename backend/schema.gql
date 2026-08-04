@@ -1,0 +1,1845 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""Add a configured dish to the cart."""
+input AddToCartInput {
+  foodId: ID!
+
+  """
+  Identifies an anonymous basket. Ignored when the request is authenticated — a signed-in customer’s cart is keyed by their user id on every device.
+  """
+  guestKey: String
+
+  """
+  Chosen variant and add-on ids, in any order. Validated against the dish’s real option groups; names and prices are read from the database, never from here.
+  """
+  optionIds: [ID!]
+  quantity: Int! = 1
+
+  """
+  Discard the existing basket when this dish belongs to a different vendor. The client sets it only after the customer has answered the "start a new cart?" prompt.
+  """
+  replaceExisting: Boolean! = false
+}
+
+"""Edit another account’s profile. Requires users:write."""
+input AdminProfilePatchInput {
+  avatar: String
+
+  """Must be an active country."""
+  countryCode: String
+
+  """ISO 4217. Must be an active currency."""
+  currency: String
+
+  """BCP-47. Must be an active language."""
+  locale: String
+  marketingOptIn: Boolean
+  name: String
+
+  """
+  Changing it clears the phone verification — a new number has not been proved.
+  """
+  phone: String
+
+  """IANA zone."""
+  timezone: String
+  userId: String!
+}
+
+"""What this API is, and whether it can serve."""
+type ApiStatus {
+  defaults: RegionDefaults!
+  dependencies: [DependencyStatus!]!
+  environment: String!
+  name: String!
+
+  """
+  Server time in UTC — the clock every derived value is computed against.
+  """
+  serverTime: DateTime!
+
+  """down when Postgres is unreachable; degraded when anything else is."""
+  status: ServiceStatus!
+  uptimeSeconds: Int!
+  version: String!
+}
+
+"""
+What a coupon is worth against this basket. Priced by the server, always.
+"""
+type AppliedCouponSummary {
+  """
+  Wallet credit earned. Deliberately does NOT reduce the total — that is what makes it cashback.
+  """
+  cashback: Money!
+  code: String!
+  deliveryWaived: Money!
+
+  """Money off the subtotal. Zero for free-delivery and cashback."""
+  discount: Money!
+  freeDelivery: Boolean!
+  id: ID!
+  kind: CouponKind!
+  title: String!
+}
+
+"""Grant a role to an account."""
+input AssignRoleInput {
+  """
+  Must be in the future. A lapsed grant is filtered at resolution, not swept.
+  """
+  expiresAt: DateTime
+  roleSlug: String!
+  userId: String!
+
+  """
+  Scope to one vendor — "manager of *this* branch". Null = platform-wide.
+  """
+  vendorId: String
+}
+
+"""Result<AuthSession>."""
+type AuthPayload implements MutationPayload {
+  data: AuthSession
+  error: UserError
+  success: Boolean!
+}
+
+"""A signed-in session. The refresh token travels as an httpOnly cookie."""
+type AuthSession {
+  """Send as `Authorization: Bearer`. Keep in memory."""
+  accessToken: String!
+
+  """When to refresh. The client should renew before this, not after a 401."""
+  accessTokenExpiresAt: DateTime!
+
+  """This sign-in — what "sign out this device" acts on."""
+  sessionId: String!
+  user: User!
+}
+
+type Cart {
+  """Total units across all lines — the header badge."""
+  count: Int!
+
+  """
+  The vendor's fee after its free-delivery threshold. NOT a checkout total — no tax, coupon or tip is applied until the checkout unit exists.
+  """
+  deliveryFee: Money!
+  id: ID!
+  lines: [CartLine!]!
+
+  """Σ unitPrice × quantity."""
+  subtotal: Money!
+  updatedAt: DateTime!
+  vendor: CartVendor!
+}
+
+"""One configured dish. `types/cart.ts::CartLine`."""
+type CartLine {
+  """The dish price when it went in — a snapshot, not a lookup."""
+  basePrice: Money!
+  foodId: ID!
+
+  """
+  Composite: food id + sorted option ids, so identical configurations merge. Computed by the server; a client-supplied id is ignored.
+  """
+  id: ID!
+  image: String!
+  name: String!
+  options: [CartSelectedOption!]!
+  quantity: Int!
+
+  """basePrice + Σ option deltas."""
+  unitPrice: Money!
+}
+
+type CartPayload implements MutationPayload {
+  data: Cart
+  error: UserError
+  success: Boolean!
+}
+
+"""A chosen variant or add-on, snapshotted so the line is self-contained."""
+type CartSelectedOption {
+  groupId: ID!
+  name: String!
+  optionId: ID!
+  priceDelta: Money!
+}
+
+"""
+Vendor snapshot the cart carries. `frontend/types/cart.ts::CartVendor`.
+"""
+type CartVendor {
+  """
+  Vendor country — drives the tax rate at checkout, which Unit 2 does not compute.
+  """
+  countryCode: String!
+
+  """ISO 4217. Every Money field below is in it."""
+  currency: String!
+  deliveryFee: Money!
+  freeDeliveryOver: Money
+  id: ID!
+  minOrder: Money!
+  name: String!
+  slug: String!
+}
+
+"""A browse tile on the home grid. Replaces lib/mock/categories.ts."""
+type Category {
+  createdAt: DateTime!
+
+  """Soft-delete marker; null when active."""
+  deletedAt: DateTime
+  emoji: String!
+  id: ID!
+  image: String!
+
+  """
+  Match terms the tile actually searches for, heaviest first. Normalised out of `category_keywords`, so a tile is a real query rather than a decorative link.
+  """
+  keywords: [String!]!
+  name: String!
+  slug: String!
+
+  """Ordering weight for the craving rail."""
+  sort: Int!
+  updatedAt: DateTime!
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+}
+
+"""
+What the basket costs and whether it may be ordered. A pure read — applying a coupon writes nothing.
+"""
+type CheckoutSummary {
+  """How much more to reach the vendor's minimum. Zero when met."""
+  amountToMinOrder: Money!
+
+  """i18n key naming the first blocker."""
+  blockedReason: String
+  cartId: ID!
+
+  """Total units across the lines."""
+  count: Int!
+  coupon: AppliedCouponSummary
+
+  """Why a requested coupon was not applied — a `coupons.reason.*` key."""
+  couponRefusal: String
+
+  """Whether `placeOrder` would be accepted right now."""
+  eligible: Boolean!
+  fulfillment: FulfillmentType!
+  lines: [CartLine!]!
+  pricing: OrderPricing!
+  vendor: CartVendor!
+}
+
+"""The choices a quote depends on. None of them is an amount."""
+input CheckoutSummaryInput {
+  """
+  A coupon code. What it is worth is decided here, never sent from the client.
+  """
+  couponCode: String
+  fulfillment: FulfillmentType! = "delivery"
+
+  """Identifies an anonymous basket."""
+  guestKey: String
+
+  """
+  Tip as a fraction of the subtotal — 0.1 is ten percent. The server does the multiplication.
+  """
+  tipPercent: Float! = 0
+}
+
+type CheckoutSummaryPayload implements MutationPayload {
+  data: CheckoutSummary
+  error: UserError
+  success: Boolean!
+}
+
+"""Remove an override so the key falls back to the layer above."""
+input ClearSettingInput {
+  key: String!
+  scope: SettingScope! = "platform"
+  scopeId: String
+}
+
+"""Close your own account."""
+input CloseAccountInput {
+  """Optional. Logged for support, not stored on the account."""
+  reason: String = ""
+}
+
+"""ISO 3166-1 alpha-2. Replaces frontend/config/regions.ts::countries."""
+type Country {
+  code: String!
+
+  """ISO 4217 of the currency this market prices in."""
+  currencyCode: String!
+
+  """BCP-47 default for accounts created here."""
+  defaultLocale: String!
+
+  """E.164 prefix, e.g. "+880"."""
+  dialCode: String!
+  isActive: Boolean!
+  name: String!
+  sort: Int!
+
+  """IANA zone. Every local-date calculation resolves here."""
+  timezone: String!
+}
+
+"""A country with its currency and languages resolved."""
+type CountryDetail {
+  code: String!
+  currency: Currency!
+
+  """ISO 4217 of the currency this market prices in."""
+  currencyCode: String!
+
+  """BCP-47 default for accounts created here."""
+  defaultLocale: String!
+
+  """E.164 prefix, e.g. "+880"."""
+  dialCode: String!
+  isActive: Boolean!
+
+  """Served languages, the default first."""
+  languages: [Language!]!
+  name: String!
+  sort: Int!
+
+  """IANA zone. Every local-date calculation resolves here."""
+  timezone: String!
+}
+
+"""Open a market."""
+input CountryInput {
+  """ISO 3166-1 alpha-2."""
+  code: String!
+  currencyCode: String!
+
+  """e.g. "+880"."""
+  dialCode: String!
+  isActive: Boolean = true
+
+  """
+  At least one. The default becomes `defaultLocale`, so that field is derived.
+  """
+  languages: [CountryLanguageInput!]!
+  name: String!
+  sort: Int = 0
+
+  """IANA zone, e.g. "Asia/Dhaka"."""
+  timezone: String!
+}
+
+"""One language a country is served in."""
+input CountryLanguageInput {
+  """
+  Exactly one entry must be the default — it becomes the country’s `defaultLocale`. A single-entry set defaults itself.
+  """
+  isDefault: Boolean = false
+  languageCode: String!
+  sort: Int = 0
+}
+
+"""Replace a country’s language set wholesale."""
+input CountryLanguagesInput {
+  countryCode: String!
+  languages: [CountryLanguageInput!]!
+}
+
+"""Change a country. Omitted fields are left alone."""
+input CountryPatchInput {
+  currencyCode: String
+  dialCode: String
+  isActive: Boolean
+  name: String
+  sort: Int
+  timezone: String
+}
+
+type CountryPayload implements MutationPayload {
+  data: Country
+  error: UserError
+  success: Boolean!
+}
+
+"""
+How a coupon’s discount is calculated. `cashback` moves no money at checkout. One of: percentage | fixed | free-delivery | bogo | cashback.
+"""
+scalar CouponKind
+
+"""Create a custom role from catalogue permissions."""
+input CreateRoleInput {
+  description: String = ""
+  name: String!
+  permissions: [String!] = []
+
+  """
+  Must be strictly below your own highest rank. 100 (super-admin) is refused.
+  """
+  rank: Int!
+
+  """Kebab-case, unique, and never a built-in’s slug."""
+  slug: String!
+}
+
+"""A cuisine a vendor can be filtered by. Replaces lib/mock/cuisines.ts."""
+type Cuisine {
+  createdAt: DateTime!
+
+  """Soft-delete marker; null when active."""
+  deletedAt: DateTime
+
+  """Rendered verbatim, e.g. "🍝"."""
+  emoji: String!
+  id: ID!
+  image: String!
+  name: String!
+  slug: String!
+  updatedAt: DateTime!
+}
+
+"""ISO 4217. Replaces frontend/config/regions.ts::currencies."""
+type Currency {
+  """ISO 4217, uppercase."""
+  code: String!
+
+  """
+  Intl locale amounts are formatted with, e.g. "bn-BD" — why BDT renders in Bengali numerals. Backs the frontend’s `Currency.locale`.
+  """
+  formatLocale: String!
+
+  """Display digits: 0 for BDT, 2 for most. Storage is always 2."""
+  fractionDigits: Int!
+  isActive: Boolean!
+  sort: Int!
+  symbol: String!
+}
+
+"""Add a currency the platform may price in."""
+input CurrencyInput {
+  code: String!
+
+  """Intl locale, e.g. "bn-BD"."""
+  formatLocale: String!
+
+  """Display digits. 0 for BDT."""
+  fractionDigits: Int = 2
+  isActive: Boolean = true
+  sort: Int = 0
+
+  """e.g. "৳". Rendered verbatim."""
+  symbol: String!
+}
+
+"""Change a currency. Omitted fields are left alone."""
+input CurrencyPatchInput {
+  formatLocale: String
+  fractionDigits: Int
+  isActive: Boolean
+  sort: Int
+  symbol: String
+}
+
+type CurrencyPayload implements MutationPayload {
+  data: Currency
+  error: UserError
+  success: Boolean!
+}
+
+"""frontend/types/settings.ts::CustomerSettings."""
+type CustomerSettings {
+  notifications: [NotificationPreference!]!
+  privacy: PrivacySettings!
+  security: SecuritySettings!
+}
+
+type CustomerSettingsPayload implements MutationPayload {
+  data: CustomerSettings
+  error: UserError
+  success: Boolean!
+}
+
+"""An ISO-8601 timestamp in UTC, e.g. "2026-08-03T14:20:00.000Z"."""
+scalar DateTime
+
+"""One opening window. Both null means closed that day."""
+type DayHours {
+  close: String
+
+  """Local "HH:mm"."""
+  open: String
+}
+
+"""Where it goes. A snapshot, not a reference."""
+type DeliveryAddress {
+  area: String!
+  city: String!
+  countryCode: String!
+  instructions: String
+  label: String!
+  line1: String!
+  line2: String
+  phone: String!
+  recipient: String!
+}
+
+"""Where the delivery goes. Stored as a snapshot on the order."""
+input DeliveryAddressInput {
+  area: String!
+  city: String!
+  countryCode: String!
+  instructions: String
+  label: String!
+  line1: String!
+  line2: String
+  phone: String!
+  recipient: String!
+}
+
+"""One external system the API depends on."""
+type DependencyStatus {
+  """Round-trip time of the probe."""
+  latencyMs: Int
+  name: String!
+  status: ServiceStatus!
+}
+
+"""
+Optional client description. Identifies a device for the security screen and for push.
+"""
+input DeviceInput {
+  appVersion: String
+
+  """
+  Stable client-generated installation id. Without it the device is not recorded.
+  """
+  installId: String
+  model: String
+  name: String
+  platform: DevicePlatform
+
+  """FCM registration token, if push was granted."""
+  pushToken: String
+}
+
+"""
+Where a session was signed in from; also the push-registration platform. One of: web | ios | android.
+"""
+scalar DevicePlatform
+
+"""
+A dietary claim on a vendor or a dish. Filterable, so it is data rather than prose in a description. One of: halal | vegetarian | vegan | gluten-free | keto | healthy | spicy.
+"""
+scalar DietaryTag
+
+"""A permission granted or denied directly on one account."""
+type DirectGrant {
+  """false = an explicit denial, which beats every role grant."""
+  effect: Boolean!
+  expiresAt: DateTime
+  grantedAt: DateTime!
+  grantedBy: String
+  id: String!
+  permissionSlug: String!
+  userId: String!
+  vendorId: String
+}
+
+type DirectGrantPayload implements MutationPayload {
+  data: DirectGrant
+  error: UserError
+  success: Boolean!
+}
+
+"""A dish. Replaces lib/mock/foods.ts."""
+type FoodItem {
+  calories: Int
+
+  """Pre-discount price, for the strike-through."""
+  compareAtPrice: Money
+  createdAt: DateTime!
+
+  """Soft-delete marker; null when active."""
+  deletedAt: DateTime
+  description: String!
+  dietary: [DietaryTag!]!
+  id: ID!
+  image: String!
+
+  """The merchant’s switch. Stock is ANDed in by the inventory unit."""
+  isAvailable: Boolean!
+  isPopular: Boolean!
+  name: String!
+  optionGroups: [FoodOptionGroup!]!
+  price: Money!
+  rating: Float!
+  reviewCount: Int!
+  sectionId: ID!
+  slug: String!
+
+  """0–3."""
+  spicyLevel: Int!
+  updatedAt: DateTime!
+  vendorId: ID!
+}
+
+"""One choice inside a group — a variant, or an add-on."""
+type FoodOption {
+  id: ID!
+  name: String!
+
+  """Added to the base price; may be negative."""
+  priceDelta: Money!
+}
+
+"""
+A choice set. `min: 1, max: 1` is a radio group (Size); `min: 0` is add-ons.
+"""
+type FoodOptionGroup {
+  id: ID!
+  max: Int!
+  min: Int!
+  name: String!
+  options: [FoodOption!]!
+  required: Boolean!
+}
+
+"""
+How the order reaches the customer. "pickup" waives the delivery fee. One of: delivery | pickup.
+"""
+scalar FulfillmentType
+
+"""Where "how far away" is measured from — the asker’s position."""
+input GeoOriginInput {
+  lat: Float!
+  lng: Float!
+}
+
+"""A point plus the human-readable address at it."""
+type GeoPoint {
+  address: String!
+  city: String!
+
+  """ISO 3166-1 alpha-2."""
+  countryCode: String!
+  lat: Float!
+  lng: Float!
+}
+
+"""
+An arbitrary JSON object. Used for immutable snapshots and template parameters.
+"""
+scalar JSONObject
+
+"""BCP-47 locale. Replaces frontend/config/i18n/config.ts::localeMeta."""
+type Language {
+  code: String!
+
+  """What the root layout puts in <html dir>."""
+  direction: TextDirection!
+  isActive: Boolean!
+
+  """English name, e.g. "Bengali"."""
+  name: String!
+
+  """Endonym, e.g. "বাংলা"."""
+  nativeName: String!
+  sort: Int!
+}
+
+"""Add a language the platform speaks."""
+input LanguageInput {
+  """BCP-47, e.g. "bn"."""
+  code: String!
+  direction: TextDirection = "ltr"
+  isActive: Boolean = true
+
+  """English name."""
+  name: String!
+
+  """Endonym."""
+  nativeName: String!
+  sort: Int = 0
+}
+
+"""Change a language. Omitted fields are left alone."""
+input LanguagePatchInput {
+  direction: TextDirection
+  isActive: Boolean
+  name: String
+  nativeName: String
+  sort: Int
+}
+
+type LanguagePayload implements MutationPayload {
+  data: Language
+  error: UserError
+  success: Boolean!
+}
+
+input LoginInput {
+  device: DeviceInput
+  email: String!
+  password: String!
+
+  """Extends the refresh family from 7 days to 30. Nothing else."""
+  rememberMe: Boolean! = false
+}
+
+"""
+A section with its available dishes attached — one query for a whole menu.
+"""
+type MenuSectionWithItems {
+  createdAt: DateTime!
+
+  """Soft-delete marker; null when active."""
+  deletedAt: DateTime
+  id: ID!
+  items: [FoodItem!]!
+  name: String!
+  sort: Int!
+  updatedAt: DateTime!
+  vendorId: ID!
+}
+
+"""
+A monetary amount as a plain number in the entity's currency (stored as Decimal(14,2)). The currency code travels on the owning type.
+"""
+scalar Money
+
+type Mutation {
+  """Add a configured dish. `frontend/stores/cart.ts::add`."""
+  addToCart(input: AddToCartInput!): CartPayload!
+
+  """Grant a role to an account."""
+  assignRole(input: AssignRoleInput!): RoleAssignmentPayload!
+
+  """Change the password and replace every session."""
+  changePassword(input: ChangePasswordInput!): AuthPayload!
+
+  """Empty the cart. Idempotent. `frontend/stores/cart.ts::clear`."""
+  clearCart(guestKey: String): MutationResult!
+
+  """Remove an override. The key falls back to the layer above it."""
+  clearSetting(input: ClearSettingInput!): SettingPayload!
+
+  """
+  Close your account. Soft-deletes it, ends every session, and starts the retention window. frontend/services/settings.ts::deleteAccount.
+  """
+  closeAccount(input: CloseAccountInput!): MutationResult!
+
+  """Close another account. Soft-deletes it and ends every session."""
+  closeUserAccount(userId: String!): MutationResult!
+
+  """
+  Open a market: the country row and its language set, in one transaction.
+  """
+  createCountry(input: CountryInput!): CountryPayload!
+
+  """Add a currency the platform may price in."""
+  createCurrency(input: CurrencyInput!): CurrencyPayload!
+
+  """Add a language the platform speaks."""
+  createLanguage(input: LanguageInput!): LanguagePayload!
+
+  """Create a custom role from catalogue permissions."""
+  createRole(input: CreateRoleInput!): RolePayload!
+
+  """Delete a custom role that nobody holds."""
+  deleteRole(roleId: String!): MutationResult!
+
+  """Email and password sign-in."""
+  login(input: LoginInput!): AuthPayload!
+
+  """Revoke this session, or every session."""
+  logout(allDevices: Boolean! = false): MutationResult!
+
+  """
+  Turn the basket into an order. Prices, discounts, tax, delivery and the total are computed here; the request may only state a tip fraction and a coupon code.
+  """
+  placeOrder(input: PlaceOrderInput!): OrderPayload!
+
+  """Create an account and sign in."""
+  register(input: RegisterInput!): AuthPayload!
+
+  """Remove a line. `frontend/stores/cart.ts::removeLine`."""
+  removeCartItem(input: RemoveCartItemInput!): CartPayload!
+
+  """Remove a direct grant or denial, so the account’s roles decide again."""
+  removeDirectGrant(input: RemoveDirectGrantInput!): MutationResult!
+
+  """Reopen a closed account."""
+  reopenUserAccount(userId: String!): UserAdminPayload!
+
+  """Send a one-time code. Always succeeds."""
+  requestOtp(input: RequestOtpInput!): OtpPayload!
+
+  """Start a password reset. Always succeeds — no account enumeration."""
+  requestPasswordReset(email: String!): MutationResult!
+
+  """Complete a password reset with the emailed token."""
+  resetPassword(input: ResetPasswordInput!): MutationResult!
+
+  """Remove a device and revoke its sessions."""
+  revokeDevice(deviceId: String!): MutationResult!
+
+  """Revoke a role from an account."""
+  revokeRole(input: RevokeRoleInput!): MutationResult!
+
+  """Revoke one session by id."""
+  revokeSession(sessionId: String!): MutationResult!
+
+  """Replace a country’s language set. Also moves its `defaultLocale`."""
+  setCountryLanguages(input: CountryLanguagesInput!): CountryPayload!
+
+  """
+  Grant or deny one permission directly on an account. A denial beats every role grant.
+  """
+  setDirectGrant(input: SetDirectGrantInput!): DirectGrantPayload!
+
+  """
+  Replace a role’s permission set. Drops the cached authorization of every account holding it, so the change is live on their next request.
+  """
+  setRolePermissions(input: SetRolePermissionsInput!): RolePayload!
+
+  """Set a setting at platform, country or vendor scope."""
+  setSetting(input: WriteSettingInput!): SettingPayload!
+
+  """
+  Change an account’s primary role. Does not sign them out — E2 resolves authorization per request, so the new role applies on their next call.
+  """
+  setUserPrimaryRole(input: SetPrimaryRoleInput!): UserAdminPayload!
+
+  """
+  Suspend, ban or reinstate an account. Suspending or banning ends every session immediately rather than at token expiry.
+  """
+  setUserStatus(input: SetUserStatusInput!): UserAdminPayload!
+
+  """
+  Create missing permission rows and refresh descriptions. Returns rows written.
+  """
+  syncPermissionCatalogue: Int!
+
+  """
+  Set a line’s quantity; zero removes it. `data` is null when that emptied the cart. `frontend/stores/cart.ts::setQuantity`.
+  """
+  updateCartItem(input: UpdateCartItemInput!): CartPayload!
+
+  """Change a country, or switch it off."""
+  updateCountry(code: String!, input: CountryPatchInput!): CountryPayload!
+
+  """Change a currency, or switch it off."""
+  updateCurrency(code: String!, input: CurrencyPatchInput!): CurrencyPayload!
+
+  """Change a language, or switch it off."""
+  updateLanguage(code: String!, input: LanguagePatchInput!): LanguagePayload!
+
+  """Edit your own profile. frontend/services/account.ts::updateProfile."""
+  updateProfile(input: ProfilePatchInput!): UserPayload!
+
+  """Rename or re-rank a custom role."""
+  updateRole(input: UpdateRoleInput!): RolePayload!
+
+  """Update your settings. Partial writes."""
+  updateSettings(input: SettingsPatchInput!): CustomerSettingsPayload!
+
+  """Edit another account’s profile."""
+  updateUserProfile(input: AdminProfilePatchInput!): UserPayload!
+
+  """Redeem a one-time code and sign in."""
+  verifyOtp(input: VerifyOtpInput!): AuthPayload!
+}
+
+"""Implemented by every mutation payload."""
+interface MutationPayload {
+  error: UserError
+  success: Boolean!
+}
+
+type MutationResult implements MutationPayload {
+  error: UserError
+  success: Boolean!
+}
+
+"""Which channels a topic may use."""
+type NotificationChannels {
+  email: Boolean!
+  push: Boolean!
+  sms: Boolean!
+}
+
+"""
+A partial channel update for one topic. Omitted channels are left alone.
+"""
+input NotificationChannelsPatchInput {
+  email: Boolean
+  push: Boolean
+  sms: Boolean
+}
+
+"""One topic’s channels."""
+input NotificationPatchInput {
+  channels: NotificationChannelsPatchInput!
+  topic: NotificationTopic!
+}
+
+"""One topic’s channels."""
+type NotificationPreference {
+  channels: NotificationChannels!
+
+  """
+  Channels that cannot be switched off for this topic, because they carry the transactional record of an order. The UI renders these locked; the server forces them on regardless.
+  """
+  requiredChannels: [String!]!
+  topic: NotificationTopic!
+}
+
+"""
+A notification subject. camelCase, because the frontend uses these as object keys in `settings.notifications`. One of: orderUpdates | deliveryAlerts | promotions | newVendors | weeklyDigest.
+"""
+scalar NotificationTopic
+
+"""The immutable record produced at checkout."""
+type Order {
+  address: DeliveryAddress
+  contact: OrderContact!
+  createdAt: DateTime!
+  deletedAt: DateTime
+
+  """
+  Provisional until the kitchen accepts and commits to a preparation time.
+  """
+  estimatedDeliveryAt: DateTime!
+  fulfillment: FulfillmentType!
+  id: ID!
+  lifecycle: OrderLifecycle!
+  lines: [CartLine!]!
+  notes: String
+
+  """Human-facing reference, e.g. "FO-000123"."""
+  orderNumber: String!
+  payment: OrderPayment!
+  placedAt: DateTime!
+  pricing: OrderPricing!
+  scheduledFor: DateTime
+  status: OrderStatus!
+  updatedAt: DateTime!
+  vendor: CartVendor!
+}
+
+"""
+Who moved the order. A status alone cannot say who set it, which is what the timeline needs. One of: customer | restaurant | rider | system | admin.
+"""
+scalar OrderActor
+
+"""
+Why an order ended early. Maps onto the `order.reason.*` i18n messages. One of: out-of-stock | too-busy | closing-soon | cannot-deliver | changed-mind | too-slow | ordered-by-mistake | duplicate | customer-unavailable | wrong-address | refused-delivery | other.
+"""
+scalar OrderCancelReason
+
+type OrderContact {
+  name: String!
+  phone: String!
+}
+
+"""One thing that happened. Append-only."""
+type OrderEvent {
+  actor: OrderActor!
+  at: DateTime!
+  id: ID!
+  note: String
+  status: OrderStatus!
+}
+
+"""Everything the order accumulates while it is worked on."""
+type OrderLifecycle {
+  assignedAt: DateTime
+  cancelReason: OrderCancelReason
+  cancelledBy: OrderActor
+  delayMinutes: Int!
+  events: [OrderEvent!]!
+  failureReason: OrderCancelReason
+
+  """
+  The delivery hand-off code. Returned once at placement and while Redis holds it; Postgres keeps only its SHA-256, so this is an empty string once the TTL passes.
+  """
+  otp: String!
+  otpAttempts: Int!
+  otpVerifiedAt: DateTime
+  prepMinutes: Int
+  promisedReadyAt: DateTime
+  rating: Int
+  refund: RefundStatus!
+  refundAmount: Money!
+  rejectedRiderIds: [String!]!
+  rejectionReason: OrderCancelReason
+}
+
+type OrderPayload implements MutationPayload {
+  data: Order
+  error: UserError
+  success: Boolean!
+}
+
+type OrderPayment {
+  """Last 4 of the card. Demo only."""
+  cardLast4: String
+  method: PaymentMethod!
+  status: PaymentStatus!
+}
+
+"""The itemised breakdown. Every number here is computed server-side."""
+type OrderPricing {
+  """The code that produced `discount`."""
+  couponCode: String
+
+  """ISO 4217. Every Money field below is in it."""
+  currency: String!
+
+  """Zero on pickup, or when a coupon waived it."""
+  deliveryFee: Money!
+
+  """Coupon reduction, never more than the subtotal."""
+  discount: Money!
+
+  """Σ unitPrice × quantity, from the stored line snapshots."""
+  subtotal: Money!
+
+  """Charged on (subtotal − discount)."""
+  tax: Money!
+
+  """What the receipt calls it — "VAT", "Sales Tax"."""
+  taxLabel: String!
+
+  """0–1. 0.05 is five percent. Snapshotted from `tax_rules`."""
+  taxRate: Float!
+
+  """Courier tip: the subtotal × the chosen fraction."""
+  tip: Money!
+  total: Money!
+}
+
+"""
+Where an order got to. Lifecycle order, which is what drives the progress bar. One of: placed | confirmed | preparing | packing | ready | rider-assigned | picked-up | on-the-way | arrived | delivered | completed | rejected | cancelled | delivery-failed | returned | refunded.
+"""
+scalar OrderStatus
+
+"""A one-time code in flight. The code itself is never returned."""
+type OtpChallengeView {
+  """Normalised — the form of the number the server stored."""
+  destination: String!
+  expiresAt: DateTime!
+
+  """
+  Seconds until a resend is allowed. The same number the server enforces.
+  """
+  resendAfterSeconds: Int!
+}
+
+"""How a one-time code is delivered. One of: sms | email."""
+scalar OtpChannel
+
+"""Result<OtpChallengeView>."""
+type OtpPayload implements MutationPayload {
+  data: OtpChallengeView
+  error: UserError
+  success: Boolean!
+}
+
+"""
+What a one-time code is for — part of the challenge’s identity, not a label on it. One of: login | register | phone-verify | password-reset | two-factor.
+"""
+scalar OtpPurpose
+
+"""Offset-paginated list metadata."""
+interface Page {
+  hasMore: Boolean!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+"""
+Offset pagination: `{ items, total, page, pageSize, hasMore }` on the way back.
+"""
+input PageInput {
+  """1-based page number."""
+  page: Int! = 1
+
+  """Items per page. Capped server-side at 100."""
+  pageSize: Int! = 12
+}
+
+"""
+Tender. `mfs` and `netbanking` exist in the schema; checkout accepts cash, card and wallet. One of: cash | card | wallet | mfs | netbanking.
+"""
+scalar PaymentMethod
+
+"""
+Where the money is. Cash stays `pending` until the rider collects it. One of: pending | paid | failed | refunded.
+"""
+scalar PaymentStatus
+
+"""One capability, e.g. "orders:accept"."""
+type Permission {
+  action: String!
+  description: String!
+
+  """Empty when the row has not been synced yet."""
+  id: String!
+
+  """
+  False for a row whose slug has left shared/permissions.ts — it is granted but nothing enforces it.
+  """
+  inCatalogue: Boolean!
+
+  """Grouping for the admin matrix, e.g. "orders"."""
+  resource: String!
+  slug: String!
+}
+
+"""Place the order. Every price on the result is computed server-side."""
+input PlaceOrderInput {
+  """Required for delivery, ignored for pickup."""
+  address: DeliveryAddressInput
+
+  """
+  Last 4 of the card, for the receipt. Demo only — no gateway is involved.
+  """
+  cardLast4: String
+
+  """Who the restaurant should ask for."""
+  contactName: String!
+  contactPhone: String!
+  couponCode: String
+  fulfillment: FulfillmentType! = "delivery"
+
+  """
+  The basket’s guest key, when it was built before signing in. Checkout adopts that basket onto the account — which is why the customer does not lose it at the till.
+  """
+  guestKey: ID
+
+  """A note for the kitchen."""
+  notes: String
+
+  """Cash, card or wallet. The two other schema tenders are refused here."""
+  paymentMethod: PaymentMethod! = "cash"
+
+  """A scheduled slot, or null for as-soon-as-possible."""
+  scheduledFor: DateTime
+
+  """Fraction of the subtotal."""
+  tipPercent: Float! = 0
+}
+
+input PrivacyPatchInput {
+  personalizedRecommendations: Boolean
+  saveSearchHistory: Boolean
+  shareOrderActivity: Boolean
+}
+
+type PrivacySettings {
+  personalizedRecommendations: Boolean!
+  saveSearchHistory: Boolean!
+  shareOrderActivity: Boolean!
+}
+
+"""Edit your own profile. frontend/services/account.ts::ProfilePatch."""
+input ProfilePatchInput {
+  avatar: String
+
+  """ISO 4217. Must be an active currency."""
+  currency: String
+
+  """BCP-47. Must be an active language."""
+  locale: String
+  marketingOptIn: Boolean
+  name: String
+
+  """
+  Changing it clears the phone verification — a new number has not been proved.
+  """
+  phone: String
+
+  """IANA zone."""
+  timezone: String
+}
+
+type Query {
+  """Every country, including inactive ones. For the admin screen."""
+  allCountries: [Country!]!
+
+  """Every currency."""
+  allCurrencies: [Currency!]!
+
+  """Every language."""
+  allLanguages: [Language!]!
+
+  """What this API is, and whether its dependencies are reachable."""
+  apiStatus: ApiStatus!
+
+  """The craving rail, in display order. Replaces lib/mock/categories.ts."""
+  categories: [Category!]!
+
+  """
+  What the basket costs, from stored rows only. Writes nothing, so it is safe to call on every change of fulfilment, tip or coupon.
+  """
+  checkoutSummary(input: CheckoutSummaryInput!): CheckoutSummaryPayload!
+
+  """
+  Active countries, in display order. Replaces frontend/config/regions.ts.
+  """
+  countries: [Country!]!
+
+  """
+  One country with its currency and languages. Null when unknown or inactive.
+  """
+  country(code: String!): CountryDetail
+
+  """Cuisines in display order. Replaces lib/mock/cuisines.ts."""
+  cuisines: [Cuisine!]!
+
+  """Active currencies."""
+  currencies: [Currency!]!
+
+  """Editorially featured storefronts."""
+  featuredVendors(limit: Int = 6): [Vendor!]!
+
+  """One dish by slug."""
+  food(slug: String!): FoodItem
+
+  """Active languages. Replaces frontend/config/i18n/config.ts::localeMeta."""
+  languages: [Language!]!
+
+  """The signed-in account."""
+  me: User!
+
+  """
+  The current basket, or null when there is none. `frontend/stores/cart.ts` hydrates from this.
+  """
+  myCart(guestKey: String): Cart
+
+  """Live sessions for the signed-in account, most recently seen first."""
+  mySessions: [SessionView!]!
+
+  """Your account settings. frontend/services/settings.ts::getSettings."""
+  mySettings: CustomerSettings!
+
+  """
+  One of your own orders. Somebody else’s is indistinguishable from missing.
+  """
+  order(id: String!): Order
+
+  """
+  The catalogue joined with the table. Unsynced keys appear with an empty id; orphaned rows with `inCatalogue: false`.
+  """
+  permissions: [Permission!]!
+
+  """The "Popular" rail on a restaurant page."""
+  popularItems(limit: Int = 6, vendorId: ID!): [FoodItem!]!
+
+  """
+  Every public key, resolved for a country. A flat map — read it once at boot, not per component.
+  """
+  publicSettings(countryCode: String): JSONObject!
+  role(id: String!): Role
+
+  """Every role, lowest rank first."""
+  roles: [Role!]!
+  serverTime: DateTime!
+
+  """
+  Keys the platform declares, with their defaults and overridable scopes.
+  """
+  settingDefinitions: [SettingDefinition!]!
+
+  """Rows that actually exist — what has been overridden, and where."""
+  settingOverrides: [SettingOverride!]!
+
+  """Every declared key resolved for a scope, including operator-only ones."""
+  settings(scope: SettingScopeInput): [Setting!]!
+
+  """The home page’s trending rail."""
+  trendingVendors(limit: Int = 8): [Vendor!]!
+
+  """One account. `includeDeleted` lets support look at a closed one."""
+  user(includeDeleted: Boolean! = false, userId: String!): UserAdminView
+
+  """Everything granted to one account, next to the resolved result."""
+  userAuthorization(userId: String!): UserAuthorization
+
+  """
+  The user directory. `permissions` is empty on each row — use `userAuthorization(userId)` for one account.
+  """
+  users(filter: UserFilterInput, page: PageInput, sort: UserSort! = NEWEST): UserPage!
+
+  """One storefront by slug. Null when unknown, deleted or not active."""
+  vendor(slug: String!): Vendor
+
+  """
+  A vendor’s delivery menu — sections in order, each with its dishes. Empty sections are dropped.
+  """
+  vendorMenu(vendorId: ID!): [MenuSectionWithItems!]!
+
+  """
+  The restaurant directory: filtered, sorted and paged. Replaces catalog.getVendors.
+  """
+  vendors(page: PageInput, query: VendorQueryInput): VendorPage!
+}
+
+"""
+Where a refund on a cancelled or returned order got to. One of: none | requested | approved | rejected.
+"""
+scalar RefundStatus
+
+"""The regional fallbacks applied when a request carries no hint."""
+type RegionDefaults {
+  countryCode: String!
+  currency: String!
+  locale: String!
+  timezone: String!
+}
+
+input RegisterInput {
+  device: DeviceInput
+  email: String!
+  marketingOptIn: Boolean! = false
+  name: String!
+  password: String!
+  phone: String
+
+  """
+  Self-service only: customer | restaurant-owner. Every other role is granted, never claimed.
+  """
+  role: UserRole!
+}
+
+input RemoveCartItemInput {
+  guestKey: String
+  lineId: ID!
+}
+
+"""Remove a direct grant or denial, so the account’s roles decide again."""
+input RemoveDirectGrantInput {
+  permissionSlug: String!
+  userId: String!
+  vendorId: String
+}
+
+input RequestOtpInput {
+  channel: OtpChannel! = "sms"
+
+  """Phone in E.164, or an email address, per `channel`."""
+  destination: String!
+  purpose: OtpPurpose! = "login"
+}
+
+input ResetPasswordInput {
+  newPassword: String!
+
+  """The single-use token from the reset link."""
+  token: String!
+}
+
+"""Revoke a role from an account."""
+input RevokeRoleInput {
+  roleSlug: String!
+  userId: String!
+  vendorId: String
+}
+
+"""A role: a named bundle of catalogue permissions."""
+type Role {
+  """How many accounts hold it. A role in use cannot be deleted."""
+  assignedCount: Int!
+
+  """
+  Set for the fourteen built-ins, so a client can map role → slug directly.
+  """
+  builtin: UserRole
+  createdAt: DateTime!
+  description: String!
+  id: String!
+
+  """
+  Built-ins cannot be renamed, re-ranked or deleted — only their permissions change.
+  """
+  isSystem: Boolean!
+  name: String!
+
+  """Catalogue permission slugs this role carries."""
+  permissions: [String!]!
+
+  """
+  Higher wins. Also the gate on administration: you may only act on roles strictly below your own highest rank.
+  """
+  rank: Int!
+
+  """Kebab-case. Matches `UserRole` for a built-in."""
+  slug: String!
+  updatedAt: DateTime!
+}
+
+"""A role held by an account, optionally scoped to one vendor."""
+type RoleAssignment {
+  expiresAt: DateTime
+  grantedAt: DateTime!
+  grantedBy: String
+  id: String!
+  roleName: String!
+  roleSlug: String!
+  userId: String!
+
+  """Null = platform-wide."""
+  vendorId: String
+}
+
+type RoleAssignmentPayload implements MutationPayload {
+  data: RoleAssignment
+  error: UserError
+  success: Boolean!
+}
+
+type RolePayload implements MutationPayload {
+  data: Role
+  error: UserError
+  success: Boolean!
+}
+
+input SecurityPatchInput {
+  loginAlerts: Boolean
+  twoFactor: Boolean
+}
+
+type SecuritySettings {
+  loginAlerts: Boolean!
+
+  """
+  Second factor on sign-in. Stored and returned; **not yet enforced** — the mfa_pending token is unbuilt (E2 §Not built).
+  """
+  twoFactor: Boolean!
+}
+
+"""Health of a dependency. One of: up | degraded | down."""
+scalar ServiceStatus
+
+"""
+Why a session ended. "rotation-reuse" means a refresh token was replayed. One of: logout | rotation-reuse | password-change | admin | expired | device-removed.
+"""
+scalar SessionRevokeReason
+
+"""A live sign-in on one device."""
+type SessionView {
+  createdAt: DateTime!
+  deviceName: String
+  expiresAt: DateTime!
+  id: String!
+  ip: String
+
+  """True for the session making this request."""
+  isCurrent: Boolean!
+  lastSeenAt: DateTime!
+  location: String
+  platform: DevicePlatform
+  revokeReason: SessionRevokeReason
+}
+
+"""Grant or deny one permission directly on an account (PBAC)."""
+input SetDirectGrantInput {
+  """false writes an explicit denial, which beats every role grant."""
+  effect: Boolean! = true
+  expiresAt: DateTime
+  permissionSlug: String!
+  userId: String!
+  vendorId: String
+}
+
+"""Change an account’s primary role."""
+input SetPrimaryRoleInput {
+  """
+  Must be strictly below your own highest rank, and so must the account’s current one.
+  """
+  role: UserRole!
+  userId: String!
+}
+
+"""Replace a role’s permission set. What the admin matrix submits."""
+input SetRolePermissionsInput {
+  """The complete set, not a delta."""
+  permissions: [String!]!
+  roleId: String!
+}
+
+"""Suspend, ban or reinstate an account."""
+input SetUserStatusInput {
+  status: UserStatus!
+  userId: String!
+}
+
+"""A setting resolved for a scope, with its provenance."""
+type Setting {
+  description: String
+
+  """True when no row exists and the catalogue answered."""
+  isDefault: Boolean!
+
+  """False for operator-only keys, which `publicSettings` omits."""
+  isPublic: Boolean!
+
+  """Dotted key, e.g. "orders.cancelWindowMinutes"."""
+  key: String!
+
+  """Which layer answered."""
+  scope: SettingScope!
+
+  """Wrapped as `{ value: … }`. Read `valueType` first."""
+  value: JSONObject!
+  valueType: SettingValueType!
+}
+
+"""A key the platform declares, from the catalogue."""
+type SettingDefinition {
+  """Wrapped as `{ value: … }`."""
+  defaultValue: JSONObject!
+  description: String!
+  isPublic: Boolean!
+  key: String!
+
+  """Scopes this key may be overridden at."""
+  scopes: [SettingScope!]!
+  valueType: SettingValueType!
+}
+
+"""A configured row, as written."""
+type SettingOverride {
+  id: String!
+  key: String!
+  scope: SettingScope!
+
+  """Country code or vendor id, per `scope`."""
+  scopeId: String
+  updatedAt: DateTime!
+  updatedBy: String
+  value: JSONObject!
+  valueType: SettingValueType!
+}
+
+type SettingPayload implements MutationPayload {
+  data: Setting
+  error: UserError
+  success: Boolean!
+}
+
+"""
+Which layer a setting was written at. Resolution is vendor → country → platform. One of: vendor | country | platform.
+"""
+scalar SettingScope
+
+"""Which scope to resolve settings for. All fields optional."""
+input SettingScopeInput {
+  countryCode: String
+  vendorId: String
+}
+
+"""
+How to read a setting’s JSON value. Declared by the catalogue, not by the writer. One of: string | number | boolean | json.
+"""
+scalar SettingValueType
+
+"""Partial settings update. Every branch optional."""
+input SettingsPatchInput {
+  notifications: [NotificationPatchInput!]
+  privacy: PrivacyPatchInput
+  security: SecurityPatchInput
+}
+
+"""
+Reading direction of a language — what the root layout puts in <html dir>. One of: ltr | rtl.
+"""
+scalar TextDirection
+
+"""Set a line’s quantity. Zero removes the line."""
+input UpdateCartItemInput {
+  guestKey: String
+
+  """The composite line id from `CartLine.id`."""
+  lineId: ID!
+  quantity: Int!
+}
+
+"""Edit a custom role. Built-ins refuse this."""
+input UpdateRoleInput {
+  description: String
+  name: String
+  rank: Int
+  roleId: String!
+}
+
+"""An account, exactly as frontend/types/user.ts describes it."""
+type User {
+  avatar: String!
+  countryCode: String!
+  createdAt: DateTime!
+  currency: String!
+  deletedAt: DateTime
+  email: String!
+  id: String!
+
+  """True once either the email or the phone is verified."""
+  isVerified: Boolean!
+  locale: String!
+  name: String!
+
+  """
+  Resolved permission slugs — role grants ∪ direct grants − direct denials. `["*"]` for a super-admin.
+  """
+  permissions: [String!]!
+  phone: String
+
+  """The primary role. Backs `User.role`."""
+  role: UserRole!
+  status: UserStatus!
+  updatedAt: DateTime!
+}
+
+type UserAdminPayload implements MutationPayload {
+  data: UserAdminView
+  error: UserError
+  success: Boolean!
+}
+
+"""An account with the operational fields an admin needs."""
+type UserAdminView {
+  emailVerifiedAt: DateTime
+  lastLoginAt: DateTime
+
+  """Marketing consent, distinct from the per-topic matrix."""
+  marketingOptIn: Boolean!
+  phoneVerifiedAt: DateTime
+
+  """IANA zone; falls back to the country’s."""
+  timezone: String
+  user: User!
+}
+
+"""Everything granted to one account, and the resolved result."""
+type UserAuthorization {
+  assignments: [RoleAssignment!]!
+  directGrants: [DirectGrant!]!
+
+  """
+  role grants ∪ direct grants − direct denials. `["*"]` for a super-admin.
+  """
+  effectivePermissions: [String!]!
+  primaryRole: UserRole!
+  userId: String!
+}
+
+"""An expected refusal, carried as data rather than thrown."""
+type UserError {
+  """i18n key, e.g. "errors.invalidCredentials". Never prose."""
+  key: String!
+
+  """ICU parameters the message needs, e.g. { min: 250 }."""
+  params: JSONObject
+
+  """Field path for a form error, e.g. "input.phone"."""
+  path: String
+}
+
+"""Narrow the user directory. Every field optional."""
+input UserFilterInput {
+  countryCode: String
+
+  """Include closed accounts. Off by default — a tombstone is not a user."""
+  includeDeleted: Boolean = false
+  isVerified: Boolean
+
+  """Matched against name, email and phone."""
+  q: String
+  role: UserRole
+  status: UserStatus
+}
+
+type UserPage implements Page {
+  hasMore: Boolean!
+  items: [User!]!
+  page: Int!
+  pageSize: Int!
+
+  """Total matching rows. Estimated above 50k (D5)."""
+  total: Int!
+}
+
+type UserPayload implements MutationPayload {
+  data: User
+  error: UserError
+  success: Boolean!
+}
+
+"""
+A role slug, identical to frontend/types/user.ts::UserRole. Kebab-case, which is exactly why it is a scalar and not a GraphQL enum. One of: guest | customer | restaurant-owner | cafe-owner | home-chef | cloud-kitchen | catering-company | delivery-rider | vendor-manager | customer-support | moderator | finance-manager | marketing-manager | super-admin.
+"""
+scalar UserRole
+
+"""How to order the user directory. Every option is index-backed."""
+enum UserSort {
+  LAST_LOGIN
+  NAME
+  NEWEST
+  OLDEST
+}
+
+"""
+Account standing. Only suspended and banned stop a token from being honoured. One of: active | pending | suspended | banned.
+"""
+scalar UserStatus
+
+"""
+A storefront: the `vendors` row joined to its primary `vendor_branches` row, flattened into the shape frontend/types/catalog.ts already renders.
+"""
+type Vendor {
+  cover: String!
+  createdAt: DateTime!
+
+  """Cuisine ids, in the order the merchant lists them."""
+  cuisineIds: [ID!]!
+
+  """ISO 4217. Every Money field on this type is in it."""
+  currency: String!
+
+  """Soft-delete marker; null when active."""
+  deletedAt: DateTime
+  deliveryFee: Money!
+  description: String!
+  dietary: [DietaryTag!]!
+
+  """
+  Straight-line km from the query’s `origin`. Computed, never stored — it is a property of the pair (vendor, asker). 0 when no origin was supplied.
+  """
+  distanceKm: Float!
+
+  """Exactly two entries: [min, max] minutes."""
+  etaMinutes: [Int!]!
+  freeDeliveryOver: Money
+  hours: WeeklyHours!
+  id: ID!
+  isFeatured: Boolean!
+
+  """
+  Derived in the branch’s own timezone from its hours, closures, pause and kill switch — not a stored flag, because a stored flag has to be written by something in every timezone the platform serves.
+  """
+  isOpen: Boolean!
+  isTrending: Boolean!
+  location: GeoPoint!
+  logo: String!
+  minOrder: Money!
+  name: String!
+
+  """Owning account. Null for an unclaimed listing."""
+  ownerId: ID
+
+  """1–4, rendered as $ – $$$$."""
+  priceLevel: Int!
+
+  """Editorial promo headline, e.g. "20% off over ৳800"."""
+  promoLabel: String
+
+  """0–5, denormalised from the review aggregate."""
+  rating: Float!
+  reviewCount: Int!
+  slug: String!
+  tagline: String!
+  type: VendorType!
+  updatedAt: DateTime!
+}
+
+type VendorPage implements Page {
+  hasMore: Boolean!
+  items: [Vendor!]!
+  page: Int!
+  pageSize: Int!
+
+  """Total matching rows. Estimated above 50k (D5)."""
+  total: Int!
+}
+
+"""Filters and ordering for a vendor list. Every field is optional."""
+input VendorQueryInput {
+  """A `Cuisine.id`, from the `cuisines` query."""
+  cuisineId: ID
+
+  """
+  Keep only branches open at request time, in their own timezone. Evaluated in the application layer, not in SQL — see policies/listing.ts.
+  """
+  openNow: Boolean
+
+  """
+  Supply it and `Vendor.distanceKm` is real and `sort: "distance"` means something. Omit it and both are 0.
+  """
+  origin: GeoOriginInput
+
+  """Case-insensitive substring of the name or tagline."""
+  search: String
+  sort: VendorSort = "recommended"
+  type: VendorType
+}
+
+"""
+Ordering for a vendor list. "recommended" is featured first, then rating. One of: recommended | rating | delivery-time | distance.
+"""
+scalar VendorSort
+
+"""
+What kind of merchant a storefront is. Identical to frontend/types/common.ts::VendorType. One of: restaurant | cafe | cloud-kitchen | home-chef | catering.
+"""
+scalar VendorType
+
+input VerifyOtpInput {
+  channel: OtpChannel! = "sms"
+  code: String!
+  destination: String!
+  device: DeviceInput
+  purpose: OtpPurpose! = "login"
+}
+
+"""
+Opening grid, Monday first. Keyed by weekday, as the frontend indexes it.
+"""
+type WeeklyHours {
+  fri: DayHours!
+  mon: DayHours!
+  sat: DayHours!
+  sun: DayHours!
+  thu: DayHours!
+  tue: DayHours!
+  wed: DayHours!
+}
+
+"""Set a setting at one scope."""
+input WriteSettingInput {
+  """A key from the catalogue. Anything else is refused."""
+  key: String!
+  scope: SettingScope! = "platform"
+
+  """
+  Country code for `country`, vendor id for `vendor`. Must be null for `platform`.
+  """
+  scopeId: String
+
+  """Wrapped: `{ "value": 15 }`."""
+  value: JSONObject!
+}

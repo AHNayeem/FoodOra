@@ -1,0 +1,409 @@
+// =============================================================================
+// PLATFORM — reference data, configuration and cross-cutting infrastructure.
+//
+// Replaces `frontend/config/regions.ts` (currencies, countries, tax) with
+// admin-editable tables, and adds the operational plumbing every other module
+// leans on: settings, feature flags, translations, files, audit, outbox and
+// idempotency.
+// =============================================================================
+
+/// ISO 4217. `fractionDigits` is a *display* concern the frontend already
+/// honours (BDT renders 0 digits); storage is always Decimal(14,2).
+model Currency {
+  code           String  @id @db.Char(3)
+  symbol         String  @db.VarChar(8)
+  /// Intl locale used to format amounts, e.g. "bn-BD".
+  formatLocale   String  @db.VarChar(16)
+  fractionDigits Int     @default(2) @db.SmallInt
+  isActive       Boolean @default(true)
+  sort           Int     @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  countries    Country[]      @relation("CountryCurrency")
+  exchangeFrom ExchangeRate[] @relation("RateBase")
+  exchangeTo   ExchangeRate[] @relation("RateQuote")
+
+  @@index([isActive, sort])
+  @@map("currencies")
+}
+
+/// Daily close rate, used only for cross-country reporting — an order is always
+/// priced and settled in its own currency, never converted.
+model ExchangeRate {
+  id          String   @id @db.VarChar(40)
+  baseCode    String   @db.Char(3)
+  quoteCode   String   @db.Char(3)
+  rate        Decimal  @db.Decimal(18, 8)
+  /// Plain local date the rate closed on ("YYYY-MM-DD").
+  effectiveOn DateTime @db.Date
+  source      String   @db.VarChar(40)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  base  Currency @relation("RateBase", fields: [baseCode], references: [code], onDelete: Restrict)
+  quote Currency @relation("RateQuote", fields: [quoteCode], references: [code], onDelete: Restrict)
+
+  @@unique([baseCode, quoteCode, effectiveOn])
+  @@index([effectiveOn])
+  @@map("exchange_rates")
+}
+
+/// ISO 3166-1 alpha-2. One row per country the platform operates in.
+model Country {
+  code          String  @id @db.Char(2)
+  name          String  @db.VarChar(80)
+  currencyCode  String  @db.Char(3)
+  /// IANA zone, e.g. "Asia/Dhaka". Every local-date calculation resolves here.
+  timezone      String  @db.VarChar(64)
+  dialCode      String  @db.VarChar(8)
+  /// BCP-47 default for new accounts created in this country.
+  defaultLocale String  @default("en") @db.VarChar(8)
+  isActive      Boolean @default(true)
+  sort          Int     @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  currency  Currency          @relation("CountryCurrency", fields: [currencyCode], references: [code], onDelete: Restrict)
+  languages CountryLanguage[] @relation("CountryLanguages")
+  taxRules  TaxRule[]         @relation("CountryTaxRules")
+  users     User[]            @relation("UserCountry")
+  branches  VendorBranch[]    @relation("BranchCountry")
+  zones     DeliveryZone[]    @relation("ZoneCountry")
+
+  @@index([isActive, sort])
+  @@map("countries")
+}
+
+/// BCP-47 locale. `direction` drives the `<html dir>` the root layout sets.
+model Language {
+  code       String        @id @db.VarChar(8)
+  name       String        @db.VarChar(60)
+  nativeName String        @db.VarChar(60)
+  direction  TextDirection @default(LTR)
+  isActive   Boolean       @default(true)
+  sort       Int           @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  countries    CountryLanguage[] @relation("LanguageCountries")
+  translations Translation[]     @relation("TranslationLanguage")
+
+  @@index([isActive, sort])
+  @@map("languages")
+}
+
+enum TextDirection {
+  LTR @map("ltr")
+  RTL @map("rtl")
+
+  @@map("text_direction")
+}
+
+/// Which languages a country is served in, and which one is its default.
+model CountryLanguage {
+  countryCode  String  @db.Char(2)
+  languageCode String  @db.VarChar(8)
+  isDefault    Boolean @default(false)
+  sort         Int     @default(0) @db.SmallInt
+
+  country  Country  @relation("CountryLanguages", fields: [countryCode], references: [code], onDelete: Cascade)
+  language Language @relation("LanguageCountries", fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@id([countryCode, languageCode])
+  @@index([languageCode])
+  @@map("country_languages")
+}
+
+enum TaxKind {
+  VAT       @map("vat")
+  GST       @map("gst")
+  SALES_TAX @map("sales-tax")
+  SERVICE   @map("service")
+
+  @@map("tax_kind")
+}
+
+/// What the tax applies to. An order can attract several rules at once
+/// (goods VAT + a municipal delivery levy), which is why this is a table and
+/// not a single `taxRate` column on Country.
+enum TaxAppliesTo {
+  ORDER_SUBTOTAL @map("order-subtotal")
+  DELIVERY_FEE   @map("delivery-fee")
+  SERVICE_CHARGE @map("service-charge")
+  PACKAGING      @map("packaging")
+
+  @@map("tax_applies_to")
+}
+
+/// A dated, scoped tax rule. Scope narrows from country → region → city →
+/// vendor; `TaxEngine.resolve()` picks the most specific live rule.
+/// Snapshotted onto every priced document (`Order.taxRate`, `taxLabel`) so a
+/// rate change never rewrites history.
+model TaxRule {
+  id            String       @id @db.VarChar(40)
+  countryCode   String       @db.Char(2)
+  /// Optional narrowing. Null = applies to the whole country.
+  region        String?      @db.VarChar(80)
+  city          String?      @db.VarChar(80)
+  vendorId      String?      @db.VarChar(40)
+  kind          TaxKind      @default(VAT)
+  appliesTo     TaxAppliesTo @default(ORDER_SUBTOTAL)
+  /// Label shown on the receipt, e.g. "VAT". Snapshotted onto orders.
+  label         String       @db.VarChar(40)
+  /// 0–1. 0.05 = 5%.
+  rate          Decimal      @db.Decimal(6, 4)
+  /// True when the advertised price already contains the tax.
+  isInclusive   Boolean      @default(false)
+  effectiveFrom DateTime     @db.Timestamptz(3)
+  effectiveTo   DateTime?    @db.Timestamptz(3)
+  priority      Int          @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  createdBy String?   @db.VarChar(40)
+  updatedBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  country Country @relation("CountryTaxRules", fields: [countryCode], references: [code], onDelete: Restrict)
+  vendor  Vendor? @relation("VendorTaxRules", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([countryCode, appliesTo, effectiveFrom, effectiveTo])
+  @@index([vendorId])
+  @@map("tax_rules")
+}
+
+enum SettingScope {
+  PLATFORM @map("platform")
+  COUNTRY  @map("country")
+  VENDOR   @map("vendor")
+
+  @@map("setting_scope")
+}
+
+enum SettingValueType {
+  STRING  @map("string")
+  NUMBER  @map("number")
+  BOOLEAN @map("boolean")
+  JSON    @map("json")
+
+  @@map("setting_value_type")
+}
+
+/// Configurable settings (spec: Admin Panel → Settings). Resolution is
+/// vendor → country → platform, first hit wins; `SettingsService` caches the
+/// resolved map in Redis under `settings:<scope>:<scopeId>`.
+model Setting {
+  id          String           @id @db.VarChar(40)
+  scope       SettingScope     @default(PLATFORM)
+  /// Country code or vendor id depending on `scope`; null for PLATFORM.
+  scopeId     String?          @db.VarChar(40)
+  /// Dotted key, e.g. "orders.cancelWindowMinutes".
+  key         String           @db.VarChar(120)
+  valueType   SettingValueType @default(STRING)
+  value       Json
+  /// False for operator-only keys the vendor dashboard must not surface.
+  isPublic    Boolean          @default(false)
+  description String?          @db.VarChar(240)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  updatedBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  // No FK on `scopeId`: it holds a country code OR a vendor id depending on
+  // `scope`, so integrity is enforced by `SettingsService`, not the database.
+
+  @@unique([scope, scopeId, key])
+  @@index([key])
+  @@map("settings")
+}
+
+enum FeatureFlagStrategy {
+  BOOLEAN    @map("boolean")
+  PERCENTAGE @map("percentage")
+  ALLOWLIST  @map("allowlist")
+  COUNTRY    @map("country")
+  ROLE       @map("role")
+
+  @@map("feature_flag_strategy")
+}
+
+/// Feature flags (spec: Admin Panel → Feature Flags). Evaluated server-side
+/// and exposed through one `featureFlags` query so the frontend never guesses.
+model FeatureFlag {
+  id          String              @id @db.VarChar(40)
+  key         String              @unique @db.VarChar(80)
+  description String              @db.VarChar(240)
+  strategy    FeatureFlagStrategy @default(BOOLEAN)
+  isEnabled   Boolean             @default(false)
+  /// Rollout percentage for PERCENTAGE, 0–100.
+  rolloutPct  Int                 @default(0) @db.SmallInt
+  /// User ids / country codes / role slugs, per `strategy`.
+  targets     String[]            @default([])
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  updatedBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  @@index([isEnabled])
+  @@map("feature_flags")
+}
+
+/// Generic per-locale text for *catalog* rows (cuisine name, category name,
+/// amenity label…). Editorial copy does NOT come here — it lives in
+/// `CmsDocument.values` as `CmsLocalizedText`, which is the C26 contract.
+model Translation {
+  id           String @id @db.VarChar(40)
+  /// Table name, e.g. "categories".
+  entity       String @db.VarChar(60)
+  entityId     String @db.VarChar(40)
+  field        String @db.VarChar(60)
+  languageCode String @db.VarChar(8)
+  value        String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  language Language @relation("TranslationLanguage", fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([entity, entityId, field, languageCode])
+  @@index([languageCode])
+  @@map("translations")
+}
+
+enum FileVisibility {
+  PUBLIC  @map("public")
+  PRIVATE @map("private")
+
+  @@map("file_visibility")
+}
+
+/// An object in S3-compatible storage. Uploads are direct-to-bucket via a
+/// presigned POST; this row is the durable record, written on the `complete`
+/// mutation. Image variants are produced by a BullMQ worker.
+model FileAsset {
+  id           String         @id @db.VarChar(40)
+  bucket       String         @db.VarChar(64)
+  /// Object key, e.g. "vendors/ven_01J8/cover.webp".
+  key          String         @db.VarChar(400)
+  mimeType     String         @db.VarChar(100)
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  checksum     String?        @db.VarChar(72)
+  visibility   FileVisibility @default(PUBLIC)
+  /// Derived renditions: { "thumb": "…/thumb.webp", "md": "…" }.
+  variants     Json           @default("{}")
+  /// Owning row, so an orphan sweep can find unattached uploads.
+  ownerEntity  String?        @db.VarChar(60)
+  ownerId      String?        @db.VarChar(40)
+  uploadedById String?        @db.VarChar(40)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  uploadedBy  User?         @relation("UserUploads", fields: [uploadedById], references: [id], onDelete: SetNull)
+  reviewMedia ReviewMedia[] @relation("ReviewMediaFile")
+
+  @@unique([bucket, key])
+  @@index([ownerEntity, ownerId])
+  @@index([uploadedById])
+  @@map("file_assets")
+}
+
+/// Append-only audit trail (spec: Admin Panel → Audit Logs). Written by an
+/// interceptor around every mutating resolver, plus explicit domain calls.
+/// Never soft-deleted, never updated.
+model AuditLog {
+  id          String   @id @db.VarChar(40)
+  /// Verb, e.g. "order.cancelled", "cms.published", "user.role.changed".
+  action      String   @db.VarChar(80)
+  entity      String   @db.VarChar(60)
+  entityId    String?  @db.VarChar(40)
+  /// Display label at the time, so the log stays readable after a rename.
+  entityLabel String?  @db.VarChar(200)
+  actorId     String?  @db.VarChar(40)
+  actorRole   String?  @db.VarChar(40)
+  actorLabel  String?  @db.VarChar(120)
+  /// Shallow field-level diff: { field: { from, to } }.
+  changes     Json?
+  ip          String?  @db.Inet
+  userAgent   String?  @db.VarChar(400)
+  /// Correlates every log line, span and job produced by one request.
+  requestId   String?  @db.VarChar(40)
+  at          DateTime @default(now()) @db.Timestamptz(3)
+
+  actor User? @relation("UserAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId, at(sort: Desc)])
+  @@index([actorId, at(sort: Desc)])
+  @@index([action, at(sort: Desc)])
+  @@map("audit_logs")
+}
+
+enum OutboxStatus {
+  PENDING    @map("pending")
+  DISPATCHED @map("dispatched")
+  FAILED     @map("failed")
+
+  @@map("outbox_status")
+}
+
+/// Transactional outbox. A domain event is written in the SAME transaction as
+/// its state change, then relayed to BullMQ by a poller. This is what makes
+/// "order accepted → notify customer → offer the job to riders" reliable
+/// without distributed transactions.
+model OutboxEvent {
+  id           String       @id @db.VarChar(40)
+  /// e.g. "order.status-changed".
+  eventName    String       @db.VarChar(80)
+  aggregate    String       @db.VarChar(60)
+  aggregateId  String       @db.VarChar(40)
+  payload      Json
+  status       OutboxStatus @default(PENDING)
+  attempts     Int          @default(0) @db.SmallInt
+  lastError    String?
+  availableAt  DateTime     @default(now()) @db.Timestamptz(3)
+  dispatchedAt DateTime?    @db.Timestamptz(3)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([status, availableAt])
+  @@index([aggregate, aggregateId])
+  @@map("outbox_events")
+}
+
+/// Replay guard for non-idempotent mutations (place order, capture payment,
+/// accept job) and for provider webhooks. The client sends
+/// `Idempotency-Key`; a repeat returns the stored response verbatim.
+model IdempotencyKey {
+  key         String    @id @db.VarChar(120)
+  scope       String    @db.VarChar(60)
+  userId      String?   @db.VarChar(40)
+  /// Hash of the request body — a same-key/different-body call is rejected.
+  requestHash String    @db.VarChar(72)
+  response    Json?
+  statusCode  Int?      @db.SmallInt
+  lockedAt    DateTime? @db.Timestamptz(3)
+  completedAt DateTime? @db.Timestamptz(3)
+  expiresAt   DateTime  @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([expiresAt])
+  @@index([userId])
+  @@map("idempotency_keys")
+}

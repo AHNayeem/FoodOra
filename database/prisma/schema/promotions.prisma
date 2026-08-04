@@ -1,0 +1,256 @@
+// =============================================================================
+// PROMOTIONS — offers (campaigns the platform advertises) and coupons (tickets
+// a customer holds).
+//
+// Serves `types/offer.ts` and `types/coupon.ts`. The C20/C21 distinction is
+// kept structurally: `Coupon.offerId` is the mint link, so a code advertised on
+// `/offers` and the ticket in a wallet can never disagree about its terms.
+//
+// DERIVED, NEVER STORED: `CouponStatus` (active/scheduled/used/expired) and
+// `HeldCoupon.remaining` / `daysLeft` are computed from the window, the usage
+// limit and the redemptions — exactly as `lib/coupons.ts` does today. There is
+// no `isExpired` and no `isUsed` column.
+// =============================================================================
+
+enum DiscountKind {
+  PERCENTAGE    @map("percentage")
+  FIXED         @map("fixed")
+  FREE_DELIVERY @map("free-delivery")
+  BOGO          @map("bogo")
+  CASHBACK      @map("cashback")
+
+  @@map("discount_kind")
+}
+
+enum PromoScope {
+  PLATFORM @map("platform")
+  VENDOR   @map("vendor")
+  CATEGORY @map("category")
+
+  @@map("promo_scope")
+}
+
+enum OfferPlacementKind {
+  FLASH    @map("flash")
+  FEATURED @map("featured")
+  COUPON   @map("coupon")
+  STANDARD @map("standard")
+
+  @@map("offer_placement_kind")
+}
+
+model Offer {
+  id             String             @id @db.VarChar(40)
+  slug           String             @unique @db.VarChar(120)
+  title          String             @db.VarChar(160)
+  description    String             @default("") @db.VarChar(400)
+  kind           DiscountKind
+  /// Percentage points for percentage/cashback, currency units for fixed.
+  value          Decimal            @default(0) @db.Decimal(14, 2)
+  maxDiscount    Decimal?           @db.Decimal(14, 2)
+  minOrder       Decimal            @default(0) @db.Decimal(14, 2)
+  currency       String             @db.Char(3)
+  scope          PromoScope         @default(PLATFORM)
+  /// Promo code to enter at checkout; null when applied automatically.
+  code           String?            @db.VarChar(40)
+  placement      OfferPlacementKind @default(STANDARD)
+  image          String             @default("") @db.VarChar(500)
+  /// Pre-computed badge, e.g. "40% off" — cards need no math.
+  badge          String             @default("") @db.VarChar(40)
+  startsAt       DateTime           @db.Timestamptz(3)
+  endsAt         DateTime           @db.Timestamptz(3)
+  /// Redemptions used vs the cap, for the scarcity meter. A counter, not a
+  /// derivation: it is incremented atomically at redemption.
+  claimed        Int                @default(0)
+  claimLimit     Int?
+  /// The small print, one entry per line.
+  terms          String[]           @default([])
+  firstOrderOnly Boolean            @default(false)
+  /// Which countries the offer is advertised in; empty = all.
+  countryCodes   String[]           @default([])
+  sort           Int                @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  createdBy String?   @db.VarChar(40)
+  updatedBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  vendors    OfferVendor[]   @relation("OfferVendors")
+  categories OfferCategory[] @relation("OfferCategories")
+  coupons    Coupon[]        @relation("CouponOffer")
+
+  @@index([placement, startsAt, endsAt])
+  @@index([startsAt, endsAt, deletedAt])
+  @@index([code])
+  @@map("offers")
+}
+
+model OfferVendor {
+  offerId  String @db.VarChar(40)
+  vendorId String @db.VarChar(40)
+
+  offer  Offer  @relation("OfferVendors", fields: [offerId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation("VendorOffers", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, vendorId])
+  @@index([vendorId])
+  @@map("offer_vendors")
+}
+
+model OfferCategory {
+  offerId    String @db.VarChar(40)
+  categoryId String @db.VarChar(40)
+
+  offer    Offer    @relation("OfferCategories", fields: [offerId], references: [id], onDelete: Cascade)
+  category Category @relation("CategoryOffers", fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, categoryId])
+  @@index([categoryId])
+  @@map("offer_categories")
+}
+
+enum CouponSourceKind {
+  CAMPAIGN @map("campaign")
+  WELCOME  @map("welcome")
+  REFERRAL @map("referral")
+  LOYALTY  @map("loyalty")
+  APOLOGY  @map("apology")
+  BIRTHDAY @map("birthday")
+  VENDOR   @map("vendor")
+
+  @@map("coupon_source_kind")
+}
+
+model Coupon {
+  id             String           @id @db.VarChar(40)
+  /// Always stored canonicalised: upper-case, no spaces.
+  code           String           @unique @db.VarChar(40)
+  title          String           @db.VarChar(160)
+  description    String           @default("") @db.VarChar(400)
+  kind           DiscountKind
+  value          Decimal          @default(0) @db.Decimal(14, 2)
+  maxDiscount    Decimal?         @db.Decimal(14, 2)
+  minOrder       Decimal          @default(0) @db.Decimal(14, 2)
+  currency       String           @db.Char(3)
+  scope          PromoScope       @default(PLATFORM)
+  startsAt       DateTime         @db.Timestamptz(3)
+  endsAt         DateTime         @db.Timestamptz(3)
+  /// How many times ONE customer may redeem it.
+  usageLimit     Int              @default(1) @db.SmallInt
+  /// Platform-wide cap across all customers; null = uncapped.
+  totalLimit     Int?
+  /// Atomic counter for `totalLimit` enforcement.
+  totalRedeemed  Int              @default(0)
+  firstOrderOnly Boolean          @default(false)
+  source         CouponSourceKind @default(CAMPAIGN)
+  /// False for granted coupons — their code cannot be passed around.
+  claimable      Boolean          @default(true)
+  terms          String[]         @default([])
+  /// The C20 campaign this was minted from; null when granted.
+  offerId        String?          @db.VarChar(40)
+  /// The vendor that issued it, for the merchant coupon board.
+  issuerVendorId String?          @db.VarChar(40)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  createdBy String?   @db.VarChar(40)
+  version   Int       @default(0)
+
+  offer       Offer?             @relation("CouponOffer", fields: [offerId], references: [id], onDelete: SetNull)
+  issuer      Vendor?            @relation("CouponIssuer", fields: [issuerVendorId], references: [id], onDelete: Cascade)
+  vendors     CouponVendor[]     @relation("CouponVendors")
+  categories  CouponCategory[]   @relation("CouponCategories")
+  claims      CouponClaim[]      @relation("CouponClaims")
+  redemptions CouponRedemption[] @relation("CouponRedemptions")
+  carts       Cart[]             @relation("CartCoupon")
+  orders      Order[]            @relation("OrderCoupon")
+
+  @@index([startsAt, endsAt, deletedAt])
+  @@index([issuerVendorId, deletedAt])
+  @@index([offerId])
+  @@index([source])
+  @@map("coupons")
+}
+
+model CouponVendor {
+  couponId String @db.VarChar(40)
+  vendorId String @db.VarChar(40)
+
+  coupon Coupon @relation("CouponVendors", fields: [couponId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation("VendorCoupons", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@id([couponId, vendorId])
+  @@index([vendorId])
+  @@map("coupon_vendors")
+}
+
+model CouponCategory {
+  couponId   String @db.VarChar(40)
+  categoryId String @db.VarChar(40)
+
+  coupon   Coupon   @relation("CouponCategories", fields: [couponId], references: [id], onDelete: Cascade)
+  category Category @relation("CategoryCoupons", fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([couponId, categoryId])
+  @@index([categoryId])
+  @@map("coupon_categories")
+}
+
+enum CouponClaimVia {
+  CODE    @map("code")
+  GRANTED @map("granted")
+
+  @@map("coupon_claim_via")
+}
+
+/// The customer's side: the fact that they hold the coupon. One row per
+/// (customer, coupon) — the composite PK is the "claim it twice" guard.
+model CouponClaim {
+  userId    String         @db.VarChar(40)
+  couponId  String         @db.VarChar(40)
+  claimedAt DateTime       @default(now()) @db.Timestamptz(3)
+  via       CouponClaimVia @default(CODE)
+  /// Set when the coupon was granted by an operator, for the audit trail.
+  grantedBy String?        @db.VarChar(40)
+
+  user        User               @relation("CouponClaimUser", fields: [userId], references: [id], onDelete: Cascade)
+  coupon      Coupon             @relation("CouponClaims", fields: [couponId], references: [id], onDelete: Cascade)
+  redemptions CouponRedemption[] @relation("ClaimRedemptions")
+
+  @@id([userId, couponId])
+  @@index([couponId])
+  @@index([userId, claimedAt(sort: Desc)])
+  @@map("coupon_claims")
+}
+
+/// One spend, recorded against the order it paid for. Append-only, and the
+/// unique index on `(couponId, orderId)` makes double-spend impossible even
+/// under a race.
+model CouponRedemption {
+  id             String   @id @db.VarChar(40)
+  couponId       String   @db.VarChar(40)
+  userId         String   @db.VarChar(40)
+  orderId        String   @db.VarChar(40)
+  orderNumber    String   @db.VarChar(24)
+  /// Money taken off this order (0 for cashback, which pays afterwards).
+  discount       Decimal  @default(0) @db.Decimal(14, 2)
+  /// Delivery fee waived, if any.
+  deliveryWaived Decimal  @default(0) @db.Decimal(14, 2)
+  /// Wallet credit earned (cashback coupons only).
+  cashback       Decimal  @default(0) @db.Decimal(14, 2)
+  currency       String   @db.Char(3)
+  redeemedAt     DateTime @default(now()) @db.Timestamptz(3)
+
+  coupon Coupon      @relation("CouponRedemptions", fields: [couponId], references: [id], onDelete: Cascade)
+  claim  CouponClaim @relation("ClaimRedemptions", fields: [userId, couponId], references: [userId, couponId], onDelete: Cascade)
+  order  Order       @relation("RedemptionOrder", fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, orderId])
+  @@index([userId, couponId])
+  @@index([orderId])
+  @@index([redeemedAt(sort: Desc)])
+  @@map("coupon_redemptions")
+}

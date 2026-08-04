@@ -1,0 +1,4472 @@
+{
+  "generatedFrom": "frontend/lib/mock — regenerate with `bun run export:catalog`",
+  "seedNow": "2026-01-01T00:00:00.000Z",
+  "cuisines": [
+    {
+      "id": "cus_italian",
+      "slug": "italian",
+      "name": "Italian",
+      "emoji": "🍝",
+      "image": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cus_american",
+      "slug": "american",
+      "name": "American",
+      "emoji": "🍔",
+      "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cus_japanese",
+      "slug": "japanese",
+      "name": "Japanese",
+      "emoji": "🍣",
+      "image": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cus_indian",
+      "slug": "indian",
+      "name": "Indian",
+      "emoji": "🍛",
+      "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cus_mexican",
+      "slug": "mexican",
+      "name": "Mexican",
+      "emoji": "🌮",
+      "image": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cus_bengali",
+      "slug": "bengali",
+      "name": "Bengali",
+      "emoji": "🐟",
+      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cus_thai",
+      "slug": "thai",
+      "name": "Thai",
+      "emoji": "🍲",
+      "image": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cus_desserts",
+      "slug": "desserts",
+      "name": "Desserts",
+      "emoji": "🍰",
+      "image": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_pizza",
+      "slug": "pizza",
+      "name": "Pizza",
+      "emoji": "🍕",
+      "sort": 1,
+      "keywords": [
+        "pizza",
+        "margherita",
+        "pepperoni",
+        "italian"
+      ],
+      "image": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_burgers",
+      "slug": "burgers",
+      "name": "Burgers",
+      "emoji": "🍔",
+      "sort": 2,
+      "keywords": [
+        "burger",
+        "smash",
+        "cheeseburger",
+        "american"
+      ],
+      "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_sushi",
+      "slug": "sushi",
+      "name": "Sushi",
+      "emoji": "🍣",
+      "sort": 3,
+      "keywords": [
+        "sushi",
+        "nigiri",
+        "roll",
+        "sashimi",
+        "japanese"
+      ],
+      "image": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_biryani",
+      "slug": "biryani",
+      "name": "Biryani",
+      "emoji": "🍛",
+      "sort": 4,
+      "keywords": [
+        "biryani",
+        "kacchi",
+        "pulao",
+        "indian",
+        "bengali"
+      ],
+      "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_pasta",
+      "slug": "pasta",
+      "name": "Pasta",
+      "emoji": "🍝",
+      "sort": 5,
+      "keywords": [
+        "pasta",
+        "carbonara",
+        "lasagna",
+        "italian"
+      ],
+      "image": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_tacos",
+      "slug": "tacos",
+      "name": "Tacos",
+      "emoji": "🌮",
+      "sort": 6,
+      "keywords": [
+        "taco",
+        "burrito",
+        "nachos",
+        "mexican"
+      ],
+      "image": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_coffee",
+      "slug": "coffee",
+      "name": "Coffee",
+      "emoji": "☕",
+      "sort": 7,
+      "keywords": [
+        "coffee",
+        "latte",
+        "cappuccino",
+        "espresso",
+        "cold brew"
+      ],
+      "image": "https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_desserts",
+      "slug": "desserts",
+      "name": "Desserts",
+      "emoji": "🍰",
+      "sort": 8,
+      "keywords": [
+        "cake",
+        "dessert",
+        "brownie",
+        "pastry",
+        "croissant",
+        "pitha"
+      ],
+      "image": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_healthy",
+      "slug": "healthy",
+      "name": "Healthy",
+      "emoji": "🥗",
+      "sort": 9,
+      "keywords": [
+        "bowl",
+        "salad",
+        "juice",
+        "healthy",
+        "vegan",
+        "protein"
+      ],
+      "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "cat_ramen",
+      "slug": "ramen",
+      "name": "Ramen",
+      "emoji": "🍜",
+      "sort": 10,
+      "keywords": [
+        "ramen",
+        "noodle",
+        "pad thai",
+        "pho",
+        "broth"
+      ],
+      "image": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    }
+  ],
+  "vendors": [
+    {
+      "id": "ven_bella_napoli",
+      "slug": "bella-napoli",
+      "type": "restaurant",
+      "name": "Bella Napoli",
+      "tagline": "Wood-fired Neapolitan pizza",
+      "description": "Authentic Neapolitan pizzeria using 00 flour, San Marzano tomatoes and a 48-hour cold-fermented dough baked in a 450°C wood oven.",
+      "logo": "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_italian"
+      ],
+      "dietary": [
+        "vegetarian"
+      ],
+      "priceLevel": 3,
+      "rating": 4.8,
+      "reviewCount": 1284,
+      "location": {
+        "lat": 23.7806,
+        "lng": 90.4152,
+        "address": "Gulshan Ave, Gulshan 1",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 1.2,
+      "etaMinutes": [
+        25,
+        35
+      ],
+      "deliveryFee": 60,
+      "minOrder": 300,
+      "freeDeliveryOver": 800,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": true,
+      "promoLabel": "20% off over ৳800",
+      "currency": "BDT",
+      "ownerId": "usr_owner",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_burger_lab",
+      "slug": "burger-lab",
+      "type": "restaurant",
+      "name": "Burger Lab",
+      "tagline": "Smash burgers & craft shakes",
+      "description": "Chef-driven smash burgers on toasted brioche, hand-cut fries and thick shakes. Everything ground fresh daily.",
+      "logo": "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_american"
+      ],
+      "dietary": [
+        "halal"
+      ],
+      "priceLevel": 2,
+      "rating": 4.6,
+      "reviewCount": 2043,
+      "location": {
+        "lat": 23.7936,
+        "lng": 90.4043,
+        "address": "Banani Rd 11, Banani",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 2.4,
+      "etaMinutes": [
+        20,
+        30
+      ],
+      "deliveryFee": 50,
+      "minOrder": 250,
+      "freeDeliveryOver": 700,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": true,
+      "promoLabel": "Free delivery over ৳700",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_sakura_sushi",
+      "slug": "sakura-sushi",
+      "type": "restaurant",
+      "name": "Sakura Sushi",
+      "tagline": "Omakase & signature rolls",
+      "description": "Edomae-style sushi from a master trained in Tokyo. Daily-flown fish, house-brewed soy and hand-pressed nigiri.",
+      "logo": "https://images.unsplash.com/photo-1607301405390-d831c242f59b?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_japanese"
+      ],
+      "dietary": [
+        "gluten-free"
+      ],
+      "priceLevel": 4,
+      "rating": 4.9,
+      "reviewCount": 876,
+      "location": {
+        "lat": 23.7925,
+        "lng": 90.4145,
+        "address": "Gulshan 2 Circle",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 1.8,
+      "etaMinutes": [
+        30,
+        45
+      ],
+      "deliveryFee": 80,
+      "minOrder": 500,
+      "freeDeliveryOver": null,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": false,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_spice_route",
+      "slug": "spice-route",
+      "type": "restaurant",
+      "name": "Spice Route",
+      "tagline": "Kacchi, biryani & kebabs",
+      "description": "Slow-cooked Dhaka-style kacchi biryani, seekh kebabs and rich curries from a family recipe three generations deep.",
+      "logo": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_indian",
+        "cus_bengali"
+      ],
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "priceLevel": 2,
+      "rating": 4.7,
+      "reviewCount": 3410,
+      "location": {
+        "lat": 23.7561,
+        "lng": 90.3742,
+        "address": "Dhanmondi 27",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 3.6,
+      "etaMinutes": [
+        35,
+        50
+      ],
+      "deliveryFee": 40,
+      "minOrder": 200,
+      "freeDeliveryOver": 600,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": true,
+      "promoLabel": "Buy 1 Get 1 kacchi",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_el_taco",
+      "slug": "el-taco-loco",
+      "type": "cloud-kitchen",
+      "name": "El Taco Loco",
+      "tagline": "Street tacos & burritos",
+      "description": "A delivery-only cloud kitchen slinging Mexico City street tacos, loaded burritos and fresh guac made to order.",
+      "logo": "https://images.unsplash.com/photo-1613514785940-daed07799d9b?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_mexican"
+      ],
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "priceLevel": 2,
+      "rating": 4.5,
+      "reviewCount": 654,
+      "location": {
+        "lat": 23.7783,
+        "lng": 90.4008,
+        "address": "Mohakhali DOHS",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 2.9,
+      "etaMinutes": [
+        25,
+        40
+      ],
+      "deliveryFee": 55,
+      "minOrder": 250,
+      "freeDeliveryOver": 750,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": true,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_the_daily_grind",
+      "slug": "the-daily-grind",
+      "type": "cafe",
+      "name": "The Daily Grind",
+      "tagline": "Specialty coffee & brunch",
+      "description": "Single-origin espresso, slow-pour filter and an all-day brunch menu in a plant-filled corner cafe.",
+      "logo": "https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_american"
+      ],
+      "dietary": [
+        "vegetarian",
+        "vegan"
+      ],
+      "priceLevel": 2,
+      "rating": 4.7,
+      "reviewCount": 1520,
+      "location": {
+        "lat": 23.7811,
+        "lng": 90.4139,
+        "address": "Gulshan 1, Road 41",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 1,
+      "etaMinutes": [
+        15,
+        25
+      ],
+      "deliveryFee": 45,
+      "minOrder": 150,
+      "freeDeliveryOver": 500,
+      "hours": {
+        "mon": {
+          "open": "07:30",
+          "close": "22:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": false,
+      "promoLabel": "Free cookie with any coffee",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_rehanas_kitchen",
+      "slug": "rehanas-kitchen",
+      "type": "home-chef",
+      "name": "Rehana's Kitchen",
+      "tagline": "Home-cooked Bengali meals",
+      "description": "Certified home chef Rehana cooks authentic Bengali comfort food — shorshe ilish, bhuna khichuri and homemade pithas — from her own kitchen.",
+      "logo": "https://i.pravatar.cc/200?img=45",
+      "cover": "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_bengali"
+      ],
+      "dietary": [
+        "halal",
+        "healthy"
+      ],
+      "priceLevel": 1,
+      "rating": 4.9,
+      "reviewCount": 412,
+      "location": {
+        "lat": 23.8759,
+        "lng": 90.3795,
+        "address": "Uttara Sector 7",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 5.2,
+      "etaMinutes": [
+        45,
+        60
+      ],
+      "deliveryFee": 70,
+      "minOrder": 200,
+      "freeDeliveryOver": null,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": null,
+          "close": null
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": true,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_green_bowl",
+      "slug": "green-bowl",
+      "type": "cloud-kitchen",
+      "name": "Green Bowl",
+      "tagline": "Healthy bowls & cold-press",
+      "description": "Macro-balanced grain bowls, salads and cold-pressed juices. Calorie-counted meals built for clean eating.",
+      "logo": "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_american"
+      ],
+      "dietary": [
+        "vegan",
+        "vegetarian",
+        "gluten-free",
+        "healthy",
+        "keto"
+      ],
+      "priceLevel": 2,
+      "rating": 4.6,
+      "reviewCount": 738,
+      "location": {
+        "lat": 23.8103,
+        "lng": 90.437,
+        "address": "Bashundhara R/A",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 4.1,
+      "etaMinutes": [
+        30,
+        40
+      ],
+      "deliveryFee": 50,
+      "minOrder": 250,
+      "freeDeliveryOver": 700,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": false,
+      "isFeatured": false,
+      "isTrending": false,
+      "promoLabel": "15% off first order",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_bangkok_house",
+      "slug": "bangkok-house",
+      "type": "restaurant",
+      "name": "Bangkok House",
+      "tagline": "Authentic Thai kitchen",
+      "description": "Fiery tom yum, creamy green curry and wok-tossed pad thai from a Bangkok-born chef.",
+      "logo": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_thai"
+      ],
+      "dietary": [
+        "spicy",
+        "gluten-free"
+      ],
+      "priceLevel": 3,
+      "rating": 4.5,
+      "reviewCount": 967,
+      "location": {
+        "lat": 23.8041,
+        "lng": 90.4218,
+        "address": "Baridhara Diplomatic Zone",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 3,
+      "etaMinutes": [
+        30,
+        45
+      ],
+      "deliveryFee": 65,
+      "minOrder": 350,
+      "freeDeliveryOver": 900,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": false,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_sugar_spoon",
+      "slug": "sugar-and-spoon",
+      "type": "cafe",
+      "name": "Sugar & Spoon",
+      "tagline": "Artisan cakes & desserts",
+      "description": "Small-batch cakes, French pastries and single-origin hot chocolate. Custom celebration cakes to order.",
+      "logo": "https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_desserts"
+      ],
+      "dietary": [
+        "vegetarian"
+      ],
+      "priceLevel": 2,
+      "rating": 4.8,
+      "reviewCount": 1105,
+      "location": {
+        "lat": 23.7489,
+        "lng": 90.3708,
+        "address": "Dhanmondi 15",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 3.9,
+      "etaMinutes": [
+        25,
+        35
+      ],
+      "deliveryFee": 55,
+      "minOrder": 200,
+      "freeDeliveryOver": 600,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": true,
+      "promoLabel": "Free brownie over ৳600",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_bean_and_bloom",
+      "slug": "bean-and-bloom",
+      "type": "cafe",
+      "name": "Bean & Bloom",
+      "tagline": "Third-wave coffee & flowers",
+      "description": "A florist and a roastery sharing one room. Guatemalan and Ethiopian single origins on a two-group lever, plus sourdough toasts all morning.",
+      "logo": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_american"
+      ],
+      "dietary": [
+        "vegetarian",
+        "vegan"
+      ],
+      "priceLevel": 3,
+      "rating": 4.8,
+      "reviewCount": 864,
+      "location": {
+        "lat": 23.7936,
+        "lng": 90.4043,
+        "address": "Banani Road 11",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 2.1,
+      "etaMinutes": [
+        15,
+        25
+      ],
+      "deliveryFee": 50,
+      "minOrder": 180,
+      "freeDeliveryOver": 600,
+      "hours": {
+        "mon": {
+          "open": "07:00",
+          "close": "21:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "08:00",
+          "close": "21:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": true,
+      "promoLabel": "2nd flat white half price",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_the_reading_room",
+      "slug": "the-reading-room",
+      "type": "cafe",
+      "name": "The Reading Room",
+      "tagline": "Quiet cafe & library",
+      "description": "Long tables, good wifi and a no-phone-call rule. Filter coffee by the pot, proper cheese toasties and a shelf you can borrow from.",
+      "logo": "https://images.unsplash.com/photo-1481833761820-0509d3217039?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_american"
+      ],
+      "dietary": [
+        "vegetarian"
+      ],
+      "priceLevel": 2,
+      "rating": 4.6,
+      "reviewCount": 507,
+      "location": {
+        "lat": 23.7533,
+        "lng": 90.3742,
+        "address": "Dhanmondi Road 27",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 4.3,
+      "etaMinutes": [
+        20,
+        30
+      ],
+      "deliveryFee": 45,
+      "minOrder": 150,
+      "freeDeliveryOver": 500,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": false,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_matcha_house",
+      "slug": "matcha-house",
+      "type": "cafe",
+      "name": "Matcha House",
+      "tagline": "Ceremonial matcha & wagashi",
+      "description": "Uji-sourced ceremonial matcha whisked to order, hojicha lattes and a small counter of seasonal Japanese sweets.",
+      "logo": "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_japanese",
+        "cus_desserts"
+      ],
+      "dietary": [
+        "vegetarian",
+        "vegan"
+      ],
+      "priceLevel": 3,
+      "rating": 4.7,
+      "reviewCount": 392,
+      "location": {
+        "lat": 23.7925,
+        "lng": 90.4152,
+        "address": "Gulshan 2, Road 53",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 1.8,
+      "etaMinutes": [
+        20,
+        30
+      ],
+      "deliveryFee": 55,
+      "minOrder": 200,
+      "freeDeliveryOver": 700,
+      "hours": {
+        "mon": {
+          "open": "09:00",
+          "close": "21:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": false,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_cha_ghor",
+      "slug": "cha-ghor",
+      "type": "cafe",
+      "name": "Cha Ghor",
+      "tagline": "Street tea, done properly",
+      "description": "Malai cha, masala cha and lebu cha brewed in copper pots, with singara and toast biscuit alongside. Open from first light.",
+      "logo": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_bengali"
+      ],
+      "dietary": [
+        "halal",
+        "vegetarian"
+      ],
+      "priceLevel": 1,
+      "rating": 4.5,
+      "reviewCount": 2140,
+      "location": {
+        "lat": 23.7639,
+        "lng": 90.3589,
+        "address": "Mohammadpur, Town Hall",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 6,
+      "etaMinutes": [
+        15,
+        25
+      ],
+      "deliveryFee": 35,
+      "minOrder": 100,
+      "freeDeliveryOver": 300,
+      "hours": {
+        "mon": {
+          "open": "06:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "06:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "06:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "06:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "06:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "06:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "06:00",
+          "close": "23:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": true,
+      "promoLabel": "Buy 4 cha, get 1 free",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_wok_this_way",
+      "slug": "wok-this-way",
+      "type": "cloud-kitchen",
+      "name": "Wok This Way",
+      "tagline": "Delivery-only Asian street food",
+      "description": "A single wok station running eight dishes at speed — no dining room, no waiting. Built for the 20-minute promise.",
+      "logo": "https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_thai",
+        "cus_japanese"
+      ],
+      "dietary": [
+        "halal"
+      ],
+      "priceLevel": 2,
+      "rating": 4.5,
+      "reviewCount": 1276,
+      "location": {
+        "lat": 23.7806,
+        "lng": 90.4256,
+        "address": "Badda Link Road",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 3.4,
+      "etaMinutes": [
+        20,
+        30
+      ],
+      "deliveryFee": 40,
+      "minOrder": 200,
+      "freeDeliveryOver": 600,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": true,
+      "promoLabel": "Free spring rolls over ৳700",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_naan_stop",
+      "slug": "naan-stop",
+      "type": "cloud-kitchen",
+      "name": "Naan Stop",
+      "tagline": "Tandoor wraps, all night",
+      "description": "Clay-oven naan folded around seekh kebab, paneer tikka or butter chicken. A late kitchen for people who eat after midnight.",
+      "logo": "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_indian"
+      ],
+      "dietary": [
+        "halal"
+      ],
+      "priceLevel": 2,
+      "rating": 4.4,
+      "reviewCount": 938,
+      "location": {
+        "lat": 23.8069,
+        "lng": 90.3686,
+        "address": "Mirpur 10",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 7.1,
+      "etaMinutes": [
+        30,
+        45
+      ],
+      "deliveryFee": 50,
+      "minOrder": 250,
+      "freeDeliveryOver": null,
+      "hours": {
+        "mon": {
+          "open": "16:00",
+          "close": "03:00"
+        },
+        "tue": {
+          "open": "16:00",
+          "close": "03:00"
+        },
+        "wed": {
+          "open": "16:00",
+          "close": "03:00"
+        },
+        "thu": {
+          "open": "16:00",
+          "close": "03:00"
+        },
+        "fri": {
+          "open": "16:00",
+          "close": "04:00"
+        },
+        "sat": {
+          "open": "16:00",
+          "close": "04:00"
+        },
+        "sun": {
+          "open": "16:00",
+          "close": "03:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": false,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_pasta_pronto",
+      "slug": "pasta-pronto",
+      "type": "cloud-kitchen",
+      "name": "Pasta Pronto",
+      "tagline": "Fresh pasta in fifteen",
+      "description": "Extruded fresh every morning, sauced to order. Six shapes, five sauces, and a policy of never boiling ahead.",
+      "logo": "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_italian"
+      ],
+      "dietary": [
+        "vegetarian"
+      ],
+      "priceLevel": 2,
+      "rating": 4.6,
+      "reviewCount": 611,
+      "location": {
+        "lat": 23.7639,
+        "lng": 90.3947,
+        "address": "Tejgaon Industrial Area",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 3.9,
+      "etaMinutes": [
+        20,
+        30
+      ],
+      "deliveryFee": 45,
+      "minOrder": 220,
+      "freeDeliveryOver": 650,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": false,
+      "promoLabel": "15% off first order",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_bowl_and_broth",
+      "slug": "bowl-and-broth",
+      "type": "cloud-kitchen",
+      "name": "Bowl & Broth",
+      "tagline": "Ramen built for delivery",
+      "description": "Broth, noodles and toppings packed separately so nothing goes soft on the way. Twelve-hour tonkotsu and a vegan shoyu.",
+      "logo": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1591814468924-caf88d1232e1?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_japanese"
+      ],
+      "dietary": [
+        "vegan",
+        "healthy"
+      ],
+      "priceLevel": 3,
+      "rating": 4.7,
+      "reviewCount": 754,
+      "location": {
+        "lat": 23.8195,
+        "lng": 90.4256,
+        "address": "Bashundhara R/A, Block C",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 5.8,
+      "etaMinutes": [
+        25,
+        40
+      ],
+      "deliveryFee": 60,
+      "minOrder": 300,
+      "freeDeliveryOver": 900,
+      "hours": {
+        "mon": {
+          "open": null,
+          "close": null
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": true,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_nadias_table",
+      "slug": "nadias-table",
+      "type": "home-chef",
+      "name": "Nadia's Table",
+      "tagline": "Levantine mezze from a home kitchen",
+      "description": "Chef Nadia cooks the Damascus recipes she grew up on — muhammara, makdous, freekeh with chicken — to order, from her own kitchen.",
+      "logo": "https://i.pravatar.cc/200?img=32",
+      "cover": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_indian"
+      ],
+      "dietary": [
+        "halal",
+        "vegetarian",
+        "healthy"
+      ],
+      "priceLevel": 2,
+      "rating": 4.9,
+      "reviewCount": 287,
+      "location": {
+        "lat": 23.8103,
+        "lng": 90.4256,
+        "address": "Baridhara DOHS",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 4.6,
+      "etaMinutes": [
+        45,
+        60
+      ],
+      "deliveryFee": 70,
+      "minOrder": 350,
+      "freeDeliveryOver": null,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": null,
+          "close": null
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": true,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_mishtis_by_ruma",
+      "slug": "mishtis-by-ruma",
+      "type": "home-chef",
+      "name": "Mishtis by Ruma",
+      "tagline": "Bengali sweets, made to order",
+      "description": "Roshomalai, chomchom and nolen gur sondesh made in small batches the day you order them. No preservatives, no shelf life.",
+      "logo": "https://i.pravatar.cc/200?img=27",
+      "cover": "https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_bengali",
+        "cus_desserts"
+      ],
+      "dietary": [
+        "vegetarian"
+      ],
+      "priceLevel": 1,
+      "rating": 4.8,
+      "reviewCount": 519,
+      "location": {
+        "lat": 23.7383,
+        "lng": 90.4128,
+        "address": "Shantinagar",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 5.5,
+      "etaMinutes": [
+        60,
+        90
+      ],
+      "deliveryFee": 60,
+      "minOrder": 300,
+      "freeDeliveryOver": 1000,
+      "hours": {
+        "mon": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": null,
+          "close": null
+        }
+      },
+      "isOpen": true,
+      "isFeatured": false,
+      "isTrending": true,
+      "promoLabel": "Free delivery over ৳1000",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_chef_arifs_grill",
+      "slug": "chef-arifs-grill",
+      "type": "home-chef",
+      "name": "Chef Arif's Grill",
+      "tagline": "Charcoal kebabs, weekends only",
+      "description": "A weekend-only kitchen. Chef Arif fires the charcoal on Thursday evening and cooks until the marinade runs out.",
+      "logo": "https://i.pravatar.cc/200?img=12",
+      "cover": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_indian",
+        "cus_bengali"
+      ],
+      "dietary": [
+        "halal"
+      ],
+      "priceLevel": 2,
+      "rating": 4.7,
+      "reviewCount": 203,
+      "location": {
+        "lat": 23.7806,
+        "lng": 90.3986,
+        "address": "Mohakhali DOHS",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 2.9,
+      "etaMinutes": [
+        50,
+        70
+      ],
+      "deliveryFee": 65,
+      "minOrder": 400,
+      "freeDeliveryOver": null,
+      "hours": {
+        "mon": {
+          "open": null,
+          "close": null
+        },
+        "tue": {
+          "open": null,
+          "close": null
+        },
+        "wed": {
+          "open": null,
+          "close": null
+        },
+        "thu": {
+          "open": "17:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "12:00",
+          "close": "23:00"
+        },
+        "sat": {
+          "open": "12:00",
+          "close": "23:00"
+        },
+        "sun": {
+          "open": null,
+          "close": null
+        }
+      },
+      "isOpen": false,
+      "isFeatured": false,
+      "isTrending": false,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_tiffin_by_shirin",
+      "slug": "tiffin-by-shirin",
+      "type": "home-chef",
+      "name": "Tiffin by Shirin",
+      "tagline": "Office lunch, home-cooked",
+      "description": "A rotating weekly tiffin: rice, one fish or chicken, two vegetables and dal. Ordered the night before, delivered by one o'clock.",
+      "logo": "https://i.pravatar.cc/200?img=48",
+      "cover": "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_bengali"
+      ],
+      "dietary": [
+        "halal",
+        "healthy"
+      ],
+      "priceLevel": 1,
+      "rating": 4.6,
+      "reviewCount": 1104,
+      "location": {
+        "lat": 23.7489,
+        "lng": 90.3833,
+        "address": "Kalabagan",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 5,
+      "etaMinutes": [
+        40,
+        55
+      ],
+      "deliveryFee": 40,
+      "minOrder": 180,
+      "freeDeliveryOver": 500,
+      "hours": {
+        "mon": {
+          "open": "11:00",
+          "close": "15:00"
+        },
+        "tue": {
+          "open": "11:00",
+          "close": "15:00"
+        },
+        "wed": {
+          "open": "11:00",
+          "close": "15:00"
+        },
+        "thu": {
+          "open": "11:00",
+          "close": "15:00"
+        },
+        "fri": {
+          "open": null,
+          "close": null
+        },
+        "sat": {
+          "open": "11:00",
+          "close": "15:00"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "15:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": false,
+      "promoLabel": "Weekly plan: 10% off",
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "ven_lolas_bakes",
+      "slug": "lolas-bakes",
+      "type": "home-chef",
+      "name": "Lola's Bakes",
+      "tagline": "Celebration cakes from a home oven",
+      "description": "Custom cakes, cinnamon buns and a very good salted-caramel brownie. Order 48 hours ahead for anything with candles on it.",
+      "logo": "https://i.pravatar.cc/200?img=20",
+      "cover": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=1200&q=80",
+      "cuisineIds": [
+        "cus_desserts"
+      ],
+      "dietary": [
+        "vegetarian"
+      ],
+      "priceLevel": 2,
+      "rating": 4.9,
+      "reviewCount": 366,
+      "location": {
+        "lat": 23.7758,
+        "lng": 90.4139,
+        "address": "Niketan, Gulshan 1",
+        "city": "Dhaka",
+        "countryCode": "BD"
+      },
+      "distanceKm": 2.4,
+      "etaMinutes": [
+        60,
+        90
+      ],
+      "deliveryFee": 70,
+      "minOrder": 500,
+      "freeDeliveryOver": 1500,
+      "hours": {
+        "mon": {
+          "open": null,
+          "close": null
+        },
+        "tue": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "wed": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "thu": {
+          "open": "10:00",
+          "close": "23:00"
+        },
+        "fri": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sat": {
+          "open": "10:00",
+          "close": "23:59"
+        },
+        "sun": {
+          "open": "11:00",
+          "close": "22:00"
+        }
+      },
+      "isOpen": true,
+      "isFeatured": true,
+      "isTrending": true,
+      "promoLabel": null,
+      "currency": "BDT",
+      "ownerId": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    }
+  ],
+  "menuSections": [
+    {
+      "id": "sec_bella_starters",
+      "vendorId": "ven_bella_napoli",
+      "name": "Starters",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_bella_pizzas",
+      "vendorId": "ven_bella_napoli",
+      "name": "Wood-fired Pizzas",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_bella_pasta",
+      "vendorId": "ven_bella_napoli",
+      "name": "Pasta",
+      "sort": 3,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_burger_burgers",
+      "vendorId": "ven_burger_lab",
+      "name": "Smash Burgers",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_burger_sides",
+      "vendorId": "ven_burger_lab",
+      "name": "Sides",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_burger_shakes",
+      "vendorId": "ven_burger_lab",
+      "name": "Shakes",
+      "sort": 3,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_sakura_starters",
+      "vendorId": "ven_sakura_sushi",
+      "name": "Starters",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_sakura_rolls",
+      "vendorId": "ven_sakura_sushi",
+      "name": "Signature Rolls",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_sakura_nigiri",
+      "vendorId": "ven_sakura_sushi",
+      "name": "Nigiri",
+      "sort": 3,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_spice_biryani",
+      "vendorId": "ven_spice_route",
+      "name": "Biryani",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_spice_kebabs",
+      "vendorId": "ven_spice_route",
+      "name": "Kebabs",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_spice_curries",
+      "vendorId": "ven_spice_route",
+      "name": "Curries",
+      "sort": 3,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_taco_tacos",
+      "vendorId": "ven_el_taco",
+      "name": "Street Tacos",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_taco_burritos",
+      "vendorId": "ven_el_taco",
+      "name": "Burritos",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_taco_sides",
+      "vendorId": "ven_el_taco",
+      "name": "Sides",
+      "sort": 3,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_grind_coffee",
+      "vendorId": "ven_the_daily_grind",
+      "name": "Coffee",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_grind_brunch",
+      "vendorId": "ven_the_daily_grind",
+      "name": "All-day Brunch",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_grind_bakery",
+      "vendorId": "ven_the_daily_grind",
+      "name": "Bakery",
+      "sort": 3,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_rehana_meals",
+      "vendorId": "ven_rehanas_kitchen",
+      "name": "Home Meals",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_rehana_sides",
+      "vendorId": "ven_rehanas_kitchen",
+      "name": "Sides & Sweets",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_green_bowls",
+      "vendorId": "ven_green_bowl",
+      "name": "Grain Bowls",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_green_juices",
+      "vendorId": "ven_green_bowl",
+      "name": "Cold-pressed Juices",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_bangkok_starters",
+      "vendorId": "ven_bangkok_house",
+      "name": "Starters",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_bangkok_curries",
+      "vendorId": "ven_bangkok_house",
+      "name": "Curries",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_bangkok_noodles",
+      "vendorId": "ven_bangkok_house",
+      "name": "Noodles & Rice",
+      "sort": 3,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_sugar_cakes",
+      "vendorId": "ven_sugar_spoon",
+      "name": "Cakes",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_sugar_pastries",
+      "vendorId": "ven_sugar_spoon",
+      "name": "Pastries",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_sugar_drinks",
+      "vendorId": "ven_sugar_spoon",
+      "name": "Drinks",
+      "sort": 3,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_bloom_espresso",
+      "vendorId": "ven_bean_and_bloom",
+      "name": "Espresso Bar",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_bloom_toasts",
+      "vendorId": "ven_bean_and_bloom",
+      "name": "Toasts & Plates",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_reading_filter",
+      "vendorId": "ven_the_reading_room",
+      "name": "Filter & Pots",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_reading_toasties",
+      "vendorId": "ven_the_reading_room",
+      "name": "Toasties",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_matcha_drinks",
+      "vendorId": "ven_matcha_house",
+      "name": "Matcha Bar",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_matcha_sweets",
+      "vendorId": "ven_matcha_house",
+      "name": "Wagashi",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_cha_tea",
+      "vendorId": "ven_cha_ghor",
+      "name": "Cha",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_cha_snacks",
+      "vendorId": "ven_cha_ghor",
+      "name": "Snacks",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_wok_noodles",
+      "vendorId": "ven_wok_this_way",
+      "name": "Wok Noodles",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_wok_sides",
+      "vendorId": "ven_wok_this_way",
+      "name": "Small Plates",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_naan_wraps",
+      "vendorId": "ven_naan_stop",
+      "name": "Tandoor Wraps",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_naan_sides",
+      "vendorId": "ven_naan_stop",
+      "name": "Sides",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_pronto_pasta",
+      "vendorId": "ven_pasta_pronto",
+      "name": "Fresh Pasta",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_pronto_extras",
+      "vendorId": "ven_pasta_pronto",
+      "name": "Salads & Extras",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_broth_ramen",
+      "vendorId": "ven_bowl_and_broth",
+      "name": "Ramen",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_broth_sides",
+      "vendorId": "ven_bowl_and_broth",
+      "name": "Sides",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_nadia_mezze",
+      "vendorId": "ven_nadias_table",
+      "name": "Mezze",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_nadia_mains",
+      "vendorId": "ven_nadias_table",
+      "name": "Mains",
+      "sort": 2,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_ruma_sweets",
+      "vendorId": "ven_mishtis_by_ruma",
+      "name": "Sweets",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_arif_grill",
+      "vendorId": "ven_chef_arifs_grill",
+      "name": "From the Charcoal",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_shirin_tiffin",
+      "vendorId": "ven_tiffin_by_shirin",
+      "name": "Daily Tiffin",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "sec_lola_cakes",
+      "vendorId": "ven_lolas_bakes",
+      "name": "Cakes & Bakes",
+      "sort": 1,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    }
+  ],
+  "foods": [
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 280,
+      "rating": 4.6,
+      "reviewCount": 214,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "bruschetta-pomodoro",
+      "vendorId": "ven_bella_napoli",
+      "sectionId": "sec_bella_starters",
+      "name": "Bruschetta al Pomodoro",
+      "description": "Grilled sourdough, San Marzano tomato, basil and Sicilian olive oil.",
+      "image": "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_bruschetta-pomodoro",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 850,
+      "rating": 4.9,
+      "reviewCount": 986,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [
+        {
+          "id": "marg_size",
+          "name": "Size",
+          "required": true,
+          "min": 1,
+          "max": 1,
+          "options": [
+            {
+              "id": "marg_regular",
+              "name": "Regular",
+              "priceDelta": 0
+            },
+            {
+              "id": "marg_large",
+              "name": "Large",
+              "priceDelta": 120
+            }
+          ]
+        }
+      ],
+      "slug": "pizza-margherita",
+      "vendorId": "ven_bella_napoli",
+      "sectionId": "sec_bella_pizzas",
+      "name": "Margherita DOP",
+      "description": "Fior di latte, San Marzano, fresh basil — the Naples classic.",
+      "image": "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80",
+      "price": 720,
+      "id": "food_pizza-margherita",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [],
+      "spicyLevel": 2,
+      "calories": 990,
+      "rating": 4.8,
+      "reviewCount": 642,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [
+        {
+          "id": "diav_size",
+          "name": "Size",
+          "required": true,
+          "min": 1,
+          "max": 1,
+          "options": [
+            {
+              "id": "diav_regular",
+              "name": "Regular",
+              "priceDelta": 0
+            },
+            {
+              "id": "diav_large",
+              "name": "Large",
+              "priceDelta": 120
+            }
+          ]
+        }
+      ],
+      "slug": "pizza-diavola",
+      "vendorId": "ven_bella_napoli",
+      "sectionId": "sec_bella_pizzas",
+      "name": "Diavola",
+      "description": "Spicy nduja, pepperoni, chilli and mozzarella.",
+      "image": "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=600&q=80",
+      "price": 890,
+      "id": "food_pizza-diavola",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [],
+      "spicyLevel": 0,
+      "calories": 720,
+      "rating": 4.7,
+      "reviewCount": 431,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "spaghetti-carbonara",
+      "vendorId": "ven_bella_napoli",
+      "sectionId": "sec_bella_pasta",
+      "name": "Spaghetti Carbonara",
+      "description": "Guanciale, pecorino, egg yolk and cracked black pepper.",
+      "image": "https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=600&q=80",
+      "price": 780,
+      "id": "food_spaghetti-carbonara",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": 950,
+      "dietary": [],
+      "spicyLevel": 0,
+      "calories": 910,
+      "rating": 4.8,
+      "reviewCount": 377,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "lasagna-bolognese",
+      "vendorId": "ven_bella_napoli",
+      "sectionId": "sec_bella_pasta",
+      "name": "Lasagna Bolognese",
+      "description": "Slow-cooked beef ragù layered with béchamel and parmesan.",
+      "image": "https://images.unsplash.com/photo-1619895092538-128341789043?auto=format&fit=crop&w=600&q=80",
+      "price": 820,
+      "id": "food_lasagna-bolognese",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 0,
+      "calories": 680,
+      "rating": 4.8,
+      "reviewCount": 1520,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [
+        {
+          "id": "smash_addons",
+          "name": "Add-ons",
+          "required": false,
+          "min": 0,
+          "max": 3,
+          "options": [
+            {
+              "id": "smash_bacon",
+              "name": "Turkey bacon",
+              "priceDelta": 90
+            },
+            {
+              "id": "smash_cheese",
+              "name": "Extra cheese",
+              "priceDelta": 60
+            },
+            {
+              "id": "smash_patty",
+              "name": "Extra patty",
+              "priceDelta": 150
+            }
+          ]
+        }
+      ],
+      "slug": "classic-smash",
+      "vendorId": "ven_burger_lab",
+      "sectionId": "sec_burger_burgers",
+      "name": "Classic Smash",
+      "description": "Double smashed beef, American cheese, pickles, house sauce, brioche.",
+      "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+      "price": 450,
+      "id": "food_classic-smash",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 0,
+      "calories": 740,
+      "rating": 4.6,
+      "reviewCount": 612,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "bacon-blue",
+      "vendorId": "ven_burger_lab",
+      "sectionId": "sec_burger_burgers",
+      "name": "Smoky Blue",
+      "description": "Beef, blue cheese, caramelised onion and smoky mayo.",
+      "image": "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80",
+      "price": 520,
+      "id": "food_bacon-blue",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 420,
+      "rating": 4.7,
+      "reviewCount": 803,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "hand-cut-fries",
+      "vendorId": "ven_burger_lab",
+      "sectionId": "sec_burger_sides",
+      "name": "Hand-cut Fries",
+      "description": "Twice-cooked, sea salt, served with garlic aioli.",
+      "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80",
+      "price": 220,
+      "id": "food_hand-cut-fries",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 560,
+      "rating": 4.7,
+      "reviewCount": 448,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "salted-caramel-shake",
+      "vendorId": "ven_burger_lab",
+      "sectionId": "sec_burger_shakes",
+      "name": "Salted Caramel Shake",
+      "description": "Thick vanilla shake, salted caramel swirl, whipped cream.",
+      "image": "https://images.unsplash.com/photo-1541658016709-82535e94bc69?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_salted-caramel-shake",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan",
+        "gluten-free"
+      ],
+      "spicyLevel": 0,
+      "calories": 190,
+      "rating": 4.5,
+      "reviewCount": 121,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "edamame",
+      "vendorId": "ven_sakura_sushi",
+      "sectionId": "sec_sakura_starters",
+      "name": "Truffle Edamame",
+      "description": "Steamed soybeans, truffle salt and yuzu zest.",
+      "image": "https://images.unsplash.com/photo-1622944925721-6c8f6f5b0f0e?auto=format&fit=crop&w=600&q=80",
+      "price": 380,
+      "id": "food_edamame",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [],
+      "spicyLevel": 0,
+      "calories": 520,
+      "rating": 4.9,
+      "reviewCount": 534,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "dragon-roll",
+      "vendorId": "ven_sakura_sushi",
+      "sectionId": "sec_sakura_rolls",
+      "name": "Dragon Roll",
+      "description": "Tempura prawn, eel, avocado, unagi glaze — 8 pieces.",
+      "image": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80",
+      "price": 980,
+      "id": "food_dragon-roll",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [],
+      "spicyLevel": 2,
+      "calories": 460,
+      "rating": 4.7,
+      "reviewCount": 389,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "spicy-tuna-roll",
+      "vendorId": "ven_sakura_sushi",
+      "sectionId": "sec_sakura_rolls",
+      "name": "Spicy Tuna Roll",
+      "description": "Bluefin tuna, sriracha mayo, cucumber, tobiko — 8 pieces.",
+      "image": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80",
+      "price": 860,
+      "id": "food_spicy-tuna-roll",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "gluten-free"
+      ],
+      "spicyLevel": 0,
+      "calories": 140,
+      "rating": 4.8,
+      "reviewCount": 276,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "salmon-nigiri",
+      "vendorId": "ven_sakura_sushi",
+      "sectionId": "sec_sakura_nigiri",
+      "name": "Salmon Nigiri",
+      "description": "Hand-pressed nigiri, Norwegian salmon — 2 pieces.",
+      "image": "https://images.unsplash.com/photo-1611143669185-af224c5e3252?auto=format&fit=crop&w=600&q=80",
+      "price": 420,
+      "id": "food_salmon-nigiri",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 1020,
+      "rating": 4.9,
+      "reviewCount": 2870,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "mutton-kacchi",
+      "vendorId": "ven_spice_route",
+      "sectionId": "sec_spice_biryani",
+      "name": "Mutton Kacchi Biryani",
+      "description": "Dhaka-style dum kacchi, tender mutton, fragrant basmati, aloo.",
+      "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80",
+      "price": 480,
+      "id": "food_mutton-kacchi",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 1,
+      "calories": 880,
+      "rating": 4.7,
+      "reviewCount": 1440,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "chicken-biryani",
+      "vendorId": "ven_spice_route",
+      "sectionId": "sec_spice_biryani",
+      "name": "Chicken Biryani",
+      "description": "Saffron basmati, marinated chicken, fried onion and raita.",
+      "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80",
+      "price": 360,
+      "id": "food_chicken-biryani",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 410,
+      "rating": 4.6,
+      "reviewCount": 512,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "seekh-kebab",
+      "vendorId": "ven_spice_route",
+      "sectionId": "sec_spice_kebabs",
+      "name": "Beef Seekh Kebab",
+      "description": "Char-grilled minced beef skewers with mint chutney — 4 pieces.",
+      "image": "https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_seekh-kebab",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 1,
+      "calories": 620,
+      "rating": 4.7,
+      "reviewCount": 688,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "butter-chicken",
+      "vendorId": "ven_spice_route",
+      "sectionId": "sec_spice_curries",
+      "name": "Butter Chicken",
+      "description": "Tandoori chicken in a silky tomato-butter gravy.",
+      "image": "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=600&q=80",
+      "price": 420,
+      "id": "food_butter-chicken",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 520,
+      "rating": 4.7,
+      "reviewCount": 341,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "al-pastor-tacos",
+      "vendorId": "ven_el_taco",
+      "sectionId": "sec_taco_tacos",
+      "name": "Tacos al Pastor",
+      "description": "Marinated pork, pineapple, onion, coriander — 3 tacos.",
+      "image": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80",
+      "price": 380,
+      "id": "food_al-pastor-tacos",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 1,
+      "calories": 780,
+      "rating": 4.6,
+      "reviewCount": 254,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "carne-burrito",
+      "vendorId": "ven_el_taco",
+      "sectionId": "sec_taco_burritos",
+      "name": "Carne Asada Burrito",
+      "description": "Grilled steak, rice, black beans, guac, pico de gallo.",
+      "image": "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=600&q=80",
+      "price": 460,
+      "id": "food_carne-burrito",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian",
+        "spicy"
+      ],
+      "spicyLevel": 1,
+      "calories": 640,
+      "rating": 4.5,
+      "reviewCount": 187,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "loaded-nachos",
+      "vendorId": "ven_el_taco",
+      "sectionId": "sec_taco_sides",
+      "name": "Loaded Nachos",
+      "description": "Corn chips, queso, jalapeños, sour cream and guacamole.",
+      "image": "https://images.unsplash.com/photo-1582169296194-e4d644c48063?auto=format&fit=crop&w=600&q=80",
+      "price": 340,
+      "id": "food_loaded-nachos",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 120,
+      "rating": 4.8,
+      "reviewCount": 921,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [
+        {
+          "id": "fw_milk",
+          "name": "Milk",
+          "required": true,
+          "min": 1,
+          "max": 1,
+          "options": [
+            {
+              "id": "fw_dairy",
+              "name": "Dairy",
+              "priceDelta": 0
+            },
+            {
+              "id": "fw_oat",
+              "name": "Oat milk",
+              "priceDelta": 60
+            },
+            {
+              "id": "fw_almond",
+              "name": "Almond milk",
+              "priceDelta": 60
+            }
+          ]
+        }
+      ],
+      "slug": "flat-white",
+      "vendorId": "ven_the_daily_grind",
+      "sectionId": "sec_grind_coffee",
+      "name": "Flat White",
+      "description": "Double ristretto, silky micro-foam, single-origin beans.",
+      "image": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=600&q=80",
+      "price": 260,
+      "id": "food_flat-white",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 130,
+      "rating": 4.7,
+      "reviewCount": 654,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "cappuccino",
+      "vendorId": "ven_the_daily_grind",
+      "sectionId": "sec_grind_coffee",
+      "name": "Cappuccino",
+      "description": "Balanced espresso, steamed milk, velvet foam.",
+      "image": "https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=600&q=80",
+      "price": 240,
+      "id": "food_cappuccino",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 560,
+      "rating": 4.8,
+      "reviewCount": 512,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "buttermilk-pancakes",
+      "vendorId": "ven_the_daily_grind",
+      "sectionId": "sec_grind_brunch",
+      "name": "Buttermilk Pancakes",
+      "description": "Fluffy stack, maple syrup, berries and whipped butter.",
+      "image": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=600&q=80",
+      "price": 420,
+      "id": "food_buttermilk-pancakes",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 380,
+      "rating": 4.6,
+      "reviewCount": 289,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "almond-croissant",
+      "vendorId": "ven_the_daily_grind",
+      "sectionId": "sec_grind_bakery",
+      "name": "Almond Croissant",
+      "description": "Twice-baked, frangipane filling, toasted almonds.",
+      "image": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80",
+      "price": 220,
+      "id": "food_almond-croissant",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 640,
+      "rating": 4.9,
+      "reviewCount": 231,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "shorshe-ilish",
+      "vendorId": "ven_rehanas_kitchen",
+      "sectionId": "sec_rehana_meals",
+      "name": "Shorshe Ilish",
+      "description": "Hilsa in mustard gravy with steamed rice — a Bengali classic.",
+      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80",
+      "price": 380,
+      "id": "food_shorshe-ilish",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 1,
+      "calories": 720,
+      "rating": 4.8,
+      "reviewCount": 198,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "bhuna-khichuri",
+      "vendorId": "ven_rehanas_kitchen",
+      "sectionId": "sec_rehana_meals",
+      "name": "Bhuna Khichuri",
+      "description": "Rainy-day comfort — spiced rice and lentils with beef bhuna.",
+      "image": "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_bhuna-khichuri",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 300,
+      "rating": 4.7,
+      "reviewCount": 96,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "homemade-pitha",
+      "vendorId": "ven_rehanas_kitchen",
+      "sectionId": "sec_rehana_sides",
+      "name": "Homemade Pitha (3 pcs)",
+      "description": "Steamed rice-flour dumplings with date molasses.",
+      "image": "https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=600&q=80",
+      "price": 180,
+      "id": "food_homemade-pitha",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "healthy",
+        "gluten-free"
+      ],
+      "spicyLevel": 0,
+      "calories": 540,
+      "rating": 4.7,
+      "reviewCount": 312,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "power-protein-bowl",
+      "vendorId": "ven_green_bowl",
+      "sectionId": "sec_green_bowls",
+      "name": "Power Protein Bowl",
+      "description": "Grilled chicken, quinoa, avocado, chickpeas, tahini drizzle.",
+      "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
+      "price": 460,
+      "id": "food_power-protein-bowl",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan",
+        "vegetarian",
+        "healthy"
+      ],
+      "spicyLevel": 0,
+      "calories": 480,
+      "rating": 4.6,
+      "reviewCount": 204,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "vegan-buddha-bowl",
+      "vendorId": "ven_green_bowl",
+      "sectionId": "sec_green_bowls",
+      "name": "Vegan Buddha Bowl",
+      "description": "Roasted sweet potato, kale, edamame, brown rice, miso dressing.",
+      "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
+      "price": 420,
+      "id": "food_vegan-buddha-bowl",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan",
+        "gluten-free",
+        "healthy"
+      ],
+      "spicyLevel": 0,
+      "calories": 110,
+      "rating": 4.5,
+      "reviewCount": 141,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "green-detox-juice",
+      "vendorId": "ven_green_bowl",
+      "sectionId": "sec_green_juices",
+      "name": "Green Detox",
+      "description": "Cold-pressed cucumber, apple, celery, spinach and ginger.",
+      "image": "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?auto=format&fit=crop&w=600&q=80",
+      "price": 240,
+      "id": "food_green-detox-juice",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 320,
+      "rating": 4.5,
+      "reviewCount": 168,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "thai-spring-rolls",
+      "vendorId": "ven_bangkok_house",
+      "sectionId": "sec_bangkok_starters",
+      "name": "Crispy Spring Rolls",
+      "description": "Vegetable spring rolls with sweet chilli dip — 4 pieces.",
+      "image": "https://images.unsplash.com/photo-1548811256-1627d99055b7?auto=format&fit=crop&w=600&q=80",
+      "price": 280,
+      "id": "food_thai-spring-rolls",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "spicy",
+        "gluten-free"
+      ],
+      "spicyLevel": 2,
+      "calories": 610,
+      "rating": 4.7,
+      "reviewCount": 423,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "green-curry",
+      "vendorId": "ven_bangkok_house",
+      "sectionId": "sec_bangkok_curries",
+      "name": "Green Curry Chicken",
+      "description": "Coconut green curry, Thai basil, bamboo shoot, jasmine rice.",
+      "image": "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&w=600&q=80",
+      "price": 480,
+      "id": "food_green-curry",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [],
+      "spicyLevel": 1,
+      "calories": 680,
+      "rating": 4.8,
+      "reviewCount": 556,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "pad-thai",
+      "vendorId": "ven_bangkok_house",
+      "sectionId": "sec_bangkok_noodles",
+      "name": "Prawn Pad Thai",
+      "description": "Wok-tossed rice noodles, prawn, tamarind, peanut and lime.",
+      "image": "https://images.unsplash.com/photo-1637806930600-37fa8892069d?auto=format&fit=crop&w=600&q=80",
+      "price": 520,
+      "id": "food_pad-thai",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 480,
+      "rating": 4.8,
+      "reviewCount": 512,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "red-velvet-slice",
+      "vendorId": "ven_sugar_spoon",
+      "sectionId": "sec_sugar_cakes",
+      "name": "Red Velvet Slice",
+      "description": "Moist red velvet with tangy cream-cheese frosting.",
+      "image": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_red-velvet-slice",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": 280,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 420,
+      "rating": 4.9,
+      "reviewCount": 604,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "fudge-brownie",
+      "vendorId": "ven_sugar_spoon",
+      "sectionId": "sec_sugar_pastries",
+      "name": "Salted Fudge Brownie",
+      "description": "Dense dark-chocolate brownie with flaky sea salt.",
+      "image": "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80",
+      "price": 220,
+      "id": "food_fudge-brownie",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 340,
+      "rating": 4.7,
+      "reviewCount": 233,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "belgian-hot-chocolate",
+      "vendorId": "ven_sugar_spoon",
+      "sectionId": "sec_sugar_drinks",
+      "name": "Belgian Hot Chocolate",
+      "description": "Single-origin 70% cocoa, steamed milk, marshmallows.",
+      "image": "https://images.unsplash.com/photo-1517578239113-b03992dcdd25?auto=format&fit=crop&w=600&q=80",
+      "price": 260,
+      "id": "food_belgian-hot-chocolate",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 120,
+      "rating": 4.9,
+      "reviewCount": 478,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [
+        {
+          "id": "bb_milk",
+          "name": "Milk",
+          "required": true,
+          "min": 1,
+          "max": 1,
+          "options": [
+            {
+              "id": "bb_dairy",
+              "name": "Dairy",
+              "priceDelta": 0
+            },
+            {
+              "id": "bb_oat",
+              "name": "Oat milk",
+              "priceDelta": 60
+            }
+          ]
+        }
+      ],
+      "slug": "bloom-flat-white",
+      "vendorId": "ven_bean_and_bloom",
+      "sectionId": "sec_bloom_espresso",
+      "name": "Guatemala Flat White",
+      "description": "Washed Huehuetenango, chocolate and orange, on a lever machine.",
+      "image": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=600&q=80",
+      "price": 300,
+      "id": "food_bloom-flat-white",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan"
+      ],
+      "spicyLevel": 0,
+      "calories": 15,
+      "rating": 4.7,
+      "reviewCount": 219,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "bloom-cold-brew",
+      "vendorId": "ven_bean_and_bloom",
+      "sectionId": "sec_bloom_espresso",
+      "name": "18-Hour Cold Brew",
+      "description": "Ethiopian natural, steeped overnight, served over a single big cube.",
+      "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_bloom-cold-brew",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan",
+        "vegetarian",
+        "healthy"
+      ],
+      "spicyLevel": 0,
+      "calories": 420,
+      "rating": 4.8,
+      "reviewCount": 304,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "bloom-avocado-toast",
+      "vendorId": "ven_bean_and_bloom",
+      "sectionId": "sec_bloom_toasts",
+      "name": "Avocado & Dukkah Toast",
+      "description": "Smashed avocado on sourdough, dukkah, lemon and chilli oil.",
+      "image": "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=600&q=80",
+      "price": 480,
+      "id": "food_bloom-avocado-toast",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 460,
+      "rating": 4.6,
+      "reviewCount": 152,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "bloom-croffle",
+      "vendorId": "ven_bean_and_bloom",
+      "sectionId": "sec_bloom_toasts",
+      "name": "Maple Croffle",
+      "description": "Croissant dough pressed in a waffle iron, maple butter, sea salt.",
+      "image": "https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?auto=format&fit=crop&w=600&q=80",
+      "price": 340,
+      "id": "food_bloom-croffle",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan"
+      ],
+      "spicyLevel": 0,
+      "calories": 10,
+      "rating": 4.7,
+      "reviewCount": 266,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "reading-filter-pot",
+      "vendorId": "ven_the_reading_room",
+      "sectionId": "sec_reading_filter",
+      "name": "Filter Coffee (Pot for Two)",
+      "description": "A full pot of the daily single origin, refilled once, free.",
+      "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80",
+      "price": 380,
+      "id": "food_reading-filter-pot",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 140,
+      "rating": 4.6,
+      "reviewCount": 188,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "reading-chai",
+      "vendorId": "ven_the_reading_room",
+      "sectionId": "sec_reading_filter",
+      "name": "Masala Chai",
+      "description": "Loose-leaf Assam simmered with cardamom, clove and ginger.",
+      "image": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80",
+      "price": 200,
+      "id": "food_reading-chai",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 610,
+      "rating": 4.8,
+      "reviewCount": 341,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "reading-cheese-toastie",
+      "vendorId": "ven_the_reading_room",
+      "sectionId": "sec_reading_toasties",
+      "name": "Three-Cheese Toastie",
+      "description": "Cheddar, gruyère and mozzarella on buttered sourdough.",
+      "image": "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80",
+      "price": 420,
+      "id": "food_reading-cheese-toastie",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan",
+        "healthy"
+      ],
+      "spicyLevel": 0,
+      "calories": 5,
+      "rating": 4.8,
+      "reviewCount": 197,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "matcha-ceremonial",
+      "vendorId": "ven_matcha_house",
+      "sectionId": "sec_matcha_drinks",
+      "name": "Ceremonial Matcha (Usucha)",
+      "description": "Uji first-harvest, whisked in a chawan and served plain.",
+      "image": "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80",
+      "price": 420,
+      "id": "food_matcha-ceremonial",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 180,
+      "rating": 4.7,
+      "reviewCount": 312,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [
+        {
+          "id": "ml_milk",
+          "name": "Milk",
+          "required": true,
+          "min": 1,
+          "max": 1,
+          "options": [
+            {
+              "id": "ml_dairy",
+              "name": "Dairy",
+              "priceDelta": 0
+            },
+            {
+              "id": "ml_oat",
+              "name": "Oat milk",
+              "priceDelta": 60
+            },
+            {
+              "id": "ml_soy",
+              "name": "Soy milk",
+              "priceDelta": 50
+            }
+          ]
+        }
+      ],
+      "slug": "matcha-latte-iced",
+      "vendorId": "ven_matcha_house",
+      "sectionId": "sec_matcha_drinks",
+      "name": "Iced Matcha Latte",
+      "description": "Ceremonial-grade matcha over milk and ice, unsweetened by default.",
+      "image": "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80",
+      "price": 380,
+      "id": "food_matcha-latte-iced",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 240,
+      "rating": 4.6,
+      "reviewCount": 124,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "matcha-daifuku",
+      "vendorId": "ven_matcha_house",
+      "sectionId": "sec_matcha_sweets",
+      "name": "Matcha Daifuku (2 pcs)",
+      "description": "Soft mochi around matcha cream and sweet red bean.",
+      "image": "https://images.unsplash.com/photo-1607013251379-e6eecfffe234?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_matcha-daifuku",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 180,
+      "rating": 4.7,
+      "reviewCount": 1840,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "cha-malai",
+      "vendorId": "ven_cha_ghor",
+      "sectionId": "sec_cha_tea",
+      "name": "Malai Cha",
+      "description": "Strong brew finished with thick clotted cream. The house standard.",
+      "image": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80",
+      "price": 60,
+      "id": "food_cha-malai",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 130,
+      "rating": 4.6,
+      "reviewCount": 1212,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "cha-masala",
+      "vendorId": "ven_cha_ghor",
+      "sectionId": "sec_cha_tea",
+      "name": "Masala Cha",
+      "description": "Copper-pot tea with cardamom, cinnamon and crushed ginger.",
+      "image": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80",
+      "price": 50,
+      "id": "food_cha-masala",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian",
+        "spicy"
+      ],
+      "spicyLevel": 1,
+      "calories": 260,
+      "rating": 4.5,
+      "reviewCount": 962,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "cha-singara",
+      "vendorId": "ven_cha_ghor",
+      "sectionId": "sec_cha_snacks",
+      "name": "Singara (2 pcs)",
+      "description": "Flaky pastry with spiced potato and peanut, fried to order.",
+      "image": "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=600&q=80",
+      "price": 40,
+      "id": "food_cha-singara",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 1,
+      "calories": 620,
+      "rating": 4.5,
+      "reviewCount": 731,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "wok-chicken-chowmein",
+      "vendorId": "ven_wok_this_way",
+      "sectionId": "sec_wok_noodles",
+      "name": "Chicken Chow Mein",
+      "description": "High-heat wok noodles, chicken, cabbage and spring onion.",
+      "image": "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80",
+      "price": 380,
+      "id": "food_wok-chicken-chowmein",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "spicyLevel": 3,
+      "calories": 700,
+      "rating": 4.6,
+      "reviewCount": 428,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "wok-drunken-noodles",
+      "vendorId": "ven_wok_this_way",
+      "sectionId": "sec_wok_noodles",
+      "name": "Drunken Noodles",
+      "description": "Wide rice noodles, Thai basil, bird's-eye chilli and beef.",
+      "image": "https://images.unsplash.com/photo-1637806930600-37fa8892069d?auto=format&fit=crop&w=600&q=80",
+      "price": 440,
+      "id": "food_wok-drunken-noodles",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 0,
+      "calories": 340,
+      "rating": 4.5,
+      "reviewCount": 296,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "wok-gyoza",
+      "vendorId": "ven_wok_this_way",
+      "sectionId": "sec_wok_sides",
+      "name": "Pan-fried Gyoza (5 pcs)",
+      "description": "Chicken and chive dumplings, crisp bottoms, ponzu dip.",
+      "image": "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=600&q=80",
+      "price": 300,
+      "id": "food_wok-gyoza",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 680,
+      "rating": 4.6,
+      "reviewCount": 604,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "naan-seekh-wrap",
+      "vendorId": "ven_naan_stop",
+      "sectionId": "sec_naan_wraps",
+      "name": "Seekh Kebab Naan Wrap",
+      "description": "Clay-oven naan, beef seekh, onion salad and mint chutney.",
+      "image": "https://images.unsplash.com/photo-1600891964092-4316c288032e?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_naan-seekh-wrap",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 610,
+      "rating": 4.5,
+      "reviewCount": 281,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "naan-paneer-wrap",
+      "vendorId": "ven_naan_stop",
+      "sectionId": "sec_naan_wraps",
+      "name": "Paneer Tikka Naan Wrap",
+      "description": "Charred paneer, capsicum, onion and a smoky tomato chutney.",
+      "image": "https://images.unsplash.com/photo-1600891964092-4316c288032e?auto=format&fit=crop&w=600&q=80",
+      "price": 300,
+      "id": "food_naan-paneer-wrap",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 180,
+      "rating": 4.4,
+      "reviewCount": 143,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "naan-boondi-raita",
+      "vendorId": "ven_naan_stop",
+      "sectionId": "sec_naan_sides",
+      "name": "Boondi Raita",
+      "description": "Chilled whisked yoghurt with crisp gram-flour pearls and cumin.",
+      "image": "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=600&q=80",
+      "price": 120,
+      "id": "food_naan-boondi-raita",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 640,
+      "rating": 4.7,
+      "reviewCount": 318,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "pronto-cacio-e-pepe",
+      "vendorId": "ven_pasta_pronto",
+      "sectionId": "sec_pronto_pasta",
+      "name": "Cacio e Pepe",
+      "description": "Fresh tonnarelli, pecorino romano and a lot of black pepper.",
+      "image": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=600&q=80",
+      "price": 520,
+      "id": "food_pronto-cacio-e-pepe",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan",
+        "vegetarian",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 580,
+      "rating": 4.6,
+      "reviewCount": 254,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "pronto-arrabbiata",
+      "vendorId": "ven_pasta_pronto",
+      "sectionId": "sec_pronto_pasta",
+      "name": "Penne all'Arrabbiata",
+      "description": "Fresh penne, garlic, chilli and slow-reduced tomato.",
+      "image": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=600&q=80",
+      "price": 460,
+      "id": "food_pronto-arrabbiata",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [],
+      "spicyLevel": 0,
+      "calories": 320,
+      "rating": 4.5,
+      "reviewCount": 167,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "pronto-caesar",
+      "vendorId": "ven_pasta_pronto",
+      "sectionId": "sec_pronto_extras",
+      "name": "Little Gem Caesar",
+      "description": "Crisp gem lettuce, anchovy dressing, focaccia croutons.",
+      "image": "https://images.unsplash.com/photo-1550317138-10000687a72b?auto=format&fit=crop&w=600&q=80",
+      "price": 340,
+      "id": "food_pronto-caesar",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [],
+      "spicyLevel": 0,
+      "calories": 780,
+      "rating": 4.8,
+      "reviewCount": 512,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "broth-tonkotsu",
+      "vendorId": "ven_bowl_and_broth",
+      "sectionId": "sec_broth_ramen",
+      "name": "12-Hour Tonkotsu Ramen",
+      "description": "Pork bone broth, chashu, ajitama and thin Hakata noodles.",
+      "image": "https://images.unsplash.com/photo-1591814468924-caf88d1232e1?auto=format&fit=crop&w=600&q=80",
+      "price": 620,
+      "id": "food_broth-tonkotsu",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan",
+        "vegetarian",
+        "healthy"
+      ],
+      "spicyLevel": 0,
+      "calories": 560,
+      "rating": 4.7,
+      "reviewCount": 288,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "broth-vegan-shoyu",
+      "vendorId": "ven_bowl_and_broth",
+      "sectionId": "sec_broth_ramen",
+      "name": "Vegan Shoyu Ramen",
+      "description": "Shiitake-kombu broth, charred corn, greens and chilli oil.",
+      "image": "https://images.unsplash.com/photo-1591814468924-caf88d1232e1?auto=format&fit=crop&w=600&q=80",
+      "price": 540,
+      "id": "food_broth-vegan-shoyu",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal"
+      ],
+      "spicyLevel": 0,
+      "calories": 480,
+      "rating": 4.6,
+      "reviewCount": 201,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "broth-karaage",
+      "vendorId": "ven_bowl_and_broth",
+      "sectionId": "sec_broth_sides",
+      "name": "Chicken Karaage",
+      "description": "Twice-fried marinated chicken with yuzu mayo.",
+      "image": "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=600&q=80",
+      "price": 340,
+      "id": "food_broth-karaage",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian",
+        "healthy"
+      ],
+      "spicyLevel": 0,
+      "calories": 720,
+      "rating": 4.9,
+      "reviewCount": 164,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "nadia-mezze-platter",
+      "vendorId": "ven_nadias_table",
+      "sectionId": "sec_nadia_mezze",
+      "name": "Mezze Platter for Two",
+      "description": "Hummus, muhammara, labneh, makdous, olives and warm bread.",
+      "image": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80",
+      "price": 780,
+      "id": "food_nadia-mezze-platter",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegan",
+        "vegetarian"
+      ],
+      "spicyLevel": 1,
+      "calories": 280,
+      "rating": 4.8,
+      "reviewCount": 97,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "nadia-muhammara",
+      "vendorId": "ven_nadias_table",
+      "sectionId": "sec_nadia_mezze",
+      "name": "Muhammara",
+      "description": "Roast red pepper and walnut dip with pomegranate molasses.",
+      "image": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80",
+      "price": 320,
+      "id": "food_nadia-muhammara",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "healthy"
+      ],
+      "spicyLevel": 0,
+      "calories": 690,
+      "rating": 4.9,
+      "reviewCount": 132,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "nadia-freekeh-chicken",
+      "vendorId": "ven_nadias_table",
+      "sectionId": "sec_nadia_mains",
+      "name": "Freekeh with Chicken",
+      "description": "Smoked green wheat, slow-cooked chicken, toasted almonds.",
+      "image": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80",
+      "price": 620,
+      "id": "food_nadia-freekeh-chicken",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 680,
+      "rating": 4.9,
+      "reviewCount": 302,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "ruma-roshomalai",
+      "vendorId": "ven_mishtis_by_ruma",
+      "sectionId": "sec_ruma_sweets",
+      "name": "Roshomalai (6 pcs)",
+      "description": "Soft chhena discs in thickened, cardamom-scented milk.",
+      "image": "https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&w=600&q=80",
+      "price": 420,
+      "id": "food_ruma-roshomalai",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 520,
+      "rating": 4.8,
+      "reviewCount": 178,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "ruma-nolen-sondesh",
+      "vendorId": "ven_mishtis_by_ruma",
+      "sectionId": "sec_ruma_sweets",
+      "name": "Nolen Gur Sondesh (8 pcs)",
+      "description": "Date-palm jaggery sondesh, made only while the gur is in season.",
+      "image": "https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=600&q=80",
+      "price": 380,
+      "id": "food_ruma-nolen-sondesh",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 600,
+      "rating": 4.7,
+      "reviewCount": 121,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "ruma-chomchom",
+      "vendorId": "ven_mishtis_by_ruma",
+      "sectionId": "sec_ruma_sweets",
+      "name": "Porabari Chomchom (6 pcs)",
+      "description": "Dense syrup-soaked chomchom rolled in khoya crumb.",
+      "image": "https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&w=600&q=80",
+      "price": 360,
+      "id": "food_ruma-chomchom",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 1120,
+      "rating": 4.8,
+      "reviewCount": 118,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "arif-mixed-grill",
+      "vendorId": "ven_chef_arifs_grill",
+      "sectionId": "sec_arif_grill",
+      "name": "Mixed Charcoal Grill",
+      "description": "Beef boti, chicken tikka, seekh kebab and grilled onion, for two.",
+      "image": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80",
+      "price": 980,
+      "id": "food_arif-mixed-grill",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "spicy"
+      ],
+      "spicyLevel": 2,
+      "calories": 540,
+      "rating": 4.7,
+      "reviewCount": 86,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "arif-beef-boti",
+      "vendorId": "ven_chef_arifs_grill",
+      "sectionId": "sec_arif_grill",
+      "name": "Beef Boti Kebab",
+      "description": "Overnight-marinated beef cubes, charred hard on the outside.",
+      "image": "https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=600&q=80",
+      "price": 520,
+      "id": "food_arif-beef-boti",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "healthy"
+      ],
+      "spicyLevel": 1,
+      "calories": 720,
+      "rating": 4.7,
+      "reviewCount": 604,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "shirin-fish-tiffin",
+      "vendorId": "ven_tiffin_by_shirin",
+      "sectionId": "sec_shirin_tiffin",
+      "name": "Fish Tiffin",
+      "description": "Rice, rui macher jhol, two vegetables and dal. Ordered the night before.",
+      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80",
+      "price": 220,
+      "id": "food_shirin-fish-tiffin",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "halal",
+        "healthy"
+      ],
+      "spicyLevel": 1,
+      "calories": 760,
+      "rating": 4.6,
+      "reviewCount": 481,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "shirin-chicken-tiffin",
+      "vendorId": "ven_tiffin_by_shirin",
+      "sectionId": "sec_shirin_tiffin",
+      "name": "Chicken Tiffin",
+      "description": "Rice, chicken jhal-fry, seasonal bhaji, dal and salad.",
+      "image": "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=600&q=80",
+      "price": 240,
+      "id": "food_shirin-chicken-tiffin",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian",
+        "healthy"
+      ],
+      "spicyLevel": 0,
+      "calories": 620,
+      "rating": 4.5,
+      "reviewCount": 297,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "shirin-veg-tiffin",
+      "vendorId": "ven_tiffin_by_shirin",
+      "sectionId": "sec_shirin_tiffin",
+      "name": "Vegetable Tiffin",
+      "description": "Rice, shukto, aloo posto, dal and a slice of lemon.",
+      "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
+      "price": 180,
+      "id": "food_shirin-veg-tiffin",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 460,
+      "rating": 4.9,
+      "reviewCount": 241,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "lola-caramel-brownie",
+      "vendorId": "ven_lolas_bakes",
+      "sectionId": "sec_lola_cakes",
+      "name": "Salted Caramel Brownie",
+      "description": "Fudge brownie with a caramel seam and flaky salt on top.",
+      "image": "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80",
+      "price": 260,
+      "id": "food_lola-caramel-brownie",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 890,
+      "rating": 4.8,
+      "reviewCount": 187,
+      "isPopular": true,
+      "isAvailable": true,
+      "optionGroups": [],
+      "slug": "lola-cinnamon-buns",
+      "vendorId": "ven_lolas_bakes",
+      "sectionId": "sec_lola_cakes",
+      "name": "Cinnamon Buns (4 pcs)",
+      "description": "Overnight-proved buns with cardamom sugar and cream-cheese glaze.",
+      "image": "https://images.unsplash.com/photo-1481391319762-47dff72954d9?auto=format&fit=crop&w=600&q=80",
+      "price": 520,
+      "id": "food_lola-cinnamon-buns",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "compareAtPrice": null,
+      "dietary": [
+        "vegetarian"
+      ],
+      "spicyLevel": 0,
+      "calories": 2400,
+      "rating": 4.9,
+      "reviewCount": 96,
+      "isPopular": false,
+      "isAvailable": true,
+      "optionGroups": [
+        {
+          "id": "cake_flavour",
+          "name": "Flavour",
+          "required": true,
+          "min": 1,
+          "max": 1,
+          "options": [
+            {
+              "id": "cake_vanilla",
+              "name": "Vanilla & berry",
+              "priceDelta": 0
+            },
+            {
+              "id": "cake_choc",
+              "name": "Chocolate fudge",
+              "priceDelta": 0
+            },
+            {
+              "id": "cake_redvelvet",
+              "name": "Red velvet",
+              "priceDelta": 200
+            }
+          ]
+        }
+      ],
+      "slug": "lola-celebration-cake",
+      "vendorId": "ven_lolas_bakes",
+      "sectionId": "sec_lola_cakes",
+      "name": "Celebration Cake (6-inch)",
+      "description": "Three-layer vanilla or chocolate cake. Order 48 hours ahead.",
+      "image": "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&w=600&q=80",
+      "price": 1800,
+      "id": "food_lola-celebration-cake",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    }
+  ],
+  "users": [
+    {
+      "id": "usr_customer",
+      "name": "Ayesha Rahman",
+      "email": "customer@foodora.dev",
+      "phone": "+8801711000001",
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=160&q=80",
+      "role": "customer",
+      "permissions": [],
+      "countryCode": "BD",
+      "currency": "BDT",
+      "locale": "en",
+      "isVerified": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "usr_owner",
+      "name": "Tanvir Hossain",
+      "email": "owner@foodora.dev",
+      "phone": "+8801711000002",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&q=80",
+      "role": "restaurant-owner",
+      "permissions": [
+        "vendor:manage",
+        "menu:edit",
+        "orders:view"
+      ],
+      "countryCode": "BD",
+      "currency": "BDT",
+      "locale": "en",
+      "isVerified": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "usr_rider",
+      "name": "Rakib Islam",
+      "email": "rider@foodora.dev",
+      "phone": "+8801711000003",
+      "avatar": "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?auto=format&fit=crop&w=160&q=80",
+      "role": "delivery-rider",
+      "permissions": [
+        "deliveries:accept",
+        "earnings:view"
+      ],
+      "countryCode": "BD",
+      "currency": "BDT",
+      "locale": "en",
+      "isVerified": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    },
+    {
+      "id": "usr_admin",
+      "name": "Nusrat Jahan",
+      "email": "admin@foodora.dev",
+      "phone": "+8801711000004",
+      "avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=160&q=80",
+      "role": "super-admin",
+      "permissions": [
+        "*"
+      ],
+      "countryCode": "BD",
+      "currency": "BDT",
+      "locale": "en",
+      "isVerified": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "deletedAt": null
+    }
+  ]
+}

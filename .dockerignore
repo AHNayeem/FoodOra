@@ -1,0 +1,28 @@
+# The build context is the REPOSITORY ROOT, not backend/ — the API image needs
+# `database/prisma/schema` to generate its client, and Docker cannot reach above
+# its context. See backend/Dockerfile.
+
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+
+# Never bake secrets or local state into a layer.
+**/.env
+**/.env.local
+**/.env.*.local
+**/*.pem
+
+.git
+.github
+**/.DS_Store
+**/*.log
+**/.vscode
+**/.idea
+
+# Not needed by the API image.
+frontend
+docs
+**/*.md
+!backend/README.md

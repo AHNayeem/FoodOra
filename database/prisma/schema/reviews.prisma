@@ -1,0 +1,287 @@
+// =============================================================================
+// REVIEWS — ratings on vendors and riders.
+//
+// Serves `types/review.ts`. Three C22 decisions are preserved structurally:
+//
+//  - The AGGREGATE is not stored. `ReviewSummary` (average, histogram, aspect
+//    averages, top tags, recommend share) is computed on read. What IS stored
+//    is `RatingAggregate` — the same denormalised counters the catalogue
+//    already exposes as `Vendor.rating` / `reviewCount`, maintained
+//    transactionally so a vendor card needs no aggregate query.
+//  - The REPLY is an attribute of the review, not a second review: a separate
+//    table with a UNIQUE index on `reviewId`.
+//  - HELPFULNESS is a count plus a vote table keyed on (reviewId, userId).
+// =============================================================================
+
+enum ReviewSubjectKind {
+  VENDOR @map("vendor")
+  RIDER  @map("rider")
+
+  @@map("review_subject_kind")
+}
+
+enum ReviewAspectKind {
+  FOOD      @map("food")
+  DELIVERY  @map("delivery")
+  PACKAGING @map("packaging")
+  VALUE     @map("value")
+
+  @@map("review_aspect_kind")
+}
+
+enum ReviewTagKind {
+  TASTY          @map("tasty")
+  GENEROUS       @map("generous")
+  HOT_ON_ARRIVAL @map("hot-on-arrival")
+  FAST_DELIVERY  @map("fast-delivery")
+  WELL_PACKAGED  @map("well-packaged")
+  GOOD_VALUE     @map("good-value")
+  FRIENDLY_RIDER @map("friendly-rider")
+  WILL_REORDER   @map("will-reorder")
+  LATE           @map("late")
+  ARRIVED_COLD   @map("arrived-cold")
+  SMALL_PORTION  @map("small-portion")
+  WRONG_ITEM     @map("wrong-item")
+  PRICEY         @map("pricey")
+  POOR_PACKAGING @map("poor-packaging")
+
+  @@map("review_tag_kind")
+}
+
+enum ReviewMediaKind {
+  PHOTO @map("photo")
+  VIDEO @map("video")
+
+  @@map("review_media_kind")
+}
+
+enum ReviewModerationStatus {
+  PUBLISHED @map("published")
+  PENDING   @map("pending")
+  HIDDEN    @map("hidden")
+  REJECTED  @map("rejected")
+
+  @@map("review_moderation_status")
+}
+
+model Review {
+  id          String            @id @db.VarChar(40)
+  subject     ReviewSubjectKind
+  /// Vendor id or rider id, per `subject`.
+  subjectId   String            @db.VarChar(40)
+  /// The vendor this review belongs to commercially — the same as `subjectId`
+  /// for a vendor review, the restaurant the trip served for a rider one.
+  /// Denormalised so the merchant board is one filter, not a join via orders.
+  vendorId    String            @db.VarChar(40)
+  riderId     String?           @db.VarChar(40)
+  /// The order being reviewed. Null only for imported rows. UNIQUE per
+  /// (order, subject) — this is what stops one order being reviewed twice.
+  orderId     String?           @db.VarChar(40)
+  orderNumber String?           @db.VarChar(24)
+
+  authorId     String  @db.VarChar(40)
+  /// Snapshotted so the card reads without a join and survives a rename.
+  authorName   String  @db.VarChar(120)
+  authorAvatar String? @db.VarChar(500)
+
+  /// Overall, 1–5. The only required score.
+  rating  Int    @db.SmallInt
+  /// The customer's own words. Never translated.
+  comment String @default("") @db.Text
+
+  helpfulCount Int                    @default(0)
+  reportCount  Int                    @default(0)
+  /// Backed by an order this account actually placed.
+  verified     Boolean                @default(false)
+  status       ReviewModerationStatus @default(PUBLISHED)
+  /// Locale the comment was written in, for the "translate" affordance.
+  languageCode String?                @db.VarChar(8)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor Vendor @relation("ReviewVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  rider  Rider? @relation("ReviewRider", fields: [riderId], references: [id], onDelete: SetNull)
+  order  Order? @relation("ReviewOrder", fields: [orderId], references: [id], onDelete: SetNull)
+  author User   @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  aspects ReviewAspectScore[] @relation("ReviewAspects")
+  tags    ReviewTagLink[]     @relation("ReviewTags")
+  dishes  ReviewDish[]        @relation("ReviewDishes")
+  media   ReviewMedia[]       @relation("ReviewMediaItems")
+  reply   ReviewReply?        @relation("ReviewReplyRef")
+  votes   ReviewVote[]        @relation("ReviewVotes")
+  reports ReviewReport[]      @relation("ReviewReports")
+
+  @@unique([orderId, subject])
+  @@index([subject, subjectId, status, createdAt(sort: Desc)])
+  @@index([vendorId, status, createdAt(sort: Desc)])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([vendorId, rating])
+  @@index([helpfulCount(sort: Desc)])
+  @@map("reviews")
+}
+
+/// `ReviewAspects` — a partial map, so a pickup order simply has no `delivery`
+/// row rather than a zero that would drag the average down.
+model ReviewAspectScore {
+  reviewId String           @db.VarChar(40)
+  aspect   ReviewAspectKind
+  score    Int              @db.SmallInt
+
+  review Review @relation("ReviewAspects", fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, aspect])
+  @@index([aspect, score])
+  @@map("review_aspect_scores")
+}
+
+model ReviewTagLink {
+  reviewId String        @db.VarChar(40)
+  tag      ReviewTagKind
+
+  review Review @relation("ReviewTags", fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, tag])
+  @@index([tag])
+  @@map("review_tags")
+}
+
+/// Dishes the review is about — drives the "most loved" strip (`LovedDish`).
+model ReviewDish {
+  reviewId String @db.VarChar(40)
+  foodId   String @db.VarChar(40)
+
+  review Review   @relation("ReviewDishes", fields: [reviewId], references: [id], onDelete: Cascade)
+  food   FoodItem @relation("ReviewDishFood", fields: [foodId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, foodId])
+  @@index([foodId])
+  @@map("review_dishes")
+}
+
+model ReviewMedia {
+  id        String          @id @db.VarChar(40)
+  reviewId  String          @db.VarChar(40)
+  kind      ReviewMediaKind @default(PHOTO)
+  url       String          @db.VarChar(600)
+  /// Poster / grid thumbnail. Equal to `url` for a photo.
+  thumbnail String          @db.VarChar(600)
+  fileId    String?         @db.VarChar(40)
+  sort      Int             @default(0) @db.SmallInt
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  review Review     @relation("ReviewMediaItems", fields: [reviewId], references: [id], onDelete: Cascade)
+  file   FileAsset? @relation("ReviewMediaFile", fields: [fileId], references: [id], onDelete: SetNull)
+
+  @@index([reviewId, sort])
+  @@map("review_media")
+}
+
+/// The merchant's public answer. One per review — hence `reviewId` as the PK.
+model ReviewReply {
+  reviewId   String   @id @db.VarChar(40)
+  body       String   @db.Text
+  /// Who signed it — the restaurant's name, not the staff member's.
+  authorName String   @db.VarChar(160)
+  /// The account that actually wrote it, for the audit trail.
+  authorId   String?  @db.VarChar(40)
+  repliedAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  review Review @relation("ReviewReplyRef", fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_replies")
+}
+
+/// Who found a review useful. `Review.helpfulCount` is the counter; this is the
+/// "one vote per person" guard the device store approximated in Phase C.
+model ReviewVote {
+  reviewId String   @db.VarChar(40)
+  userId   String   @db.VarChar(40)
+  votedAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  review Review @relation("ReviewVotes", fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation("ReviewVoteUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, userId])
+  @@index([userId])
+  @@map("review_votes")
+}
+
+enum ReportReasonKind {
+  SPAM       @map("spam")
+  OFFENSIVE  @map("offensive")
+  IRRELEVANT @map("irrelevant")
+  FAKE       @map("fake")
+  PRIVACY    @map("privacy")
+  OTHER      @map("other")
+
+  @@map("report_reason_kind")
+}
+
+model ReviewReport {
+  id         String           @id @db.VarChar(40)
+  reviewId   String           @db.VarChar(40)
+  reporterId String           @db.VarChar(40)
+  reason     ReportReasonKind
+  comment    String?          @db.VarChar(500)
+  resolvedAt DateTime?        @db.Timestamptz(3)
+  resolvedBy String?          @db.VarChar(40)
+  outcome    String?          @db.VarChar(60)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  review   Review @relation("ReviewReports", fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter User   @relation("ReviewReportUser", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, reporterId])
+  @@index([resolvedAt])
+  @@map("review_reports")
+}
+
+enum AggregateSubject {
+  VENDOR @map("vendor")
+  RIDER  @map("rider")
+  FOOD   @map("food")
+
+  @@map("aggregate_subject")
+}
+
+/// The denormalised rating counters, one row per subject per month plus one
+/// lifetime row (`month = NULL`). The lifetime row backs `Vendor.rating` /
+/// `reviewCount`; the monthly rows back the dashboard's `RatingPoint` trend
+/// without scanning the corpus. Updated in the same transaction as the review.
+model RatingAggregate {
+  id        String           @id @db.VarChar(40)
+  subject   AggregateSubject
+  subjectId String           @db.VarChar(40)
+  /// "YYYY-MM", or null for the lifetime row.
+  month     String?          @db.Char(7)
+  count     Int              @default(0)
+  /// Sum of stars — average = sum / count, kept exact.
+  starSum   Int              @default(0)
+  star1     Int              @default(0)
+  star2     Int              @default(0)
+  star3     Int              @default(0)
+  star4     Int              @default(0)
+  star5     Int              @default(0)
+  withMedia Int              @default(0)
+  verified  Int              @default(0)
+  vendorId  String?          @db.VarChar(40)
+
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  vendor Vendor? @relation("AggregateVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([subject, subjectId, month])
+  @@index([vendorId])
+  @@map("rating_aggregates")
+}

@@ -1,0 +1,304 @@
+// =============================================================================
+// NOTIFICATIONS — the record, the outbox and broadcasts.
+//
+// Serves `types/notification.ts`. The three C25 rules are structural:
+//
+//  1. A NOTIFICATION IS A KEY PLUS DATA, never a sentence. `key` + `params` are
+//     translated at read time, so an inbox restored next week reads in whatever
+//     language the device is in now. The one exception is `text` — an
+//     operator's broadcast, prose a human wrote, which no catalogue can
+//     translate and which we therefore do not pretend to.
+//  2. A CATEGORY, not a table of statuses. The subject is a typed reference
+//     (`subjectKind` + `subjectId` + `subjectLabel`), not an `orderId` column.
+//  3. CHANNELS ARE DECIDED ONCE, AT EMIT. `NotificationChannelRecord` stores
+//     where it actually went, so "why didn't I get an email" is answered from
+//     the row rather than re-derived from preferences that may have changed.
+// =============================================================================
+
+enum NotifyAudienceKind {
+  CUSTOMER   @map("customer")
+  RESTAURANT @map("restaurant")
+  RIDER      @map("rider")
+  ADMIN      @map("admin")
+
+  @@map("notify_audience_kind")
+}
+
+enum NotifyToneKind {
+  INFO    @map("info")
+  SUCCESS @map("success")
+  WARNING @map("warning")
+  DANGER  @map("danger")
+
+  @@map("notify_tone_kind")
+}
+
+enum NotifyCategoryKind {
+  ORDER        @map("order")
+  DELIVERY     @map("delivery")
+  PAYMENT      @map("payment")
+  REVIEW       @map("review")
+  RESERVATION  @map("reservation")
+  SUBSCRIPTION @map("subscription")
+  CATERING     @map("catering")
+  PROMO        @map("promo")
+  SYSTEM       @map("system")
+
+  @@map("notify_category_kind")
+}
+
+enum NotifyChannelKind {
+  IN_APP @map("inApp")
+  PUSH   @map("push")
+  EMAIL  @map("email")
+  SMS    @map("sms")
+
+  @@map("notify_channel_kind")
+}
+
+enum NotifySubjectKind {
+  ORDER        @map("order")
+  REVIEW       @map("review")
+  RESERVATION  @map("reservation")
+  SUBSCRIPTION @map("subscription")
+  QUOTE        @map("quote")
+  COUPON       @map("coupon")
+  WALLET       @map("wallet")
+  BROADCAST    @map("broadcast")
+
+  @@map("notify_subject_kind")
+}
+
+/// A reusable message definition. `key` is the i18n key the notification
+/// carries; the template rows record which channels a key may use and the
+/// provider-side template ids, so adding a language is a catalogue change.
+model NotificationTemplate {
+  id           String                @id @db.VarChar(40)
+  /// i18n key under `notifications.<audience>.<key>`.
+  key          String                @db.VarChar(80)
+  audience     NotifyAudienceKind
+  category     NotifyCategoryKind
+  tone         NotifyToneKind        @default(INFO)
+  /// Channels this key is allowed to use, before preferences are applied.
+  channels     NotifyChannelKind[]   @default([])
+  /// Required regardless of preference (an order was cancelled, a payment
+  /// failed). Mirrors `REQUIRED_NOTIFICATIONS` in `services/settings.ts`.
+  isRequired   Boolean               @default(false)
+  /// Preference topic that governs it, when it is suppressible.
+  topic        NotificationTopicKey?
+  /// Provider template ids: { "email": "d-1234", "sms": "OTP_V2" }.
+  providerRefs Json                  @default("{}")
+  /// Deep-link pattern, e.g. "/orders/{orderId}".
+  hrefPattern  String?               @db.VarChar(200)
+  isActive     Boolean               @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  notifications Notification[] @relation("NotificationTemplateRef")
+
+  @@unique([key, audience])
+  @@index([category])
+  @@map("notification_templates")
+}
+
+/// One record in one inbox. High-volume and append-mostly (only `readAt`
+/// changes), so no `version` and no soft delete — an inbox is pruned by age.
+model Notification {
+  id         String             @id @db.VarChar(40)
+  /// The recipient. Null only for an unaddressed operator broadcast row.
+  userId     String?            @db.VarChar(40)
+  audience   NotifyAudienceKind
+  category   NotifyCategoryKind
+  /// i18n key under `notifications.<audience>.<key>`, with `.title`/`.body`.
+  key        String             @db.VarChar(80)
+  templateId String?            @db.VarChar(40)
+  /// Values interpolated into the title/body messages.
+  params     Json               @default("{}")
+  /// Literal, already-written text. Only a human-composed broadcast sets this;
+  /// when present the UI renders it verbatim instead of translating `key`.
+  text       Json?
+  tone       NotifyToneKind     @default(INFO)
+
+  /// `NotifySubject` — kind + id + already-human label, so the feed can group
+  /// and link by it.
+  subjectKind  NotifySubjectKind?
+  subjectId    String?            @db.VarChar(40)
+  subjectLabel String?            @db.VarChar(200)
+  /// The lifecycle status that produced it, when the order machine did.
+  orderStatus  OrderStatusKind?
+  orderId      String?            @db.VarChar(40)
+  /// Vendor / rider scoping, so a merchant inbox is one indexed filter.
+  vendorId     String?            @db.VarChar(40)
+  riderId      String?            @db.VarChar(40)
+  campaignId   String?            @db.VarChar(40)
+
+  /// Where tapping it goes.
+  href   String    @db.VarChar(300)
+  at     DateTime  @default(now()) @db.Timestamptz(3)
+  readAt DateTime? @db.Timestamptz(3)
+
+  user       User?                       @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  order      Order?                      @relation("NotificationOrder", fields: [orderId], references: [id], onDelete: SetNull)
+  template   NotificationTemplate?       @relation("NotificationTemplateRef", fields: [templateId], references: [id], onDelete: SetNull)
+  campaign   NotificationCampaign?       @relation("CampaignNotifications", fields: [campaignId], references: [id], onDelete: SetNull)
+  channels   NotificationChannelRecord[] @relation("NotificationChannels")
+  dispatches NotificationDispatch[]      @relation("NotificationDispatches")
+
+  /// The feed query: one inbox, newest first, optionally unread or by category.
+  @@index([userId, at(sort: Desc)])
+  @@index([userId, readAt, at(sort: Desc)])
+  @@index([userId, category, at(sort: Desc)])
+  @@index([audience, vendorId, at(sort: Desc)])
+  @@index([audience, riderId, at(sort: Desc)])
+  @@index([subjectKind, subjectId])
+  @@map("notifications")
+}
+
+/// `AppNotification.channels` — where it actually went. A row per channel, so
+/// the answer survives a preference change.
+model NotificationChannelRecord {
+  notificationId String            @db.VarChar(40)
+  channel        NotifyChannelKind
+
+  notification Notification @relation("NotificationChannels", fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@id([notificationId, channel])
+  @@map("notification_channels")
+}
+
+enum DispatchStatusKind {
+  QUEUED     @map("queued")
+  SENT       @map("sent")
+  DELIVERED  @map("delivered")
+  SUPPRESSED @map("suppressed")
+  FAILED     @map("failed")
+  BOUNCED    @map("bounced")
+
+  @@map("dispatch_status_kind")
+}
+
+enum DeliveryChannelKind {
+  PUSH  @map("push")
+  EMAIL @map("email")
+  SMS   @map("sms")
+
+  @@map("delivery_channel_kind")
+}
+
+/// One delivery attempt on one channel — the outbox row. It stores
+/// `key`/`params`, not rendered prose, so the log re-reads itself in the
+/// current locale.
+model NotificationDispatch {
+  id             String              @id @db.VarChar(40)
+  notificationId String              @db.VarChar(40)
+  channel        DeliveryChannelKind
+  /// Masked destination — `a•••@example.com`, `+8801•••4321`, or the device.
+  to             String              @db.VarChar(191)
+  /// The real destination, for provider correlation. Never returned by GraphQL.
+  destinationRef String?             @db.VarChar(400)
+  audience       NotifyAudienceKind
+  key            String              @db.VarChar(80)
+  params         Json                @default("{}")
+  text           Json?
+  status         DispatchStatusKind  @default(QUEUED)
+  /// i18n key under `notifications.reason.*` when suppressed or failed.
+  reason         String?             @db.VarChar(80)
+  providerId     String?             @db.VarChar(60)
+  /// Provider message id, for the delivery-receipt webhook.
+  providerRef    String?             @db.VarChar(191)
+  attempts       Int                 @default(0) @db.SmallInt
+  at             DateTime            @default(now()) @db.Timestamptz(3)
+  sentAt         DateTime?           @db.Timestamptz(3)
+  deliveredAt    DateTime?           @db.Timestamptz(3)
+  failedAt       DateTime?           @db.Timestamptz(3)
+
+  notification Notification @relation("NotificationDispatches", fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([status, at])
+  @@index([channel, at(sort: Desc)])
+  @@index([providerRef])
+  @@map("notification_dispatches")
+}
+
+enum SegmentKind {
+  ALL_CUSTOMERS    @map("all-customers")
+  ACTIVE_CUSTOMERS @map("active-customers")
+  LAPSED_CUSTOMERS @map("lapsed-customers")
+  SUBSCRIBERS      @map("subscribers")
+  RESTAURANTS      @map("restaurants")
+  RIDERS           @map("riders")
+
+  @@map("segment_kind")
+}
+
+/// A broadcast audience. Sizes are DERIVED — the row holds the rule, and
+/// `SegmentService.resolve()` counts it at send time.
+model NotificationSegment {
+  id       SegmentKind        @id
+  audience NotifyAudienceKind
+  label    String             @db.VarChar(80)
+  /// Structured predicate the resolver compiles to a Prisma `where`.
+  rule     Json               @default("{}")
+  isActive Boolean            @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  campaigns NotificationCampaign[] @relation("CampaignSegment")
+
+  @@map("notification_segments")
+}
+
+enum BroadcastKindEnum {
+  PROMOTION    @map("promotion")
+  ANNOUNCEMENT @map("announcement")
+
+  @@map("broadcast_kind")
+}
+
+enum CampaignStatus {
+  DRAFT     @map("draft")
+  SCHEDULED @map("scheduled")
+  SENDING   @map("sending")
+  SENT      @map("sent")
+  CANCELLED @map("cancelled")
+  FAILED    @map("failed")
+
+  @@map("campaign_status")
+}
+
+/// An operator broadcast. `kind` is the one thing an operator must decide and
+/// the platform cannot: marketing (suppressible, and suppressed by default
+/// because C28 starts promotions off) or a service announcement (obligatory).
+model NotificationCampaign {
+  id           String                @id @db.VarChar(40)
+  segmentId    SegmentKind
+  kind         BroadcastKindEnum
+  status       CampaignStatus        @default(DRAFT)
+  title        String                @db.VarChar(120)
+  body         String                @db.VarChar(1000)
+  /// Optional deep link the notification opens.
+  href         String                @default("") @db.VarChar(300)
+  channels     DeliveryChannelKind[] @default([])
+  /// Recipients the segment resolved to at send time.
+  audienceSize Int                   @default(0)
+  /// `ChannelResult[]` — per-channel sent/suppressed counts.
+  results      Json                  @default("[]")
+  scheduledFor DateTime?             @db.Timestamptz(3)
+  sentAt       DateTime?             @db.Timestamptz(3)
+  createdById  String?               @db.VarChar(40)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  segment       NotificationSegment @relation("CampaignSegment", fields: [segmentId], references: [id], onDelete: Restrict)
+  notifications Notification[]      @relation("CampaignNotifications")
+
+  @@index([status, scheduledFor])
+  @@index([sentAt(sort: Desc)])
+  @@map("notification_campaigns")
+}

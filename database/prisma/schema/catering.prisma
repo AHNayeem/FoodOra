@@ -1,0 +1,310 @@
+// =============================================================================
+// CATERING — the event-catering vertical.
+//
+// Serves `types/catering.ts`. A `CateringService` quotes for events rather than
+// delivering food, so it is its own aggregate and not a `Vendor` row with a
+// flag: its money is per-guest, its calendar is per-event and its lifecycle is
+// a quotation, none of which the ordering model expresses.
+//
+// `CateringPricing` is an indicative estimate computed at request time and
+// snapshotted onto the quote — in production the caterer confirms a final
+// figure, which becomes a new revision rather than an overwrite.
+// =============================================================================
+
+enum EventTypeKind {
+  WEDDING    @map("wedding")
+  CORPORATE  @map("corporate")
+  BIRTHDAY   @map("birthday")
+  CONFERENCE @map("conference")
+  OUTDOOR    @map("outdoor")
+
+  @@map("event_type_kind")
+}
+
+enum ServiceStyleKind {
+  BUFFET        @map("buffet")
+  PLATED        @map("plated")
+  FAMILY_STYLE  @map("family-style")
+  FOOD_STATIONS @map("food-stations")
+  DROP_OFF      @map("drop-off")
+
+  @@map("service_style_kind")
+}
+
+model CateringService {
+  id          String   @id @db.VarChar(40)
+  slug        String   @unique @db.VarChar(120)
+  name        String   @db.VarChar(160)
+  tagline     String   @default("") @db.VarChar(240)
+  description String   @default("") @db.Text
+  logo        String   @default("") @db.VarChar(500)
+  cover       String   @default("") @db.VarChar(500)
+  /// Portfolio imagery shown on the detail page.
+  gallery     String[] @default([])
+  /// Optional link to a merchant account, when a restaurant also caters.
+  vendorId    String?  @db.VarChar(40)
+
+  rating      Decimal @default(0) @db.Decimal(3, 2)
+  reviewCount Int     @default(0)
+
+  /// `GeoPoint`.
+  lat         Decimal @db.Decimal(10, 7)
+  lng         Decimal @db.Decimal(10, 7)
+  address     String  @db.VarChar(300)
+  city        String  @db.VarChar(120)
+  countryCode String  @db.Char(2)
+
+  /// Guest-capacity window this caterer accepts.
+  minGuests         Int      @db.SmallInt
+  maxGuests         Int      @db.SmallInt
+  /// Advertised "from" price per guest.
+  pricePerGuestFrom Decimal  @db.Decimal(14, 2)
+  currency          String   @db.Char(3)
+  /// Minimum notice required to book, in days.
+  leadTimeDays      Int      @db.SmallInt
+  /// Short selling points (staffing, setup…) — DATA strings, like taglines.
+  highlights        String[] @default([])
+  /// Platform service fee applied to a quote, 0–1.
+  serviceFeeRate    Decimal  @default(0) @db.Decimal(6, 4)
+  isFeatured        Boolean  @default(false)
+  isActive          Boolean  @default(true)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  cuisines   CateringServiceCuisine[] @relation("ServiceCuisines")
+  dietary    CateringServiceDietary[] @relation("ServiceDietary")
+  eventTypes CateringServiceEvent[]   @relation("ServiceEventTypes")
+  styles     CateringServiceStyle[]   @relation("ServiceStyles")
+  addOns     CateringServiceAddOn[]   @relation("ServiceAddOns")
+  packages   CateringPackage[]        @relation("ServicePackages")
+  quotes     CateringQuote[]          @relation("QuoteService")
+
+  @@index([city, countryCode, isActive])
+  @@index([isFeatured, deletedAt])
+  @@map("catering_services")
+}
+
+model CateringServiceCuisine {
+  serviceId String @db.VarChar(40)
+  cuisineId String @db.VarChar(40)
+
+  service CateringService @relation("ServiceCuisines", fields: [serviceId], references: [id], onDelete: Cascade)
+  cuisine Cuisine         @relation("CuisineCaterers", fields: [cuisineId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, cuisineId])
+  @@index([cuisineId])
+  @@map("catering_service_cuisines")
+}
+
+model CateringServiceDietary {
+  serviceId String         @db.VarChar(40)
+  tag       DietaryTagKind
+
+  service CateringService @relation("ServiceDietary", fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, tag])
+  @@index([tag])
+  @@map("catering_service_dietary")
+}
+
+model CateringServiceEvent {
+  serviceId String        @db.VarChar(40)
+  eventType EventTypeKind
+
+  service CateringService @relation("ServiceEventTypes", fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, eventType])
+  @@index([eventType])
+  @@map("catering_service_events")
+}
+
+model CateringServiceStyle {
+  serviceId String           @db.VarChar(40)
+  style     ServiceStyleKind
+
+  service CateringService @relation("ServiceStyles", fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, style])
+  @@index([style])
+  @@map("catering_service_styles")
+}
+
+/// A per-guest menu package offered by a caterer for a given event type.
+model CateringPackage {
+  id            String           @id @db.VarChar(40)
+  serviceId     String           @db.VarChar(40)
+  slug          String           @db.VarChar(120)
+  name          String           @db.VarChar(160)
+  description   String           @default("") @db.Text
+  image         String           @default("") @db.VarChar(500)
+  eventType     EventTypeKind
+  serviceStyle  ServiceStyleKind
+  pricePerGuest Decimal          @db.Decimal(14, 2)
+  minGuests     Int              @db.SmallInt
+  /// What each guest is served — menu highlights (DATA strings).
+  courses       String[]         @default([])
+  /// Service inclusions bundled in (staff, setup, tableware…).
+  includes      String[]         @default([])
+  isPopular     Boolean          @default(false)
+  isActive      Boolean          @default(true)
+  sort          Int              @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  service CateringService @relation("ServicePackages", fields: [serviceId], references: [id], onDelete: Cascade)
+  quotes  CateringQuote[] @relation("QuotePackage")
+
+  @@unique([serviceId, slug])
+  @@index([eventType, isActive])
+  @@map("catering_packages")
+}
+
+enum AddOnUnitKind {
+  PER_GUEST @map("per-guest")
+  FLAT      @map("flat")
+
+  @@map("add_on_unit_kind")
+}
+
+/// An optional extra. Global rather than per-caterer, matching the seed, and
+/// linked through `CateringServiceAddOn` — several caterers offer "live grill".
+model CateringAddOn {
+  id          String        @id @db.VarChar(40)
+  slug        String        @unique @db.VarChar(120)
+  name        String        @db.VarChar(160)
+  description String        @default("") @db.VarChar(600)
+  /// Per guest or flat, per `unit`.
+  price       Decimal       @db.Decimal(14, 2)
+  unit        AddOnUnitKind @default(PER_GUEST)
+  currency    String        @db.Char(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  services CateringServiceAddOn[] @relation("AddOnServices")
+  quotes   CateringQuoteAddOn[]   @relation("QuoteAddOnRef")
+
+  @@map("catering_add_ons")
+}
+
+model CateringServiceAddOn {
+  serviceId     String   @db.VarChar(40)
+  addOnId       String   @db.VarChar(40)
+  /// Caterer-specific override of the catalogue price.
+  priceOverride Decimal? @db.Decimal(14, 2)
+
+  service CateringService @relation("ServiceAddOns", fields: [serviceId], references: [id], onDelete: Cascade)
+  addOn   CateringAddOn   @relation("AddOnServices", fields: [addOnId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, addOnId])
+  @@index([addOnId])
+  @@map("catering_service_add_ons")
+}
+
+enum QuoteStatusKind {
+  REQUESTED @map("requested")
+  REVIEWING @map("reviewing")
+  QUOTED    @map("quoted")
+  CONFIRMED @map("confirmed")
+  DECLINED  @map("declined")
+  EXPIRED   @map("expired")
+
+  @@map("quote_status_kind")
+}
+
+model CateringQuote {
+  id          String  @id @db.VarChar(40)
+  quoteNumber String  @unique @db.VarChar(24)
+  serviceId   String  @db.VarChar(40)
+  userId      String? @db.VarChar(40)
+
+  /// `QuoteService` verbatim — id, slug, name, currency, countryCode.
+  serviceSnapshot Json
+  /// Selected package, or null for a fully custom menu request.
+  packageId       String?          @db.VarChar(40)
+  packageName     String?          @db.VarChar(160)
+  eventType       EventTypeKind
+  serviceStyle    ServiceStyleKind
+  /// Event date as a plain local date.
+  eventDate       DateTime         @db.Date
+  eventTime       String?          @db.VarChar(5)
+  guests          Int              @db.SmallInt
+
+  /// `QuoteVenue`.
+  venueCity    String  @db.VarChar(120)
+  venueArea    String  @db.VarChar(120)
+  venueAddress String? @db.VarChar(300)
+
+  /// `QuoteContact`.
+  contactName    String  @db.VarChar(120)
+  contactPhone   String  @db.VarChar(24)
+  contactEmail   String  @db.VarChar(191)
+  contactCompany String? @db.VarChar(160)
+
+  notes String? @db.VarChar(1000)
+
+  // --- pricing (CateringPricing) ---------------------------------------------
+  currency        String  @db.Char(3)
+  pricePerGuest   Decimal @db.Decimal(14, 2)
+  packageSubtotal Decimal @db.Decimal(14, 2)
+  addOnsTotal     Decimal @default(0) @db.Decimal(14, 2)
+  serviceFee      Decimal @default(0) @db.Decimal(14, 2)
+  serviceFeeRate  Decimal @default(0) @db.Decimal(6, 4)
+  tax             Decimal @default(0) @db.Decimal(14, 2)
+  taxLabel        String  @default("VAT") @db.VarChar(40)
+  taxRate         Decimal @default(0) @db.Decimal(6, 4)
+  total           Decimal @db.Decimal(14, 2)
+
+  status          QuoteStatusKind @default(REQUESTED)
+  requestedAt     DateTime        @db.Timestamptz(3)
+  /// The caterer's final figure, once they answer. Null until `quoted`.
+  quotedTotal     Decimal?        @db.Decimal(14, 2)
+  quotedAt        DateTime?       @db.Timestamptz(3)
+  quotedNote      String?         @db.VarChar(1000)
+  confirmedAt     DateTime?       @db.Timestamptz(3)
+  declinedAt      DateTime?       @db.Timestamptz(3)
+  declineReason   String?         @db.VarChar(400)
+  /// Deposit held to confirm the booking.
+  depositIntentId String?         @db.VarChar(40)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  service CateringService      @relation("QuoteService", fields: [serviceId], references: [id], onDelete: Restrict)
+  package CateringPackage?     @relation("QuotePackage", fields: [packageId], references: [id], onDelete: SetNull)
+  user    User?                @relation("QuoteUser", fields: [userId], references: [id], onDelete: SetNull)
+  addOns  CateringQuoteAddOn[] @relation("QuoteAddOns")
+
+  @@index([serviceId, status, requestedAt(sort: Desc)])
+  @@index([userId, requestedAt(sort: Desc)])
+  @@index([eventDate])
+  @@map("catering_quotes")
+}
+
+/// A resolved add-on line on a quote, with its computed amount for this event.
+model CateringQuoteAddOn {
+  quoteId String        @db.VarChar(40)
+  addOnId String        @db.VarChar(40)
+  name    String        @db.VarChar(160)
+  unit    AddOnUnitKind
+  price   Decimal       @db.Decimal(14, 2)
+  /// price × guests for per-guest add-ons, else the flat price.
+  amount  Decimal       @db.Decimal(14, 2)
+
+  quote CateringQuote @relation("QuoteAddOns", fields: [quoteId], references: [id], onDelete: Cascade)
+  addOn CateringAddOn @relation("QuoteAddOnRef", fields: [addOnId], references: [id], onDelete: Restrict)
+
+  @@id([quoteId, addOnId])
+  @@index([addOnId])
+  @@map("catering_quote_add_ons")
+}

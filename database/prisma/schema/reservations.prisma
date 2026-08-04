@@ -1,0 +1,177 @@
+// =============================================================================
+// RESERVATIONS — table booking.
+//
+// Serves `types/reservation.ts`. The only stored entity is the `Reservation`
+// (plus its per-venue `BookingPolicy`). Everything around it stays DERIVED,
+// exactly as `lib/reservations.ts` computes it today:
+//
+//   TimeSlot / DayAvailability   from opening hours + floor plan + the book
+//   TableStatus                  from the book at an instant
+//   ReservationDaySummary        aggregate over the book
+//   `completed` status           from the clock, once the table's time passed
+//
+// There is deliberately NO slot table. Seats are a finite resource and the only
+// honest answer to "is 19:30 free for four?" is the overlap arithmetic against
+// the bookings actually on the book.
+// =============================================================================
+
+enum ReservationStatusKind {
+  PENDING   @map("pending")
+  CONFIRMED @map("confirmed")
+  SEATED    @map("seated")
+  COMPLETED @map("completed")
+  CANCELLED @map("cancelled")
+  NO_SHOW   @map("no-show")
+
+  @@map("reservation_status_kind")
+}
+
+enum OccasionKind {
+  NONE        @map("none")
+  BIRTHDAY    @map("birthday")
+  ANNIVERSARY @map("anniversary")
+  DATE        @map("date")
+  BUSINESS    @map("business")
+  CELEBRATION @map("celebration")
+
+  @@map("occasion_kind")
+}
+
+/// Per-venue booking rules. Data, so a sushi counter and a rooftop trattoria
+/// behave differently without a branch anywhere in the UI.
+model BookingPolicy {
+  id       String  @id @db.VarChar(40)
+  vendorId String  @unique @db.VarChar(40)
+  branchId String? @db.VarChar(40)
+
+  /// Minutes a table is held for a normal party, and the longer hold for big
+  /// parties (which linger, and everyone knows it).
+  turnMinutes            Int @db.SmallInt
+  largePartyTurnMinutes  Int @db.SmallInt
+  largePartyFrom         Int @db.SmallInt
+  /// Booking grid granularity in minutes (30 = :00 and :30 starts).
+  slotMinutes            Int @db.SmallInt
+  minPartySize           Int @db.SmallInt
+  maxPartySize           Int @db.SmallInt
+  /// No new seating within this many minutes of closing.
+  lastSeatingBeforeClose Int @db.SmallInt
+  /// Minimum notice before a booking can start, in minutes.
+  leadTimeMinutes        Int @db.SmallInt
+  /// How far ahead the calendar is open, in days.
+  advanceDays            Int @db.SmallInt
+
+  /// Per-guest hold deposit for large parties (0 = the venue takes none).
+  depositPerGuest   Decimal @default(0) @db.Decimal(14, 2)
+  depositFrom       Int     @default(0) @db.SmallInt
+  currency          String  @db.Char(3)
+  countryCode       String  @db.Char(2)
+  /// Free-cancellation window, in hours before the booking starts.
+  cancelCutoffHours Int     @db.SmallInt
+  /// True = instantly confirmed; false = the venue reviews the request.
+  autoConfirm       Boolean @default(true)
+  /// Venue-authored note on the booking form (dress code, parking…).
+  note              String? @db.VarChar(500)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor        Vendor              @relation("VendorBookingPolicy", fields: [vendorId], references: [id], onDelete: Cascade)
+  bookableZones BookingPolicyZone[] @relation("PolicyZones")
+
+  @@map("booking_policies")
+}
+
+/// Zones sold online — a venue may hold its private room back for events.
+model BookingPolicyZone {
+  policyId String        @db.VarChar(40)
+  zone     TableZoneKind
+
+  policy BookingPolicy @relation("PolicyZones", fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@id([policyId, zone])
+  @@map("booking_policy_zones")
+}
+
+model Reservation {
+  id        String  @id @db.VarChar(40)
+  /// Human-facing reference, e.g. "RSV-8F3A21".
+  reference String  @unique @db.VarChar(24)
+  userId    String? @db.VarChar(40)
+  vendorId  String  @db.VarChar(40)
+  branchId  String? @db.VarChar(40)
+
+  /// `ReservationVenueRef` verbatim — id, slug, name, image, address, city,
+  /// countryCode, currency. Snapshotted; a rebrand must not rewrite the card.
+  venueSnapshot Json
+
+  /// Plain local date ("YYYY-MM-DD") — a Friday booking is Friday everywhere.
+  date            DateTime @db.Date
+  /// Local start time, "HH:mm".
+  time            String   @db.VarChar(5)
+  /// The same instant in UTC, derived from date + time + the branch timezone.
+  /// This is what the overlap query uses; `date`/`time` are what the UI shows.
+  startsAt        DateTime @db.Timestamptz(3)
+  endsAt          DateTime @db.Timestamptz(3)
+  /// Snapshot of the policy's turn time at booking.
+  durationMinutes Int      @db.SmallInt
+  partySize       Int      @db.SmallInt
+
+  /// Labels of the allocated tables, snapshotted so the card reads without a
+  /// join. The allocation itself is `ReservationTable`.
+  tableLabels String[]      @default([])
+  zone        TableZoneKind @default(INDOOR)
+  occasion    OccasionKind  @default(NONE)
+
+  /// `ReservationGuest` — snapshotted, so a profile edit must not rewrite it.
+  guestName  String  @db.VarChar(120)
+  guestPhone String  @db.VarChar(24)
+  guestEmail String  @db.VarChar(191)
+  /// Allergies, wheelchair access, "quiet corner please".
+  notes      String? @db.VarChar(500)
+
+  status          ReservationStatusKind @default(CONFIRMED)
+  /// Held deposit in `currency`; 0 when the policy takes none.
+  depositAmount   Decimal               @default(0) @db.Decimal(14, 2)
+  currency        String                @db.Char(3)
+  /// The intent that holds the deposit, when one was taken.
+  depositIntentId String?               @db.VarChar(40)
+
+  confirmedAt  DateTime?       @db.Timestamptz(3)
+  seatedAt     DateTime?       @db.Timestamptz(3)
+  cancelledAt  DateTime?       @db.Timestamptz(3)
+  cancelledBy  OrderActorKind?
+  cancelReason String?         @db.VarChar(240)
+  noShowAt     DateTime?       @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  user   User?              @relation("ReservationUser", fields: [userId], references: [id], onDelete: SetNull)
+  vendor Vendor             @relation("VendorReservations", fields: [vendorId], references: [id], onDelete: Cascade)
+  tables ReservationTable[] @relation("ReservationTables")
+
+  /// The availability query: every live booking for a venue on a date.
+  @@index([vendorId, date, status])
+  @@index([vendorId, startsAt, endsAt])
+  @@index([userId, startsAt(sort: Desc)])
+  @@index([status, startsAt])
+  @@map("reservations")
+}
+
+/// Which tables a booking holds. Usually one; a party too big for any single
+/// table is seated across two, which is what a floor manager does.
+model ReservationTable {
+  reservationId String @db.VarChar(40)
+  tableId       String @db.VarChar(40)
+
+  reservation Reservation     @relation("ReservationTables", fields: [reservationId], references: [id], onDelete: Cascade)
+  table       RestaurantTable @relation("TableReservations", fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@id([reservationId, tableId])
+  @@index([tableId])
+  @@map("reservation_tables")
+}

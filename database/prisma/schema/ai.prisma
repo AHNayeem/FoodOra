@@ -1,0 +1,220 @@
+// =============================================================================
+// AI & SEARCH — the food assistant, the diet planner, recognition and the
+// search log.
+//
+// Serves `types/ai.ts` and `services/search.ts`. The Phase C assistant is
+// deterministic and local (`services/ai.ts` parses intents with rules); the
+// backend keeps that engine and adds only what a server can provide: durable
+// conversations, a stored food profile, usage accounting and a search log that
+// makes suggestions real instead of hard-coded.
+//
+// The provider is an implementation detail behind `AiProviderPort`, exactly as
+// payment providers sit behind `PaymentProviderPort`. Nothing in this file names
+// a model or vendor.
+// =============================================================================
+
+enum AiIntentKind {
+  RECOMMEND  @map("recommend")
+  FIND_DISH  @map("find-dish")
+  BUDGET     @map("budget")
+  MOOD       @map("mood")
+  DIET_PLAN  @map("diet-plan")
+  NUTRITION  @map("nutrition")
+  ALLERGY    @map("allergy")
+  REORDER    @map("reorder")
+  SMALL_TALK @map("small-talk")
+  UNKNOWN    @map("unknown")
+
+  @@map("ai_intent_kind")
+}
+
+/// The customer's standing dietary context (`types/ai.ts::FoodProfile`).
+/// Read by the assistant, the allergy warning and the diet planner.
+model FoodProfile {
+  userId             String           @id @db.VarChar(40)
+  /// Allergens to warn or block on.
+  allergens          AllergenKind[]   @default([])
+  dietary            DietaryTagKind[] @default([])
+  /// Daily calorie target for the planner; null when unset.
+  calorieTarget      Int?
+  proteinTarget      Int?
+  /// Typical spend per order, for budget-based search.
+  budgetPerOrder     Decimal?         @db.Decimal(14, 2)
+  /// 0–3, the heat the customer actually enjoys.
+  spiceTolerance     Int              @default(1) @db.SmallInt
+  /// Cuisine ids the customer leans towards / away from.
+  likedCuisineIds    String[]         @default([])
+  dislikedCuisineIds String[]         @default([])
+  /// Free-text dislikes the kitchen should know ("no coriander").
+  dislikes           String[]         @default([])
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  user User @relation("UserFoodProfile", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("food_profiles")
+}
+
+enum AiSurface {
+  ASSISTANT      @map("assistant")
+  SEARCH         @map("search")
+  DIET_PLAN      @map("diet-plan")
+  RECOGNITION    @map("recognition")
+  REVIEW_SUMMARY @map("review-summary")
+  MENU_OCR       @map("menu-ocr")
+
+  @@map("ai_surface")
+}
+
+/// One assistant thread. Kept so a conversation survives a reload and so the
+/// resolved `AssistantContext` (budget, mood, constraints) is not re-parsed
+/// from scratch on every turn.
+model AiConversation {
+  id            String    @id @db.VarChar(40)
+  userId        String?   @db.VarChar(40)
+  /// Anonymous device key, so a guest keeps their thread.
+  guestKey      String?   @db.VarChar(60)
+  surface       AiSurface @default(ASSISTANT)
+  locale        String    @default("en") @db.VarChar(8)
+  /// `AssistantContext` — the running constraints the thread has established.
+  context       Json      @default("{}")
+  title         String?   @db.VarChar(200)
+  lastMessageAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  user     User?       @relation("AiConversationUser", fields: [userId], references: [id], onDelete: Cascade)
+  messages AiMessage[] @relation("ConversationMessages")
+
+  @@index([userId, lastMessageAt(sort: Desc)])
+  @@index([guestKey])
+  @@map("ai_conversations")
+}
+
+enum AiMessageRole {
+  USER      @map("user")
+  ASSISTANT @map("assistant")
+  SYSTEM    @map("system")
+
+  @@map("ai_message_role")
+}
+
+/// One turn. `blocks` is `AssistantBlock[]` — the structured reply the UI
+/// renders (dish cards, vendor cards, a plan table), NOT markdown, so the
+/// frontend renderer stays exhaustive and type-safe.
+model AiMessage {
+  id             String        @id @db.VarChar(40)
+  conversationId String        @db.VarChar(40)
+  role           AiMessageRole
+  /// Plain text for a user turn; the assistant's prose lives in `blocks`.
+  text           String?       @db.Text
+  blocks         Json?
+  intent         AiIntentKind?
+  /// `ParsedRequest` — what the parser understood, kept for evaluation.
+  parsed         Json?
+  /// Entity ids referenced, so a resolver can hydrate without re-parsing.
+  foodIds        String[]      @default([])
+  vendorIds      String[]      @default([])
+  at             DateTime      @default(now()) @db.Timestamptz(3)
+
+  conversation AiConversation @relation("ConversationMessages", fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, at])
+  @@map("ai_messages")
+}
+
+/// Per-call accounting. What makes an AI feature operable: cost per surface,
+/// latency, failure rate, and a per-user rate limit that is auditable.
+model AiUsageLog {
+  id           String    @id @db.VarChar(40)
+  userId       String?   @db.VarChar(40)
+  surface      AiSurface
+  /// Adapter name, never a hard-coded vendor in the schema.
+  provider     String    @db.VarChar(40)
+  model        String?   @db.VarChar(80)
+  inputTokens  Int       @default(0)
+  outputTokens Int       @default(0)
+  costMicros   Int       @default(0)
+  latencyMs    Int?
+  success      Boolean   @default(true)
+  errorCode    String?   @db.VarChar(60)
+  /// Deterministic (rule-based) rather than model-backed — the Phase C path.
+  isLocal      Boolean   @default(false)
+  at           DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, at(sort: Desc)])
+  @@index([surface, at(sort: Desc)])
+  @@map("ai_usage_logs")
+}
+
+/// A food-recognition or menu-OCR run (spec: Image Search, Food Recognition,
+/// OCR Menu Scanner). The upload and the interpretation are kept so a bad match
+/// is reproducible.
+model AiRecognition {
+  id             String    @id @db.VarChar(40)
+  userId         String?   @db.VarChar(40)
+  surface        AiSurface @default(RECOGNITION)
+  fileId         String?   @db.VarChar(40)
+  /// `ImageFingerprint` — the deterministic signature Phase C matches on.
+  fingerprint    Json?
+  /// `RecognitionResult` — labels + confidence + matched food ids.
+  result         Json?
+  matchedFoodIds String[]  @default([])
+  confidence     String?   @db.VarChar(12)
+  at             DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, at(sort: Desc)])
+  @@map("ai_recognitions")
+}
+
+/// Every search, so `getSearchSuggestions` and `popularSearchTerms` stop being
+/// hard-coded lists. Honours C28: nothing is written when the account has
+/// `saveSearchHistory: false`, and `userId` is null for a guest.
+model SearchQueryLog {
+  id            String   @id @db.VarChar(40)
+  userId        String?  @db.VarChar(40)
+  /// Normalised: lower-cased, unaccented, collapsed whitespace.
+  term          String   @db.VarChar(200)
+  /// Raw query as typed, for spelling analysis.
+  rawTerm       String   @db.VarChar(200)
+  /// `SearchQuery` filters that were active.
+  filters       Json?
+  resultCount   Int      @default(0)
+  /// What the searcher actually opened, if anything — the relevance signal.
+  clickedEntity String?  @db.VarChar(40)
+  clickedId     String?  @db.VarChar(40)
+  clickedRank   Int?     @db.SmallInt
+  countryCode   String?  @db.Char(2)
+  city          String?  @db.VarChar(120)
+  locale        String?  @db.VarChar(8)
+  at            DateTime @default(now()) @db.Timestamptz(3)
+
+  user User? @relation("SearchLogUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([term, at(sort: Desc)])
+  @@index([userId, at(sort: Desc)])
+  @@index([at(sort: Desc)])
+  @@map("search_query_logs")
+}
+
+/// Rolling popularity, refreshed by a scheduled job from `SearchQueryLog`.
+/// A materialised counter rather than a live GROUP BY, because the suggestion
+/// endpoint is on the hot path of every keystroke.
+model SearchTermStat {
+  term        String   @db.VarChar(200)
+  countryCode String   @db.Char(2)
+  searches    Int      @default(0)
+  clicks      Int      @default(0)
+  /// searches ÷ total, for the suggestion ranking.
+  weight      Decimal  @default(0) @db.Decimal(8, 6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  @@id([term, countryCode])
+  @@index([countryCode, searches(sort: Desc)])
+  @@map("search_term_stats")
+}

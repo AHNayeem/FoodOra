@@ -1,0 +1,640 @@
+// =============================================================================
+// PAYMENTS & MONEY — provider-independent payment records, wallets, the
+// double-entry ledger, vendor settlement and platform membership.
+//
+// The design rule (D7) is that NOTHING here names a provider in a column type.
+// `PaymentProvider` is a row; `PaymentIntent.providerRef` and
+// `PaymentTransaction.rawPayload` hold whatever that provider returned. Adding
+// Nagad is a seed row plus an adapter class, never a migration.
+//
+// Money moves in exactly one place: `LedgerEntry`. Wallet balances, rider
+// balances and vendor payables are all projections of it, and the invariant
+// `SUM(amount) = 0` per `transactionRef` is asserted in the write path.
+// =============================================================================
+
+enum PaymentProviderKind {
+  STRIPE     @map("stripe")
+  SSLCOMMERZ @map("sslcommerz")
+  BKASH      @map("bkash")
+  NAGAD      @map("nagad")
+  ROCKET     @map("rocket")
+  PAYPAL     @map("paypal")
+  APPLE_PAY  @map("apple-pay")
+  GOOGLE_PAY @map("google-pay")
+  CASH       @map("cash")
+  WALLET     @map("wallet")
+
+  @@map("payment_provider_kind")
+}
+
+enum PaymentCapability {
+  CHARGE         @map("charge")
+  REFUND         @map("refund")
+  PARTIAL_REFUND @map("partial-refund")
+  TOKENIZE       @map("tokenize")
+  WEBHOOK        @map("webhook")
+  PAYOUT         @map("payout")
+  THREE_DS       @map("three-ds")
+
+  @@map("payment_capability")
+}
+
+/// A configured gateway. Credentials never live here — only the key *names*
+/// resolved from the secret manager, so a database dump is not a breach.
+model PaymentProvider {
+  id             String              @id @db.VarChar(40)
+  kind           PaymentProviderKind @unique
+  displayName    String              @db.VarChar(80)
+  /// Countries it may be offered in; empty = all.
+  countryCodes   String[]            @default([])
+  currencies     String[]            @default([])
+  capabilities   PaymentCapability[] @default([])
+  /// Secret-manager key names, e.g. { "apiKey": "STRIPE_SECRET_KEY" }.
+  credentialRefs Json                @default("{}")
+  /// Lower number tried first when the customer picked a method, not a brand.
+  priority       Int                 @default(100) @db.SmallInt
+  isEnabled      Boolean             @default(false)
+  isTestMode     Boolean             @default(true)
+  /// Provider fee, for margin reporting: rate × amount + fixed.
+  feeRate        Decimal             @default(0) @db.Decimal(6, 4)
+  feeFixed       Decimal             @default(0) @db.Decimal(14, 2)
+  config         Json                @default("{}")
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  intents      PaymentIntent[]       @relation("IntentProvider")
+  transactions PaymentTransaction[]  @relation("TxnProvider")
+  refunds      Refund[]              @relation("RefundProvider")
+  webhooks     PaymentWebhookEvent[] @relation("WebhookProvider")
+  savedMethods SavedPaymentMethod[]  @relation("SavedMethodProvider")
+  payouts      Payout[]              @relation("PayoutProvider")
+
+  @@index([isEnabled, priority])
+  @@map("payment_providers")
+}
+
+enum PaymentIntentStatus {
+  CREATED            @map("created")
+  REQUIRES_ACTION    @map("requires-action")
+  PROCESSING         @map("processing")
+  AUTHORIZED         @map("authorized")
+  CAPTURED           @map("captured")
+  FAILED             @map("failed")
+  CANCELLED          @map("cancelled")
+  PARTIALLY_REFUNDED @map("partially-refunded")
+  REFUNDED           @map("refunded")
+  EXPIRED            @map("expired")
+
+  @@map("payment_intent_status")
+}
+
+/// One attempt to collect one amount for one order. A retry after a failure is
+/// a NEW intent, which is what makes "Payment Retry" a listable history rather
+/// than a mutated row.
+model PaymentIntent {
+  id                  String              @id @db.VarChar(40)
+  orderId             String?             @db.VarChar(40)
+  /// Set when the intent pays a subscription cycle instead of an order.
+  subscriptionCycleId String?             @unique @db.VarChar(40)
+  userId              String?             @db.VarChar(40)
+  providerId          String              @db.VarChar(40)
+  method              PaymentMethodKind
+  status              PaymentIntentStatus @default(CREATED)
+
+  currency       String  @db.Char(3)
+  amount         Decimal @db.Decimal(14, 2)
+  capturedAmount Decimal @default(0) @db.Decimal(14, 2)
+  refundedAmount Decimal @default(0) @db.Decimal(14, 2)
+  /// Gateway fee actually charged, filled from the settlement webhook.
+  providerFee    Decimal @default(0) @db.Decimal(14, 2)
+
+  /// The provider's own identifier (`pi_…`, a bKash paymentID, an SSLCommerz
+  /// tran_id). Unique per provider.
+  providerRef String? @db.VarChar(191)
+  /// Our reference sent TO the provider, so an unmatched webhook can be traced.
+  clientRef   String  @unique @db.VarChar(60)
+  /// Hosted-page / app-switch URL while `REQUIRES_ACTION`.
+  redirectUrl String? @db.VarChar(800)
+  /// Card brand + last4, MFS wallet number masked. Never a PAN.
+  instrument  Json?
+  failureCode String? @db.VarChar(60)
+  /// i18n key under `payment.error.*`.
+  failureKey  String? @db.VarChar(80)
+
+  /// Which attempt this is for the order, 1-based.
+  attempt      Int       @default(1) @db.SmallInt
+  authorizedAt DateTime? @db.Timestamptz(3)
+  capturedAt   DateTime? @db.Timestamptz(3)
+  failedAt     DateTime? @db.Timestamptz(3)
+  expiresAt    DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  order        Order?               @relation("PaymentOrder", fields: [orderId], references: [id], onDelete: Cascade)
+  provider     PaymentProvider      @relation("IntentProvider", fields: [providerId], references: [id], onDelete: Restrict)
+  transactions PaymentTransaction[] @relation("TxnIntent")
+  refunds      Refund[]             @relation("RefundIntent")
+  cycle        SubscriptionCycle?   @relation("CyclePayment", fields: [subscriptionCycleId], references: [id], onDelete: SetNull)
+
+  @@unique([providerId, providerRef])
+  @@index([orderId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("payment_intents")
+}
+
+enum PaymentTxnKind {
+  AUTHORIZE  @map("authorize")
+  CAPTURE    @map("capture")
+  VOID       @map("void")
+  REFUND     @map("refund")
+  CHARGEBACK @map("chargeback")
+  SYNC       @map("sync")
+
+  @@map("payment_txn_kind")
+}
+
+/// Append-only record of every call to and callback from a provider. This is
+/// the audit trail Payment Status Sync reconciles against. Never deleted.
+model PaymentTransaction {
+  id             String         @id @db.VarChar(40)
+  intentId       String         @db.VarChar(40)
+  providerId     String         @db.VarChar(40)
+  kind           PaymentTxnKind
+  /// Provider status verbatim, un-normalised.
+  providerStatus String?        @db.VarChar(60)
+  amount         Decimal        @db.Decimal(14, 2)
+  currency       String         @db.Char(3)
+  success        Boolean
+  errorCode      String?        @db.VarChar(60)
+  errorMessage   String?        @db.VarChar(500)
+  /// Full request/response, redacted of secrets by the adapter.
+  rawPayload     Json?
+  /// Round-trip latency, for the provider health dashboard.
+  latencyMs      Int?
+  at             DateTime       @default(now()) @db.Timestamptz(3)
+
+  intent   PaymentIntent   @relation("TxnIntent", fields: [intentId], references: [id], onDelete: Cascade)
+  provider PaymentProvider @relation("TxnProvider", fields: [providerId], references: [id], onDelete: Restrict)
+
+  @@index([intentId, at])
+  @@index([providerId, at(sort: Desc)])
+  @@map("payment_transactions")
+}
+
+enum RefundReasonKind {
+  ORDER_CANCELLED  @map("order-cancelled")
+  ORDER_RETURNED   @map("order-returned")
+  ITEM_MISSING     @map("item-missing")
+  QUALITY          @map("quality")
+  LATE             @map("late")
+  DUPLICATE_CHARGE @map("duplicate-charge")
+  GOODWILL         @map("goodwill")
+  OTHER            @map("other")
+
+  @@map("refund_reason_kind")
+}
+
+enum RefundExecutionStatus {
+  PENDING    @map("pending")
+  PROCESSING @map("processing")
+  SUCCEEDED  @map("succeeded")
+  FAILED     @map("failed")
+
+  @@map("refund_execution_status")
+}
+
+/// Money actually going back. Several rows per intent express partial refunds;
+/// `SUM(amount) <= intent.capturedAmount` is enforced in the write path.
+model Refund {
+  id            String                @id @db.VarChar(40)
+  intentId      String                @db.VarChar(40)
+  orderId       String?               @db.VarChar(40)
+  requestId     String?               @db.VarChar(40)
+  providerId    String                @db.VarChar(40)
+  amount        Decimal               @db.Decimal(14, 2)
+  currency      String                @db.Char(3)
+  /// True when it does not cover the whole capture.
+  isPartial     Boolean               @default(false)
+  reason        RefundReasonKind
+  status        RefundExecutionStatus @default(PENDING)
+  /// Refunds to wallet skip the gateway entirely.
+  toWallet      Boolean               @default(false)
+  providerRef   String?               @db.VarChar(191)
+  failureCode   String?               @db.VarChar(60)
+  requestedById String?               @db.VarChar(40)
+  processedAt   DateTime?             @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  intent   PaymentIntent   @relation("RefundIntent", fields: [intentId], references: [id], onDelete: Cascade)
+  order    Order?          @relation("RefundOrder", fields: [orderId], references: [id], onDelete: SetNull)
+  provider PaymentProvider @relation("RefundProvider", fields: [providerId], references: [id], onDelete: Restrict)
+
+  @@index([intentId])
+  @@index([orderId])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("refunds")
+}
+
+enum WebhookStatus {
+  RECEIVED  @map("received")
+  VERIFIED  @map("verified")
+  PROCESSED @map("processed")
+  IGNORED   @map("ignored")
+  INVALID   @map("invalid")
+  FAILED    @map("failed")
+
+  @@map("webhook_status")
+}
+
+/// Every inbound provider callback, stored BEFORE it is processed. Signature
+/// verification, deduplication by `(providerId, eventId)` and replay all read
+/// from this table — a webhook is never trusted or handled inline.
+model PaymentWebhookEvent {
+  id             String        @id @db.VarChar(40)
+  providerId     String        @db.VarChar(40)
+  /// The provider's event id; the dedup key.
+  eventId        String?       @db.VarChar(191)
+  eventType      String?       @db.VarChar(120)
+  status         WebhookStatus @default(RECEIVED)
+  signature      String?       @db.VarChar(500)
+  signatureValid Boolean?
+  headers        Json?
+  payload        Json
+  /// Intent resolved from the payload, once known.
+  intentId       String?       @db.VarChar(40)
+  attempts       Int           @default(0) @db.SmallInt
+  lastError      String?
+  receivedAt     DateTime      @default(now()) @db.Timestamptz(3)
+  processedAt    DateTime?     @db.Timestamptz(3)
+
+  provider PaymentProvider @relation("WebhookProvider", fields: [providerId], references: [id], onDelete: Restrict)
+
+  @@unique([providerId, eventId])
+  @@index([status, receivedAt])
+  @@index([intentId])
+  @@map("payment_webhook_events")
+}
+
+/// A tokenised instrument. The token belongs to the provider; we keep only the
+/// display fields, so PCI scope stays at SAQ-A.
+model SavedPaymentMethod {
+  id          String            @id @db.VarChar(40)
+  userId      String            @db.VarChar(40)
+  providerId  String            @db.VarChar(40)
+  method      PaymentMethodKind
+  /// Provider-side token / customer id.
+  token       String            @db.VarChar(191)
+  brand       String?           @db.VarChar(40)
+  last4       String?           @db.Char(4)
+  expMonth    Int?              @db.SmallInt
+  expYear     Int?              @db.SmallInt
+  /// Masked MFS number for bKash/Nagad/Rocket.
+  maskedPhone String?           @db.VarChar(24)
+  holderName  String?           @db.VarChar(120)
+  isDefault   Boolean           @default(false)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  user     User            @relation("SavedMethodUser", fields: [userId], references: [id], onDelete: Cascade)
+  provider PaymentProvider @relation("SavedMethodProvider", fields: [providerId], references: [id], onDelete: Restrict)
+
+  @@unique([providerId, token])
+  @@index([userId, deletedAt])
+  @@map("saved_payment_methods")
+}
+
+// ---------------------------------------------------------------------------
+// Wallet — `types/wallet.ts`
+// ---------------------------------------------------------------------------
+
+/// `balance` is a maintained projection of `WalletTransaction`, updated in the
+/// same transaction as the entry. A nightly job asserts it still equals the sum.
+model Wallet {
+  id       String  @id @db.VarChar(40)
+  userId   String  @unique @db.VarChar(40)
+  currency String  @db.Char(3)
+  balance  Decimal @default(0) @db.Decimal(14, 2)
+  /// Credits not yet spendable (a cashback awaiting the return window).
+  pending  Decimal @default(0) @db.Decimal(14, 2)
+  isLocked Boolean @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  user         User                @relation("UserWallet", fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[] @relation("WalletTxns")
+
+  @@map("wallets")
+}
+
+enum WalletTxnKind {
+  TOP_UP     @map("top-up")
+  PAYMENT    @map("payment")
+  REFUND     @map("refund")
+  REWARD     @map("reward")
+  CASHBACK   @map("cashback")
+  ADJUSTMENT @map("adjustment")
+
+  @@map("wallet_txn_kind")
+}
+
+/// Append-only. Signed amounts: credit > 0, debit < 0.
+model WalletTransaction {
+  id           String        @id @db.VarChar(40)
+  walletId     String        @db.VarChar(40)
+  type         WalletTxnKind
+  amount       Decimal       @db.Decimal(14, 2)
+  /// Balance after this entry, so the statement needs no window function.
+  balanceAfter Decimal       @db.Decimal(14, 2)
+  currency     String        @db.Char(3)
+  description  String        @db.VarChar(240)
+  orderId      String?       @db.VarChar(40)
+  /// Human order reference for the statement line.
+  orderNumber  String?       @db.VarChar(24)
+  /// Set for a top-up paid through a gateway.
+  intentId     String?       @db.VarChar(40)
+  occurredAt   DateTime      @default(now()) @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  wallet Wallet @relation("WalletTxns", fields: [walletId], references: [id], onDelete: Cascade)
+  order  Order? @relation("WalletTxnOrder", fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, occurredAt(sort: Desc)])
+  @@index([orderId])
+  @@map("wallet_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Ledger — the single source of truth for money
+// ---------------------------------------------------------------------------
+
+enum LedgerAccountKind {
+  PLATFORM_REVENUE @map("platform-revenue")
+  PLATFORM_CASH    @map("platform-cash")
+  VENDOR_PAYABLE   @map("vendor-payable")
+  RIDER_PAYABLE    @map("rider-payable")
+  RIDER_CASH_HELD  @map("rider-cash-held")
+  CUSTOMER_WALLET  @map("customer-wallet")
+  TAX_PAYABLE      @map("tax-payable")
+  GATEWAY_FEES     @map("gateway-fees")
+  PROMOTIONS       @map("promotions")
+  SUSPENSE         @map("suspense")
+
+  @@map("ledger_account_kind")
+}
+
+model LedgerAccount {
+  id       String            @id @db.VarChar(40)
+  kind     LedgerAccountKind
+  /// Vendor id / rider id / user id, or null for a platform account.
+  ownerId  String?           @db.VarChar(40)
+  currency String            @db.Char(3)
+  /// Maintained projection of the entries.
+  balance  Decimal           @default(0) @db.Decimal(16, 2)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  entries LedgerEntry[] @relation("AccountEntries")
+
+  @@unique([kind, ownerId, currency])
+  @@map("ledger_accounts")
+}
+
+/// Double-entry. Every business event writes >= 2 rows sharing one
+/// `transactionRef`, and they must sum to zero. Append-only, never updated.
+model LedgerEntry {
+  id             String   @id @db.VarChar(40)
+  accountId      String   @db.VarChar(40)
+  /// Groups the legs of one event.
+  transactionRef String   @db.VarChar(40)
+  /// e.g. "order.captured", "payout.settled", "rider.remitted".
+  eventName      String   @db.VarChar(60)
+  /// Signed: debit < 0, credit > 0 from the account's perspective.
+  amount         Decimal  @db.Decimal(16, 2)
+  currency       String   @db.Char(3)
+  orderId        String?  @db.VarChar(40)
+  payoutId       String?  @db.VarChar(40)
+  description    String   @db.VarChar(240)
+  occurredAt     DateTime @default(now()) @db.Timestamptz(3)
+
+  account LedgerAccount @relation("AccountEntries", fields: [accountId], references: [id], onDelete: Restrict)
+  order   Order?        @relation("LedgerOrder", fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([accountId, occurredAt(sort: Desc)])
+  @@index([transactionRef])
+  @@index([orderId])
+  @@map("ledger_entries")
+}
+
+// ---------------------------------------------------------------------------
+// Settlement
+// ---------------------------------------------------------------------------
+
+enum PayoutAccountKind {
+  BANK   @map("bank")
+  MFS    @map("mfs")
+  STRIPE @map("stripe")
+  PAYPAL @map("paypal")
+
+  @@map("payout_account_kind")
+}
+
+model PayoutAccount {
+  id           String            @id @db.VarChar(40)
+  /// Exactly one of these is set.
+  vendorId     String?           @db.VarChar(40)
+  riderId      String?           @db.VarChar(40)
+  kind         PayoutAccountKind
+  holderName   String            @db.VarChar(160)
+  /// Masked; the full value lives in the secret manager keyed by `secretRef`.
+  maskedNumber String            @db.VarChar(40)
+  secretRef    String?           @db.VarChar(120)
+  bankName     String?           @db.VarChar(160)
+  branchName   String?           @db.VarChar(160)
+  routingCode  String?           @db.VarChar(40)
+  currency     String            @db.Char(3)
+  countryCode  String            @db.Char(2)
+  isDefault    Boolean           @default(false)
+  isVerified   Boolean           @default(false)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor  Vendor?  @relation("PayoutAccountVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  rider   Rider?   @relation("PayoutAccountRider", fields: [riderId], references: [id], onDelete: Cascade)
+  payouts Payout[] @relation("PayoutAccount")
+
+  @@index([vendorId])
+  @@index([riderId])
+  @@map("payout_accounts")
+}
+
+enum PayoutStatus {
+  SCHEDULED  @map("scheduled")
+  PROCESSING @map("processing")
+  PAID       @map("paid")
+  FAILED     @map("failed")
+  CANCELLED  @map("cancelled")
+
+  @@map("payout_status")
+}
+
+/// A settlement run for one vendor (or rider) over one period.
+model Payout {
+  id              String       @id @db.VarChar(40)
+  reference       String       @unique @db.VarChar(32)
+  vendorId        String?      @db.VarChar(40)
+  riderId         String?      @db.VarChar(40)
+  accountId       String?      @db.VarChar(40)
+  providerId      String?      @db.VarChar(40)
+  status          PayoutStatus @default(SCHEDULED)
+  currency        String       @db.Char(3)
+  /// Gross sales in the window.
+  grossAmount     Decimal      @db.Decimal(16, 2)
+  commission      Decimal      @default(0) @db.Decimal(16, 2)
+  /// Refunds and chargebacks clawed back.
+  deductions      Decimal      @default(0) @db.Decimal(16, 2)
+  /// Cash the rider/vendor already collected on our behalf.
+  cashOffset      Decimal      @default(0) @db.Decimal(16, 2)
+  netAmount       Decimal      @db.Decimal(16, 2)
+  periodStart     DateTime     @db.Timestamptz(3)
+  periodEnd       DateTime     @db.Timestamptz(3)
+  paidAt          DateTime?    @db.Timestamptz(3)
+  providerRef     String?      @db.VarChar(191)
+  failureCode     String?      @db.VarChar(60)
+  statementFileId String?      @db.VarChar(40)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  vendor   Vendor?          @relation("PayoutVendor", fields: [vendorId], references: [id], onDelete: SetNull)
+  rider    Rider?           @relation("PayoutRider", fields: [riderId], references: [id], onDelete: SetNull)
+  account  PayoutAccount?   @relation("PayoutAccount", fields: [accountId], references: [id], onDelete: SetNull)
+  provider PaymentProvider? @relation("PayoutProvider", fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, periodEnd(sort: Desc)])
+  @@index([riderId, periodEnd(sort: Desc)])
+  @@index([status, periodEnd])
+  @@map("payouts")
+}
+
+/// Commission a vendor is charged, resolvable per vendor / type / country so a
+/// negotiated rate is data. Snapshotted onto `Order.commission` at placement.
+model CommissionRule {
+  id            String           @id @db.VarChar(40)
+  vendorId      String?          @db.VarChar(40)
+  vendorType    VendorTypeKind?
+  countryCode   String?          @db.Char(2)
+  fulfillment   FulfillmentKind?
+  rate          Decimal          @db.Decimal(6, 4)
+  fixedFee      Decimal          @default(0) @db.Decimal(14, 2)
+  minFee        Decimal          @default(0) @db.Decimal(14, 2)
+  priority      Int              @default(0) @db.SmallInt
+  effectiveFrom DateTime         @db.Timestamptz(3)
+  effectiveTo   DateTime?        @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  @@index([vendorId, effectiveFrom])
+  @@index([countryCode, vendorType, effectiveFrom])
+  @@map("commission_rules")
+}
+
+// ---------------------------------------------------------------------------
+// Platform membership (spec: Admin Panel → Membership / Subscription)
+// ---------------------------------------------------------------------------
+
+enum MembershipInterval {
+  MONTHLY @map("monthly")
+  YEARLY  @map("yearly")
+
+  @@map("membership_interval")
+}
+
+/// A SaaS plan a merchant subscribes to. Distinct from `MealPlan`, which is a
+/// consumer product — the two share no table on purpose.
+model MembershipPlan {
+  id             String             @id @db.VarChar(40)
+  slug           String             @unique @db.VarChar(60)
+  name           String             @db.VarChar(80)
+  description    String             @default("") @db.VarChar(400)
+  interval       MembershipInterval @default(MONTHLY)
+  price          Decimal            @db.Decimal(14, 2)
+  currency       String             @db.Char(3)
+  /// Commission override while on this plan; null = use `CommissionRule`.
+  commissionRate Decimal?           @db.Decimal(6, 4)
+  /// Capability slugs, e.g. ["pos", "qr-menu", "analytics.advanced"].
+  features       String[]           @default([])
+  maxBranches    Int?               @db.SmallInt
+  maxStaff       Int?               @db.SmallInt
+  trialDays      Int                @default(0) @db.SmallInt
+  isPublic       Boolean            @default(true)
+  sort           Int                @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  memberships VendorMembership[] @relation("MembershipPlanRef")
+
+  @@map("membership_plans")
+}
+
+enum MembershipStatus {
+  TRIALING  @map("trialing")
+  ACTIVE    @map("active")
+  PAST_DUE  @map("past-due")
+  CANCELLED @map("cancelled")
+  EXPIRED   @map("expired")
+
+  @@map("membership_status")
+}
+
+model VendorMembership {
+  id                 String           @id @db.VarChar(40)
+  vendorId           String           @db.VarChar(40)
+  planId             String           @db.VarChar(40)
+  status             MembershipStatus @default(TRIALING)
+  currency           String           @db.Char(3)
+  startedAt          DateTime         @db.Timestamptz(3)
+  trialEndsAt        DateTime?        @db.Timestamptz(3)
+  currentPeriodStart DateTime         @db.Timestamptz(3)
+  currentPeriodEnd   DateTime         @db.Timestamptz(3)
+  cancelAtPeriodEnd  Boolean          @default(false)
+  cancelledAt        DateTime?        @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  vendor Vendor         @relation("MembershipVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  plan   MembershipPlan @relation("MembershipPlanRef", fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([vendorId, status])
+  @@index([currentPeriodEnd])
+  @@map("vendor_memberships")
+}

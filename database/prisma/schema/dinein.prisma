@@ -1,0 +1,343 @@
+// =============================================================================
+// DINE-IN — tables, the QR menu, guest sittings and POS Lite.
+//
+// Serves `types/table.ts`, `types/qr.ts` and `types/pos.ts`.
+//
+// `DineInRound` / `ServiceRequest` are session records the guest's device holds
+// in Phase C. Persisting them is what lets the KITCHEN see a round and a waiter
+// see a call — the whole point of the feature — so they become real tables
+// hanging off a `DineInSession`. Their status stays derived from `sentAt`, as
+// `lib/qr.ts` does today.
+// =============================================================================
+
+enum TableZoneKind {
+  INDOOR  @map("indoor")
+  OUTDOOR @map("outdoor")
+  ROOFTOP @map("rooftop")
+  PRIVATE @map("private")
+
+  @@map("table_zone_kind")
+}
+
+model RestaurantTable {
+  id       String        @id @db.VarChar(40)
+  vendorId String        @db.VarChar(40)
+  branchId String?       @db.VarChar(40)
+  /// Short floor label, e.g. "T1", "P2".
+  label    String        @db.VarChar(16)
+  seats    Int           @db.SmallInt
+  zone     TableZoneKind @default(INDOOR)
+  /// Position on the floor plan, for the dashboard's map view.
+  posX     Int?          @db.SmallInt
+  posY     Int?          @db.SmallInt
+  isActive Boolean       @default(true)
+  sort     Int           @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor       Vendor             @relation("VendorTables", fields: [vendorId], references: [id], onDelete: Cascade)
+  reservations ReservationTable[] @relation("TableReservations")
+  sessions     DineInSession[]    @relation("SessionTable")
+  posTickets   PosHeldTicket[]    @relation("HeldTicketTable")
+
+  @@unique([vendorId, label])
+  @@index([vendorId, zone, deletedAt])
+  @@map("restaurant_tables")
+}
+
+/// Per-venue QR menu settings — what a scanning guest is allowed to do.
+model QrMenuConfig {
+  id                String  @id @db.VarChar(40)
+  vendorId          String  @unique @db.VarChar(40)
+  /// Greeting on the welcome sheet, in the venue's voice.
+  welcomeMessage    String  @default("") @db.VarChar(400)
+  /// Guests may send orders to the kitchen (false = browse-only menu).
+  ordering          Boolean @default(true)
+  waiterCall        Boolean @default(true)
+  billRequest       Boolean @default(true)
+  /// Dine-in service charge as a fraction of subtotal (0 = none).
+  serviceChargeRate Decimal @default(0) @db.Decimal(6, 4)
+  askGuestName      Boolean @default(false)
+  /// Menu served to scanners; falls back to the default menu when null.
+  menuId            String? @db.VarChar(40)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor Vendor @relation("VendorQrConfig", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("qr_menu_configs")
+}
+
+enum DineInSessionStatus {
+  OPEN      @map("open")
+  BILLED    @map("billed")
+  CLOSED    @map("closed")
+  ABANDONED @map("abandoned")
+
+  @@map("dine_in_session_status")
+}
+
+/// One sitting at one table. A sitting ACCUMULATES rounds (starters, then
+/// mains, then dessert) rather than replacing a single cart.
+model DineInSession {
+  id                String              @id @db.VarChar(40)
+  vendorId          String              @db.VarChar(40)
+  tableId           String?             @db.VarChar(40)
+  /// Anonymous guest key from the scanning device.
+  guestKey          String              @db.VarChar(60)
+  guestName         String?             @db.VarChar(120)
+  userId            String?             @db.VarChar(40)
+  status            DineInSessionStatus @default(OPEN)
+  currency          String              @db.Char(3)
+  /// Snapshot of the config at scan time, so a mid-meal settings change cannot
+  /// re-price the bill.
+  serviceChargeRate Decimal             @default(0) @db.Decimal(6, 4)
+  taxRate           Decimal             @default(0) @db.Decimal(6, 4)
+  taxLabel          String              @default("VAT") @db.VarChar(40)
+  openedAt          DateTime            @default(now()) @db.Timestamptz(3)
+  billedAt          DateTime?           @db.Timestamptz(3)
+  closedAt          DateTime?           @db.Timestamptz(3)
+  /// The POS sale that settled it, when the counter took payment.
+  posSaleId         String?             @unique @db.VarChar(40)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  table    RestaurantTable? @relation("SessionTable", fields: [tableId], references: [id], onDelete: SetNull)
+  rounds   DineInRound[]    @relation("SessionRounds")
+  requests ServiceRequest[] @relation("SessionRequests")
+
+  @@index([vendorId, status, openedAt(sort: Desc)])
+  @@index([tableId, status])
+  @@index([guestKey])
+  @@map("dine_in_sessions")
+}
+
+/// One "send to kitchen" batch. No status column: progress is derived from
+/// `sentAt` exactly as `lib/qr.ts` does.
+model DineInRound {
+  id          String    @id @db.VarChar(40)
+  sessionId   String    @db.VarChar(40)
+  /// 1-based position within the sitting, shown as "Round 2".
+  roundNumber Int       @db.SmallInt
+  note        String    @default("") @db.VarChar(400)
+  sentAt      DateTime  @default(now()) @db.Timestamptz(3)
+  /// Set by the kitchen when it is actually out — the honest override for the
+  /// time-derived status.
+  servedAt    DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  session DineInSession     @relation("SessionRounds", fields: [sessionId], references: [id], onDelete: Cascade)
+  items   DineInRoundItem[] @relation("RoundItems")
+
+  @@unique([sessionId, roundNumber])
+  @@index([sentAt(sort: Desc)])
+  @@map("dine_in_rounds")
+}
+
+model DineInRoundItem {
+  id        String  @id @db.VarChar(120)
+  roundId   String  @db.VarChar(40)
+  foodId    String  @db.VarChar(40)
+  name      String  @db.VarChar(160)
+  image     String  @default("") @db.VarChar(500)
+  basePrice Decimal @db.Decimal(14, 2)
+  unitPrice Decimal @db.Decimal(14, 2)
+  quantity  Int     @db.SmallInt
+  /// `CartSelectedOption[]` verbatim — a dine-in round reuses the cart line
+  /// shape, so the JSON here is the read model.
+  options   Json    @default("[]")
+
+  round DineInRound @relation("RoundItems", fields: [roundId], references: [id], onDelete: Cascade)
+  food  FoodItem    @relation("RoundItemFood", fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@index([roundId])
+  @@index([foodId])
+  @@map("dine_in_round_items")
+}
+
+enum ServiceRequestKindEnum {
+  WAITER  @map("waiter")
+  WATER   @map("water")
+  CUTLERY @map("cutlery")
+  BILL    @map("bill")
+
+  @@map("service_request_kind")
+}
+
+model ServiceRequest {
+  id          String                 @id @db.VarChar(40)
+  sessionId   String                 @db.VarChar(40)
+  kind        ServiceRequestKindEnum
+  requestedAt DateTime               @default(now()) @db.Timestamptz(3)
+  /// Set when a staff member picks it up — clears it from the floor board.
+  resolvedAt  DateTime?              @db.Timestamptz(3)
+  resolvedBy  String?                @db.VarChar(40)
+
+  session DineInSession @relation("SessionRequests", fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, requestedAt(sort: Desc)])
+  @@index([resolvedAt])
+  @@map("service_requests")
+}
+
+// ---------------------------------------------------------------------------
+// POS Lite — `types/pos.ts`
+// ---------------------------------------------------------------------------
+
+enum PosOrderTypeKind {
+  DINE_IN  @map("dine-in")
+  TAKEAWAY @map("takeaway")
+  DELIVERY @map("delivery")
+
+  @@map("pos_order_type_kind")
+}
+
+/// A cashier's till session. Opening/closing floats make the drawer
+/// reconcilable, which a bare list of sales is not.
+model PosShift {
+  id           String    @id @db.VarChar(40)
+  vendorId     String    @db.VarChar(40)
+  branchId     String?   @db.VarChar(40)
+  cashierId    String?   @db.VarChar(40)
+  cashierName  String    @db.VarChar(120)
+  currency     String    @db.Char(3)
+  openingFloat Decimal   @default(0) @db.Decimal(14, 2)
+  /// Counted at close; the variance against expected is the audit signal.
+  closingCount Decimal?  @db.Decimal(14, 2)
+  expectedCash Decimal   @default(0) @db.Decimal(14, 2)
+  openedAt     DateTime  @default(now()) @db.Timestamptz(3)
+  closedAt     DateTime? @db.Timestamptz(3)
+  note         String?   @db.VarChar(400)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  vendor Vendor    @relation("VendorPosShifts", fields: [vendorId], references: [id], onDelete: Cascade)
+  sales  PosSale[] @relation("SaleShift")
+
+  @@index([vendorId, openedAt(sort: Desc)])
+  @@index([closedAt])
+  @@map("pos_shifts")
+}
+
+/// A parked ticket the cashier can recall later.
+model PosHeldTicket {
+  id         String           @id @db.VarChar(40)
+  vendorId   String           @db.VarChar(40)
+  /// Human label for the recall list, e.g. "T4 · 15:42".
+  label      String           @db.VarChar(60)
+  orderType  PosOrderTypeKind @default(TAKEAWAY)
+  tableId    String?          @db.VarChar(40)
+  /// `PosDiscount` — { type: "percent" | "amount", value }.
+  discount   Json?
+  note       String?          @db.VarChar(400)
+  cashierId  String?          @db.VarChar(40)
+  heldAt     DateTime         @default(now()) @db.Timestamptz(3)
+  /// Set when recalled and charged; the row is kept for the audit trail.
+  recalledAt DateTime?        @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  vendor Vendor              @relation("VendorHeldTickets", fields: [vendorId], references: [id], onDelete: Cascade)
+  table  RestaurantTable?    @relation("HeldTicketTable", fields: [tableId], references: [id], onDelete: SetNull)
+  lines  PosHeldTicketLine[] @relation("HeldTicketLines")
+
+  @@index([vendorId, heldAt(sort: Desc)])
+  @@map("pos_held_tickets")
+}
+
+model PosHeldTicketLine {
+  id        String  @id @db.VarChar(40)
+  ticketId  String  @db.VarChar(40)
+  foodId    String  @db.VarChar(40)
+  name      String  @db.VarChar(160)
+  image     String  @default("") @db.VarChar(500)
+  unitPrice Decimal @db.Decimal(14, 2)
+  quantity  Int     @db.SmallInt
+
+  ticket PosHeldTicket @relation("HeldTicketLines", fields: [ticketId], references: [id], onDelete: Cascade)
+  food   FoodItem      @relation("HeldLineFood", fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId])
+  @@map("pos_held_ticket_lines")
+}
+
+/// A completed, immutable sale — the POS equivalent of an Order.
+model PosSale {
+  id         String           @id @db.VarChar(40)
+  /// Human-facing reference, e.g. "POS-8F3A21".
+  saleNumber String           @unique @db.VarChar(24)
+  vendorId   String           @db.VarChar(40)
+  branchId   String?          @db.VarChar(40)
+  shiftId    String?          @db.VarChar(40)
+  orderType  PosOrderTypeKind
+  /// Snapshot of the table label for dine-in, else null.
+  tableLabel String?          @db.VarChar(16)
+
+  // --- pricing (PosPricing) --------------------------------------------------
+  currency String  @db.Char(3)
+  subtotal Decimal @db.Decimal(14, 2)
+  discount Decimal @default(0) @db.Decimal(14, 2)
+  tax      Decimal @default(0) @db.Decimal(14, 2)
+  taxLabel String  @default("VAT") @db.VarChar(40)
+  taxRate  Decimal @default(0) @db.Decimal(6, 4)
+  total    Decimal @db.Decimal(14, 2)
+
+  // --- payment (PosPayment) --------------------------------------------------
+  method    PaymentMethodKind
+  /// Cash handed over and change returned (cash only), else null.
+  tendered  Decimal?          @db.Decimal(14, 2)
+  change    Decimal?          @db.Decimal(14, 2)
+  cardLast4 String?           @db.Char(4)
+
+  cashierId   String?   @db.VarChar(40)
+  cashierName String    @db.VarChar(120)
+  soldAt      DateTime  @db.Timestamptz(3)
+  /// A refunded sale is voided, never deleted.
+  voidedAt    DateTime? @db.Timestamptz(3)
+  voidReason  String?   @db.VarChar(240)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor  Vendor        @relation("VendorPosSales", fields: [vendorId], references: [id], onDelete: Cascade)
+  shift   PosShift?     @relation("SaleShift", fields: [shiftId], references: [id], onDelete: SetNull)
+  cashier User?         @relation("PosSaleCashier", fields: [cashierId], references: [id], onDelete: SetNull)
+  lines   PosSaleItem[] @relation("SaleItems")
+
+  @@index([vendorId, soldAt(sort: Desc)])
+  @@index([shiftId])
+  @@map("pos_sales")
+}
+
+model PosSaleItem {
+  id        String  @id @db.VarChar(40)
+  saleId    String  @db.VarChar(40)
+  foodId    String? @db.VarChar(40)
+  name      String  @db.VarChar(160)
+  image     String  @default("") @db.VarChar(500)
+  unitPrice Decimal @db.Decimal(14, 2)
+  quantity  Int     @db.SmallInt
+  lineTotal Decimal @db.Decimal(14, 2)
+
+  sale PosSale   @relation("SaleItems", fields: [saleId], references: [id], onDelete: Cascade)
+  food FoodItem? @relation("PosSaleItemFood", fields: [foodId], references: [id], onDelete: SetNull)
+
+  @@index([saleId])
+  @@index([foodId])
+  @@map("pos_sale_items")
+}

@@ -1,0 +1,78 @@
+// =============================================================================
+// FoodOra — Prisma schema (Phase D4)
+//
+// Multi-file schema (Prisma >= 6.7, GA). The folder is wired up in
+// `database/package.json` -> "prisma": { "schema": "./prisma/schema" }.
+//
+// One file per bounded context, mirroring `backend/src/modules/*` so a module
+// stays independently maintainable (Phase D1 rule).
+//
+// -----------------------------------------------------------------------------
+// CONVENTIONS — applied to every model in this schema
+// -----------------------------------------------------------------------------
+//
+// 1. IDs are application-generated, prefixed, lexicographically sortable
+//    strings ("ven_01J8…", "usr_01J8…"). Prisma has no `@default` that can
+//    produce a prefix, so `IdService.next('ven')` in `common/ids` mints them
+//    and every `create` passes one. This preserves the ids the frontend and its
+//    seed data already use (`ven_*`, `usr_*`, `cat_*`, `cus_*`, `off_*`,
+//    `cpn_*`, `cpk_*`, `cao_*`, `rid_*`, `job_*`, `dzn_*`, `bpol_*`, `mpl_*`,
+//    `qrc_*`, `tst_*`, `wtx_*`, `addr_*`, `doc_*`, `post_*`) — deep links
+//    minted during Phase C keep resolving after the cutover.
+//    Pure join tables use composite primary keys instead.
+//
+// 2. AUDIT FIELDS. Every persisted row carries `createdAt`, `updatedAt`,
+//    `deletedAt`, plus `createdBy` / `updatedBy` / `deletedBy` on anything a
+//    human edits. `types/common.ts::BaseEntity` already exposes the first
+//    three to the frontend, so the read models need no reshaping.
+//
+// 3. SOFT DELETE. `deletedAt IS NULL` means active. Enforced globally by a
+//    Prisma client extension (`infrastructure/prisma/soft-delete.extension.ts`)
+//    that rewrites `findMany`/`findFirst`/`count`/`aggregate` and turns
+//    `delete` into an update. Immutable financial records (payments, ledger
+//    entries, order events, dispatches) deliberately have NO `deletedAt` —
+//    they are never deleted, only superseded.
+//
+// 4. OPTIMISTIC LOCKING. Mutable aggregates carry `version Int @default(0)`.
+//    Writes go through `updateMany({ where: { id, version }, data: { …,
+//    version: { increment: 1 } } })`; a 0-row result raises `ConflictError`
+//    (GraphQL `CONFLICT`). Append-only tables have no `version`.
+//
+// 5. MONEY is `Decimal @db.Decimal(14, 2)` — exact base-unit amounts, never
+//    float. Rates/fractions are `Decimal @db.Decimal(6, 4)` (0.0875 = 8.75%).
+//    Resolvers convert to `number` at the GraphQL boundary because the
+//    frontend types money as a plain `number` in the entity's currency.
+//    See D2 §Money for why Decimal beat minor-unit integers here.
+//
+// 6. ENUM LABELS are stored in the frontend's kebab-case vocabulary via
+//    `@map`, so a Postgres row reads identically to the TypeScript union
+//    ("cloud-kitchen", "rider-assigned", "free-delivery"). D5 §Enums explains
+//    how those reach the wire unchanged.
+//
+// 7. SNAPSHOTS. Where the frontend embeds an immutable copy of another entity
+//    (`Order.vendor`, `Order.address`, `Reservation.venue`,
+//    `Subscription.plan`, `CateringQuote.service`, `OrderLifecycle.rider`) the
+//    snapshot is stored as `Json` **and** the live FK is kept beside it. The
+//    JSON serves the read model with zero reshaping; the FK serves joins,
+//    analytics and referential integrity.
+//
+// 8. DERIVED STATE IS NEVER STORED. The Phase C convention holds: no
+//    `isExpired`, no `isUsed`, no reservation-slot table, no review aggregate,
+//    no subscription calendar. Those are computed fields in the resolver layer
+//    (D5 §Derived fields). The only exceptions are the denormalised counters
+//    the frontend already reads (`Vendor.rating`/`reviewCount`,
+//    `Offer.claimed`) — maintained transactionally, see `RatingAggregate`.
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../../../backend/src/infrastructure/prisma/generated"
+  previewFeatures = ["postgresqlExtensions", "relationJoins", "views"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DATABASE_DIRECT_URL")
+  extensions = [pg_trgm, unaccent, citext, btree_gin]
+}

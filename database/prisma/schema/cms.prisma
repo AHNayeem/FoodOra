@@ -1,0 +1,337 @@
+// =============================================================================
+// CMS & CONTENT — the schema-driven content model, plus blog and testimonials.
+//
+// Serves `types/cms.ts` and `types/content.ts`.
+//
+// The C26 design is preserved exactly, because it is the reason every marketing
+// surface is already dynamic: a COLLECTION declares its fields, a DOCUMENT holds
+// values against them, and `lib/cms.ts` projects a document back into the domain
+// type each surface renders (`LegalDoc`, `FaqGroup`, `CmsBanner`, `CmsSeo`,
+// `Category`, `BlogPost`…). Phase E swaps the seed for these rows; no component
+// learns the CMS moved.
+//
+// `values` / `draft` stay JSONB. That is not laziness: the shape is declared by
+// `CmsCollection.fields` at runtime, so a relational decomposition would need a
+// migration every time an editor adds a field — the exact thing the design
+// exists to avoid. Localized text is `CmsLocalizedText` inside the JSON, and
+// resolution stays authored → message key → default locale.
+//
+// DERIVED, NEVER STORED: `CmsStatus` (published / draft / scheduled / expired /
+// archived) comes from the window + `archivedAt` + whether a draft exists.
+// =============================================================================
+
+enum CmsCollectionKind {
+  BANNERS    @map("banners")
+  PAGES      @map("pages")
+  LEGAL      @map("legal")
+  POSTS      @map("posts")
+  FAQS       @map("faqs")
+  CATEGORIES @map("categories")
+  MENUS      @map("menus")
+  SEO        @map("seo")
+  SITE       @map("site")
+
+  @@map("cms_collection_kind")
+}
+
+/// A collection definition. Seeded from `lib/mock/cms.ts` and thereafter
+/// editable, so adding a field is a row update rather than a deployment.
+model CmsCollection {
+  id          CmsCollectionKind @id
+  label       String            @db.VarChar(80)
+  description String            @default("") @db.VarChar(400)
+  /// Lucide name, resolved by `components/directory/dash-icon`.
+  icon        String            @db.VarChar(60)
+  /// Where the public site renders it — shown in the admin as a preview link.
+  surface     String            @db.VarChar(120)
+  previewHref String?           @db.VarChar(200)
+  /// `CmsFieldDef[]` — the field schema every document in the collection has.
+  fields      Json
+  creatable   Boolean           @default(false)
+  orderable   Boolean           @default(false)
+  /// Value key used as the document's title in lists.
+  titleField  String            @db.VarChar(60)
+  sort        Int               @default(0) @db.SmallInt
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  documents CmsDocument[] @relation("CollectionDocuments")
+
+  @@map("cms_collections")
+}
+
+model CmsDocument {
+  id         String            @id @db.VarChar(40)
+  collection CmsCollectionKind
+  /// Stable handle the code asks for: "home-hero", "terms", "header".
+  key        String            @db.VarChar(120)
+  /// Published values — what the site renders.
+  values     Json
+  /// Unpublished edits; null when there is no open draft.
+  draft      Json?
+  sort       Int               @default(0) @db.SmallInt
+
+  /// Publication window. Null on both sides = live as soon as published.
+  publishAt     DateTime? @db.Timestamptz(3)
+  unpublishAt   DateTime? @db.Timestamptz(3)
+  /// First publication; null for a document that has never been live.
+  publishedAt   DateTime? @db.Timestamptz(3)
+  archivedAt    DateTime? @db.Timestamptz(3)
+  /// Display name of whoever last saved it.
+  updatedByName String    @default("") @db.VarChar(120)
+  updatedById   String?   @db.VarChar(40)
+  /// Structural documents an editor may rewrite but not delete.
+  locked        Boolean   @default(false)
+  /// Fields beyond the collection's, for a document with its own shape.
+  fields        Json?
+  /// Field key → i18n message key used when no text is authored.
+  fallbacks     Json?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  collectionRef CmsCollection   @relation("CollectionDocuments", fields: [collection], references: [id], onDelete: Restrict)
+  revisions     CmsRevision[]   @relation("DocumentRevisions")
+  auditEntries  CmsAuditEntry[] @relation("DocumentAudit")
+
+  @@unique([collection, key])
+  @@index([collection, sort])
+  @@index([publishAt, unpublishAt])
+  @@index([archivedAt])
+  /// Value search across authored text, using the JSONB GIN index added in the
+  /// migration (`USING gin (values jsonb_path_ops)`).
+  @@map("cms_documents")
+}
+
+enum CmsRevisionReason {
+  PUBLISH @map("publish")
+  REVERT  @map("revert")
+
+  @@map("cms_revision_reason")
+}
+
+/// A saved snapshot of published values, so a publish is reversible.
+model CmsRevision {
+  id         String            @id @db.VarChar(40)
+  documentId String            @db.VarChar(40)
+  values     Json
+  at         DateTime          @default(now()) @db.Timestamptz(3)
+  by         String            @default("") @db.VarChar(120)
+  byId       String?           @db.VarChar(40)
+  reason     CmsRevisionReason @default(PUBLISH)
+
+  document CmsDocument @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, at(sort: Desc)])
+  @@map("cms_revisions")
+}
+
+enum CmsAuditActionKind {
+  CREATED     @map("created")
+  SAVED       @map("saved")
+  PUBLISHED   @map("published")
+  UNPUBLISHED @map("unpublished")
+  REVERTED    @map("reverted")
+  ARCHIVED    @map("archived")
+  RESTORED    @map("restored")
+  DISCARDED   @map("discarded")
+  REORDERED   @map("reordered")
+
+  @@map("cms_audit_action_kind")
+}
+
+/// The CMS's own audit trail. Kept separate from `AuditLog` because the admin
+/// renders it inline per document and the shape is fixed by `CmsAuditEntry`.
+model CmsAuditEntry {
+  id         String             @id @db.VarChar(40)
+  documentId String             @db.VarChar(40)
+  collection CmsCollectionKind
+  /// Document title at the time, so the log stays readable after a rename.
+  title      String             @db.VarChar(200)
+  action     CmsAuditActionKind
+  at         DateTime           @default(now()) @db.Timestamptz(3)
+  by         String             @default("") @db.VarChar(120)
+  byId       String?            @db.VarChar(40)
+
+  document CmsDocument @relation("DocumentAudit", fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([at(sort: Desc)])
+  @@index([documentId, at(sort: Desc)])
+  @@map("cms_audit_entries")
+}
+
+enum ContactTopicKind {
+  ORDER   @map("order")
+  PARTNER @map("partner")
+  RIDER   @map("rider")
+  PRESS   @map("press")
+  OTHER   @map("other")
+
+  @@map("contact_topic_kind")
+}
+
+enum ContactMessageStatus {
+  NEW      @map("new")
+  READ     @map("read")
+  REPLIED  @map("replied")
+  ARCHIVED @map("archived")
+  SPAM     @map("spam")
+
+  @@map("contact_message_status")
+}
+
+model CmsContactMessage {
+  id        String               @id @db.VarChar(40)
+  name      String               @db.VarChar(120)
+  email     String               @db.VarChar(191)
+  phone     String?              @db.VarChar(24)
+  topic     ContactTopicKind     @default(OTHER)
+  message   String               @db.Text
+  status    ContactMessageStatus @default(NEW)
+  /// Anti-abuse context.
+  ip        String?              @db.Inet
+  userAgent String?              @db.VarChar(400)
+  at        DateTime             @default(now()) @db.Timestamptz(3)
+  handledBy String?              @db.VarChar(40)
+  handledAt DateTime?            @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  @@index([status, at(sort: Desc)])
+  @@index([topic])
+  @@map("cms_contact_messages")
+}
+
+// ---------------------------------------------------------------------------
+// Editorial — `types/content.ts`
+// ---------------------------------------------------------------------------
+
+enum PostStatus {
+  DRAFT     @map("draft")
+  SCHEDULED @map("scheduled")
+  PUBLISHED @map("published")
+  ARCHIVED  @map("archived")
+
+  @@map("post_status")
+}
+
+/// A blog post. Kept as a first-class table rather than a CMS document because
+/// it is queried by tag, category, author and recency — access patterns a JSONB
+/// value map serves badly. `services/cms.ts::cmsPosts` still projects CMS
+/// overrides on top, so an editor can override a post's copy.
+model BlogPost {
+  id       String     @id @db.VarChar(40)
+  slug     String     @unique @db.VarChar(160)
+  title    String     @db.VarChar(240)
+  excerpt  String     @default("") @db.VarChar(600)
+  cover    String     @default("") @db.VarChar(500)
+  /// Editorial category label, e.g. "Guides".
+  category String     @db.VarChar(80)
+  status   PostStatus @default(PUBLISHED)
+
+  author       String  @db.VarChar(120)
+  /// Short author bio shown in the byline card.
+  authorRole   String  @default("") @db.VarChar(160)
+  authorAvatar String  @default("") @db.VarChar(500)
+  authorId     String? @db.VarChar(40)
+
+  /// Estimated read time in minutes.
+  readMinutes Int      @db.SmallInt
+  publishedAt DateTime @db.Timestamptz(3)
+  /// `BlogBlock[]` — the discriminated article body, in order. Structured data,
+  /// never raw HTML.
+  body        Json
+  /// Per-locale title/excerpt/body overrides, same contract as the CMS.
+  localized   Json?
+  viewCount   Int      @default(0)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  tags PostTag[] @relation("PostTags")
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([category, publishedAt(sort: Desc)])
+  @@map("blog_posts")
+}
+
+/// Free-form tags, used for the tag list and related-post matching.
+model PostTag {
+  postId String @db.VarChar(40)
+  tag    String @db.VarChar(60)
+
+  post BlogPost @relation("PostTags", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tag])
+  @@index([tag])
+  @@map("post_tags")
+}
+
+/// A customer testimonial shown in the social-proof rail. Human-authored copy
+/// lives on the entity as data — only the surrounding chrome is translated.
+model Testimonial {
+  id           String   @id @db.VarChar(40)
+  name         String   @db.VarChar(120)
+  /// Short role/context line, e.g. "Foodie, Dhaka".
+  role         String   @default("") @db.VarChar(120)
+  avatar       String   @default("") @db.VarChar(500)
+  quote        String   @db.Text
+  rating       Int      @db.SmallInt
+  /// Which markets it is shown in; empty = all.
+  countryCodes String[] @default([])
+  isPublished  Boolean  @default(true)
+  sort         Int      @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  @@index([isPublished, sort])
+  @@map("testimonials")
+}
+
+enum JobOpeningStatus {
+  OPEN   @map("open")
+  CLOSED @map("closed")
+  DRAFT  @map("draft")
+
+  @@map("job_opening_status")
+}
+
+/// A careers listing (`lib/mock/pages.ts::jobOpenings`). A table rather than a
+/// CMS document because `/careers/[slug]` needs a routable, filterable entity.
+model JobOpening {
+  id               String           @id @db.VarChar(40)
+  slug             String           @unique @db.VarChar(140)
+  title            String           @db.VarChar(200)
+  team             String           @db.VarChar(80)
+  location         String           @db.VarChar(120)
+  /// "full-time" | "part-time" | "contract" | "internship".
+  employment       String           @db.VarChar(24)
+  /// Remote / hybrid / on-site.
+  workMode         String           @default("on-site") @db.VarChar(16)
+  description      String           @db.Text
+  responsibilities String[]         @default([])
+  requirements     String[]         @default([])
+  status           JobOpeningStatus @default(OPEN)
+  postedAt         DateTime         @db.Timestamptz(3)
+  closesAt         DateTime?        @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  @@index([status, postedAt(sort: Desc)])
+  @@index([team])
+  @@map("job_openings")
+}

@@ -1,0 +1,352 @@
+// =============================================================================
+// SUBSCRIPTIONS — recurring meal plans (the consumer product).
+//
+// Serves `types/subscription.ts`. A `MealPlan` belongs to a vendor and
+// publishes a rotating weekly menu (`PlanMeal`, one row per weekday × slot)
+// plus purchasable `PlanTier`s.
+//
+// DERIVED, NEVER STORED: `PlannedDelivery` / the delivery calendar. A
+// subscription stores only the RULES of its schedule (start date, weekdays,
+// skips, pause) and `buildSchedule` derives the occurrences, so a calendar can
+// never drift from the clock. `SubscriptionPricing` is likewise recomputed —
+// but it is ALSO snapshotted onto the subscription, because the customer agreed
+// to a specific figure and a later price change must not silently rebill them.
+// =============================================================================
+
+enum PlanGoalKind {
+  BALANCED    @map("balanced")
+  WEIGHT_LOSS @map("weight-loss")
+  MUSCLE_GAIN @map("muscle-gain")
+  KETO        @map("keto")
+  PLANT_BASED @map("plant-based")
+  FAMILY      @map("family")
+
+  @@map("plan_goal_kind")
+}
+
+enum MealSlotKind {
+  BREAKFAST @map("breakfast")
+  LUNCH     @map("lunch")
+  DINNER    @map("dinner")
+
+  @@map("meal_slot_kind")
+}
+
+enum BillingCycleKind {
+  WEEKLY  @map("weekly")
+  MONTHLY @map("monthly")
+
+  @@map("billing_cycle_kind")
+}
+
+model MealPlan {
+  id          String       @id @db.VarChar(40)
+  /// The kitchen that cooks it.
+  vendorId    String       @db.VarChar(40)
+  slug        String       @unique @db.VarChar(120)
+  name        String       @db.VarChar(160)
+  tagline     String       @default("") @db.VarChar(240)
+  description String       @default("") @db.Text
+  image       String       @default("") @db.VarChar(500)
+  cover       String       @default("") @db.VarChar(500)
+  goal        PlanGoalKind @default(BALANCED)
+
+  /// Mean macros for a full day on the plan — the weekly menu averaged out.
+  caloriesPerDay Int
+  proteinPerDay  Decimal @db.Decimal(8, 2)
+  carbsPerDay    Decimal @db.Decimal(8, 2)
+  fatPerDay      Decimal @db.Decimal(8, 2)
+
+  /// Short selling points — DATA strings, like vendor taglines.
+  highlights        String[] @default([])
+  rating            Decimal  @default(0) @db.Decimal(3, 2)
+  reviewCount       Int      @default(0)
+  currency          String   @db.Char(3)
+  countryCode       String   @db.Char(2)
+  /// Delivery charge per delivery day.
+  deliveryFeePerDay Decimal  @default(0) @db.Decimal(14, 2)
+  /// Minimum notice before the first delivery, in days.
+  leadTimeDays      Int      @default(1) @db.SmallInt
+  /// How long before a delivery it can still be skipped.
+  skipCutoffHours   Int      @default(24) @db.SmallInt
+  isFeatured        Boolean  @default(false)
+  isActive          Boolean  @default(true)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor        Vendor            @relation("VendorMealPlans", fields: [vendorId], references: [id], onDelete: Cascade)
+  dietary       MealPlanDietary[] @relation("PlanDietary")
+  deliveryDays  MealPlanDay[]     @relation("PlanDeliveryDays")
+  slots         MealPlanSlot[]    @relation("PlanSlots")
+  tiers         PlanTier[]        @relation("PlanTiers")
+  meals         PlanMeal[]        @relation("PlanMeals")
+  subscriptions Subscription[]    @relation("SubscriptionPlan")
+
+  @@index([goal, isActive, deletedAt])
+  @@index([vendorId, deletedAt])
+  @@index([isFeatured, deletedAt])
+  @@map("meal_plans")
+}
+
+model MealPlanDietary {
+  planId String         @db.VarChar(40)
+  tag    DietaryTagKind
+
+  plan MealPlan @relation("PlanDietary", fields: [planId], references: [id], onDelete: Cascade)
+
+  @@id([planId, tag])
+  @@index([tag])
+  @@map("meal_plan_dietary")
+}
+
+/// Weekdays this kitchen delivers the plan on.
+model MealPlanDay {
+  planId String      @db.VarChar(40)
+  day    WeekdayKind
+
+  plan MealPlan @relation("PlanDeliveryDays", fields: [planId], references: [id], onDelete: Cascade)
+
+  @@id([planId, day])
+  @@map("meal_plan_days")
+}
+
+/// Meal slots the plan covers.
+model MealPlanSlot {
+  planId String       @db.VarChar(40)
+  slot   MealSlotKind
+
+  plan MealPlan @relation("PlanSlots", fields: [planId], references: [id], onDelete: Cascade)
+
+  @@id([planId, slot])
+  @@map("meal_plan_slots")
+}
+
+/// A purchasable commitment: how long you commit for and how many meals land
+/// per delivery day. Longer commitments carry a `discountRate` — that is the
+/// whole reason a subscription exists rather than daily ordering.
+model PlanTier {
+  id           String           @id @db.VarChar(40)
+  planId       String           @db.VarChar(40)
+  name         String           @db.VarChar(120)
+  cycle        BillingCycleKind @default(WEEKLY)
+  /// Meals delivered on each delivery day.
+  mealsPerDay  Int              @db.SmallInt
+  /// List price of one meal.
+  pricePerMeal Decimal          @db.Decimal(14, 2)
+  /// Commitment discount on the cycle subtotal (0 = none).
+  discountRate Decimal          @default(0) @db.Decimal(6, 4)
+  isPopular    Boolean          @default(false)
+  isActive     Boolean          @default(true)
+  sort         Int              @default(0) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  plan          MealPlan       @relation("PlanTiers", fields: [planId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[] @relation("SubscriptionTier")
+
+  @@index([planId, sort])
+  @@map("plan_tiers")
+}
+
+/// One dish on a plan's rotating weekly menu.
+model PlanMeal {
+  id          String       @id @db.VarChar(40)
+  planId      String       @db.VarChar(40)
+  day         WeekdayKind
+  slot        MealSlotKind
+  name        String       @db.VarChar(160)
+  description String       @default("") @db.VarChar(600)
+  /// `NutritionFacts`.
+  calories    Int
+  protein     Decimal      @db.Decimal(8, 2)
+  carbs       Decimal      @db.Decimal(8, 2)
+  fat         Decimal      @db.Decimal(8, 2)
+  image       String?      @db.VarChar(500)
+  /// Rotation week, for kitchens that run a 2- or 4-week cycle. 1 = a single
+  /// repeating week, which is what Phase C assumes.
+  weekIndex   Int          @default(1) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  plan    MealPlan          @relation("PlanMeals", fields: [planId], references: [id], onDelete: Cascade)
+  dietary PlanMealDietary[] @relation("PlanMealDietary")
+
+  @@unique([planId, weekIndex, day, slot])
+  @@index([planId])
+  @@map("plan_meals")
+}
+
+model PlanMealDietary {
+  mealId String         @db.VarChar(40)
+  tag    DietaryTagKind
+
+  meal PlanMeal @relation("PlanMealDietary", fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@id([mealId, tag])
+  @@map("plan_meal_dietary")
+}
+
+enum SubscriptionStatusKind {
+  ACTIVE    @map("active")
+  PAUSED    @map("paused")
+  CANCELLED @map("cancelled")
+  PAST_DUE  @map("past-due")
+
+  @@map("subscription_status_kind")
+}
+
+model Subscription {
+  id        String  @id @db.VarChar(40)
+  /// Human-facing reference, e.g. "SUB-8F3A21".
+  reference String  @unique @db.VarChar(24)
+  userId    String? @db.VarChar(40)
+  planId    String  @db.VarChar(40)
+  tierId    String  @db.VarChar(40)
+
+  /// `SubscriptionPlanRef` verbatim — id, slug, name, image, goal, vendorId,
+  /// vendorName, vendorSlug, currency, countryCode, skipCutoffHours.
+  planSnapshot Json
+  tierName     String           @db.VarChar(120)
+  cycle        BillingCycleKind
+  mealsPerDay  Int              @db.SmallInt
+
+  /// First delivery, as a plain local date.
+  startDate       DateTime @db.Date
+  /// Preferred hand-off window, e.g. "07:00–09:00".
+  deliveryWindow  String   @db.VarChar(24)
+  addressId       String?  @db.VarChar(40)
+  /// `DeliveryAddress` snapshot — the kitchen ships to what was agreed.
+  addressSnapshot Json
+  /// Allergies / dislikes for the kitchen.
+  notes           String?  @db.VarChar(500)
+
+  // --- pricing (SubscriptionPricing), snapshotted at subscribe -------------
+  currency            String  @db.Char(3)
+  pricePerMeal        Decimal @db.Decimal(14, 2)
+  deliveryDaysPerWeek Int     @db.SmallInt
+  weeks               Int     @db.SmallInt
+  mealCount           Int     @db.SmallInt
+  subtotal            Decimal @db.Decimal(14, 2)
+  discount            Decimal @default(0) @db.Decimal(14, 2)
+  discountRate        Decimal @default(0) @db.Decimal(6, 4)
+  deliveryFee         Decimal @default(0) @db.Decimal(14, 2)
+  tax                 Decimal @default(0) @db.Decimal(14, 2)
+  taxLabel            String  @default("VAT") @db.VarChar(40)
+  taxRate             Decimal @default(0) @db.Decimal(6, 4)
+  total               Decimal @db.Decimal(14, 2)
+
+  status       SubscriptionStatusKind @default(ACTIVE)
+  /// While paused, deliveries resume on this date; null when active.
+  pausedUntil  DateTime?              @db.Date
+  startedAt    DateTime               @db.Timestamptz(3)
+  cancelledAt  DateTime?              @db.Timestamptz(3)
+  cancelReason String?                @db.VarChar(240)
+  /// Next charge, as a plain date. Derived at write time, re-derived on renew.
+  renewsOn     DateTime               @db.Date
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  user    User?    @relation("SubscriptionUser", fields: [userId], references: [id], onDelete: SetNull)
+  plan    MealPlan @relation("SubscriptionPlan", fields: [planId], references: [id], onDelete: Restrict)
+  tier    PlanTier @relation("SubscriptionTier", fields: [tierId], references: [id], onDelete: Restrict)
+  address Address? @relation("SubscriptionAddress", fields: [addressId], references: [id], onDelete: SetNull)
+
+  slots        SubscriptionSlot[]  @relation("SubscriptionSlots")
+  deliveryDays SubscriptionDay[]   @relation("SubscriptionDays")
+  skips        SubscriptionSkip[]  @relation("SubscriptionSkips")
+  cycles       SubscriptionCycle[] @relation("SubscriptionCycles")
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@index([planId, status])
+  @@index([status, renewsOn])
+  @@map("subscriptions")
+}
+
+model SubscriptionSlot {
+  subscriptionId String       @db.VarChar(40)
+  slot           MealSlotKind
+
+  subscription Subscription @relation("SubscriptionSlots", fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@id([subscriptionId, slot])
+  @@map("subscription_slots")
+}
+
+/// Weekdays the customer chose to receive deliveries on.
+model SubscriptionDay {
+  subscriptionId String      @db.VarChar(40)
+  day            WeekdayKind
+
+  subscription Subscription @relation("SubscriptionDays", fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@id([subscriptionId, day])
+  @@map("subscription_days")
+}
+
+/// A skipped delivery date. A table rather than a `string[]`, so the kitchen's
+/// "what am I cooking tomorrow" query is an index scan.
+model SubscriptionSkip {
+  subscriptionId String   @db.VarChar(40)
+  /// Plain local date.
+  date           DateTime @db.Date
+  skippedAt      DateTime @default(now()) @db.Timestamptz(3)
+  reason         String?  @db.VarChar(240)
+
+  subscription Subscription @relation("SubscriptionSkips", fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@id([subscriptionId, date])
+  @@index([date])
+  @@map("subscription_skips")
+}
+
+enum CycleStatus {
+  SCHEDULED @map("scheduled")
+  PAID      @map("paid")
+  FAILED    @map("failed")
+  SKIPPED   @map("skipped")
+  REFUNDED  @map("refunded")
+
+  @@map("cycle_status")
+}
+
+/// One billing period. This is what makes a subscription auditable: each
+/// renewal is a row with its own charge, not a mutated `renewsOn`.
+model SubscriptionCycle {
+  id             String      @id @db.VarChar(40)
+  subscriptionId String      @db.VarChar(40)
+  /// 1-based.
+  cycleNumber    Int         @db.SmallInt
+  periodStart    DateTime    @db.Date
+  periodEnd      DateTime    @db.Date
+  status         CycleStatus @default(SCHEDULED)
+  currency       String      @db.Char(3)
+  amount         Decimal     @db.Decimal(14, 2)
+  /// Meals actually planned for the period after skips.
+  mealCount      Int         @db.SmallInt
+  chargedAt      DateTime?   @db.Timestamptz(3)
+  failureReason  String?     @db.VarChar(240)
+  retryCount     Int         @default(0) @db.SmallInt
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  version   Int      @default(0)
+
+  subscription Subscription   @relation("SubscriptionCycles", fields: [subscriptionId], references: [id], onDelete: Cascade)
+  payment      PaymentIntent? @relation("CyclePayment")
+
+  @@unique([subscriptionId, cycleNumber])
+  @@index([status, periodStart])
+  @@map("subscription_cycles")
+}

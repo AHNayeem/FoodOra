@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+*.log
+*.tsbuildinfo
+
+# Prisma client is generated from ../database/prisma/schema — never committed.
+src/infrastructure/prisma/generated/
+
+# Local key material (see docs/backend/.env.example for how to mint these).
+*.pem
+
+# `schema:emit` generates here and compares before touching the committed SDL. It
+# removes the file itself; this is only for the case where a crash beats the cleanup.
+.schema.generated.gql

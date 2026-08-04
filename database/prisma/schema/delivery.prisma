@@ -1,0 +1,530 @@
+// =============================================================================
+// DELIVERY — zones, riders, trips, tracking, cash and rider money.
+//
+// Serves `types/delivery.ts`. The unit of work is a `DeliveryJob` — one TRIP,
+// not one order. Money, distance and progress live on the job; per-order detail
+// (who to hand it to, what to collect, which code to check) lives on its stops.
+// That is what makes batching a data shape instead of a special case.
+//
+// DERIVED, NEVER STORED: `RiderWallet`, `RiderCashPosition`,
+// `RiderEarningsSummary` and `RiderEarningsPoint` are all projections of
+// `RiderLedgerEntry` + completed jobs, computed in the resolver exactly as
+// `services/delivery.ts` computes them today.
+// =============================================================================
+
+enum RiderVehicleKind {
+  BIKE    @map("bike")
+  SCOOTER @map("scooter")
+  BICYCLE @map("bicycle")
+  CAR     @map("car")
+
+  @@map("rider_vehicle_kind")
+}
+
+/// A delivery zone. Fares are DATA: two zones pay differently for the same
+/// distance and cap cash differently, with no branch in any component.
+model DeliveryZone {
+  id          String  @id @db.VarChar(40)
+  name        String  @db.VarChar(120)
+  city        String  @db.VarChar(120)
+  countryCode String  @db.Char(2)
+  currency    String  @db.Char(3)
+  /// Zone centre — used to score distance and place synthesised stops.
+  lat         Decimal @db.Decimal(10, 7)
+  lng         Decimal @db.Decimal(10, 7)
+  /// Optional GeoJSON polygon; when present it wins over `areas` matching.
+  boundary    Json?
+
+  /// Flat amount a rider earns for accepting a trip.
+  baseFare        Decimal @db.Decimal(14, 2)
+  /// Earned per kilometre of the whole route.
+  perKm           Decimal @db.Decimal(14, 2)
+  /// Multiplier applied to (base + distance) during peak hours.
+  peakMultiplier  Decimal @default(1) @db.Decimal(6, 4)
+  /// Local hours (0–23) that count as peak.
+  peakHours       Int[]   @default([])
+  /// Extra paid per additional order batched into one trip.
+  batchBonus      Decimal @default(0) @db.Decimal(14, 2)
+  /// Cash a rider may hold before a remittance is required.
+  cashLimit       Decimal @db.Decimal(14, 2)
+  /// Minimum a rider withdrawal must reach.
+  minWithdrawal   Decimal @default(0) @db.Decimal(14, 2)
+  /// Customer-facing delivery charge basis for branches in this zone.
+  customerBaseFee Decimal @default(0) @db.Decimal(14, 2)
+  customerPerKm   Decimal @default(0) @db.Decimal(14, 2)
+  isActive        Boolean @default(true)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  country  Country        @relation("ZoneCountry", fields: [countryCode], references: [code], onDelete: Restrict)
+  areas    ZoneArea[]     @relation("ZoneAreas")
+  riders   Rider[]        @relation("RiderZone")
+  jobs     DeliveryJob[]  @relation("JobZone")
+  branches VendorBranch[] @relation("ZoneBranches")
+
+  @@index([countryCode, city, isActive])
+  @@map("delivery_zones")
+}
+
+/// An area label the zone covers — what a dropoff address is matched against.
+model ZoneArea {
+  zoneId String @db.VarChar(40)
+  /// Lower-cased, unaccented at write time.
+  area   String @db.VarChar(120)
+
+  zone DeliveryZone @relation("ZoneAreas", fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@id([zoneId, area])
+  @@index([area])
+  @@map("zone_areas")
+}
+
+enum RiderStatus {
+  PENDING   @map("pending")
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  INACTIVE  @map("inactive")
+
+  @@map("rider_status")
+}
+
+/// A delivery partner. `userId` links the rider to their account, which is how
+/// the rider app resolves "me".
+model Rider {
+  id      String           @id @db.VarChar(40)
+  userId  String?          @unique @db.VarChar(40)
+  name    String           @db.VarChar(120)
+  phone   String           @db.VarChar(24)
+  photo   String?          @db.VarChar(500)
+  vehicle RiderVehicleKind
+  /// Plate/registration where the vehicle has one (a bicycle does not).
+  plate   String?          @db.VarChar(24)
+  /// Home zone — the pool this rider is offered trips from.
+  zoneId  String           @db.VarChar(40)
+  status  RiderStatus      @default(ACTIVE)
+
+  rating         Decimal  @default(0) @db.Decimal(3, 2)
+  /// Lifetime completed trips.
+  trips          Int      @default(0)
+  /// Share of offers accepted, 0–1.
+  acceptanceRate Decimal  @default(0) @db.Decimal(5, 4)
+  /// Share delivered inside the promised window, 0–1.
+  onTimeRate     Decimal  @default(0) @db.Decimal(5, 4)
+  joinedAt       DateTime @db.Timestamptz(3)
+
+  /// Shift state — what the rider app's on-shift switch writes.
+  isOnShift    Boolean   @default(false)
+  /// Last known position; the history lives in `RiderLocationPing`.
+  lastLat      Decimal?  @db.Decimal(10, 7)
+  lastLng      Decimal?  @db.Decimal(10, 7)
+  lastSeenAt   DateTime? @db.Timestamptz(3)
+  /// Concurrent trips the dispatcher may hold on this rider.
+  maxBatchSize Int       @default(2) @db.SmallInt
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  user User?        @relation("RiderUser", fields: [userId], references: [id], onDelete: SetNull)
+  zone DeliveryZone @relation("RiderZone", fields: [zoneId], references: [id], onDelete: Restrict)
+
+  documents      RiderDocument[]     @relation("RiderDocuments")
+  shifts         RiderShift[]        @relation("RiderShifts")
+  jobs           DeliveryJob[]       @relation("JobRider")
+  jobOffers      JobOffer[]          @relation("OfferRider")
+  orders         Order[]             @relation("OrderRider")
+  orderDeclines  OrderRiderDecline[] @relation("RiderDeclines")
+  pings          RiderLocationPing[] @relation("PingRider")
+  ledger         RiderLedgerEntry[]  @relation("RiderLedger")
+  remittances    RiderRemittance[]   @relation("RiderRemittances")
+  withdrawals    RiderWithdrawal[]   @relation("RiderWithdrawals")
+  reviews        Review[]            @relation("ReviewRider")
+  payoutAccounts PayoutAccount[]     @relation("PayoutAccountRider")
+  payouts        Payout[]            @relation("PayoutRider")
+
+  @@index([zoneId, status, isOnShift])
+  @@index([userId])
+  @@index([lastLat, lastLng])
+  @@map("riders")
+}
+
+enum RiderDocumentKind {
+  NATIONAL_ID          @map("national-id")
+  LICENCE              @map("licence")
+  VEHICLE_REGISTRATION @map("vehicle-registration")
+  INSURANCE            @map("insurance")
+
+  @@map("rider_document_kind")
+}
+
+enum RiderDocumentStatus {
+  VERIFIED @map("verified")
+  PENDING  @map("pending")
+  EXPIRED  @map("expired")
+  REJECTED @map("rejected")
+
+  @@map("rider_document_status")
+}
+
+model RiderDocument {
+  id              String              @id @db.VarChar(40)
+  riderId         String              @db.VarChar(40)
+  kind            RiderDocumentKind
+  status          RiderDocumentStatus @default(PENDING)
+  /// Scan in private object storage — never a public URL.
+  fileId          String?             @db.VarChar(40)
+  number          String?             @db.VarChar(60)
+  expiresAt       DateTime?           @db.Timestamptz(3)
+  verifiedAt      DateTime?           @db.Timestamptz(3)
+  verifiedBy      String?             @db.VarChar(40)
+  rejectionReason String?             @db.VarChar(240)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  rider Rider @relation("RiderDocuments", fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@unique([riderId, kind])
+  @@index([status, expiresAt])
+  @@map("rider_documents")
+}
+
+/// One on-shift period. Gives the "hours worked" the earnings screen needs and
+/// the availability window dispatch reads.
+model RiderShift {
+  id        String    @id @db.VarChar(40)
+  riderId   String    @db.VarChar(40)
+  zoneId    String    @db.VarChar(40)
+  startedAt DateTime  @db.Timestamptz(3)
+  endedAt   DateTime? @db.Timestamptz(3)
+  /// Trips completed during the shift, denormalised for the summary card.
+  trips     Int       @default(0) @db.SmallInt
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  rider Rider @relation("RiderShifts", fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@index([riderId, startedAt(sort: Desc)])
+  @@index([zoneId, endedAt])
+  @@map("rider_shifts")
+}
+
+enum DeliveryJobStatusKind {
+  OFFERED    @map("offered")
+  ACCEPTED   @map("accepted")
+  PICKING_UP @map("picking-up")
+  DELIVERING @map("delivering")
+  DELIVERED  @map("delivered")
+  CANCELLED  @map("cancelled")
+
+  @@map("delivery_job_status_kind")
+}
+
+/// A trip: one or more orders, the ordered stops that fulfil them, what it pays
+/// and how far the rider has got.
+model DeliveryJob {
+  id        String                @id @db.VarChar(40)
+  /// Human-facing reference, e.g. "TRP-8F3A21".
+  jobNumber String                @unique @db.VarChar(24)
+  /// Assigned rider; null while the trip is still in the offer pool.
+  riderId   String?               @db.VarChar(40)
+  zoneId    String                @db.VarChar(40)
+  currency  String                @db.Char(3)
+  status    DeliveryJobStatusKind @default(OFFERED)
+
+  /// Whole-route distance, km, and riding + handling time, minutes.
+  distanceKm       Decimal @db.Decimal(8, 2)
+  estimatedMinutes Int     @db.SmallInt
+
+  // --- payout (DeliveryPayout) -----------------------------------------------
+  baseFare      Decimal @default(0) @db.Decimal(14, 2)
+  distanceFee   Decimal @default(0) @db.Decimal(14, 2)
+  peakBonus     Decimal @default(0) @db.Decimal(14, 2)
+  batchBonus    Decimal @default(0) @db.Decimal(14, 2)
+  /// Customer tips carried over from the orders.
+  tip           Decimal @default(0) @db.Decimal(14, 2)
+  payoutTotal   Decimal @default(0) @db.Decimal(14, 2)
+  /// Total cash to collect across the trip.
+  cashToCollect Decimal @default(0) @db.Decimal(14, 2)
+
+  offeredAt    DateTime        @default(now()) @db.Timestamptz(3)
+  /// Offers lapse — the pool moves on if nobody takes it.
+  expiresAt    DateTime        @db.Timestamptz(3)
+  acceptedAt   DateTime?       @db.Timestamptz(3)
+  completedAt  DateTime?       @db.Timestamptz(3)
+  cancelledAt  DateTime?       @db.Timestamptz(3)
+  cancelReason String?         @db.VarChar(240)
+  /// How the rider got the job.
+  assignment   AssignmentKind?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  rider Rider?       @relation("JobRider", fields: [riderId], references: [id], onDelete: SetNull)
+  zone  DeliveryZone @relation("JobZone", fields: [zoneId], references: [id], onDelete: Restrict)
+
+  orders DeliveryJobOrder[]  @relation("JobOrders")
+  stops  DeliveryStop[]      @relation("JobStops")
+  offers JobOffer[]          @relation("OfferJob")
+  pings  RiderLocationPing[] @relation("PingJob")
+  ledger RiderLedgerEntry[]  @relation("LedgerJob")
+
+  @@index([riderId, status, offeredAt(sort: Desc)])
+  @@index([zoneId, status, expiresAt])
+  @@index([status, offeredAt(sort: Desc)])
+  @@index([completedAt(sort: Desc)])
+  @@map("delivery_jobs")
+}
+
+/// The order behind a stop pair, snapshotted onto the trip.
+model DeliveryJobOrder {
+  jobId         String            @db.VarChar(40)
+  orderId       String            @db.VarChar(40)
+  orderNumber   String            @db.VarChar(24)
+  vendorId      String            @db.VarChar(40)
+  vendorName    String            @db.VarChar(160)
+  customerName  String            @db.VarChar(120)
+  itemCount     Int               @db.SmallInt
+  /// Order total in the job currency — what the rider collects if unpaid.
+  orderTotal    Decimal           @db.Decimal(14, 2)
+  paymentMethod PaymentMethodKind
+  /// Amount still to collect on delivery (cash orders only).
+  cashDue       Decimal           @default(0) @db.Decimal(14, 2)
+  sort          Int               @default(0) @db.SmallInt
+
+  job   DeliveryJob @relation("JobOrders", fields: [jobId], references: [id], onDelete: Cascade)
+  order Order       @relation("JobOrderOrder", fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, orderId])
+  @@index([orderId])
+  @@map("delivery_job_orders")
+}
+
+enum DeliveryStopKindEnum {
+  PICKUP  @map("pickup")
+  DROPOFF @map("dropoff")
+
+  @@map("delivery_stop_kind")
+}
+
+/// One place the rider must physically be. Stops are ordered by the router and
+/// completed strictly in `sequence` order — that ordering is the contract
+/// between the map, the checklist and the seam.
+model DeliveryStop {
+  id           String               @id @db.VarChar(40)
+  jobId        String               @db.VarChar(40)
+  kind         DeliveryStopKindEnum
+  /// The order this stop belongs to — a batch has stops for two of them.
+  orderId      String               @db.VarChar(40)
+  orderNumber  String               @db.VarChar(24)
+  /// Vendor name for a pickup, customer name for a dropoff.
+  name         String               @db.VarChar(160)
+  address      String               @db.VarChar(300)
+  area         String               @db.VarChar(120)
+  phone        String               @db.VarChar(24)
+  lat          Decimal              @db.Decimal(10, 7)
+  lng          Decimal              @db.Decimal(10, 7)
+  /// Kitchen note or door instructions to show on arrival.
+  instructions String?              @db.VarChar(400)
+  /// Position in the optimised route, 0-based.
+  sequence     Int                  @db.SmallInt
+  /// Distance from the previous stop, km, and riding time for that leg.
+  legKm        Decimal              @db.Decimal(8, 2)
+  legMinutes   Int                  @db.SmallInt
+  /// Handoff code, hashed; null for pickups. Verified, never displayed to the
+  /// rider (see D6 §Delivery OTP).
+  otpHash      String?              @db.Char(64)
+  /// Cash to collect here — 0 when the order was prepaid.
+  cashDue      Decimal              @default(0) @db.Decimal(14, 2)
+
+  /// Progress. `DeliveryJob.completedStopIds` on the read model is
+  /// `stops.filter(completedAt).sort(by completedAt).map(id)`.
+  arrivedAt     DateTime? @db.Timestamptz(3)
+  completedAt   DateTime? @db.Timestamptz(3)
+  /// Proof-of-delivery photo.
+  proofFileId   String?   @db.VarChar(40)
+  failureReason String?   @db.VarChar(240)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  job DeliveryJob @relation("JobStops", fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, sequence])
+  @@index([orderId])
+  @@index([jobId, completedAt])
+  @@map("delivery_stops")
+}
+
+enum JobOfferOutcome {
+  PENDING   @map("pending")
+  ACCEPTED  @map("accepted")
+  DECLINED  @map("declined")
+  EXPIRED   @map("expired")
+  WITHDRAWN @map("withdrawn")
+
+  @@map("job_offer_outcome")
+}
+
+/// One trip offered to one rider. The dispatcher's audit trail and the source
+/// of `acceptanceRate` — which is why a decline is a row, not a deletion.
+model JobOffer {
+  id            String          @id @db.VarChar(40)
+  jobId         String          @db.VarChar(40)
+  riderId       String          @db.VarChar(40)
+  outcome       JobOfferOutcome @default(PENDING)
+  /// Dispatch score that put this rider at the front of the queue.
+  score         Decimal?        @db.Decimal(8, 4)
+  distanceKm    Decimal?        @db.Decimal(8, 2)
+  offeredAt     DateTime        @default(now()) @db.Timestamptz(3)
+  expiresAt     DateTime        @db.Timestamptz(3)
+  respondedAt   DateTime?       @db.Timestamptz(3)
+  declineReason String?         @db.VarChar(120)
+
+  job   DeliveryJob @relation("OfferJob", fields: [jobId], references: [id], onDelete: Cascade)
+  rider Rider       @relation("OfferRider", fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, riderId])
+  @@index([riderId, outcome, offeredAt(sort: Desc)])
+  @@index([expiresAt, outcome])
+  @@map("job_offers")
+}
+
+/// Rider GPS breadcrumb (spec: Live Rider Tracking). High-volume and
+/// append-only: partitioned monthly and pruned after 30 days by a cron job.
+/// The live position the customer's tracker reads comes from Redis, not here —
+/// this table is for route replay, disputes and distance verification.
+model RiderLocationPing {
+  id         String   @id @db.VarChar(40)
+  riderId    String   @db.VarChar(40)
+  jobId      String?  @db.VarChar(40)
+  lat        Decimal  @db.Decimal(10, 7)
+  lng        Decimal  @db.Decimal(10, 7)
+  /// Degrees from north, and km/h.
+  heading    Int?     @db.SmallInt
+  speedKph   Decimal? @db.Decimal(6, 2)
+  accuracyM  Decimal? @db.Decimal(8, 2)
+  batteryPct Int?     @db.SmallInt
+  at         DateTime @default(now()) @db.Timestamptz(3)
+
+  rider Rider        @relation("PingRider", fields: [riderId], references: [id], onDelete: Cascade)
+  job   DeliveryJob? @relation("PingJob", fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([riderId, at(sort: Desc)])
+  @@index([jobId, at])
+  @@map("rider_location_pings")
+}
+
+enum RiderLedgerKind {
+  TRIP           @map("trip")
+  TIP            @map("tip")
+  BONUS          @map("bonus")
+  CASH_COLLECTED @map("cash-collected")
+  REMITTANCE     @map("remittance")
+  WITHDRAWAL     @map("withdrawal")
+  PENALTY        @map("penalty")
+  ADJUSTMENT     @map("adjustment")
+
+  @@map("rider_ledger_kind")
+}
+
+/// What moved a rider's balance. Signed: credit > 0, debit < 0. Append-only.
+/// `RiderWallet.available` / `pending` / `cash` are all sums over this table.
+model RiderLedgerEntry {
+  id          String          @id @db.VarChar(40)
+  riderId     String          @db.VarChar(40)
+  type        RiderLedgerKind
+  amount      Decimal         @db.Decimal(14, 2)
+  currency    String          @db.Char(3)
+  description String          @db.VarChar(240)
+  /// Trip reference this entry came from, when applicable.
+  reference   String?         @db.VarChar(40)
+  jobId       String?         @db.VarChar(40)
+  /// False while the trip has not settled — feeds `RiderWallet.pending`.
+  isSettled   Boolean         @default(true)
+  /// True for the cash-in-hand axis rather than the earnings axis. Keeping the
+  /// two apart is the whole point: `available` is money we owe the rider,
+  /// `cashInHand` is money the rider owes us.
+  affectsCash Boolean         @default(false)
+  occurredAt  DateTime        @default(now()) @db.Timestamptz(3)
+
+  rider Rider        @relation("RiderLedger", fields: [riderId], references: [id], onDelete: Cascade)
+  job   DeliveryJob? @relation("LedgerJob", fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([riderId, occurredAt(sort: Desc)])
+  @@index([riderId, affectsCash, isSettled])
+  @@index([jobId])
+  @@map("rider_ledger_entries")
+}
+
+enum RemittanceMethodKind {
+  AGENT  @map("agent")
+  BANK   @map("bank")
+  WALLET @map("wallet")
+
+  @@map("remittance_method_kind")
+}
+
+/// A rider handing collected cash back to the platform.
+model RiderRemittance {
+  id            String               @id @db.VarChar(40)
+  riderId       String               @db.VarChar(40)
+  amount        Decimal              @db.Decimal(14, 2)
+  currency      String               @db.Char(3)
+  method        RemittanceMethodKind
+  /// Deposit slip / agent reference.
+  reference     String               @db.VarChar(60)
+  occurredAt    DateTime             @db.Timestamptz(3)
+  verifiedAt    DateTime?            @db.Timestamptz(3)
+  verifiedBy    String?              @db.VarChar(40)
+  receiptFileId String?              @db.VarChar(40)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  rider Rider @relation("RiderRemittances", fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@index([riderId, occurredAt(sort: Desc)])
+  @@map("rider_remittances")
+}
+
+enum WithdrawalStatus {
+  PROCESSING @map("processing")
+  PAID       @map("paid")
+  FAILED     @map("failed")
+
+  @@map("withdrawal_status")
+}
+
+/// A cash-out of earned balance to the rider's bank/wallet.
+model RiderWithdrawal {
+  id            String           @id @db.VarChar(40)
+  riderId       String           @db.VarChar(40)
+  amount        Decimal          @db.Decimal(14, 2)
+  currency      String           @db.Char(3)
+  status        WithdrawalStatus @default(PROCESSING)
+  reference     String           @db.VarChar(60)
+  accountId     String?          @db.VarChar(40)
+  occurredAt    DateTime         @db.Timestamptz(3)
+  paidAt        DateTime?        @db.Timestamptz(3)
+  failureReason String?          @db.VarChar(240)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  rider Rider @relation("RiderWithdrawals", fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@index([riderId, occurredAt(sort: Desc)])
+  @@index([status])
+  @@map("rider_withdrawals")
+}
