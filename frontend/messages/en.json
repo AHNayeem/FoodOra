@@ -605,7 +605,27 @@
       "passwordShort": "Password must be at least 8 characters.",
       "nameRequired": "Please enter your name.",
       "phoneInvalid": "Enter a valid phone number.",
-      "termsRequired": "Please accept the terms to continue."
+      "termsRequired": "Please accept the terms to continue.",
+      "accountNotFound": "We couldn't find an account with those details.",
+      "accountLocked": "Too many failed attempts. Try again in a few minutes.",
+      "accountSuspended": "This account has been suspended. Contact support.",
+      "noPassword": "This account signs in with a code, not a password.",
+      "wrongPassword": "That password isn't right.",
+      "phoneTaken": "An account with this phone number already exists.",
+      "phoneMissing": "Add a phone number to your account first.",
+      "otpExpired": "That code has expired. Request a new one.",
+      "otpAttemptsExhausted": "Too many wrong codes. Request a new one.",
+      "otpNotRequested": "Request a code first.",
+      "otpTooSoon": "Hold on a moment before requesting another code.",
+      "resetTokenInvalid": "This reset link is no longer valid. Request a new one.",
+      "samePassword": "Choose a password you haven't used here before.",
+      "unauthenticated": "Please sign in to continue.",
+      "forbidden": "You don't have access to that.",
+      "notFound": "We couldn't find that.",
+      "invalidInput": "Please check the details and try again.",
+      "tooManyRequests": "Too many requests. Please wait a moment.",
+      "serviceUnavailable": "We're having trouble reaching the service. Try again shortly.",
+      "network": "Can't reach the server. Check your connection and try again."
     }
   },
   "account": {
@@ -959,7 +979,11 @@
       "emptyCart": "Your cart is empty.",
       "generic": "Something went wrong. Please try again.",
       "paymentDeclined": "Your payment was declined. Try a different method.",
-      "insufficientFunds": "Your wallet doesn't cover this order. Top up or pick another method."
+      "insufficientFunds": "Your wallet doesn't cover this order. Top up or pick another method.",
+      "signInRequired": "Please sign in to place your order.",
+      "vendorClosed": "This restaurant is closed right now. Schedule your order for later, or try another.",
+      "belowMinimum": "Your order is below this restaurant's minimum.",
+      "couponRejected": "That promo code is no longer valid. Remove it and check your total again."
     },
     "discountWithCode": "Discount ({code})"
   },

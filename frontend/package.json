@@ -6,13 +6,18 @@
     "dev": "next dev -p 3005",
     "build": "next build",
     "start": "next start -p 3005",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "verify:graphql": "bun run scripts/verify-operations.ts",
+    "export:catalog": "bun run scripts/export-catalog.ts"
   },
   "dependencies": {
+    "@apollo/client": "^4.2.9",
     "@hookform/resolvers": "^5.4.0",
     "@types/qrcode": "^1.5.6",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
+    "graphql": "^17.0.2",
     "lucide-react": "^1.25.0",
     "next": "16.2.10",
     "next-intl": "^4.4.0",
