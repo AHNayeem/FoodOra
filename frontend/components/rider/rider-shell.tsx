@@ -26,7 +26,9 @@ import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { hasReached } from "@/lib/order-machine";
 import { RiderProvider } from "./rider-context";
+import { useRiderRecords } from "./use-rider-records";
 
 /** Roles allowed into the rider app. Support/admin can look; customers cannot. */
 const RIDER_ROLES: readonly UserRole[] = ["delivery-rider", "super-admin"];
@@ -238,11 +240,15 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
  * The on-shift switch. Going offline does not abandon a trip in progress — a
  * rider who has food in their bag still has to deliver it — it only stops new
  * offers arriving, which is what the seam enforces too.
+ *
+ * Flipping it also publishes to the shared availability board, so dispatch stops
+ * handing this rider real orders the moment they go home (G40). That used to be
+ * two separate truths: the offer pool respected the switch and the dispatcher
+ * could not even see it.
  */
 function ShiftToggle() {
   const t = useTranslations("delivery");
-  const online = useRider((s) => s.online);
-  const hydrated = useRider((s) => s.hydrated);
+  const { online, hydrated } = useRiderRecords();
   const setOnline = useRider((s) => s.setOnline);
 
   function toggle() {
@@ -286,32 +292,59 @@ function ShiftToggle() {
   );
 }
 
-/** A persistent way back to the live trip, on every screen but the trip itself. */
+/**
+ * A persistent way back to the work in progress, on every screen but that work's
+ * own.
+ *
+ * It covers *both* kinds now (G39). A rider carrying a real customer's order used
+ * to lose it the moment they tapped another tab — the bar only knew about
+ * synthesised trips — which is the clearest symptom there was of the two systems
+ * not knowing about each other. The real order wins when somehow both exist,
+ * because a customer is waiting on it.
+ */
 function ActiveTripBar() {
   const t = useTranslations("delivery");
   const pathname = usePathname();
-  const job = useRider((s) => s.activeJob);
-  const hydrated = useRider((s) => s.hydrated);
+  const { hydrated, activeJob, activeOrder } = useRiderRecords();
   const [now] = useState(() => Date.now());
 
-  if (!hydrated || !job || pathname.startsWith(`/delivery/trip/${job.id}`)) return null;
-  const next = nextStopOf(job, now);
+  if (!hydrated) return null;
+
+  const work = activeOrder
+    ? {
+        href: `/delivery/order/${activeOrder.id}`,
+        ref: activeOrder.orderNumber,
+        // Before the pickup the rider is riding to the kitchen; after it, to the door.
+        label: hasReached(activeOrder, "picked-up")
+          ? t("barDeliverTo", { name: activeOrder.contact.name })
+          : t("barCollectFrom", { name: activeOrder.vendor.name }),
+      }
+    : activeJob
+      ? (() => {
+          const next = nextStopOf(activeJob, now);
+          return {
+            href: `/delivery/trip/${activeJob.id}`,
+            ref: activeJob.jobNumber,
+            label: next
+              ? t(next.kind === "pickup" ? "barCollectFrom" : "barDeliverTo", {
+                  name: next.name,
+                })
+              : t("barFinish"),
+          };
+        })()
+      : null;
+
+  if (!work || pathname.startsWith(work.href)) return null;
 
   return (
     <Link
-      href={`/delivery/trip/${job.id}`}
+      href={work.href}
       className="block bg-primary text-white transition-colors hover:bg-primary-600"
     >
       <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 py-2.5">
         <Navigation className="size-4 shrink-0 rtl:-scale-x-100" aria-hidden />
-        <p className="min-w-0 flex-1 truncate text-sm font-semibold">
-          {next
-            ? t(next.kind === "pickup" ? "barCollectFrom" : "barDeliverTo", {
-                name: next.name,
-              })
-            : t("barFinish")}
-        </p>
-        <span className="text-xs font-bold whitespace-nowrap">{job.jobNumber}</span>
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold">{work.label}</p>
+        <span className="text-xs font-bold whitespace-nowrap">{work.ref}</span>
         <ChevronRight className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
       </div>
     </Link>

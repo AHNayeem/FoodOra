@@ -16,6 +16,7 @@ import {
   Heart,
   Star,
   Settings,
+  LifeBuoy,
   Lock,
 } from "lucide-react";
 import { useAuth } from "@/stores/auth";
@@ -31,6 +32,8 @@ const NAV = [
   { href: "/account/reservations", key: "reservations", icon: CalendarCheck },
   { href: "/account/favorites", key: "favorites", icon: Heart },
   { href: "/account/reviews", key: "reviews", icon: Star },
+  // Phase 5: where a reported problem goes, and how the customer follows it.
+  { href: "/account/support", key: "support", icon: LifeBuoy },
   { href: "/account/addresses", key: "addresses", icon: MapPin },
   { href: "/account/wallet", key: "wallet", icon: Wallet },
   { href: "/account/coupons", key: "coupons", icon: Ticket },

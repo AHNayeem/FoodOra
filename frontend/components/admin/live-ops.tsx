@@ -17,11 +17,17 @@ import {
 } from "lucide-react";
 import type { Order, Rider, Vendor } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { useOrders, liveOrders, awaitingCompletion } from "@/stores/orders";
+import {
+  useOrders,
+  awaitingCompletion,
+  busyRiderIds,
+  liveOrders,
+} from "@/stores/orders";
+import { offShiftRiderIds, useFleet } from "@/stores/fleet";
 import { getFleet } from "@/services/delivery";
 import { getVendors } from "@/services/catalog";
 import { isFailure, isWithRider, isInKitchen } from "@/lib/order-machine";
-import { readyInMs, toMinutes } from "@/lib/order-lifecycle";
+import { readyInMs, stuckOrders, stuckReason } from "@/lib/order-lifecycle";
 import { platformFinancials } from "@/lib/settlement";
 import { formatPrice } from "@/lib/format";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
@@ -51,6 +57,7 @@ export function LiveOps() {
 
   const hydrated = useOrders((s) => s.hydrated);
   const orders = useOrders((s) => s.orders);
+  const shifts = useFleet((s) => s.shifts);
 
   const [now, setNow] = useState(() => Date.now());
   const [fleet, setFleet] = useState<Rider[]>([]);
@@ -58,6 +65,8 @@ export function LiveOps() {
 
   useEffect(() => {
     useOrders.persist.rehydrate();
+    // The shift board is what turns "who has an order" into "who can take one".
+    useFleet.persist.rehydrate();
     getFleet().then(setFleet);
     getVendors().then((res) => setVendors(res.items ?? []));
   }, []);
@@ -116,29 +125,24 @@ export function LiveOps() {
     [orders, now],
   );
 
-  /** Orders an operator should look at: overdue, or ready with nobody coming. */
-  const stuck = useMemo(
-    () =>
-      live.filter((order) => {
-        const remaining = readyInMs(order, now);
-        if (remaining != null && remaining < 0 && order.status !== "ready") return true;
-        if (order.status === "ready" && order.fulfillment === "delivery") {
-          const readyAt = order.lifecycle.events.find((e) => e.status === "ready");
-          return readyAt ? now - Date.parse(readyAt.at) > 5 * 60_000 : false;
-        }
-        if (order.status === "placed") {
-          return now - Date.parse(order.placedAt) > 4 * 60_000;
-        }
-        return order.status === "delivery-failed";
-      }),
-    [live, now],
-  );
+  /**
+   * Orders an operator should look at: overdue, or ready with nobody coming.
+   * The rule itself lives in `lib/order-lifecycle` so the orders list (Phase 4)
+   * flags exactly the same orders for exactly the same reasons.
+   */
+  const stuck = useMemo(() => stuckOrders(live, now), [live, now]);
 
-  /** Which riders are carrying something right now. */
-  const busyRiderIds = useMemo(
-    () => new Set(live.map((o) => o.lifecycle.rider?.id).filter(Boolean) as string[]),
-    [live],
-  );
+  /**
+   * What each rider is doing, as dispatch sees it (G40).
+   *
+   * Two facts, one from each half of availability: who is carrying an order (the
+   * orders store) and who is off shift or on a synthesised trip (the shift board
+   * the rider app publishes to). The board used to show only the first, so a
+   * rider who had gone home read as "free" here while dispatch happily assigned
+   * to them.
+   */
+  const carrying = useMemo(() => busyRiderIds(orders), [orders]);
+  const offShift = useMemo(() => offShiftRiderIds(shifts), [shifts]);
 
   /** Restaurants with live orders, and how many each has. */
   const vendorLoad = useMemo(() => {
@@ -202,7 +206,7 @@ export function LiveOps() {
         />
         <StatCard
           label={t("statRiders")}
-          value={`${busyRiderIds.size}/${fleet.length}`}
+          value={`${carrying.size}/${fleet.length}`}
           icon={Bike}
           hint={t("statRidersHint")}
         />
@@ -225,16 +229,18 @@ export function LiveOps() {
           </h2>
           <ul className="mt-3 space-y-2">
             {stuck.slice(0, 5).map((order) => (
-              <li
-                key={order.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-field bg-surface px-3 py-2 text-sm"
-              >
-                <span className="font-mono font-bold text-ink">{order.orderNumber}</span>
-                <OrderStatusChip status={order.status} size="sm" />
-                <span className="text-xs text-muted">{order.vendor.name}</span>
-                <span className="ms-auto text-xs font-semibold text-danger">
-                  {reasonStuck(order, now, t)}
-                </span>
+              <li key={order.id}>
+                <Link
+                  href={`/admin/orders/${order.id}`}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-field bg-surface px-3 py-2 text-sm transition-colors hover:bg-surface-muted"
+                >
+                  <span className="font-mono font-bold text-ink">{order.orderNumber}</span>
+                  <OrderStatusChip status={order.status} size="sm" />
+                  <span className="text-xs text-muted">{order.vendor.name}</span>
+                  <span className="ms-auto text-xs font-semibold text-danger">
+                    {reasonStuck(order, now, t)}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
@@ -364,7 +370,7 @@ export function LiveOps() {
                   </span>
 
                   <Link
-                    href={`/orders/${order.id}`}
+                    href={`/admin/orders/${order.id}`}
                     className="rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-muted"
                   >
                     {t("view")}
@@ -414,20 +420,28 @@ export function LiveOps() {
             </h2>
             <ul className="mt-3 space-y-2">
               {fleet.map((rider) => {
-                const busy = busyRiderIds.has(rider.id);
+                // Carrying something is the stronger fact: a rider mid-delivery is
+                // "busy", not "off shift", even if they flipped the switch.
+                const state = carrying.has(rider.id)
+                  ? "riderBusy"
+                  : offShift.has(rider.id)
+                    ? "riderOffline"
+                    : "riderFree";
                 return (
                   <li key={rider.id} className="flex items-center gap-2 text-sm">
                     <span
                       className={cn(
                         "size-2 shrink-0 rounded-full",
-                        busy ? "bg-accent" : "bg-fresh",
+                        state === "riderBusy"
+                          ? "bg-accent"
+                          : state === "riderOffline"
+                            ? "bg-line"
+                            : "bg-fresh",
                       )}
                       aria-hidden
                     />
                     <span className="min-w-0 flex-1 truncate text-body">{rider.name}</span>
-                    <span className="text-[11px] font-semibold text-muted">
-                      {busy ? t("riderBusy") : t("riderFree")}
-                    </span>
+                    <span className="text-[11px] font-semibold text-muted">{t(state)}</span>
                   </li>
                 );
               })}
@@ -446,24 +460,18 @@ function startOfDay(now: number): number {
   return d.getTime();
 }
 
-/** Why an order is flagged — the operator needs the reason, not just the row. */
+/**
+ * Why an order is flagged — the operator needs the reason, not just the row. The
+ * rule is `stuckReason`; this only turns its answer into a sentence.
+ */
 function reasonStuck(
   order: Order,
   now: number,
   t: ReturnType<typeof useTranslations>,
 ): string {
-  if (order.status === "delivery-failed") return t("stuckFailed");
-  if (order.status === "placed") {
-    return t("stuckUnanswered", { minutes: toMinutes(now - Date.parse(order.placedAt)) });
-  }
-  if (order.status === "ready") {
-    const readyAt = order.lifecycle.events.find((e) => e.status === "ready");
-    return t("stuckNoRider", {
-      minutes: readyAt ? toMinutes(now - Date.parse(readyAt.at)) : 0,
-    });
-  }
-  const remaining = readyInMs(order, now);
-  return t("stuckOverdue", { minutes: remaining == null ? 0 : toMinutes(-remaining) });
+  const reason = stuckReason(order, now);
+  if (!reason) return "";
+  return t(reason.key, { minutes: reason.minutes });
 }
 
 /**

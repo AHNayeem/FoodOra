@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -23,6 +23,7 @@ import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
+import { useRiderRecords } from "./use-rider-records";
 
 const METHOD_ICON: Record<RemittanceMethod, typeof Landmark> = {
   agent: Building2,
@@ -55,21 +56,12 @@ export function RiderWalletView() {
   const { rider, zone } = useRiderApp();
   const currency = zone.currency as CurrencyCode;
 
-  const completed = useRider((s) => s.completed);
-  const declined = useRider((s) => s.declined);
-  const remittances = useRider((s) => s.remittances);
-  const withdrawals = useRider((s) => s.withdrawals);
-  const hydrated = useRider((s) => s.hydrated);
+  const { ctx, hydrated } = useRiderRecords();
   const addRemittance = useRider((s) => s.addRemittance);
   const addWithdrawal = useRider((s) => s.addWithdrawal);
 
   const [wallet, setWallet] = useState<RiderWallet | null>(null);
   const [sheet, setSheet] = useState<"remit" | "withdraw" | null>(null);
-
-  const ctx = useMemo(
-    () => ({ completed, declined, remittances, withdrawals }),
-    [completed, declined, remittances, withdrawals],
-  );
 
   useEffect(() => {
     if (!hydrated) return;

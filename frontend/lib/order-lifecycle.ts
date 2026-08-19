@@ -92,6 +92,9 @@ export function createLifecycle(orderId: string, placedAt: string): OrderLifecyc
     otpVerifiedAt: null,
     refund: "none",
     refundAmount: 0,
+    refundMethod: null,
+    refundDecidedAt: null,
+    refundSettledAt: null,
     rating: null,
     // Nothing financial has happened yet — the `completed` transition stamps it.
     financials: null,
@@ -196,6 +199,50 @@ export function ensureFinancials(order: Order, fallbackRate: number): Order {
   return { ...order, commissionRate, lifecycle: { ...order.lifecycle, financials } };
 }
 
+/**
+ * Backfill the refund record on an order persisted before the refund lifecycle
+ * existed (Phase 5, G07).
+ *
+ * Two shapes come out of the old build and they need different answers:
+ *
+ *  - `refund: "approved"` was only ever written by the `refunded` transition,
+ *    which ran *after* the wallet had actually been credited. That is a settled
+ *    refund, so it becomes `refunded` with the money's date.
+ *  - `payment.status: "refunded"` with no refund record at all is the old
+ *    instant flip on cancelling a paid order. The customer was already told the
+ *    money was back, so it is recorded as back rather than quietly reopened — a
+ *    migration must not turn a closed refund into a new liability.
+ *
+ * Idempotent: an order that already carries the fields is returned untouched.
+ */
+export function ensureRefundRecord(order: Order): Order {
+  const life = order.lifecycle;
+  if (life.refundMethod !== undefined && life.refundSettledAt !== undefined) {
+    // Already the new shape; only the stale `approved` needs re-reading.
+    if (life.refund !== "approved" || life.refundSettledAt === null) return order;
+  }
+
+  const settledAt = order.updatedAt;
+  const wasSettled = life.refund === "approved" || order.payment.status === "refunded";
+  const refund = wasSettled ? "refunded" : (life.refund ?? "none");
+  const amount =
+    refund === "none" || refund === "rejected"
+      ? (life.refundAmount ?? 0)
+      : life.refundAmount || order.pricing.total;
+
+  return {
+    ...order,
+    lifecycle: {
+      ...life,
+      refund,
+      refundAmount: amount,
+      refundMethod: refund === "none" ? null : (life.refundMethod ?? order.payment.method),
+      refundDecidedAt: refund === "none" || refund === "requested" ? null : settledAt,
+      refundSettledAt: refund === "refunded" ? settledAt : null,
+    },
+  };
+}
+
 /** The actor a stage is normally performed by — used only when backfilling. */
 function actorForStage(status: OrderStatus): OrderLifecycle["events"][number]["actor"] {
   switch (status) {
@@ -241,14 +288,22 @@ export function riderSnapshot(rider: Rider): OrderRider {
  * in the vendor's zone, drop anyone who has already turned this job down, and
  * rank by rating × acceptance rate. Deterministic — the same order always gets
  * the same rider, so a reload during a demo does not swap the courier out.
+ *
+ * `unavailable` is who cannot take work right now — off shift, or already
+ * carrying something (G40). It is *injected* rather than looked up because
+ * availability spans two stores (the shift board and the live orders) and this
+ * module stays free of both, exactly as it stays free of the mock data it ranks.
  */
 export function dispatchRider(
   order: Order,
   fleet: Rider[],
   zoneId: string | null,
+  unavailable: ReadonlySet<string> = new Set(),
 ): Rider | null {
   const excluded = new Set(order.lifecycle.rejectedRiderIds);
-  const eligible = fleet.filter((r) => !r.deletedAt && !excluded.has(r.id));
+  const eligible = fleet.filter(
+    (r) => !r.deletedAt && !excluded.has(r.id) && !unavailable.has(r.id),
+  );
   if (eligible.length === 0) return null;
 
   const inZone = zoneId ? eligible.filter((r) => r.zoneId === zoneId) : [];
@@ -313,4 +368,75 @@ export function timeOf(order: Order, status: OrderStatus): number | null {
 /** The most recent event, which is what the "last updated" line reads from. */
 export function lastEvent(order: Order) {
   return order.lifecycle.events[order.lifecycle.events.length - 1] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Attention — which orders an operations desk should be looking at
+// ---------------------------------------------------------------------------
+
+/** A `placed` order nobody has answered for this long is overdue an answer. */
+const UNANSWERED_MS = 4 * 60_000;
+
+/** Food on the pass this long with no courier coming is going cold. */
+const NO_RIDER_MS = 5 * 60_000;
+
+/**
+ * Why an order needs an operator, or null when it does not.
+ *
+ * `key` is the i18n key under the admin namespace and `minutes` is how long it
+ * has been in that state — the rule and its measurement, with the sentence left
+ * to the surface. It was previously written twice inside `live-ops.tsx` (once as
+ * a filter, once as a label), which is two chances for "stuck" to mean two
+ * things; Phase 4 needs the same answer on the orders list, so it lives here.
+ *
+ * Derived from the clock and the event log, never flagged on the order, so it
+ * cannot go stale and no writer has to remember to clear it.
+ */
+export interface StuckReason {
+  key: "stuckFailed" | "stuckUnanswered" | "stuckNoRider" | "stuckOverdue";
+  /** Minutes in the state. Zero where the message needs no number. */
+  minutes: number;
+}
+
+export function stuckReason(order: Order, now: number): StuckReason | null {
+  // A finished order cannot be stuck, and a delivered one is waiting on a person
+  // rather than blocked — that has its own queue (`awaitingCompletion`).
+  if (isTerminal(order.status) || order.status === "delivered") return null;
+
+  if (order.status === "delivery-failed") return { key: "stuckFailed", minutes: 0 };
+
+  if (order.status === "placed") {
+    const waiting = now - Date.parse(order.placedAt);
+    return waiting > UNANSWERED_MS
+      ? { key: "stuckUnanswered", minutes: toMinutes(waiting) }
+      : null;
+  }
+
+  if (order.status === "ready") {
+    // Only a delivery order can be waiting for a courier; a pickup order on the
+    // pass is waiting for its customer, which is not the platform's problem.
+    if (order.fulfillment !== "delivery") return null;
+    const readyAt = timeOf(order, "ready");
+    const waiting = readyAt == null ? 0 : now - readyAt;
+    return waiting > NO_RIDER_MS
+      ? { key: "stuckNoRider", minutes: toMinutes(waiting) }
+      : null;
+  }
+
+  const remaining = readyInMs(order, now);
+  return remaining != null && remaining < 0
+    ? { key: "stuckOverdue", minutes: toMinutes(-remaining) }
+    : null;
+}
+
+/** Does this order need an operator right now? */
+export function isStuck(order: Order, now: number): boolean {
+  return stuckReason(order, now) !== null;
+}
+
+/** Everything needing attention, worst-waited first. */
+export function stuckOrders(orders: Order[], now: number): Order[] {
+  return orders
+    .filter((order) => isStuck(order, now))
+    .sort((a, b) => Date.parse(a.placedAt) - Date.parse(b.placedAt));
 }

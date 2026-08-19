@@ -16,8 +16,11 @@ import type {
   Order,
   OrderEvent,
   OrderStatus,
+  RefundStatus,
   Reservation,
   Subscription,
+  SupportEvent,
+  SupportTicket,
   WalletTransaction,
 } from "@/types";
 
@@ -308,7 +311,9 @@ function hrefFor(audience: NotifyAudience, order: Order): string {
     case "rider":
       return "/delivery";
     case "admin":
-      return "/admin";
+      // Phase 4 gave the operations desk a page per order, so the notification
+      // can land on the thing it is about rather than on the board.
+      return `/admin/orders/${order.id}`;
   }
 }
 
@@ -459,6 +464,167 @@ export function walletNotification(
     href: "/account/wallet",
     at: transaction.occurredAt,
   });
+}
+
+/**
+ * A refund moved (Phase 5, G07).
+ *
+ * Three moments, and they are genuinely three different messages: granted (we owe
+ * you), refused (we do not, here is why), and settled (the money is with you). The
+ * old model could only say the middle thing by implication, which is why a card
+ * refund used to be announced as complete the instant an order was cancelled.
+ *
+ * The admin copy is deliberately absent for `approved`/`rejected`: the desk *made*
+ * that decision seconds ago and an inbox that repeats what you just did is noise
+ * (the C19 rule). A settlement is different — it happens later, often without
+ * anybody watching.
+ */
+export function refundNotifications(
+  order: Order,
+  stage: Exclude<RefundStatus, "none">,
+  at: string,
+): AppNotification[] {
+  const key =
+    stage === "requested"
+      ? "refundRequested"
+      : stage === "approved"
+        ? "refundApproved"
+        : stage === "rejected"
+          ? "refundRejected"
+          : "refundSettled";
+
+  const params = {
+    order: order.orderNumber,
+    amount: order.lifecycle.refundAmount,
+    currency: order.pricing.currency,
+    method: order.lifecycle.refundMethod ?? order.payment.method,
+  };
+
+  const items: AppNotification[] = [];
+  // The customer hears about all four; a request is their own action, so it is
+  // recorded for the desk rather than read back to them.
+  if (stage !== "requested") {
+    items.push(
+      build({
+        id: `ntf_${order.id}_${key}`,
+        audience: "customer",
+        category: "payment",
+        key,
+        params,
+        tone: stage === "rejected" ? "warning" : "success",
+        subject: orderSubject(order),
+        href: `/orders/${order.id}`,
+        at,
+      }),
+    );
+  }
+  if (stage === "requested" || stage === "refunded") {
+    items.push(
+      build({
+        id: `ntf_${order.id}_${key}_admin`,
+        audience: "admin",
+        category: "payment",
+        key,
+        params,
+        tone: stage === "requested" ? "warning" : "info",
+        subject: orderSubject(order),
+        href: `/admin/orders/${order.id}`,
+        at,
+      }),
+    );
+  }
+  return items;
+}
+
+/**
+ * A support ticket moved (Phase 5, G25/G26).
+ *
+ * Driven by the ticket's own event log rather than by the caller choosing a
+ * message, for the same reason the order fan-out is driven by a status: the log is
+ * what actually happened, so a new kind of event cannot ship without somebody
+ * deciding who hears about it.
+ *
+ * An internal note produces nothing. That is the whole point of one — and it is
+ * enforced here as well as in `customerEvents`, because a notification is a copy
+ * of the note that leaves the building.
+ */
+export function supportNotifications(
+  ticket: SupportTicket,
+  event: SupportEvent,
+): AppNotification[] {
+  if (event.visibility === "internal") return [];
+
+  const params = {
+    ticket: ticket.ticketNumber,
+    order: ticket.orderNumber,
+    customer: ticket.customerName,
+  };
+  const id = (audience: NotifyAudience) => `ntf_${event.id}_${audience}`;
+
+  // Opened by the customer: the desk needs to know, and the customer needs to see
+  // that it landed somewhere rather than in an inbox nobody reads.
+  if (event.kind === "message" && event.author === "customer") {
+    const first = ticket.events[0]?.id === event.id;
+    return [
+      ...(first
+        ? [
+            build({
+              id: id("customer"),
+              audience: "customer" as const,
+              category: "order" as const,
+              key: "supportOpened",
+              params,
+              tone: "info" as const,
+              subject: supportSubject(ticket),
+              href: `/account/support/${ticket.id}`,
+              at: event.at,
+            }),
+          ]
+        : []),
+      build({
+        id: id("admin"),
+        audience: "admin",
+        category: "order",
+        key: first ? "supportOpened" : "supportCustomerReplied",
+        params,
+        tone: "warning",
+        subject: supportSubject(ticket),
+        href: `/admin/support/${ticket.id}`,
+        at: event.at,
+      }),
+    ];
+  }
+
+  // The desk replying, or deciding.
+  if (event.author === "agent") {
+    const key =
+      event.kind === "status"
+        ? event.status === "resolved"
+          ? "supportResolved"
+          : event.status === "rejected"
+            ? "supportRejected"
+            : "supportUpdated"
+        : "supportReplied";
+    return [
+      build({
+        id: id("customer"),
+        audience: "customer",
+        category: "order",
+        key,
+        params,
+        tone: event.status === "rejected" ? "warning" : "success",
+        subject: supportSubject(ticket),
+        href: `/account/support/${ticket.id}`,
+        at: event.at,
+      }),
+    ];
+  }
+
+  return [];
+}
+
+function supportSubject(ticket: SupportTicket): NotifySubject {
+  return { kind: "support", id: ticket.id, label: ticket.ticketNumber };
 }
 
 /** A ticket landed in the wallet (C21). */

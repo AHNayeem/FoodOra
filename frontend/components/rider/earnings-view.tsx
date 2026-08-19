@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Bar,
@@ -14,13 +14,13 @@ import {
 import { Banknote, Bike, Route, Wallet } from "lucide-react";
 import type { RiderEarningsPoint, RiderEarningsSummary } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { useRider } from "@/stores/rider";
 import { getRiderEarnings, type EarningsRange } from "@/services/delivery";
 import { fromDateKey, weekdayOf } from "@/lib/dates";
 import { formatCompact, formatDistance, formatPrice } from "@/lib/format";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
+import { useRiderRecords } from "./use-rider-records";
 
 const RANGES: EarningsRange[] = ["today", "week", "month"];
 
@@ -42,20 +42,11 @@ export function EarningsView() {
   const { rider, zone } = useRiderApp();
   const currency = zone.currency as CurrencyCode;
 
-  const completed = useRider((s) => s.completed);
-  const declined = useRider((s) => s.declined);
-  const remittances = useRider((s) => s.remittances);
-  const withdrawals = useRider((s) => s.withdrawals);
-  const hydrated = useRider((s) => s.hydrated);
+  const { ctx, hydrated } = useRiderRecords();
 
   const [range, setRange] = useState<EarningsRange>("today");
   const [data, setData] = useState<{ range: EarningsRange; summary: RiderEarningsSummary } | null>(
     null,
-  );
-
-  const ctx = useMemo(
-    () => ({ completed, declined, remittances, withdrawals }),
-    [completed, declined, remittances, withdrawals],
   );
 
   useEffect(() => {

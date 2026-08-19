@@ -4,7 +4,7 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 
 ---
 
-## Completed Phase
+## Completed Phases
 
 ### Session 1 — PHASE 0: AUDIT ONLY (2026-08-19)
 
@@ -224,12 +224,283 @@ Demo data:
   exist at all — before this every balance was "pending" and the
   pending/available distinction was undemonstrable.
 
+### Session 4 — PHASE 3: Rider Delivery + Earnings Unification (G04, G05, G39, G40) (2026-08-19)
+
+One delivery reality, and a real delivery that pays.
+
+The prototype had two: a `DeliveryJob` (synthesised, multi-stop — what paid the
+rider and filled the wallet) and an `Order` (real — what a customer placed and a
+restaurant cooked). They shared no code and no records. A rider could hold one of
+each at once, delivering a real customer's food earned nothing, the cash taken at
+the door was discarded, and dispatch could hand an order to a rider who had gone
+home.
+
+**The bridge goes one way on purpose.** New `lib/delivery-bridge.ts` derives a
+`DeliveryJob` *from* an `Order`; the order stays the authority. Nothing is copied
+into a second store to drift — ask for a real order's trip and you get one built
+from the order as it stands. That is what lets the entire rider app keep running
+on `DeliveryJob` while the truth lives on the order, with no screen having to know
+which kind of work it is looking at.
+
+New:
+
+* `lib/delivery-bridge.ts` — `jobFromOrder`, `riderEarningFrom`, `jobStatusFor`,
+  `cashCarriedOn`, `orderJobId`, `isOrderJob`. Pure; the caller resolves the two
+  ends of the ride and passes them in.
+* `lib/mock/drop-points.ts` — the per-zone residential geography, extracted from
+  the trip synthesiser so a real order's drop and a synthesised one resolve to the
+  same coordinates. `dropPointFor(area)` matches a free-text area both ways round.
+* `stores/fleet.ts` — the shared availability board: `RiderShift` per rider,
+  `isAvailableForDispatch`, `offShiftRiderIds`. One writer (`stores/rider`
+  publishes from inside every action that changes availability), so it is a
+  projection, not a second copy.
+* `components/rider/use-rider-records.ts` — one reading of this rider's reality
+  (`ctx`, `hydrated`, `online`, `activeJob`, `activeOrder`, `busy`), shared by six
+  screens.
+* `components/rider/payout-breakdown.tsx` — the earnings receipt, now shared by
+  the synthesised trip and the real order's handoff screen.
+
+Seam:
+
+* `RiderContext.orders` — real orders go in as `Order`s and are converted to trips
+  inside `services/delivery`. `resolveHistory` merges real → local → synthesised,
+  deduped by trip id, real first. Earnings, today, history, wallet, cash position,
+  ledger and remittance liability therefore account for a real delivery through
+  *exactly* the same pure functions a synthesised one goes through — none of
+  `lib/delivery.ts`'s arithmetic changed.
+* `jobForOrder(order, now)` and `riderEarningForOrder(order, now)` — synchronous
+  projections, like the existing `nextStopOf`.
+* `orderTrips` is keyed by trip id, so the same order appearing twice in a caller's
+  context cannot be earned from twice.
+
+G05 — the cash:
+
+* `TransitionPatch.cashCollected` and a new `errors.cashNotConfirmed` guard: a cash
+  **delivery** cannot reach `delivered` unless the rider confirms the money changed
+  hands. The doorstep dialog had always asked; `submitOtp` dropped the answer.
+* Scoped to delivery. A cash *pickup* is paid at the vendor's till by the customer
+  standing there — there is no rider's bag for it to be in.
+* `cashDueOn(order)` moved into the machine (the guard needs it) and replaced three
+  inline copies in the OTP dialog, the live trip screen and the live offer card.
+* `cashCarriedOn` in the bridge is the *other* question — "did this order involve
+  cash" — which is what the wallet and the remittance liability keep needing after
+  the payment flips to paid.
+
+G04 — the earning:
+
+* Resolved in `stores/orders.advance` when `to === "completed"` and the caller has
+  not supplied one, so every surface that can close an order produces the same
+  number. The payout needs zone fares and route geometry the pure machine cannot
+  see; the store injects it exactly as it injects `riders` into `dispatchRider`.
+* **Anchored to the handoff, not the reading clock.** Peak pay depends on the hour,
+  so deriving a delivered trip's payout from `now` would quietly change what a
+  rider was paid on every re-read — and would disagree with the record stamped at
+  completion. `payoutAt` uses the `delivered` event time.
+* A completed order's trip reuses the payout stored in its financials rather than
+  recomputing it. The books do not restate themselves.
+
+G40 — one availability truth:
+
+* `dispatchRider(order, fleet, zoneId, unavailable)` — availability is injected,
+  because it spans two stores and `lib/` stays free of both.
+* `unavailableRiderIds(orders)` unions the two halves: riders carrying an order
+  (the orders store knows) and riders off shift or on a trip of their own (the
+  shift board knows). `busyRiderIds(orders)` is now one selector instead of the
+  admin board's private copy.
+* `assignRider` refuses a rider already carrying something (`errors.riderBusy`) —
+  checked in the store, because the restaurant's dialog, a rider taking a live job
+  and auto-dispatch can all assign.
+* `zoneIdForArea` moved to `lib/mock/delivery-zones.ts` from the orders store, so
+  dispatch and the rider app cannot disagree about which zone a drop is in.
+
+Surfaces:
+
+* Rider home — the offer pool pauses for *either* kind of work in hand, and says
+  which. `LiveDeliveries` refuses live orders while a synthesised trip is open.
+* The shell's active-work bar covers a real order too. Losing a live delivery by
+  tapping another tab was the clearest symptom of the two systems' mutual
+  ignorance.
+* The handoff screen shows what the delivery paid, through the shared receipt.
+* Admin fleet board: three states (busy / off shift / free) instead of two. A
+  rider who had gone home used to read as "free" while dispatch assigned to them.
+* Assign-rider dialog: unavailable riders are shown struck out with the reason —
+  handed back, on a delivery, or off shift — rather than silently assignable.
+
+### Session 5 — PHASE 4: Admin Order Operations (G06, G14) (2026-08-19)
+
+The operations desk got the two things it had no code for: a way to find an order,
+and a way to do something about it.
+
+`components/admin/live-ops.tsx` had zero `onClick` handlers, so "admin can
+intervene" was a claim with nothing behind it, and there was no route where an
+order could be looked up at all — the live board shows what is in flight, which is
+the wrong shape for the question a support call opens with.
+
+New:
+
+* `app/(admin)/admin/orders` and `.../[id]` — a list and a detail route. A route
+  rather than a panel so the notification fan-out can link straight to an order;
+  `hrefFor("admin", order)` now returns `/admin/orders/<id>` instead of `/admin`.
+* `lib/order-search.ts` — the whole query as one pure predicate: `OrderQuery`,
+  `filterOrders`, `matchesOrderText`, `countByGroup`, `inStatusGroup`,
+  `rangeStartMs`, plus `ALL_ORDER_STATUSES` / `ORDER_STATUS_GROUPS` /
+  `ORDER_DATE_RANGES` as data. No clock, no store, no i18n — callers pass `now`,
+  so the same query object can go into a URL, a test, or a `WHERE` clause later.
+* `components/admin/orders-view.tsx` — search, six status-group chips with counts,
+  and five precise filters (status, payment method, payment state, fulfilment,
+  date). Each filter is independent; together they compose.
+* `components/admin/order-detail-view.tsx` — customer, restaurant, payment,
+  delivery, courier + trip, money, items and the lifecycle timeline, plus the
+  intervention controls.
+
+Domain:
+
+* `order-machine.adminActions(order)` — **the intervention controls are the graph.**
+  `TRANSITIONS[status]` with each guarded move labelled with what it needs
+  collecting (`prompts`), so a new state or a new edge appears on the admin surface
+  the moment it is added to the machine and cannot drift from what the machine will
+  accept. `actorCan` is not consulted, because `admin` is the exemption the actor
+  table already describes.
+* `refunded` is deliberately excluded from `adminActions`: money going back has a
+  decision behind it, and the bare status transition would return a customer's
+  money with no record of who approved it. That is Phase 5's controls.
+* `OrderAction.prompts` gained `"cash"` and `"confirm"` — the doorstep cash
+  question (the `delivered` guard refuses without it) and a second look at
+  anything irreversible.
+* `order-lifecycle.stuckReason` / `isStuck` / `stuckOrders` — "needs attention" was
+  written twice inside `live-ops.tsx`, once as a filter and once as a label, which
+  is two chances for "stuck" to mean two things. One rule, returning a key and a
+  number; the sentence stays with the surface. `live-ops` now reads it too, so both
+  admin surfaces flag the same orders for the same reasons.
+* `stores/orders.reassignRider(id, rider)` — expressed as the two transitions it
+  actually is (`ready`, which is the machine's own unassign path, then a fresh
+  assignment), so the timeline shows a reassignment as the two events it was and
+  nothing writes `lifecycle.rider` directly. That also decides *when* it is
+  possible, correctly: `ready` is only reachable from `rider-assigned`, so an order
+  can be reassigned while the courier rides to the restaurant and not once the food
+  is in the bag. Availability is checked before the release, so a refused
+  reassignment leaves the order exactly as it was.
+
+Reuse rather than reinvention: the detail page drives `PrepTimeDialog`,
+`ReasonDialog`, `ConfirmDialog`, `AssignRiderDialog`, `OrderTimeline` and
+`PayoutBreakdown` — every dialog the restaurant and rider surfaces already use.
+`AssignRiderDialog` gained optional `title`/`body` so a reassignment is not
+labelled "assign a rider" when one is already on it.
+
+One thing deliberately *not* shown: an order that has not completed has no
+commission record, and the money panel says its books are not worked out yet
+rather than projecting one. A projected platform take on an in-flight order is the
+audit's "fake financial value".
+
+### Session 6 — PHASE 5: Refunds + Support + Disputes (G07, G25, G26) (2026-08-19)
+
+A refund that can be decided, and somewhere for a complaint to go.
+
+**The refund model was wrong, not merely incomplete.** `RefundStatus` ended at
+`approved`, so there was no way to say "we agreed to pay this and the money has
+actually gone back" — and cancelling a paid order flipped `payment.status`
+straight to `refunded`, which told a customer their card had been credited when
+nothing had touched it. That was the clearest instance of the audit's fake
+financial value, and it is what Phase 5 fixes first.
+
+Refund lifecycle (`types/order.ts`, `lib/order-machine.ts`):
+
+* `RefundStatus` gains the spec's terminal member: `none → requested →
+  approved | rejected → refunded`. `RefundMethod` (`wallet | card | cash`) is new.
+* `OrderLifecycle` gains `refundMethod`, `refundDecidedAt`, `refundSettledAt` —
+  the route, the decision and the money, which are three different facts.
+* Ending a paid order now *opens* the refund at `requested` instead of claiming it
+  is done: `openRefundOwed` runs in the `rejected` / `cancelled` / `returned`
+  cases, and `payment.status` stays `paid` until something settles it.
+* `approveRefund` (partial amounts, clamped to the total), `rejectRefund`,
+  `settleRefund`, and the guards `isRefundable` / `canDecideRefund` /
+  `canSettleRefund`. All pure, all clock-injected, all appending an event.
+* `settleRefund` is separate from the `refunded` **status** on purpose: that status
+  only exists for an order that ended badly, so a goodwill refund on an order the
+  customer received and ate cannot use it without lying about the food. Both routes
+  stamp the same fields through one private `stampRefundSettled`, so no consumer
+  has to know which one ran.
+* `stores/orders.decideRefund` / `settleRefund` — the decision is the machine's;
+  the store moves the money. A wallet refund approves and settles in one commit
+  because the ledger is ours and there is nothing to wait for; card and cash stop
+  at `approved`, which is the honest state.
+* The automatic wallet refund on cancellation now goes *through* `decideRefund`
+  rather than crediting and advancing on its own, so an automatic refund and one an
+  agent granted are the same shape and the same log.
+* `platformFinancials` counts a refund when it is `refunded`, not when it is
+  `approved` — money out, not money agreed to.
+* Store v3 → v4 migrates old devices (`ensureRefundRecord`): a legacy `approved`
+  becomes `refunded` (it was only ever written after the wallet was credited), and
+  the old instant `payment.status` flip is recorded as settled rather than reopened
+  — a migration must not turn a closed refund into a new liability.
+
+Support domain (`types/support.ts`, `lib/support.ts`, `stores/support.ts`):
+
+* `SupportTicket` with an append-only `events` log, the spec's eight categories, a
+  six-state status graph (`open → in-review → awaiting-customer →
+  resolved | rejected → closed`, reopenable from anywhere) and a `resolution`.
+* Built exactly like the order machine: `TICKET_TRANSITIONS` refuses an illegal
+  move, `createTicket` / `addMessage` / `moveTicket` / `resolveTicket` /
+  `reopenTicket` are pure, and the store commits and emits notifications.
+* **Visibility is a property of the event, not of the reader.** An internal note is
+  `visibility: "internal"` and is filtered once, in `customerEvents`, so a
+  customer-facing surface cannot leak one by forgetting a condition —
+  `supportNotifications` drops it too, because a notification is a copy that leaves
+  the building.
+* A customer reply pulls an `awaiting-customer` ticket back onto the desk; an
+  agent's reply does not move the status, because the agent decides where it goes.
+* One live ticket per order: a second report about the same dinner continues the
+  same conversation instead of opening a second row for one complaint.
+* `stores/support.resolve` is the seam that keeps the two halves in step: it writes
+  the **order** first and only lets the ticket claim a refund the order accepted.
+  A resolution that promises money the order refused is the failure mode that
+  would otherwise be one component away.
+
+Surfaces:
+
+* Customer — `ReportProblemDialog` (category + a required sentence) reached from
+  the tracker and from order history, `/account/support` and
+  `/account/support/[id]` with status, the order, when it was submitted, the
+  thread, the resolution and a reply box while the ticket is live. New nav entry.
+* Admin — `/admin/support` (queue with live/decided ordering, category filter,
+  three KPIs including the longest wait) and `/admin/support/[id]`: the
+  conversation beside the order, internal notes, a reply, the decision dialog
+  (five outcomes, refund amount, the sentence the customer reads) and
+  close/reopen. New nav entry, badged with the live count.
+* `RefundControls` is one component used by both the ticket page and the admin
+  order page, writing to the same store — so a refund granted from a ticket and
+  one granted from the order are one record, not two claims.
+* `components/support/ticket-thread.tsx` — one thread renderer for both sides;
+  `showInternal` is the only difference.
+* The tracker now distinguishes *approved* ("on its way back to your card") from
+  *settled*, which the old model could not express.
+
+Demo data:
+
+* `SeedSpec` gains `via`, `endings` and `refund`. The off-path tail is walked as
+  the chain it is, so `delivery-failed`, `returned` (failed at the door, then taken
+  back) and the terminal `refunded` status exist for the first time — three
+  statuses the audit recorded as absent.
+* Every `RefundStatus` member is now demonstrable on some order: requested (a
+  returned order awaiting a decision), approved (a card refund with the provider),
+  rejected, refunded.
+* `lib/mock/support-tickets.ts` seeds five tickets — untouched, in review with an
+  internal note, awaiting the customer, resolved with a refund, refused. Each is
+  built by the domain functions rather than hand-assembled, so a seeded ticket and
+  a reviewer's are the same shape, and each attaches to an order whose seeded
+  refund record matches the resolution.
+* A courier is no longer double-booked by the seed. `courierFor` reserves a rider
+  per *live* order, because the store enforces one order per rider and constructed
+  seeds have to honour the same rule; finished orders still share couriers, which
+  is what a fleet's history looks like.
+
 ---
 
 ## Current Phase
 
-None in progress. Phases 1 and 2 complete. Next per the spec: **PHASE 3 — Rider
-Delivery + Earnings Unification (G04, G05, G39, G40)**.
+None in progress. Phases 1–5 complete. Next per the spec: **PHASE 6 — Restaurant
+Onboarding + Approval (G08, G09, G12)**, which is not started and needs an
+explicit instruction.
 
 ---
 
@@ -244,7 +515,8 @@ Delivery + Earnings Unification (G04, G05, G39, G40)**.
 ### Flows actually exercised
 
 Verified by driving the real modules and the real persisted store (throwaway
-harnesses, not committed), plus a dev-server smoke test of every touched route:
+harnesses, not committed — 57 domain/seam checks and 37 store checks for Phase 3
+alone), plus a dev-server smoke test of every touched route:
 
 | Flow | Result |
 |---|---|
@@ -260,7 +532,56 @@ harnesses, not committed), plus a dev-server smoke test of every touched route:
 | Only the current ISO week is `open`; a closed period yields an available (payable) balance | PASS |
 | Platform commission equals the sum of every settlement; GMV counts completed orders only | PASS |
 | v2 → v3 store migration backfills the rate and the commission record on an already-completed order | PASS |
-| Dev-server render of `/`, `/admin`, `/dashboard`, `/account/orders`, `/orders/[id]` | 200, no new errors |
+| **Phase 3** — cash delivery refused at `delivered` without confirmation (`errors.cashNotConfirmed`); an explicit "no" refused too; order does not move | PASS |
+| Confirming the cash commits the handoff, flips the payment to `paid`, leaves nothing to collect, and still records the note as carried | PASS |
+| A prepaid delivery needs no cash confirmation; a cash *pickup* is not gated | PASS |
+| A real order yields one trip: two stops, both done once delivered, status `delivered`, the order's *own* OTP on the dropoff, real route distance | PASS |
+| Payout lines add to the total; the tip passes through; a single order earns no batch bonus; base fare is the drop zone's | PASS |
+| Payout does not move with the reading clock (re-derived 6h later, byte-identical) and the trip id is stable | PASS |
+| Completion stores the rider earning without the caller supplying it; it names the courier, matches the trip's payout, and records the cash | PASS |
+| A completed order's trip reuses the stored payout instead of recomputing it | PASS |
+| A pickup order records no rider earning | PASS |
+| Second completion refused; order byte-identical after; commission and earning each exist exactly once | PASS |
+| The rider's day, week, wallet, ledger and cash-in-hand all move by exactly the real delivery's payout / cash — through the same functions a synthesised trip uses | PASS |
+| The trip number links back to the customer's order number; history contains the delivery exactly once | PASS |
+| The same order twice in the context is earned from once; an undelivered order earns nothing | PASS |
+| Offer pool: idle+on-shift yields offers; holding work yields none; off shift yields none | PASS |
+| Dispatch prefers the drop's zone, skips an unavailable rider, and returns null when nobody is free | PASS |
+| Going offline in the rider app reaches the shared board and takes the rider out of auto-dispatch; coming back frees them | PASS |
+| Accepting a synthesised trip removes the rider from dispatch; handing it back restores them | PASS |
+| A second order for a rider already carrying one is refused (`errors.riderBusy`); a free courier takes it | PASS |
+| Dev-server render of `/`, `/admin`, `/dashboard`, `/account/orders`, `/orders/[id]`, `/delivery`, `/delivery/wallet`, `/delivery/earnings`, `/delivery/history`, `/dashboard/orders` | 200, no new errors |
+| **Phase 4** — `adminActions` equals `TRANSITIONS[status]` minus `refunded`, for every seeded status | PASS |
+| Every action the admin surface offers is accepted by the machine once its prompt is satisfied | PASS |
+| A cash delivery is prompted for the cash; a prepaid one only for confirmation; a completed order offers nothing | PASS |
+| Empty query matches every order, newest first; payment / payment-state / fulfilment / date / group filters each hold, and compose | PASS |
+| Search finds an order by number, customer, courier and area; two words are an intersection | PASS |
+| Group counts follow the date window and ignore the group selection | PASS |
+| `stuckReason`: a terminal order is never stuck; a fresh `placed` is not, a 6-minute-old one is; `ready` with no courier only after 5 minutes; overdue otherwise | PASS |
+| Reassignment: same courier refused, busy courier refused with the order untouched, free courier accepted through two events (`ready:reassigned` → `rider-assigned`), old courier freed | PASS |
+| Reassignment refused once the food is collected (`errors.illegalTransition`); the order stays with the courier holding it | PASS |
+| A transition the actor table forbids is refused for the rider and accepted for `admin`, with `admin` recorded on the event | PASS |
+| **Phase 5** — request → approve → settle: each step stamps its own field, a partial amount is honoured, an over-refund is clamped to the total | PASS |
+| Approving does **not** move the money (payment still `paid`); settling flips it and keeps the decision date | PASS |
+| A settled refund can be neither re-decided nor re-settled; refusing clears the amount | PASS |
+| Cancelling a paid order opens a refund at `requested` with the route resolved, and does not claim the money is back | PASS |
+| Cancelling an unpaid cash order opens nothing, and offers the customer no refund request | PASS |
+| The `refunded` status and the standalone settle stamp identical fields; settling a completed order leaves its status alone | PASS |
+| `platformFinancials` counts a settled refund and ignores an approved-but-unpaid one | PASS |
+| Wallet cancellation walks the whole lifecycle in one commit (approved → refunded), credits the wallet exactly once, and leaves nothing to decide | PASS |
+| A card refund stops at `approved`, waits, then settles on demand — amount preserved across both steps | PASS |
+| Ticket graph: `closed` unreachable from `open`, illegal moves refused, every status reopenable | PASS |
+| An internal note is a note, hidden from `customerEvents`, and produces no notification | PASS |
+| A customer reply pulls an `awaiting-customer` ticket back to `in-review` | PASS |
+| Resolving lands on `resolved`/`rejected` by outcome; reopening clears the resolution and the closure but not the log | PASS |
+| A second report on the same order continues the same ticket as a message | PASS |
+| Resolving with a refund writes the order first; a refund the order refuses leaves the ticket undecided and the order untouched | PASS |
+| Refusing a ticket refuses the refund it was about | PASS |
+| Seeded data: five tickets, each on a real order, one order each, every resolution matching its order's refund record, deterministic | PASS |
+| Every `RefundStatus` member and the `delivery-failed` / `returned` / `refunded` statuses exist in the working set | PASS |
+| No courier is double-booked across the seeded live orders | PASS |
+| v3 → v4 migration: legacy `approved` becomes settled, the old instant payment flip is recorded as settled rather than reopened, an untouched order gains nulls only, idempotent | PASS |
+| Dev-server render of `/admin/orders`, `/admin/orders/[id]`, `/admin/support`, `/admin/support/[id]`, `/account/support`, `/account/support/[id]` | 200, no new errors |
 
 Not verified: a click-through in a real browser. No browser automation is
 available in this environment, so the assertions above drive the store actions the
@@ -299,13 +620,59 @@ overview-view / live-ops   (consume the domain; compute nothing themselves)
   deliberately left alone so no page-built snapshot can carry a stale rate.
 * No new store was added. No competing lifecycle or second order model exists.
 
+### Added in Phase 3
+
+```text
+lib/mock/drop-points.ts    (one geography for both kinds of trip)
+   ↓
+lib/delivery-bridge.ts     (pure: Order → DeliveryJob, and its rider earning)
+   ↓
+services/delivery.ts       (resolves the seed geography; RiderContext.orders)
+   ↓                              ↘
+stores/orders.ts                   stores/fleet.ts   (shared availability board)
+(resolves the earning at            ↑
+ completion; unions availability)   stores/rider.ts  (publishes from one write path)
+   ↓
+use-rider-records.ts       (one reading of the rider's reality, six screens)
+```
+
+* **The order is the authority; the trip is derived.** There is no second record
+  and nothing to keep in step. `jobFromOrder` is called on demand and is
+  deterministic, so a real delivery dedupes against itself by id.
+* **One payout formula.** Both kinds of work go through `computePayout`, and a
+  completed order's trip reuses the payout stored in its financials — so the
+  rider's wallet and the order's books agree by construction, not by two places
+  doing similar sums.
+* **`statusFromProgress` answers for both.** Its signature was widened to the
+  fields it reads, so the bridge asks *it* what an order's stops mean rather than
+  writing a second status table.
+* **Availability is injected, not looked up.** `dispatchRider` takes an
+  `unavailable` set; the union of "carrying an order" and "off shift" is computed
+  once in `stores/orders.unavailableRiderIds`. `lib/` stays free of both stores.
+* No competing lifecycle was added. Every rider transition still goes through
+  `lib/order-machine.transition`; the synthesised trip's own stop-completion rules
+  still live in `services/delivery.completeStop`.
+
 ### Deliberately deferred (not omissions)
 
-* **`OrderFinancials.riderEarning` is always null.** The shape is final and reuses
-  `DeliveryPayout`, so there is one payout formula rather than two — but a payout
-  needs trip geometry (route distance, zone, peak hour) that the order does not
-  carry. Filling it is G04, which is Phase 3's assigned gap. `TransitionPatch`
-  already accepts `riderEarning`, so Phase 3 hands it in and nothing else moves.
+* ~~**`OrderFinancials.riderEarning` is always null.**~~ **Closed in Phase 3** —
+  filled by `services/delivery.riderEarningForOrder`, resolved in the store at
+  completion. No type or machine change was needed, as Phase 2 predicted.
+* **A real order's drop coordinate is its *area's* centre, not its doorstep.**
+  `DeliveryAddress` is a postal snapshot with no coordinates, so the geography is
+  resolved from the seed's per-area points (`lib/mock/drop-points.ts`), falling
+  back to the zone centre for an area the seed does not cover. Stated in the code
+  rather than papered over: a fabricated doorstep coordinate would make the paid
+  distance look more precise than it is. Phase E geocodes at checkout and every
+  caller keeps working.
+* **A rider with no shift record is treated as available.** Only one rider has a
+  device in this demo, so holding the seeded fleet to a shift they can never clock
+  into would leave dispatch with nobody to pick. A rider who *has* signed on is
+  held to what they said — going offline removes them from the pool. The rule is
+  documented on `isAvailableForDispatch`.
+* **The zone cash limit is not yet enforced against real orders.** The wallet warns
+  and the home screen nudges, as before; refusing work over the limit is G44
+  (fraud/abuse, P3), not Phase 3's list.
 * **No `services/finance.ts` yet.** Phase 2's two readouts consume `lib/settlement`
   directly, the way the overview already consumes `lib/analytics`. The seam
   belongs with its first real consumers — the restaurant earnings page and the
@@ -315,6 +682,21 @@ overview-view / live-ops   (consume the domain; compute nothing themselves)
   require a payout run, which is Phase 8. `buildVendorSettlements` already
   accepts `payouts` and `adjustments` and projects the status from them, so
   Phase 8 supplies data rather than changing logic.
+
+* **A cash refund settles by hand.** `RefundMethod` includes `cash` and the desk
+  marks it returned; there is no cash-out ledger, because the platform does not
+  hold the rider's float in this prototype. Stated rather than automated.
+* **Wallet credit as an outcome is recorded, not paid.** `SupportOutcome.credited`
+  writes the resolution; issuing an actual promotional credit is Phase 12's coupon
+  machinery, and crediting the wallet here would be a second, unreconciled way of
+  giving money back.
+* **A ticket has no assignee.** The spec's admin list does not ask for one, and a
+  queue with an owner column nobody sets is worse than none. `RBAC` (Phase 14) is
+  where "who may work this" gets decided.
+* **`SupportTicket` is not attached to a customer id.** The prototype has one
+  customer account per device and the ticket snapshots the name and phone off the
+  order, exactly as an order snapshots its vendor. Phase 11 (admin customers) is
+  where a customer's ticket history needs the join.
 
 ### Preserved
 
@@ -339,25 +721,75 @@ types/*  →  lib/mock/*  →  services/*  →  stores/*  →  components/routes
   Note for anyone reproducing: the untracked `.env.local` on this machine turns on
   `BACKEND_AUTH` and `BACKEND_CATALOG` with `BACKEND_FALLBACK=1`, which is why the
   dev log carries `[catalog] … fell back to the mock layer` warnings when no API is
-  running. `BACKEND_ORDERS=0`, so the order path Phases 1–2 touch is the mock one.
+  running. `BACKEND_ORDERS=0`, so the order path Phases 1–3 touch is the mock one.
 
-No architectural violations were introduced this session.
+### Added in Phase 4
+
+```text
+lib/order-search.ts        (pure: one query, one predicate)
+lib/order-machine.ts       (`adminActions` — the graph, as controls)
+lib/order-lifecycle.ts     (`stuckReason` — one attention rule, two surfaces)
+   ↓
+components/admin/orders-view.tsx        → /admin/orders
+components/admin/order-detail-view.tsx  → /admin/orders/[id]
+   ↓
+stores/orders.reassignRider (two transitions, never a field write)
+```
+
+### Added in Phase 5
+
+```text
+types/support.ts + types/order.ts (RefundStatus/RefundMethod)
+   ↓
+lib/order-machine.ts       (refund lifecycle: approve / reject / settle + guards)
+lib/support.ts             (pure: ticket graph, constructors, visibility filter)
+   ↓
+stores/orders.decideRefund / settleRefund   (the money — one writer)
+stores/support.ts          (tickets; `resolve` writes the order first)
+   ↓
+components/admin/refund-controls.tsx   (shared: order page + ticket page)
+components/support/ticket-thread.tsx   (shared: customer + desk)
+   ↓
+/account/support · /admin/support
+```
+
+* **The order remains the only record of money.** A ticket records a refund
+  decision; `order.lifecycle.refund` *is* the refund. `stores/support.resolve`
+  writes the order first and lets the ticket claim only what the order accepted.
+* **Refund states are three separate facts.** Route (`refundMethod`), decision
+  (`refundDecidedAt`) and money (`refundSettledAt`). Collapsing them is what made
+  the old model announce a card refund the instant an order was cancelled.
+* **Internal notes are filtered once.** `customerEvents` and
+  `supportNotifications` are the two exits, and both check the event's own
+  `visibility` rather than trusting the caller.
+* **No second lifecycle.** Every order move still goes through
+  `lib/order-machine.transition`; the ticket graph governs tickets only, and
+  nothing in `lib/` reads a store.
+
+No architectural violations were introduced in Phases 1–5.
 
 ---
 
 ## Next Phase
 
-**PHASE 3 — Rider Delivery + Earnings Unification (G04, G05, G39, G40).**
+**PHASE 6 — Restaurant Onboarding + Approval (G08, G09, G12).** Not started; needs
+an explicit instruction.
 
-What Phases 1–2 leave ready for it:
+What Phases 1–5 leave ready for it:
 
-1. `TransitionPatch.riderEarning` and `OrderFinancials.riderEarning` are typed and
-   wired — Phase 3 computes a `DeliveryPayout` for the real order and passes it to
-   `advance(id, "completed", …)`. No type or machine change needed.
-2. `OrderRiderEarning.cashCollected` is the field the discarded `cashCollected`
-   flag (G05) belongs in.
-3. `services/delivery.RiderContext.completed` remains the injection point for
-   bridging a real `Order` into the rider's earnings/wallet/history without a
-   second code path.
-4. `dispatchRider(order, fleet, zoneId)` is still the single dispatch chokepoint
-   for G40's availability truth.
+1. `Vendor` still has no status field, and `services/vendor.getDashboardVendor`
+   still falls back to the flagship vendor for any management account (§5.3). That
+   fallback is the first thing Phase 6 has to remove, and doing so fixes every
+   dashboard surface at once.
+2. `/admin/restaurants` does not exist. `/admin/orders` is the template: a pure
+   query module (`lib/order-search.ts`'s shape), a list component holding a query
+   object, and a detail route with the domain's own action list as controls.
+3. The approve/reject pattern now exists twice — the refund lifecycle and the
+   ticket graph — and both are the same shape a vendor application needs: a status
+   graph in `lib/`, guards asked rather than statuses tested, an append-only log,
+   and a store action that commits and notifies.
+4. `lib/notifications` has an explicit four-audience fan-out; a vendor application
+   changing state needs an entry there rather than an ad-hoc message.
+5. Demo data will need vendor-status variety, which `SeedSpec`'s pattern in
+   `lib/mock/demo-orders.ts` and `lib/mock/support-tickets.ts` now demonstrates:
+   seed the states through the domain's own constructors, not by hand.

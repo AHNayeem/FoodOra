@@ -21,6 +21,7 @@ import {
   type UnroutedStop,
 } from "@/lib/delivery";
 import { zoneById } from "./delivery-zones";
+import { DROP_POINTS } from "./drop-points";
 import { foodsByVendor } from "./foods";
 import { riderById } from "./riders";
 import { hashSeed, mulberry32, pick } from "./rng";
@@ -91,47 +92,6 @@ const PICKUP_NOTES: (string | null)[] = [
   "Two bags — check the drinks are in.",
   "Ask for the packer, order is under the customer's name.",
 ];
-
-interface DropPoint {
-  area: string;
-  address: string;
-  lat: number;
-  lng: number;
-}
-
-/**
- * Residential drop points per zone. Coordinates are inside each zone, so the
- * routes the router produces look like the rides a courier in that part of Dhaka
- * would make (and a zone's trips never wander into another zone's streets).
- */
-const DROP_POINTS: Record<string, DropPoint[]> = {
-  dzn_gulshan: [
-    { area: "Gulshan 1", address: "House 42, Road 11", lat: 23.7793, lng: 90.4165 },
-    { area: "Gulshan 2", address: "House 7, Road 53", lat: 23.7948, lng: 90.4172 },
-    { area: "Banani", address: "Flat 4B, House 21, Road 6", lat: 23.7942, lng: 90.4009 },
-    { area: "Baridhara", address: "Block J, Road 8", lat: 23.8062, lng: 90.4238 },
-    { area: "Bashundhara R/A", address: "Block C, Road 3", lat: 23.8156, lng: 90.4362 },
-    { area: "Niketan", address: "House 63, Road 4", lat: 23.7771, lng: 90.4121 },
-    { area: "Mohakhali", address: "DOHS Road 5, House 318", lat: 23.7801, lng: 90.3998 },
-    { area: "Badda", address: "Link Road, Ranavola", lat: 23.7838, lng: 90.4271 },
-  ],
-  dzn_dhanmondi: [
-    { area: "Dhanmondi", address: "House 55, Road 27", lat: 23.7566, lng: 90.3729 },
-    { area: "Dhanmondi", address: "House 12, Road 8/A", lat: 23.7452, lng: 90.3736 },
-    { area: "Kalabagan", address: "Lake Circus, 2nd floor", lat: 23.7495, lng: 90.3841 },
-    { area: "Mohammadpur", address: "Block D, Shyamoli", lat: 23.7671, lng: 90.3603 },
-    { area: "Lalmatia", address: "Block B, House 4", lat: 23.7602, lng: 90.3672 },
-    { area: "Shantinagar", address: "Chamelibagh, House 19", lat: 23.7398, lng: 90.4135 },
-    { area: "Tejgaon", address: "Nakhalpara, Road 2", lat: 23.7657, lng: 90.3921 },
-  ],
-  dzn_uttara: [
-    { area: "Uttara Sector 4", address: "House 18, Road 12", lat: 23.8628, lng: 90.3985 },
-    { area: "Uttara Sector 7", address: "House 3, Road 35", lat: 23.8741, lng: 90.3812 },
-    { area: "Mirpur 10", address: "Block B, Senpara", lat: 23.8072, lng: 90.3691 },
-    { area: "Pallabi", address: "Block D, Road 5", lat: 23.8248, lng: 90.3652 },
-    { area: "Kalshi", address: "Housing Estate, Building 7", lat: 23.8291, lng: 90.3789 },
-  ],
-};
 
 /** Payment mix — cash still carries a big share of Dhaka deliveries. */
 const PAYMENT_POOL: PaymentMethod[] = [

@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { DeliveryJob, RiderRemittance, RiderWithdrawal } from "@/types";
+import { useFleet } from "./fleet";
 
 /**
  * rider store — the delivery partner's device state (Phase C18).
@@ -22,8 +23,16 @@ import type { DeliveryJob, RiderRemittance, RiderWithdrawal } from "@/types";
  * rehydrate in the shell, gated on `hydrated`, so SSR and the first client render
  * never disagree. With the Phase E backend this shrinks to a cache of
  * server-owned records and `declined` disappears entirely.
+ *
+ * One thing here is *not* private to the device: whether this rider is available
+ * for work. Dispatch has to know, and it cannot read a device store — so every
+ * action that changes availability publishes it to `stores/fleet` (G40). That is
+ * why `identify` exists: a device store has no idea whose device it is until the
+ * shell resolves "me".
  */
 interface RiderState {
+  /** Whose device this is, once the shell has resolved it; null before that. */
+  riderId: string | null;
   /** On shift and available for offers. */
   online: boolean;
   /** When this shift started — the home screen's "online since". */
@@ -37,6 +46,8 @@ interface RiderState {
   remittances: RiderRemittance[];
   withdrawals: RiderWithdrawal[];
   hydrated: boolean;
+  /** Tell the store which rider it belongs to, and publish their current state. */
+  identify: (riderId: string) => void;
   setOnline: (online: boolean, at: string | null) => void;
   /** Take a trip (or replace it with an advanced copy from the seam). */
   setActiveJob: (job: DeliveryJob) => void;
@@ -50,9 +61,25 @@ interface RiderState {
   setHydrated: () => void;
 }
 
+/**
+ * Tell the shared availability board what this device's rider is doing.
+ *
+ * Called from inside every action that changes it, so there is exactly one write
+ * path and the board cannot fall behind. A no-op before the shell has identified
+ * the rider — there is nothing to publish under.
+ */
+function publish(
+  riderId: string | null,
+  patch: { online?: boolean; since?: string | null; activeJobId?: string | null },
+) {
+  if (!riderId) return;
+  useFleet.getState().publish(riderId, patch);
+}
+
 export const useRider = create<RiderState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      riderId: null,
       online: false,
       shiftStartedAt: null,
       activeJob: null,
@@ -61,14 +88,34 @@ export const useRider = create<RiderState>()(
       remittances: [],
       withdrawals: [],
       hydrated: false,
-      setOnline: (online, at) => set({ online, shiftStartedAt: at }),
-      setActiveJob: (job) => set({ activeJob: job }),
-      finishJob: (job) =>
+      identify: (riderId) => {
+        set({ riderId });
+        const { online, shiftStartedAt, activeJob } = get();
+        publish(riderId, {
+          online,
+          since: shiftStartedAt,
+          activeJobId: activeJob?.id ?? null,
+        });
+      },
+      setOnline: (online, at) => {
+        set({ online, shiftStartedAt: at });
+        publish(get().riderId, { online, since: at });
+      },
+      setActiveJob: (job) => {
+        set({ activeJob: job });
+        publish(get().riderId, { activeJobId: job.id });
+      },
+      finishJob: (job) => {
         set((s) => ({
           activeJob: null,
           completed: [job, ...s.completed.filter((j) => j.id !== job.id)],
-        })),
-      clearActiveJob: () => set({ activeJob: null }),
+        }));
+        publish(get().riderId, { activeJobId: null });
+      },
+      clearActiveJob: () => {
+        set({ activeJob: null });
+        publish(get().riderId, { activeJobId: null });
+      },
       decline: (jobId) =>
         set((s) =>
           s.declined.includes(jobId) ? {} : { declined: [...s.declined, jobId] },
@@ -82,6 +129,7 @@ export const useRider = create<RiderState>()(
     {
       name: "foodora-rider",
       partialize: (s) => ({
+        riderId: s.riderId,
         online: s.online,
         shiftStartedAt: s.shiftStartedAt,
         activeJob: s.activeJob,

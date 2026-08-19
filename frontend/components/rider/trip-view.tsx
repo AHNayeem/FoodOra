@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
+import { PayoutBreakdown } from "./payout-breakdown";
 import { RouteMap } from "./route-map";
 import { HandoffDialog } from "./handoff-dialog";
 
@@ -457,14 +458,6 @@ function TripReceipt({ job }: { job: DeliveryJob }) {
   const t = useTranslations("delivery");
   const currency = job.currency as CurrencyCode;
 
-  const rows: [string, number][] = [
-    ["payoutBase", job.payout.baseFare],
-    ["payoutDistance", job.payout.distanceFee],
-    ["payoutPeak", job.payout.peakBonus],
-    ["payoutBatch", job.payout.batchBonus],
-    ["payoutTip", job.payout.tip],
-  ];
-
   return (
     <div className="space-y-5">
       <div className="rounded-card border border-fresh/40 bg-fresh/5 p-6 text-center">
@@ -483,33 +476,11 @@ function TripReceipt({ job }: { job: DeliveryJob }) {
         </p>
       </div>
 
-      <section className="rounded-card border border-line bg-surface p-5">
-        <h2 className="text-sm font-bold text-ink">{t("payoutBreakdown")}</h2>
-        <dl className="mt-3 space-y-2 text-sm">
-          {rows
-            .filter(([, amount]) => amount > 0)
-            .map(([key, amount]) => (
-              <div key={key} className="flex justify-between gap-4">
-                <dt className="text-body">{t(key)}</dt>
-                <dd className="font-semibold text-ink">{formatPrice(amount, currency)}</dd>
-              </div>
-            ))}
-          <div className="flex justify-between gap-4 border-t border-line pt-2">
-            <dt className="font-bold text-ink">{t("payoutTotal")}</dt>
-            <dd className="font-extrabold text-ink">
-              {formatPrice(job.payout.total, currency)}
-            </dd>
-          </div>
-        </dl>
-        {job.cashToCollect > 0 && (
-          <p className="mt-4 flex items-start gap-2 rounded-field bg-surface-alt p-3 text-xs text-body">
-            <Banknote className="mt-0.5 size-4 shrink-0 text-accent-600" aria-hidden />
-            {t("cashHeldNote", {
-              amount: formatPrice(job.cashToCollect, currency),
-            })}
-          </p>
-        )}
-      </section>
+      <PayoutBreakdown
+        payout={job.payout}
+        cashCollected={job.cashToCollect}
+        className="rounded-card border border-line bg-surface p-5"
+      />
 
       <div className="flex flex-wrap gap-3">
         <Button href="/delivery" className="flex-1">

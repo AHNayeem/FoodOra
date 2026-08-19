@@ -288,7 +288,10 @@ export interface JobProgress {
  * remaining legs. So the checklist never lies about progress, and the ETA is
  * honest about being an estimate.
  */
-export function jobProgress(job: DeliveryJob, now: number): JobProgress {
+export function jobProgress(
+  job: Pick<DeliveryJob, "stops" | "completedStopIds">,
+  now: number,
+): JobProgress {
   const done = new Set(job.completedStopIds);
   const stops = [...job.stops].sort((a, b) => a.sequence - b.sequence);
   const completed = stops.filter((s) => done.has(s.id)).length;
@@ -323,8 +326,16 @@ export function jobProgress(job: DeliveryJob, now: number): JobProgress {
   };
 }
 
-/** The status a job's completed stops imply — kept in step with `completeStop`. */
-export function statusFromProgress(job: DeliveryJob): DeliveryJob["status"] {
+/**
+ * The status a job's completed stops imply — kept in step with `completeStop`.
+ *
+ * Takes only the fields it reads so a trip that is still being assembled can be
+ * asked the same question: `lib/delivery-bridge` derives a real order's stops and
+ * then asks *this* what they mean, rather than writing a second status table.
+ */
+export function statusFromProgress(
+  job: Pick<DeliveryJob, "status" | "stops" | "completedStopIds">,
+): DeliveryJob["status"] {
   if (job.status === "cancelled") return "cancelled";
   const progress = jobProgress(job, 0);
   if (progress.completed === 0) return "accepted";

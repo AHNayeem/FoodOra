@@ -3,16 +3,21 @@ import {
   buildRiderHistory,
   buildRiderRemittances,
   deliveryZones,
+  dropPointFor,
   OFFER_WINDOW_MS,
   riderById,
   riderByUserId,
   riders,
+  vendorById,
   zoneById,
+  zoneIdForArea,
 } from "@/lib/mock";
 import type {
   DeliveryJob,
   DeliveryStop,
   DeliveryZone,
+  Order,
+  OrderRiderEarning,
   RemittanceMethod,
   Rider,
   RiderCashPosition,
@@ -34,6 +39,11 @@ import {
   otpMatches,
   statusFromProgress,
 } from "@/lib/delivery";
+import {
+  jobFromOrder,
+  riderEarningFrom,
+  type TripPlace,
+} from "@/lib/delivery-bridge";
 import { roundMoney } from "@/lib/checkout";
 import { toDateKey } from "@/lib/dates";
 import { mockDelay, ok, type Result } from "./http";
@@ -57,6 +67,17 @@ import { mockDelay, ok, type Result } from "./http";
 
 /** Records held on the rider's device that the seam cannot see for itself. */
 export interface RiderContext {
+  /**
+   * Real customer orders this rider delivered, from `stores/orders` — the bridge
+   * out of the two-delivery-systems problem (G39).
+   *
+   * They arrive as `Order`s and are converted to trips here, so every read below
+   * (today, earnings, history, wallet, cash, remittance liability) accounts for a
+   * real delivery through exactly the same code path as a synthesised one. The
+   * caller passes orders rather than jobs on purpose: the order is the authority
+   * and the trip is derived from it, so there is nothing to keep in step.
+   */
+  orders?: Order[];
   /** Trips completed in this browser, from `stores/rider`. */
   completed?: DeliveryJob[];
   /** Offer ids the rider turned down, so the pool stops showing them. */
@@ -77,12 +98,134 @@ export const MIN_WITHDRAWAL = 500;
  */
 export const OFFER_REFRESH_MS = OFFER_WINDOW_MS;
 
-/** The rider's week: synthesised history plus the trips they ran here, deduped. */
+// ---------------------------------------------------------------------------
+// Real orders as trips (spec: Phase 3 — one delivery reality)
+// ---------------------------------------------------------------------------
+
+/** Fallback pickup line for a vendor with no published rider number. */
+const VENDOR_PHONE = "+8802255000000";
+
+/**
+ * Where a real order's ride starts and ends.
+ *
+ * An `Order` snapshots postal detail, not coordinates, so the geography has to be
+ * resolved from the seed: the vendor's own point for the pickup, and the drop
+ * area's point for the handoff. Both come from data the catalog and the zones
+ * already carry — see `lib/mock/drop-points` for why the answer is the area's
+ * centre and not the doorstep.
+ */
+function placesFor(order: Order, zone: DeliveryZone): { pickup: TripPlace; dropoff: TripPlace } | null {
+  const vendor = vendorById.get(order.vendor.id);
+  if (!vendor) return null;
+
+  const dropArea = order.address?.area ?? zone.areas[0];
+  const drop = dropPointFor(dropArea);
+
+  return {
+    pickup: {
+      lat: vendor.location.lat,
+      lng: vendor.location.lng,
+      address: vendor.location.address,
+      area: vendor.location.address.split(",").pop()?.trim() ?? vendor.location.city,
+      phone: VENDOR_PHONE,
+    },
+    dropoff: {
+      // No seeded point for this area: the zone centre is the honest answer, and
+      // it is inside the zone whose fares are being applied.
+      lat: drop?.lat ?? zone.lat,
+      lng: drop?.lng ?? zone.lng,
+      address: [order.address?.line1, order.address?.line2, order.address?.area]
+        .filter(Boolean)
+        .join(", "),
+      area: dropArea,
+      phone: order.contact.phone,
+    },
+  };
+}
+
+/** The zone whose fares apply to an order — the drop area's, else the rider's. */
+function zoneForOrder(order: Order, rider: Rider | undefined): DeliveryZone | undefined {
+  const byArea = zoneIdForArea(order.address?.area);
+  return zoneById.get(byArea ?? rider?.zoneId ?? "") ?? (rider ? zoneById.get(rider.zoneId) : undefined);
+}
+
+/**
+ * The trip behind a real order, or null when there is no trip to speak of — a
+ * pickup order, an unassigned one, or a vendor/zone the seed does not know.
+ *
+ * Synchronous, like `nextStopOf`: this is a projection of a record the caller
+ * already holds, not a fetch. Phase E turns it into a join and the callers stay
+ * put.
+ */
+export function jobForOrder(order: Order, now: number = Date.now()): DeliveryJob | null {
+  if (order.fulfillment !== "delivery") return null;
+  const rider = order.lifecycle.rider ? riderById.get(order.lifecycle.rider.id) : undefined;
+  const zone = zoneForOrder(order, rider);
+  if (!zone) return null;
+  const places = placesFor(order, zone);
+  if (!places) return null;
+
+  return jobFromOrder(order, {
+    zone,
+    // The order's snapshot is what the customer was told, so it is what the
+    // route is timed against — the rider may have changed vehicle since.
+    vehicle: order.lifecycle.rider?.vehicle ?? rider?.vehicle ?? "bike",
+    pickup: places.pickup,
+    dropoff: places.dropoff,
+    now,
+  });
+}
+
+/**
+ * What the rider earned delivering this order (G04) — the record the `completed`
+ * transition stamps onto the order's financials.
+ *
+ * Resolved here rather than in the store or a component because it needs the
+ * zone's fare rules and the trip's geometry, and because every surface that can
+ * complete an order has to produce the same number.
+ */
+export function riderEarningForOrder(
+  order: Order,
+  now: number = Date.now(),
+): OrderRiderEarning | null {
+  const job = jobForOrder(order, now);
+  return job ? riderEarningFrom(order, job) : null;
+}
+
+/**
+ * Orders this rider actually delivered, as trips.
+ *
+ * Keyed by trip id rather than collected into a list, so the same order appearing
+ * twice in the caller's context cannot be earned from twice. The store does not
+ * hand out duplicates today; making that a property of *this* function rather
+ * than a property of its caller is what keeps it true when a second caller
+ * arrives.
+ */
+function orderTrips(riderId: string, now: number, ctx: RiderContext = {}): DeliveryJob[] {
+  const trips = new Map<string, DeliveryJob>();
+  for (const order of ctx.orders ?? []) {
+    if (order.lifecycle.rider?.id !== riderId) continue;
+    if (order.status !== "delivered" && order.status !== "completed") continue;
+    const job = jobForOrder(order, now);
+    if (job) trips.set(job.id, job);
+  }
+  return [...trips.values()];
+}
+
+/**
+ * The rider's week: real deliveries, the synthesised trips they ran in this
+ * browser, and the seeded past — deduped, newest first.
+ *
+ * Order matters. Real orders win, because they are the only records with a
+ * customer behind them; a synthesised trip is only ever filler for a week the
+ * prototype has no backend to remember.
+ */
 function resolveHistory(riderId: string, now: number, ctx: RiderContext = {}): DeliveryJob[] {
+  const real = orderTrips(riderId, now, ctx);
   const local = (ctx.completed ?? []).filter((j) => j.riderId === riderId);
-  const seen = new Set(local.map((j) => j.id));
+  const seen = new Set([...real, ...local].map((j) => j.id));
   const synthesised = buildRiderHistory(riderId, now).filter((j) => !seen.has(j.id));
-  return [...local, ...synthesised].sort(
+  return [...real, ...local, ...synthesised].sort(
     (a, b) =>
       Date.parse(b.completedAt ?? b.offeredAt) - Date.parse(a.completedAt ?? a.offeredAt),
   );
@@ -368,7 +511,7 @@ export async function getRiderDay({
       today: earningsSummary(trips, { currency: zone.currency, days: 1, now }),
       trips,
       rating: rider.rating,
-      lifetimeTrips: rider.trips + (ctx?.completed?.length ?? 0),
+      lifetimeTrips: rider.trips + (ctx?.completed?.length ?? 0) + orderTrips(riderId, now, ctx).length,
       // Pool this session's accept/decline decisions into the rider's historical
       // rate rather than averaging the two rates, which would let two declines
       // outweigh a thousand trips. `acceptanceRate` is reused so the arithmetic

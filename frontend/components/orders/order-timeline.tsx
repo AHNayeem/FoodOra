@@ -205,6 +205,14 @@ function noteLabel(
       return t("note.otpFailed", { count: Number(value) });
     case "refund-requested":
       return t("note.refundRequested");
+    case "reassigned":
+      return t("note.reassigned");
+    case "refund-approved":
+      return t("note.refundApproved");
+    case "refund-rejected":
+      return t("note.refundRejected");
+    case "refund-settled":
+      return t("note.refundSettled");
     default:
       return step.note;
   }

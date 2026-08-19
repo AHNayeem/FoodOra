@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { Banknote, Bike, Layers, Route } from "lucide-react";
 import type { DeliveryJob } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { useRider } from "@/stores/rider";
 import { getRiderJobs } from "@/services/delivery";
 import { isBatch } from "@/lib/delivery";
 import { toDateKey } from "@/lib/dates";
@@ -13,6 +12,7 @@ import { formatDistance, formatPrice } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { useDateLabel } from "@/components/reservations/use-date-label";
 import { useRiderApp } from "./rider-context";
+import { useRiderRecords } from "./use-rider-records";
 
 /**
  * HistoryView — `/delivery/history` (Phase C18).
@@ -26,20 +26,11 @@ export function HistoryView() {
   const { rider, zone } = useRiderApp();
   const currency = zone.currency as CurrencyCode;
 
-  const completed = useRider((s) => s.completed);
-  const declined = useRider((s) => s.declined);
-  const remittances = useRider((s) => s.remittances);
-  const withdrawals = useRider((s) => s.withdrawals);
-  const hydrated = useRider((s) => s.hydrated);
+  const { ctx, hydrated } = useRiderRecords();
 
   const [jobs, setJobs] = useState<DeliveryJob[] | null>(null);
   const [now] = useState(() => new Date());
   const dateLabel = useDateLabel(now);
-
-  const ctx = useMemo(
-    () => ({ completed, declined, remittances, withdrawals }),
-    [completed, declined, remittances, withdrawals],
-  );
 
   useEffect(() => {
     if (!hydrated) return;

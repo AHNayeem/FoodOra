@@ -8,13 +8,25 @@ import type {
   OrderStatus,
   Rider,
 } from "@/types";
-import { buildDemoOrders, riders, vendorById } from "@/lib/mock";
-import { notificationsFor, nearYouNotification } from "@/lib/notifications";
+import { buildDemoOrders, riders, vendorById, zoneIdForArea } from "@/lib/mock";
+import {
+  notificationsFor,
+  nearYouNotification,
+  refundNotifications,
+} from "@/lib/notifications";
 import {
   addDelay,
+  approveRefund,
+  canDecideRefund,
+  canSettleRefund,
+  canTransition,
   isTerminal,
   recordOtpFailure,
+  refundIsInstant,
+  refundMethodFor,
+  rejectRefund,
   requestRefund,
+  settleRefund,
   transition,
   type TransitionError,
   type TransitionPatch,
@@ -23,9 +35,12 @@ import {
   dispatchRider,
   ensureFinancials,
   ensureLifecycle,
+  ensureRefundRecord,
   riderSnapshot,
 } from "@/lib/order-lifecycle";
 import { commissionRateFor, DEFAULT_COMMISSION_RATE } from "@/lib/settlement";
+import { riderEarningForOrder } from "@/services/delivery";
+import { offShiftRiderIds, useFleet } from "./fleet";
 import { emitNotifications, useNotifications } from "./notifications";
 import { useWallet } from "./wallet";
 
@@ -63,7 +78,7 @@ import { useWallet } from "./wallet";
  */
 
 /** Bump when the persisted shape changes; `migrate` backfills the difference. */
-const STORE_VERSION = 3;
+const STORE_VERSION = 4;
 
 interface OrdersState {
   orders: Order[];
@@ -95,12 +110,31 @@ interface OrdersState {
     rider: Rider,
     assignment: "auto" | "manual",
   ) => { order: Order | null; error: string | null };
+  /**
+   * Take an order off its current courier and give it to another one. Two
+   * machine transitions, not a field edit — see the implementation.
+   */
+  reassignRider: (
+    id: string,
+    rider: Rider,
+  ) => { order: Order | null; error: string | null };
   /** Auto-dispatch: pick a rider for a `ready` order and assign them. */
   autoDispatch: (id: string) => { order: Order | null; error: string | null };
   /** Log a wrong handoff code. */
   failOtp: (id: string) => Order | null;
   /** Customer asks for their money back on a failed order. */
   askRefund: (id: string) => void;
+  /**
+   * The desk's refund decision (Phase 5, G07). Approving a wallet refund also
+   * settles it, because the ledger is ours; anything else waits for `settleRefund`.
+   */
+  decideRefund: (
+    id: string,
+    decision: "approve" | "reject",
+    input?: { amount?: number },
+  ) => { order: Order | null; error: string | null };
+  /** Record that an approved refund has actually reached the customer. */
+  settleRefund: (id: string) => { order: Order | null; error: string | null };
   /** Raise the "your rider is nearly there" nudge, once per order. */
   notifyNearby: (id: string) => void;
 
@@ -131,9 +165,11 @@ function owesWalletRefund(order: Order): boolean {
   return (
     order.payment.method === "wallet" &&
     REFUNDABLE.includes(order.status) &&
-    // The machine flips a paid online order to `refunded` on cancel/reject; a
-    // returned one is still `paid`. Either way the money left the wallet.
-    (order.payment.status === "paid" || order.payment.status === "refunded")
+    // The transition that ended the order opened the refund at `requested` (Phase
+    // 5). `canDecideRefund` is therefore the same question asked of the refund
+    // lifecycle rather than of the payment flag, which is what stops this firing
+    // twice or firing on an order nobody actually paid for.
+    canDecideRefund(order)
   );
 }
 
@@ -156,7 +192,19 @@ export const useOrders = create<OrdersState>()(
         const current = get().orders.find((o) => o.id === id);
         if (!current) return { order: null, error: "errors.notFound" as const };
 
-        const result = transition(current, to, actor, patch);
+        /**
+         * Completing is when the rider's side of the order is written down (G04).
+         * The payout needs the zone's fare rules and the trip's geometry, neither
+         * of which the pure machine can see, so it is resolved here — once, for
+         * every surface that can close an order — and handed in. A caller that
+         * already knows the earning (a replay, a test) keeps its own.
+         */
+        const resolved: TransitionPatch =
+          to === "completed" && patch.riderEarning === undefined
+            ? { ...patch, riderEarning: riderEarningForOrder(current) }
+            : patch;
+
+        const result = transition(current, to, actor, resolved);
         if (result.error) return { order: null, error: result.error };
 
         set((s) => ({
@@ -166,27 +214,20 @@ export const useOrders = create<OrdersState>()(
 
         // Settling the wallet is part of committing the transition, not a thing
         // a surface remembers to do: an order can be cancelled from four of
-        // them, and the money has to come back from all four. The follow-on
-        // `refunded` transition is what tells the customer, through the same
-        // notification path as every other status.
+        // them, and the money has to come back from all four.
+        //
+        // Phase 5 routes it through the same decision every other refund goes
+        // through (`decideRefund`) rather than crediting and advancing here. The
+        // effect on the customer is identical — a wallet refund is instant — but
+        // the record is now the full lifecycle, requested → approved → refunded,
+        // so an automatic refund and one an agent granted are the same shape.
         //
         // The caller's transition already succeeded, so a failure here must not
         // be reported as its failure — the settlement is reported only by what
         // it commits.
         if (owesWalletRefund(result.order)) {
-          const credited = useWallet
-            .getState()
-            .refundOrder(
-              result.order.pricing.total,
-              result.order.vendor.name,
-              result.order.orderNumber,
-            );
-          if (credited) {
-            const settled = get().advance(id, "refunded", "system", {
-              refundAmount: result.order.pricing.total,
-            });
-            if (settled.order) return { order: settled.order, error: null };
-          }
+          const settled = get().decideRefund(id, "approve");
+          if (settled.order) return { order: settled.order, error: null };
         }
 
         return { order: result.order, error: null };
@@ -197,17 +238,64 @@ export const useOrders = create<OrdersState>()(
           orders: s.orders.map((o) => (o.id === id ? addDelay(o, minutes) : o)),
         })),
 
-      assignRider: (id, rider, assignment) =>
-        get().advance(id, "rider-assigned", "system", {
+      assignRider: (id, rider, assignment) => {
+        /**
+         * A rider carries one order at a time. Checked here rather than by the
+         * surfaces offering the button, because three of them can assign — the
+         * restaurant's dialog, the rider taking a live job, and auto-dispatch —
+         * and "this courier already has somebody's dinner" has to mean the same
+         * thing to all three (G39, G40).
+         */
+        const holding = activeOrderForRider(get().orders, rider.id);
+        if (holding && holding.id !== id) {
+          return { order: null, error: "errors.riderBusy" };
+        }
+        return get().advance(id, "rider-assigned", "system", {
           rider: riderSnapshot(rider),
           assignment,
-        }),
+        });
+      },
+
+      /**
+       * Reassignment (Phase 4, G06) — the operations desk pulling a job off one
+       * courier and giving it to another.
+       *
+       * Expressed as the two transitions it actually is: back to `ready`, which
+       * is the machine's own unassign path (it clears the rider and remembers who
+       * had it so dispatch stops offering the job back to them), then a fresh
+       * assignment. Nothing here writes `lifecycle.rider` directly, so the
+       * timeline shows a reassignment as the two events it was.
+       *
+       * That also decides *when* it is possible, and correctly: `ready` is only
+       * reachable from `rider-assigned`, so an order can be reassigned while the
+       * courier is riding to the restaurant and not after they have the food. Once
+       * it is in the bag the honest move is to fail the delivery, not to
+       * quietly hand a stranger's dinner to somebody else.
+       *
+       * The new courier's availability is checked *before* the release, so a
+       * refused reassignment leaves the order exactly as it was rather than
+       * stranding it unassigned.
+       */
+      reassignRider: (id, rider) => {
+        const current = get().orders.find((o) => o.id === id);
+        if (!current) return { order: null, error: "errors.notFound" };
+        if (current.lifecycle.rider?.id === rider.id) {
+          return { order: null, error: "errors.riderUnchanged" };
+        }
+        const holding = activeOrderForRider(get().orders, rider.id);
+        if (holding && holding.id !== id) {
+          return { order: null, error: "errors.riderBusy" };
+        }
+        const released = get().advance(id, "ready", "admin", { note: "reassigned" });
+        if (released.error) return { order: null, error: released.error };
+        return get().assignRider(id, rider, "manual");
+      },
 
       autoDispatch: (id) => {
         const order = get().orders.find((o) => o.id === id);
         if (!order) return { order: null, error: "errors.notFound" };
         const zoneId = zoneForOrder(order);
-        const rider = dispatchRider(order, riders, zoneId);
+        const rider = dispatchRider(order, riders, zoneId, unavailableRiderIds(get().orders));
         if (!rider) return { order: null, error: "errors.noRiderAvailable" };
         return get().assignRider(id, rider, "auto");
       },
@@ -220,10 +308,99 @@ export const useOrders = create<OrdersState>()(
         return next;
       },
 
-      askRefund: (id) =>
-        set((s) => ({
-          orders: s.orders.map((o) => (o.id === id ? requestRefund(o) : o)),
-        })),
+      askRefund: (id) => {
+        const current = get().orders.find((o) => o.id === id);
+        if (!current) return;
+        const asked = requestRefund(current);
+        set((s) => ({ orders: s.orders.map((o) => (o.id === id ? asked : o)) }));
+        emitNotifications(
+          refundNotifications(asked, "requested", asked.updatedAt),
+        );
+      },
+
+      /**
+       * Approve or refuse a refund (Phase 5, G07).
+       *
+       * The decision is the machine's (`approveRefund` / `rejectRefund`); what the
+       * store adds is the part a pure function cannot do — moving the money.
+       *
+       * A wallet refund is approved and settled in one commit because there is
+       * nothing to wait for: the ledger is this application's, `refundOrder`
+       * refuses a second credit for the same order number, and leaving it sitting
+       * at `approved` would be describing a delay that does not exist. A card or
+       * cash refund stops at `approved`, which is the honest state — the provider
+       * has not moved, or a person has not yet handed the notes over.
+       */
+      decideRefund: (id, decision, input = {}) => {
+        const current = get().orders.find((o) => o.id === id);
+        if (!current) return { order: null, error: "errors.notFound" };
+        if (!canDecideRefund(current)) return { order: null, error: "errors.refundNotOpen" };
+
+        const decided =
+          decision === "approve"
+            ? approveRefund(current, { amount: input.amount })
+            : rejectRefund(current);
+        set((s) => ({ orders: s.orders.map((o) => (o.id === id ? decided : o)) }));
+        emitNotifications(
+          refundNotifications(
+            decided,
+            decision === "approve" ? "approved" : "rejected",
+            decided.updatedAt,
+          ),
+        );
+
+        if (decision === "reject") return { order: decided, error: null };
+
+        if (refundIsInstant(refundMethodFor(decided))) {
+          const credited = useWallet
+            .getState()
+            .refundOrder(
+              decided.lifecycle.refundAmount,
+              decided.vendor.name,
+              decided.orderNumber,
+            );
+          // A refused credit means the ledger already has this refund, which is
+          // itself proof the money is back — so it still settles.
+          const settled = get().settleRefund(id);
+          if (settled.order) return settled;
+          if (!credited) return { order: decided, error: null };
+        }
+        return { order: decided, error: null };
+      },
+
+      /**
+       * The money is back.
+       *
+       * Two routes to the same record, and which one applies is decided by the
+       * order rather than by the caller: an order that ended badly has `refunded`
+       * as a legal *status*, and reaching it is the settlement (the machine stamps
+       * the fields there). An order the customer received and ate has no such
+       * status — its lifecycle is over — so the refund settles on the lifecycle
+       * alone. Both paths go through `stampRefundSettled`, so nothing downstream
+       * has to know which one ran.
+       */
+      settleRefund: (id) => {
+        const current = get().orders.find((o) => o.id === id);
+        if (!current) return { order: null, error: "errors.notFound" };
+        if (!canSettleRefund(current)) return { order: null, error: "errors.refundNotApproved" };
+
+        if (canTransition(current.status, "refunded")) {
+          const result = get().advance(id, "refunded", "system", {
+            refundAmount: current.lifecycle.refundAmount,
+          });
+          if (result.order) {
+            emitNotifications(
+              refundNotifications(result.order, "refunded", result.order.updatedAt),
+            );
+          }
+          return { order: result.order, error: result.error };
+        }
+
+        const settled = settleRefund(current);
+        set((s) => ({ orders: s.orders.map((o) => (o.id === id ? settled : o)) }));
+        emitNotifications(refundNotifications(settled, "refunded", settled.updatedAt));
+        return { order: settled, error: null };
+      },
 
       notifyNearby: (id) => {
         const order = get().orders.find((o) => o.id === id);
@@ -278,6 +455,10 @@ export const useOrders = create<OrdersState>()(
             );
           });
         }
+        // v3 orders predate the refund lifecycle (G07): they carry no refund
+        // route and no decision/settlement dates, and their `approved` meant what
+        // `refunded` means now.
+        if (version < 4) orders = orders.map(ensureRefundRecord);
         return { orders, seeded: state.seeded ?? false };
       },
       skipHydration: true,
@@ -291,22 +472,15 @@ export const useOrders = create<OrdersState>()(
 );
 
 /**
- * Which delivery zone an order belongs to — matched on the drop area, falling
- * back to the vendor's. Dispatch uses it to prefer riders who are actually
- * nearby. A backend would resolve this from coordinates; the areas are enough
- * here because the seed's zones are defined by exactly these labels.
+ * Which delivery zone an order belongs to — matched on the drop area. Dispatch
+ * uses it to prefer riders who are actually nearby.
+ *
+ * The matching itself moved to `lib/mock/delivery-zones` so the rider app's own
+ * zone lookup gives the same answer (G39): a real order's trip has to be priced
+ * by the same zone dispatch used to choose its courier.
  */
 function zoneForOrder(order: Order): string | null {
-  const area = order.address?.area?.toLowerCase() ?? "";
-  if (!area) return null;
-  if (/gulshan|banani|baridhara|bashundhara|niketan|mohakhali|badda/.test(area)) {
-    return "dzn_gulshan";
-  }
-  if (/dhanmondi|kalabagan|mohammadpur|lalmatia|shantinagar|tejgaon/.test(area)) {
-    return "dzn_dhanmondi";
-  }
-  if (/uttara|mirpur|pallabi|kalshi/.test(area)) return "dzn_uttara";
-  return null;
+  return zoneIdForArea(order.address?.area);
 }
 
 // ---------------------------------------------------------------------------
@@ -325,15 +499,46 @@ export function dispatchableOrders(orders: Order[]): Order[] {
   return orders.filter((o) => o.status === "ready" && o.fulfillment === "delivery");
 }
 
+/**
+ * Riders who are carrying an order right now.
+ *
+ * The admin's fleet board and dispatch were each deriving this for themselves —
+ * one from the live board, one not at all. One selector, so "busy" cannot mean
+ * two things.
+ */
+export function busyRiderIds(orders: Order[]): Set<string> {
+  const ids = new Set<string>();
+  for (const order of orders) {
+    const riderId = order.lifecycle.rider?.id;
+    if (riderId && isActiveDelivery(order)) ids.add(riderId);
+  }
+  return ids;
+}
+
+/**
+ * Everyone dispatch must not pick: riders holding an order, plus riders the shift
+ * board says are off shift or already on a synthesised trip (G40).
+ *
+ * This is where the two halves of availability meet. Neither store can answer it
+ * alone — the orders store cannot see a shift, and the shift board deliberately
+ * does not mirror orders — so the union is computed once, here, and injected into
+ * `dispatchRider`.
+ */
+export function unavailableRiderIds(orders: Order[]): Set<string> {
+  const ids = busyRiderIds(orders);
+  for (const id of offShiftRiderIds(useFleet.getState().shifts)) ids.add(id);
+  return ids;
+}
+
+/** Carrying food, or on the way to collect it — not free for another job. */
+function isActiveDelivery(order: Order): boolean {
+  return !isTerminal(order.status) && order.status !== "delivered";
+}
+
 /** The order a given rider is currently carrying, if any. */
 export function activeOrderForRider(orders: Order[], riderId: string): Order | null {
   return (
-    orders.find(
-      (o) =>
-        o.lifecycle.rider?.id === riderId &&
-        !isTerminal(o.status) &&
-        o.status !== "delivered",
-    ) ?? null
+    orders.find((o) => o.lifecycle.rider?.id === riderId && isActiveDelivery(o)) ?? null
   );
 }
 

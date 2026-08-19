@@ -22,7 +22,13 @@ import type { Order, OrderCancelReason, OrderStatus } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { useOrders } from "@/stores/orders";
 import { verifyOtp } from "@/services/orders";
-import { riderActions, isTerminal, type OrderAction } from "@/lib/order-machine";
+import { jobForOrder } from "@/services/delivery";
+import {
+  cashDueOn,
+  isTerminal,
+  riderActions,
+  type OrderAction,
+} from "@/lib/order-machine";
 import { DELIVERY_FAIL_REASONS } from "@/lib/order-lifecycle";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -32,6 +38,7 @@ import { OtpDialog } from "@/components/orders/otp-dialog";
 import { ReasonDialog } from "@/components/orders/reason-dialog";
 import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
+import { PayoutBreakdown } from "./payout-breakdown";
 
 const TICK_MS = 1000;
 
@@ -102,10 +109,7 @@ export function LiveTripView({ orderId }: { orderId: string }) {
 
   const currency = order.pricing.currency as CurrencyCode;
   const actions = riderActions(order);
-  const cashDue =
-    order.payment.method === "cash" && order.payment.status === "pending"
-      ? order.pricing.total
-      : 0;
+  const cashDue = cashDueOn(order);
 
   /** Apply a plain transition and report it. */
   function run(to: OrderStatus, patch = {}) {
@@ -138,8 +142,17 @@ export function LiveTripView({ orderId }: { orderId: string }) {
     run(action.to as OrderStatus);
   }
 
-  /** The handoff: verified in the seam, counted on the order. */
-  function submitOtp({ otp }: { otp: string; cashCollected: boolean }) {
+  /**
+   * The handoff: verified in the seam, counted on the order — and the cash
+   * carried through.
+   *
+   * `cashCollected` used to stop here: the dialog asked the rider to confirm the
+   * money, and the answer was dropped on the floor (G05). It now goes into the
+   * transition, which refuses to close a cash delivery without it — so from this
+   * commit on, the platform's books say the order is paid and the rider's wallet
+   * says they are carrying the note, and both statements come from one place.
+   */
+  function submitOtp({ otp, cashCollected }: { otp: string; cashCollected: boolean }) {
     if (!order) return;
     setSubmitting(true);
     verifyOtp(order, otp).then((res) => {
@@ -149,17 +162,31 @@ export function LiveTripView({ orderId }: { orderId: string }) {
         setOtpError(t("errors.otpMismatch"));
         return;
       }
-      const result = advance(order.id, "delivered", "rider");
+      const result = advance(order.id, "delivered", "rider", { cashCollected });
       if (result.error) {
         setOtpError(t(result.error));
         return;
       }
       setOtpOpen(false);
-      toast.success(t("deliveredTo", { name: order.contact.name }));
+      toast.success(
+        cashDueOn(order) > 0
+          ? t("deliveredWithCash", {
+              name: order.contact.name,
+              amount: formatPrice(cashDueOn(order), currency),
+            })
+          : t("deliveredTo", { name: order.contact.name }),
+      );
     });
   }
 
   const done = order.status === "delivered" || order.status === "completed";
+  /**
+   * What this delivery paid (G04). Derived from the order rather than looked up,
+   * and only once it is over — the payout is anchored to the handoff, so this is
+   * the same figure the completed order carries in its financials and the same
+   * one the rider's wallet counts.
+   */
+  const trip = done ? jobForOrder(order) : null;
 
   return (
     <div className="space-y-5">
@@ -186,23 +213,39 @@ export function LiveTripView({ orderId }: { orderId: string }) {
       </div>
 
       {done ? (
-        <section className="rounded-card border border-fresh/40 bg-fresh/5 p-6 text-center">
-          <span className="animate-pop-in inline-flex size-14 items-center justify-center rounded-pill bg-fresh text-white">
-            <Check className="size-7" aria-hidden />
-          </span>
-          <h2 className="mt-3 text-h2 text-ink">{t("handoffDoneTitle")}</h2>
-          <p className="mt-1 text-sm text-body">
-            {t("handoffDoneBody", { name: order.contact.name })}
-          </p>
-          {cashDue === 0 && order.payment.status === "paid" && (
-            <p className="mt-3 inline-flex rounded-pill bg-surface px-3 py-1 text-xs font-semibold text-fresh-600">
-              {t("paymentSettled")}
+        <>
+          <section className="rounded-card border border-fresh/40 bg-fresh/5 p-6 text-center">
+            <span className="animate-pop-in inline-flex size-14 items-center justify-center rounded-pill bg-fresh text-white">
+              <Check className="size-7" aria-hidden />
+            </span>
+            <h2 className="mt-3 text-h2 text-ink">{t("handoffDoneTitle")}</h2>
+            <p className="mt-1 text-sm text-body">
+              {t("handoffDoneBody", { name: order.contact.name })}
             </p>
+            {cashDue === 0 && order.payment.status === "paid" && (
+              <p className="mt-3 inline-flex rounded-pill bg-surface px-3 py-1 text-xs font-semibold text-fresh-600">
+                {t("paymentSettled")}
+              </p>
+            )}
+            {trip && (
+              <p className="mt-4 text-3xl font-extrabold tracking-tight text-ink">
+                {formatPrice(trip.payout.total, currency)}
+              </p>
+            )}
+            <Button href="/delivery" className="mt-4">
+              {t("backToToday")}
+            </Button>
+          </section>
+
+          {/* The same receipt a synthesised trip gets — one earnings display. */}
+          {trip && (
+            <PayoutBreakdown
+              payout={trip.payout}
+              cashCollected={trip.cashToCollect}
+              className="rounded-card border border-line bg-surface p-5"
+            />
           )}
-          <Button href="/delivery" className="mt-4">
-            {t("backToToday")}
-          </Button>
-        </section>
+        </>
       ) : (
         <StopCard order={order} cashDue={cashDue} currency={currency} />
       )}

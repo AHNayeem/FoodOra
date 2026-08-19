@@ -1439,16 +1439,10 @@ Status:
 Implemented:
 - ...
 
-Important changes:
-- ...
-
 Validation:
 Typecheck: PASS/FAIL
 Lint: PASS/FAIL
 Build: PASS/FAIL/NOT RUN
-
-Affected flows verified:
-- ...
 
 Known remaining issues:
 - ...

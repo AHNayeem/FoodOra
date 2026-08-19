@@ -14,11 +14,14 @@ import {
   LogOut,
   ShieldAlert,
   ShieldCheck,
+  ShoppingBag,
+  LifeBuoy,
 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { useAuth } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { useCms } from "@/stores/cms";
+import { liveTicketCount, useSupport } from "@/stores/support";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -41,6 +44,11 @@ const ADMIN_ROLES: readonly UserRole[] = [
  */
 const NAV = [
   { href: "/admin", key: "navOps", icon: Activity },
+  // Phase 4: the board answers "what is happening"; this answers "find me that
+  // order", which is the question a support call opens with.
+  { href: "/admin/orders", key: "navOrders", icon: ShoppingBag },
+  // Phase 5: `customer-support` was already an admin role with no queue behind it.
+  { href: "/admin/support", key: "navSupport", icon: LifeBuoy },
   { href: "/admin/cms", key: "navContent", icon: FileText },
   { href: "/admin/notifications", key: "navNotifications", icon: Bell },
 ] as const;
@@ -75,12 +83,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const hydrated = useAuth((s) => s.hydrated);
   const signOut = useAuth((s) => s.signOut);
 
+  // The one nav entry that carries a count: a dispute nobody has picked up is the
+  // thing on this shell most likely to be waiting on somebody.
+  const tickets = useSupport((s) => s.tickets);
+  const supportHydrated = useSupport((s) => s.hydrated);
+  const waiting = supportHydrated ? liveTicketCount(tickets) : 0;
+
   useEffect(() => {
     useAuth.persist.rehydrate();
     useOrders.persist.rehydrate();
     // The content desk's edits (C26) live here too, and every CMS surface is
     // gated on this store's `hydrated` flag.
     void useCms.persist.rehydrate();
+    useSupport.persist.rehydrate();
   }, []);
 
   if (!hydrated) {
@@ -176,6 +191,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="size-4" aria-hidden />
                   {t(key)}
+                  {key === "navSupport" && waiting > 0 && (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-pill bg-danger px-1.5 text-[11px] font-bold text-white tabular-nums">
+                      {waiting > 99 ? "99+" : waiting}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

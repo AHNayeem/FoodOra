@@ -21,6 +21,7 @@ import {
 import type { CurrencyCode } from "@/config/regions";
 import type { OrderCancelReason } from "@/types";
 import { useOrders } from "@/stores/orders";
+import { liveTicketForOrder, useSupport } from "@/stores/support";
 import { cancelOrder } from "@/services/orders";
 import { remainingMinutes, trackingProgress, type TrackingProgress } from "@/lib/tracking";
 import {
@@ -35,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { OrderTimeline } from "@/components/orders/order-timeline";
 import { CompleteOrderButton } from "@/components/orders/complete-order-button";
 import { ReasonDialog } from "@/components/orders/reason-dialog";
+import { ReportProblemButton } from "@/components/support/report-problem-dialog";
 import { STATUS_ICON } from "@/components/orders/order-status-meta";
 import { TrackingMap } from "@/components/tracking/tracking-map";
 import { cn } from "@/lib/utils";
@@ -67,12 +69,14 @@ export function OrderTracking({ orderId }: { orderId: string }) {
   const t = useTranslations("tracking");
   const to = useTranslations("order");
   const tc = useTranslations("checkout");
+  const ts = useTranslations("support");
   const locale = useLocale();
 
   const hydrated = useOrders((s) => s.hydrated);
   const order = useOrders((s) => s.orders.find((o) => o.id === orderId));
   const advance = useOrders((s) => s.advance);
   const askRefund = useOrders((s) => s.askRefund);
+  const tickets = useSupport((s) => s.tickets);
 
   const [now, setNow] = useState(() => Date.now());
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -80,6 +84,9 @@ export function OrderTracking({ orderId }: { orderId: string }) {
 
   useEffect(() => {
     useOrders.persist.rehydrate();
+    // A problem the customer has already reported has to be linked to rather than
+    // offered again (Phase 5) — one live conversation per order.
+    useSupport.persist.rehydrate();
   }, []);
 
   // Live tick — drives countdowns and the map marker only.
@@ -304,6 +311,25 @@ export function OrderTracking({ orderId }: { orderId: string }) {
         </Button>
       </div>
 
+      {/* Report a problem (Phase 5, G25). Offered once the food has been handed
+          over — before that the useful action is still cancelling — and replaced by
+          a link once there is a conversation about this order. */}
+      {(order.status === "delivered" ||
+        order.status === "completed" ||
+        progress.failed) && (
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-panel border border-line bg-surface p-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-ink">{ts("trackerTitle")}</p>
+            <p className="mt-0.5 text-sm text-body">{ts("trackerHint")}</p>
+          </div>
+          <ReportProblemButton
+            order={order}
+            liveTicketId={liveTicketForOrder(tickets, order.id)?.id ?? null}
+            size="md"
+          />
+        </div>
+      )}
+
       {order.lifecycle.refund === "requested" && (
         <p className="mt-4 rounded-field bg-surface-muted p-3 text-center text-sm text-body">
           {t("refundPending", {
@@ -312,9 +338,27 @@ export function OrderTracking({ orderId }: { orderId: string }) {
         </p>
       )}
 
+      {/* Granted, and on its way — a state the old model could not express, which
+          is why a card refund used to be announced as finished the moment an order
+          was cancelled (Phase 5, G07). */}
+      {order.lifecycle.refund === "approved" && (
+        <p className="mt-4 rounded-field bg-primary/5 p-3 text-center text-sm text-body">
+          {ts("customerRefundApproved", {
+            amount: formatPrice(order.lifecycle.refundAmount, currency),
+            method: ts(`refundMethod.${order.lifecycle.refundMethod ?? order.payment.method}`),
+          })}
+        </p>
+      )}
+
+      {order.lifecycle.refund === "rejected" && (
+        <p className="mt-4 rounded-field bg-surface-muted p-3 text-center text-sm text-body">
+          {ts("customerRefundRejected")}
+        </p>
+      )}
+
       {/* A wallet refund is not pending anything — the money is already back
           (C19), so say so, and point at the ledger row that proves it. */}
-      {order.lifecycle.refund === "approved" && order.payment.method === "wallet" && (
+      {order.lifecycle.refund === "refunded" && order.payment.method === "wallet" && (
         <p className="mt-4 rounded-field bg-fresh/10 p-3 text-center text-sm text-body">
           {t("refundedToWallet", {
             amount: formatPrice(order.lifecycle.refundAmount, currency),

@@ -8,6 +8,7 @@ import type { CurrencyCode } from "@/config/regions";
 import type { Order } from "@/types";
 import { useOrders } from "@/stores/orders";
 import { useReviews } from "@/stores/reviews";
+import { liveTicketForOrder, useSupport } from "@/stores/support";
 import { cartCount } from "@/lib/cart";
 import { isActive, splitOrders } from "@/lib/order-lifecycle";
 import { isTerminal } from "@/lib/order-machine";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
 import { CompleteOrderButton } from "@/components/orders/complete-order-button";
 import { WriteReviewDialog } from "@/components/reviews/write-review-dialog";
+import { ReportProblemButton } from "@/components/support/report-problem-dialog";
 
 /**
  * OrderHistory — the customer's active & past orders (Phase C3).
@@ -37,6 +39,9 @@ export function OrderHistory() {
   useEffect(() => {
     useOrders.persist.rehydrate();
     useReviews.persist.rehydrate();
+    // Reporting a problem is offered from here too, and it needs to know whether
+    // there is already a conversation about the order (Phase 5).
+    useSupport.persist.rehydrate();
   }, []);
 
   if (!hydrated) {
@@ -105,6 +110,7 @@ function OrderCard({
   const t = useTranslations("account");
   const locale = useLocale();
   const reviews = useReviews((s) => s.reviews);
+  const tickets = useSupport((s) => s.tickets);
   const [rating, setRating] = useState(false);
   const reviewable = canReviewOrder(
     order,
@@ -173,6 +179,13 @@ function OrderCard({
             <Star className="size-4" aria-hidden />
             {t("rateOrder")}
           </Button>
+        )}
+        {/* Something went wrong with a finished order (Phase 5, G25). */}
+        {!isActive(order) && (
+          <ReportProblemButton
+            order={order}
+            liveTicketId={liveTicketForOrder(tickets, order.id)?.id ?? null}
+          />
         )}
       </div>
 

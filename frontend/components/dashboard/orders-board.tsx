@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import type { Order, OrderCancelReason, OrderStatus, Rider } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { useOrders, ordersForVendor } from "@/stores/orders";
+import { useOrders, busyRiderIds, ordersForVendor } from "@/stores/orders";
+import { offShiftRiderIds, useFleet } from "@/stores/fleet";
 import { getFleet } from "@/services/delivery";
 import {
   restaurantActions,
@@ -81,6 +82,7 @@ export function OrdersBoard() {
 
   const hydrated = useOrders((s) => s.hydrated);
   const allOrders = useOrders((s) => s.orders);
+  const shifts = useFleet((s) => s.shifts);
   const advance = useOrders((s) => s.advance);
   const delayOrder = useOrders((s) => s.delayOrder);
   const assignRider = useOrders((s) => s.assignRider);
@@ -98,6 +100,8 @@ export function OrdersBoard() {
 
   useEffect(() => {
     useOrders.persist.rehydrate();
+    // Availability spans both stores; the dispatch dialog has to see both halves.
+    useFleet.persist.rehydrate();
     getFleet().then(setFleet);
   }, []);
 
@@ -110,6 +114,15 @@ export function OrdersBoard() {
     () => ordersForVendor(allOrders, vendor.id),
     [allOrders, vendor.id],
   );
+
+  /**
+   * Who cannot take a job right now. Read from the whole order set rather than
+   * this vendor's, because a rider carrying somebody else's dinner is just as
+   * unavailable — and from the shift board, because a rider who has gone home is
+   * too (G40).
+   */
+  const busy = useMemo(() => busyRiderIds(allOrders), [allOrders]);
+  const offShift = useMemo(() => offShiftRiderIds(shifts), [shifts]);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -292,6 +305,8 @@ export function OrdersBoard() {
       {/* Dispatch — automatic or hand-picked. */}
       {dialog?.kind === "rider" && (
         <AssignRiderDialog
+          busy={busy}
+          offShift={offShift}
           open
           order={dialog.order}
           fleet={fleet}

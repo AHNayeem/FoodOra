@@ -394,8 +394,11 @@ export function platformFinancials(
     // Refunds are dated by the order's last update — the refund is the last
     // thing that happened to a refunded order.
     if (order.lifecycle.refundAmount > 0 && within(order.updatedAt)) {
+      // Money *out*, not money agreed to. Phase 5 split those two facts apart:
+      // `approved` is a decision the provider has not acted on yet, so counting it
+      // here would report a refund the customer has not received.
       const settled =
-        order.payment.status === "refunded" || order.lifecycle.refund === "approved";
+        order.payment.status === "refunded" || order.lifecycle.refund === "refunded";
       if (settled) {
         totals.refundedAmount += order.lifecycle.refundAmount;
         totals.refundedCount += 1;

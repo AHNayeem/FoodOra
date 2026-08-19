@@ -6,11 +6,12 @@ import type {
   OrderEvent,
   OrderStatus,
   PaymentMethod,
+  RefundStatus,
 } from "@/types";
 import { buildCartLine } from "@/lib/cart";
 import { computeTotals } from "@/lib/checkout";
 import { createLifecycle, riderSnapshot } from "@/lib/order-lifecycle";
-import { RIDE_ALLOWANCE_MIN, stagesFor } from "@/lib/order-machine";
+import { RIDE_ALLOWANCE_MIN, stagesFor, TERMINAL_STATUSES } from "@/lib/order-machine";
 import { commissionRateFor, settleOrder } from "@/lib/settlement";
 import { foodsByVendor } from "./foods";
 import { riders } from "./riders";
@@ -133,7 +134,35 @@ interface SeedSpec {
    * however long ago it was placed.
    */
   closedAgoMin?: number;
+  /**
+   * How far along the *happy path* this order got, for a `status` that is not on
+   * it. A returned order was delivered-to-the-door and then failed, and its
+   * timeline should say so — `backdatedEvents` can only walk stages it knows, so
+   * the off-path tail is appended separately (`endings`).
+   */
+  via?: OrderStatus;
+  /**
+   * The off-path statuses to append after `via`, in the order they happened.
+   * Defaults to `[status]`, which is right for a one-step ending (rejected at
+   * intake) and wrong for a chain — a refunded order was cancelled first.
+   */
+  endings?: OrderStatus[];
+  /**
+   * Where this order's refund got to (Phase 5, G07). Seeded so every state in the
+   * lifecycle — asked for, granted-not-yet-paid, refused, settled — exists on some
+   * order without a reviewer having to stage one.
+   */
+  refund?: RefundStatus;
 }
+
+/** Who performs each off-path ending. */
+const ENDING_ACTOR: Partial<Record<OrderStatus, OrderEvent["actor"]>> = {
+  rejected: "restaurant",
+  cancelled: "customer",
+  "delivery-failed": "rider",
+  returned: "rider",
+  refunded: "system",
+};
 
 const WORKING_SET: SeedSpec[] = [
   // Waiting on the restaurant — the board's "New" tab has something in it.
@@ -172,9 +201,70 @@ const WORKING_SET: SeedSpec[] = [
     fulfillment: "delivery",
     payment: "wallet",
   },
+  // Completed, with the refund lifecycle at each of its interesting points — a
+  // goodwill refund already paid, one granted and still with the provider, and one
+  // the desk refused. Without these, three of `RefundStatus`'s five members exist
+  // in the type and nowhere else (Phase 5).
+  {
+    status: "completed",
+    ageMin: 60 * 30 + 40,
+    closedAgoMin: 60 * 30,
+    fulfillment: "delivery",
+    payment: "wallet",
+    refund: "refunded",
+  },
+  {
+    status: "completed",
+    ageMin: 60 * 20 + 30,
+    closedAgoMin: 60 * 20,
+    fulfillment: "delivery",
+    payment: "card",
+    refund: "approved",
+  },
+  {
+    status: "completed",
+    ageMin: 60 * 53,
+    closedAgoMin: 60 * 52 + 10,
+    fulfillment: "delivery",
+    payment: "card",
+    refund: "rejected",
+  },
   // The unhappy endings, so failure states are demonstrable without staging one.
   { status: "rejected", ageMin: 132, fulfillment: "delivery", payment: "card", reason: "out-of-stock" },
   { status: "cancelled", ageMin: 210, fulfillment: "delivery", payment: "wallet", reason: "changed-mind" },
+  // A handover that failed and is still at the fork — retry, or take it back.
+  {
+    status: "delivery-failed",
+    via: "arrived",
+    ageMin: 58,
+    fulfillment: "delivery",
+    payment: "card",
+    reason: "customer-unavailable",
+  },
+  // Failed, taken back to the kitchen, and the money asked for but not yet decided.
+  {
+    status: "returned",
+    via: "arrived",
+    endings: ["delivery-failed", "returned"],
+    ageMin: 300,
+    closedAgoMin: 240,
+    fulfillment: "delivery",
+    payment: "card",
+    reason: "wrong-address",
+    refund: "requested",
+  },
+  // Cancelled and settled — the terminal `refunded` status, which nothing seeded.
+  {
+    status: "refunded",
+    via: "confirmed",
+    endings: ["cancelled", "refunded"],
+    ageMin: 420,
+    closedAgoMin: 400,
+    fulfillment: "delivery",
+    payment: "card",
+    reason: "changed-mind",
+    refund: "refunded",
+  },
 ];
 
 /** Human order reference, matching `services/orders`. */
@@ -267,6 +357,31 @@ export function buildDemoOrders(now: number): Order[] {
   );
   if (pool.length === 0) return [];
 
+  const fleet = riders.filter((r) => !r.deletedAt);
+  /** Couriers already carrying one of the seeded orders — see `courierFor`. */
+  const carrying = new Set<string>();
+
+  /**
+   * Which courier to put on a seeded order.
+   *
+   * A rider carries one order at a time (G39/G40), and the store enforces it —
+   * `assignRider` refuses a courier who already has something. Seeded orders are
+   * constructed rather than assigned, so the rule has to be honoured here or the
+   * working set opens with a rider on two live deliveries at once, which every
+   * availability read downstream then has to disagree about.
+   *
+   * Only *live* work reserves a courier. A finished order is history, and the same
+   * rider having delivered several of them is exactly what a fleet looks like.
+   */
+  function courierFor(status: OrderStatus, index: number) {
+    const live = !TERMINAL_STATUSES.includes(status) && status !== "delivered";
+    if (!live) return fleet[index % fleet.length];
+    const free = fleet.find((r) => !carrying.has(r.id));
+    if (!free) return null;
+    carrying.add(free.id);
+    return free;
+  }
+
   return WORKING_SET.map((spec, index) => {
     const vendor = pool[index % pool.length];
     const cartVendor = cartVendorOf(vendor);
@@ -299,7 +414,7 @@ export function buildDemoOrders(now: number): Order[] {
     const closedMs = spec.closedAgoMin != null ? now - spec.closedAgoMin * MIN : now;
     const events = backdatedEvents(
       orderId,
-      spec.status,
+      spec.via ?? spec.status,
       spec.fulfillment,
       placedMs,
       Math.max(closedMs, placedMs + MIN),
@@ -333,11 +448,12 @@ export function buildDemoOrders(now: number): Order[] {
     // Courier, for anything dispatch has already handled.
     const assignedAt = events.find((e) => e.status === "rider-assigned")?.at ?? null;
     if (assignedAt) {
-      const zoneRiders = riders.filter((r) => !r.deletedAt);
-      const rider = zoneRiders[index % zoneRiders.length];
-      lifecycle.rider = riderSnapshot(rider);
-      lifecycle.assignment = "auto";
-      lifecycle.assignedAt = assignedAt;
+      const rider = courierFor(spec.status, index);
+      if (rider) {
+        lifecycle.rider = riderSnapshot(rider);
+        lifecycle.assignment = "auto";
+        lifecycle.assignedAt = assignedAt;
+      }
     }
 
     if (events.some((e) => e.status === "delivered")) {
@@ -345,27 +461,66 @@ export function buildDemoOrders(now: number): Order[] {
       lifecycle.rating = spec.status === "completed" ? pick([4, 5, 5], rand) : null;
     }
 
-    // The unhappy endings carry their reason, and the money follows it.
     let paymentStatus: Order["payment"]["status"] =
       spec.payment === "cash" ? "pending" : "paid";
-    if (spec.status === "rejected" || spec.status === "cancelled") {
-      const at = new Date(placedMs + 3 * MIN).toISOString();
+    if (spec.status === "delivered" || spec.status === "completed") paymentStatus = "paid";
+
+    /**
+     * The off-path tail. Walked as a chain rather than handled as a special case
+     * per status, because the interesting endings genuinely are chains: a returned
+     * order failed at the door first, and a refunded one was cancelled first.
+     *
+     * Note what this no longer does: flip the payment to `refunded`. Ending a paid
+     * order makes the money *owed*, not returned (Phase 5) — the refund record
+     * below is what says how far that got.
+     */
+    const endings =
+      spec.endings ??
+      (stagesFor(spec.fulfillment).includes(spec.status) ? [] : [spec.status]);
+    let endCursor = Math.max(
+      Date.parse(lifecycle.events[lifecycle.events.length - 1]?.at ?? ""),
+      placedMs,
+    );
+    for (const ending of endings) {
+      endCursor += 2 * MIN;
       lifecycle.events = [
         ...lifecycle.events,
         {
-          id: `evt_${orderId}_${spec.status}`,
-          status: spec.status,
-          at,
-          actor: spec.status === "rejected" ? "restaurant" : "customer",
+          id: `evt_${orderId}_${ending}`,
+          status: ending,
+          at: new Date(endCursor).toISOString(),
+          actor: ENDING_ACTOR[ending] ?? "system",
           note: null,
         },
       ];
-      lifecycle.cancelledBy = spec.status === "rejected" ? "restaurant" : "customer";
-      if (spec.status === "rejected") lifecycle.rejectionReason = spec.reason ?? "other";
-      else lifecycle.cancelReason = spec.reason ?? "other";
-      if (paymentStatus === "paid") paymentStatus = "refunded";
+      if (ending === "rejected") {
+        lifecycle.rejectionReason = spec.reason ?? "other";
+        lifecycle.cancelledBy = "restaurant";
+      }
+      if (ending === "cancelled") {
+        lifecycle.cancelReason = spec.reason ?? "other";
+        lifecycle.cancelledBy = "customer";
+      }
+      if (ending === "delivery-failed" || ending === "returned") {
+        lifecycle.failureReason = spec.reason ?? "customer-unavailable";
+      }
     }
-    if (spec.status === "delivered" || spec.status === "completed") paymentStatus = "paid";
+
+    /**
+     * Where the refund got to. The dates are derived from the state rather than
+     * seeded per order: a decision comes shortly after the order stopped moving,
+     * and the money follows the decision — which is the ordering every consumer of
+     * these fields assumes.
+     */
+    if (spec.refund && spec.refund !== "none") {
+      const decidedAt = new Date(endCursor + 6 * MIN).toISOString();
+      lifecycle.refund = spec.refund;
+      lifecycle.refundMethod = spec.payment;
+      lifecycle.refundAmount = spec.refund === "rejected" ? 0 : pricing.total;
+      lifecycle.refundDecidedAt = spec.refund === "requested" ? null : decidedAt;
+      lifecycle.refundSettledAt = spec.refund === "refunded" ? decidedAt : null;
+      if (spec.refund === "refunded") paymentStatus = "refunded";
+    }
 
     // The delay and failure events above are dated *earlier* than the stages
     // appended before them, so the log has to be put back in order. It is not

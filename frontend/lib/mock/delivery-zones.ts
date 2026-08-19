@@ -87,3 +87,36 @@ export const deliveryZones: DeliveryZone[] = [
 ];
 
 export const zoneById = new Map(deliveryZones.map((z) => [z.id, z]));
+
+/**
+ * Which zone an area belongs to.
+ *
+ * Moved here from the orders store so dispatch, the rider app and the bridge
+ * that turns a real order into a trip (G39) all answer it identically — three
+ * copies of "which zone is Banani" is exactly how the two delivery realities
+ * drifted apart in the first place.
+ *
+ * Matched on the labels a `DeliveryAddress` actually carries: a zone's own
+ * `areas` list first, then the looser neighbourhood spellings a customer types
+ * ("Uttara" for "Uttara Sector 4", "Mirpur" for "Mirpur 10"). A backend resolves
+ * this from coordinates; the labels are enough here because the seed's zones are
+ * defined by exactly these names.
+ */
+export function zoneIdForArea(area: string | null | undefined): string | null {
+  const needle = area?.trim().toLowerCase();
+  if (!needle) return null;
+
+  const listed = deliveryZones.find((zone) =>
+    zone.areas.some((name) => name.toLowerCase() === needle),
+  );
+  if (listed) return listed.id;
+
+  if (/gulshan|banani|baridhara|bashundhara|niketan|mohakhali|badda/.test(needle)) {
+    return "dzn_gulshan";
+  }
+  if (/dhanmondi|kalabagan|mohammadpur|lalmatia|shantinagar|tejgaon/.test(needle)) {
+    return "dzn_dhanmondi";
+  }
+  if (/uttara|mirpur|pallabi|kalshi/.test(needle)) return "dzn_uttara";
+  return null;
+}

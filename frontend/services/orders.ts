@@ -295,6 +295,11 @@ function toOrder(wire: OrderWire): Order {
       otpVerifiedAt: wire.lifecycle.otpVerifiedAt,
       refund: wire.lifecycle.refund as Order["lifecycle"]["refund"],
       refundAmount: wire.lifecycle.refundAmount,
+      // Not on the wire yet: the refund route and its two timestamps are Phase 5
+      // fields, resolved from the tender when a refund actually opens.
+      refundMethod: null,
+      refundDecidedAt: null,
+      refundSettledAt: null,
       rating: wire.lifecycle.rating,
       // Also not on the wire: the commission record is stamped by the transition
       // that completes the order, and a freshly placed one has none.

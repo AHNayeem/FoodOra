@@ -16,16 +16,14 @@ import {
 } from "lucide-react";
 import type { Order } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import {
-  useOrders,
-  activeOrderForRider,
-  dispatchableOrders,
-} from "@/stores/orders";
+import { useOrders, dispatchableOrders } from "@/stores/orders";
 import { toMinutes } from "@/lib/order-lifecycle";
+import { cashDueOn } from "@/lib/order-machine";
 import { formatPrice } from "@/lib/format";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
 import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
+import { useRiderRecords } from "./use-rider-records";
 
 /**
  * LiveDeliveries — the real orders a rider can take (spec §4, §5).
@@ -40,31 +38,25 @@ import { useRiderApp } from "./rider-context";
  * Taking one assigns the rider on the order itself, which is the moment the
  * customer's tracker names them and the restaurant's board shows who is coming.
  */
-export function LiveDeliveries({ online }: { online: boolean }) {
+export function LiveDeliveries() {
   const t = useTranslations("delivery");
   const router = useRouter();
   const { rider, zone } = useRiderApp();
   const currency = zone.currency as CurrencyCode;
 
-  const hydrated = useOrders((s) => s.hydrated);
   const orders = useOrders((s) => s.orders);
   const assignRider = useOrders((s) => s.assignRider);
 
-  const [now, setNow] = useState(() => Date.now());
+  // Availability comes from the one place that knows about both kinds of work.
+  const { hydrated, online, activeJob, activeOrder: mine } = useRiderRecords();
 
-  useEffect(() => {
-    useOrders.persist.rehydrate();
-  }, []);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const mine = useMemo(
-    () => activeOrderForRider(orders, rider.id),
-    [orders, rider.id],
-  );
   const available = useMemo(
     () =>
       dispatchableOrders(orders).filter(
@@ -111,6 +103,23 @@ export function LiveDeliveries({ online }: { online: boolean }) {
 
   if (!online) return null;
 
+  /**
+   * On a synthesised trip. The two delivery systems used not to know about each
+   * other, so a rider could take a real customer's order while already carrying
+   * an invented one — and then be unable to be in both places. Stating it beats
+   * silently hiding the list.
+   */
+  if (activeJob) {
+    return (
+      <section>
+        <h2 className="mb-3 text-h3 text-ink">{t("liveOffersTitle")}</h2>
+        <p className="rounded-card border border-line bg-surface p-4 text-sm text-body">
+          {t("liveOffersPausedTrip")}
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -135,7 +144,9 @@ export function LiveDeliveries({ online }: { online: boolean }) {
                 onAccept={() => {
                   const result = assignRider(order.id, rider, "manual");
                   if (result.error) {
-                    toast.error(t("errors.generic"));
+                    // Say which rule refused it — "already carrying an order" is
+                    // actionable, "something went wrong" is not.
+                    toast.error(t(result.error));
                     return;
                   }
                   toast.success(t("deliveryAccepted", { number: order.orderNumber }));
@@ -170,10 +181,7 @@ function LiveOfferCard({
   const t = useTranslations("delivery");
   const readyAt = order.lifecycle.events.find((e) => e.status === "ready");
   const waiting = readyAt ? toMinutes(now - Date.parse(readyAt.at)) : 0;
-  const cashDue =
-    order.payment.method === "cash" && order.payment.status === "pending"
-      ? order.pricing.total
-      : 0;
+  const cashDue = cashDueOn(order);
 
   return (
     <div className="rounded-card border border-line bg-surface p-4 shadow-card">

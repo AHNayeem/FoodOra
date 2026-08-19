@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -32,6 +32,7 @@ import { formatDistance, formatPrice, formatRating } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { useRiderApp } from "./rider-context";
+import { useRiderRecords } from "./use-rider-records";
 import { OfferCard } from "./offer-card";
 import { LiveDeliveries } from "./live-deliveries";
 
@@ -56,28 +57,20 @@ export function TodayView() {
   const currency = zone.currency as CurrencyCode;
 
   const user = useAuth((s) => s.user);
-  const online = useRider((s) => s.online);
   const shiftStartedAt = useRider((s) => s.shiftStartedAt);
-  const activeJob = useRider((s) => s.activeJob);
-  const completed = useRider((s) => s.completed);
-  const declined = useRider((s) => s.declined);
-  const remittances = useRider((s) => s.remittances);
-  const withdrawals = useRider((s) => s.withdrawals);
-  const hydrated = useRider((s) => s.hydrated);
   const setOnline = useRider((s) => s.setOnline);
   const setActiveJob = useRider((s) => s.setActiveJob);
   const decline = useRider((s) => s.decline);
+
+  // One reading of this rider's reality — real orders included — shared with
+  // every other screen (see `use-rider-records`).
+  const { ctx, hydrated, online, activeJob, activeOrder, busy } = useRiderRecords();
 
   const [tick, setTick] = useState(() => Date.now());
   const [day, setDay] = useState<RiderDay | null>(null);
   const [offers, setOffers] = useState<DeliveryJob[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
-
-  const ctx = useMemo(
-    () => ({ completed, declined, remittances, withdrawals }),
-    [completed, declined, remittances, withdrawals],
-  );
 
   // One clock for the whole screen, so every countdown moves together.
   useEffect(() => {
@@ -106,7 +99,9 @@ export function TodayView() {
       riderId: rider.id,
       now: Date.now(),
       online,
-      busy: Boolean(activeJob),
+      // Either kind of work in hand pauses the pool. Before this, a rider
+      // carrying a real customer's order was still offered synthesised trips.
+      busy,
       ctx,
     }).then((list) => {
       if (active) setOffers(list);
@@ -114,7 +109,7 @@ export function TodayView() {
     return () => {
       active = false;
     };
-  }, [rider.id, online, activeJob, ctx, hydrated, pool, nonce]);
+  }, [rider.id, online, busy, ctx, hydrated, pool, nonce]);
 
   const handleAccept = useCallback(
     (job: DeliveryJob) => {
@@ -124,7 +119,7 @@ export function TodayView() {
         riderId: rider.id,
         now: Date.now(),
         online,
-        busy: Boolean(activeJob),
+        busy,
       }).then((res) => {
         setBusyId(null);
         if (res.error || !res.data) {
@@ -137,7 +132,7 @@ export function TodayView() {
         router.push(`/delivery/trip/${res.data.id}`);
       });
     },
-    [rider.id, online, activeJob, setActiveJob, router, t],
+    [rider.id, online, busy, setActiveJob, router, t],
   );
 
   const handleDecline = useCallback(
@@ -181,7 +176,7 @@ export function TodayView() {
       </div>
 
       {/* Off shift: nothing else on this screen matters yet. */}
-      {!online && !activeJob && (
+      {!online && !busy && (
         <section className="rounded-card border border-line bg-surface p-5 text-center shadow-card">
           <span className="inline-flex size-14 items-center justify-center rounded-pill bg-primary/10 text-primary">
             <Zap className="size-6" aria-hidden />
@@ -206,7 +201,7 @@ export function TodayView() {
       {/* Real customer orders waiting on a courier. These sit above the
           synthesised offer pool because they are the live flow: taking one
           names this rider on the customer's tracker. */}
-      <LiveDeliveries online={online} />
+      <LiveDeliveries />
 
       {/* Cash the rider is carrying, once it matters. */}
       {cash && cash.overLimit && (
@@ -289,9 +284,9 @@ export function TodayView() {
           </button>
         </div>
 
-        {activeJob ? (
+        {busy ? (
           <p className="rounded-card border border-line bg-surface p-4 text-sm text-body">
-            {t("offersPausedTrip")}
+            {t(activeOrder && !activeJob ? "offersPausedOrder" : "offersPausedTrip")}
           </p>
         ) : !online ? (
           <p className="rounded-card border border-line bg-surface p-4 text-sm text-body">

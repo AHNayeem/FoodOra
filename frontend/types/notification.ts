@@ -67,6 +67,7 @@ export interface NotifySubject {
     | "quote"
     | "coupon"
     | "wallet"
+    | "support"
     | "broadcast";
   id: string;
   /** Already-human label (order number, plan name, venue) for grouping. */

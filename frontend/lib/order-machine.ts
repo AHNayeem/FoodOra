@@ -3,8 +3,10 @@ import type {
   Order,
   OrderActor,
   OrderEvent,
+  OrderLifecycle,
   OrderRiderEarning,
   OrderStatus,
+  RefundMethod,
 } from "@/types";
 import { settleOrder } from "./settlement";
 
@@ -244,6 +246,21 @@ export function isOtpLocked(order: Order): boolean {
   return order.lifecycle.otpAttempts >= OTP_MAX_ATTEMPTS;
 }
 
+/**
+ * Cash still to be handed over on this order, in the order currency; 0 for a
+ * prepaid one or one already settled.
+ *
+ * Lives here because the `delivered` guard below needs it, and it was being
+ * re-derived inline by the OTP dialog, the rider's trip screen and the live
+ * offer card — three copies of the rule that decides whether money changed
+ * hands (G05).
+ */
+export function cashDueOn(order: Order): number {
+  return order.payment.method === "cash" && order.payment.status === "pending"
+    ? order.pricing.total
+    : 0;
+}
+
 // ---------------------------------------------------------------------------
 // Applying a transition
 // ---------------------------------------------------------------------------
@@ -263,6 +280,11 @@ export interface TransitionPatch {
   refundAmount?: number;
   rating?: number;
   /**
+   * Deliver: the rider confirming they took the cash owed at the door. Required
+   * on a cash delivery — see the `delivered` guard.
+   */
+  cashCollected?: boolean;
+  /**
    * Complete: what the rider earned on this order, when the caller knows it.
    * The payout needs trip geometry the order does not carry, so the delivery
    * unit computes it and hands it in (G04); null leaves the rider's side of the
@@ -276,7 +298,8 @@ export type TransitionError =
   | "errors.notPermitted"
   | "errors.prepTimeRequired"
   | "errors.riderRequired"
-  | "errors.otpLocked";
+  | "errors.otpLocked"
+  | "errors.cashNotConfirmed";
 
 export type TransitionResult =
   | { order: Order; event: OrderEvent; error: null }
@@ -316,6 +339,25 @@ export function transition(
     return fail("errors.riderRequired");
   }
   if (to === "delivered" && isOtpLocked(order)) return fail("errors.otpLocked");
+  /**
+   * A cash delivery cannot close until the rider says the money changed hands
+   * (G05). Refusing it here rather than in the doorstep dialog is what makes the
+   * two ledgers agree afterwards: from this transition on, the platform's books
+   * say the order is paid and the rider's wallet says they are carrying it, and
+   * both statements come from the same commit.
+   *
+   * Delivery only. A cash *pickup* order is paid at the vendor's till by the
+   * customer standing there — there is no rider's bag for it to be in, and the
+   * restaurant marking it collected is the whole confirmation.
+   */
+  if (
+    to === "delivered" &&
+    order.fulfillment === "delivery" &&
+    cashDueOn(order) > 0 &&
+    patch.cashCollected !== true
+  ) {
+    return fail("errors.cashNotConfirmed");
+  }
 
   const iso = new Date(now).toISOString();
   const life = { ...order.lifecycle };
@@ -379,22 +421,25 @@ export function transition(
     case "rejected": {
       life.rejectionReason = patch.reason ?? "other";
       life.cancelledBy = "restaurant";
-      if (order.payment.status === "paid") payment = { ...payment, status: "refunded" };
+      openRefundOwed(order, life);
       break;
     }
     case "cancelled": {
       life.cancelReason = patch.reason ?? "other";
       life.cancelledBy = actor;
-      if (order.payment.status === "paid") payment = { ...payment, status: "refunded" };
+      openRefundOwed(order, life);
       break;
     }
     case "returned": {
       life.failureReason = patch.reason ?? life.failureReason ?? "customer-unavailable";
+      openRefundOwed(order, life);
       break;
     }
     case "refunded": {
-      life.refund = "approved";
-      life.refundAmount = patch.refundAmount ?? order.pricing.total;
+      // The status only exists for an order that ended badly, and reaching it
+      // *is* the settlement — so it stamps the same fields the standalone
+      // `settleRefund` does, through the same helper.
+      stampRefundSettled(order, life, patch.refundAmount ?? refundAmountOn(order), iso);
       payment = { ...payment, status: "refunded" };
       break;
     }
@@ -492,28 +537,186 @@ export function recordOtpFailure(order: Order, now = Date.now()): Order {
   };
 }
 
-/** Log a customer refund request without changing the order's status. */
-export function requestRefund(order: Order, now = Date.now()): Order {
+// ---------------------------------------------------------------------------
+// The refund lifecycle — requested → approved | rejected → refunded (G07)
+// ---------------------------------------------------------------------------
+
+/**
+ * How the money would go back on this order: the tender it came in on.
+ *
+ * Resolved from the payment rather than chosen, because it is not a choice — a
+ * card payment goes back to that card. What *is* a decision is whether to refund
+ * at all, and that is `approveRefund`.
+ */
+export function refundMethodFor(order: Order): RefundMethod {
+  return order.payment.method;
+}
+
+/** How long a refund takes to settle, by route. Prose lives in the messages. */
+export function refundIsInstant(method: RefundMethod): boolean {
+  // The wallet is a ledger this app owns, so there is nothing to wait for. A card
+  // refund is a provider's business and cash has to be handed back by a person.
+  return method === "wallet";
+}
+
+/** Is there money on this order that could go back, and has it not gone yet? */
+export function isRefundable(order: Order): boolean {
+  return order.payment.status === "paid" && order.lifecycle.refund !== "refunded";
+}
+
+/** May the desk decide this refund now? */
+export function canDecideRefund(order: Order): boolean {
+  return (
+    isRefundable(order) &&
+    (order.lifecycle.refund === "none" || order.lifecycle.refund === "requested")
+  );
+}
+
+/** Is there an approved refund still waiting for the money to move? */
+export function canSettleRefund(order: Order): boolean {
+  return order.lifecycle.refund === "approved" && order.lifecycle.refundSettledAt === null;
+}
+
+/** What is owed back: whatever was already agreed, else the whole order. */
+function refundAmountOn(order: Order): number {
+  return order.lifecycle.refundAmount > 0
+    ? order.lifecycle.refundAmount
+    : order.pricing.total;
+}
+
+/**
+ * A refund the *platform* owes, opened by the transition that created the debt.
+ *
+ * Cancelling, rejecting or returning a paid order does not make the money come
+ * back — it makes it owed. This used to flip `payment.status` straight to
+ * `refunded` at that moment, which was the clearest instance of the gap analysis's
+ * "fake financial value": the customer's card had not been touched and the
+ * statement said it had. The refund now *opens*, at `requested`, and only reaches
+ * `refunded` when something settles it — instantly for the wallet, on a decision
+ * for anything else.
+ *
+ * Mutates the working copy of the lifecycle the transition is building, which is
+ * why it is private to this module.
+ */
+function openRefundOwed(order: Order, life: OrderLifecycle): void {
+  if (order.payment.status !== "paid") return;
+  if (life.refund !== "none") return;
+  life.refund = "requested";
+  life.refundAmount = order.pricing.total;
+  life.refundMethod = refundMethodFor(order);
+}
+
+/** Stamp a refund as settled. One writer, two callers (see `case "refunded"`). */
+function stampRefundSettled(
+  order: Order,
+  life: OrderLifecycle,
+  amount: number,
+  iso: string,
+): void {
+  life.refund = "refunded";
+  life.refundAmount = amount;
+  life.refundMethod = life.refundMethod ?? refundMethodFor(order);
+  life.refundDecidedAt = life.refundDecidedAt ?? iso;
+  life.refundSettledAt = iso;
+}
+
+/** Append an event that records something about the refund, status unchanged. */
+function withRefundEvent(
+  order: Order,
+  life: OrderLifecycle,
+  actor: OrderActor,
+  note: string,
+  now: number,
+): Order {
   const iso = new Date(now).toISOString();
   return {
     ...order,
     updatedAt: iso,
     lifecycle: {
-      ...order.lifecycle,
-      refund: "requested",
-      refundAmount: order.pricing.total,
+      ...life,
       events: [
-        ...order.lifecycle.events,
+        ...life.events,
         {
-          id: `${eventId(order.id, order.status, now)}_refund`,
+          id: `${eventId(order.id, order.status, now)}_${note}`,
           status: order.status,
           at: iso,
-          actor: "customer",
-          note: "refund-requested",
+          actor,
+          note,
         },
       ],
     },
   };
+}
+
+/** Log a customer refund request without changing the order's status. */
+export function requestRefund(order: Order, now = Date.now()): Order {
+  const life: OrderLifecycle = {
+    ...order.lifecycle,
+    refund: "requested",
+    refundAmount: order.pricing.total,
+    refundMethod: refundMethodFor(order),
+  };
+  return withRefundEvent(order, life, "customer", "refund-requested", now);
+}
+
+/**
+ * Grant a refund. Pure — the decision, not the payment.
+ *
+ * Reaching `approved` and reaching `refunded` are deliberately two steps even
+ * though a wallet refund makes them one commit: the difference between "we agreed
+ * to pay this" and "the money is back" is the whole content of a refund status,
+ * and collapsing them is what made the old model unable to describe a card.
+ *
+ * A partial amount is allowed and clamped to the order total — a missing side dish
+ * is not worth the whole dinner, and that is the commonest real refund there is.
+ */
+export function approveRefund(
+  order: Order,
+  input: { amount?: number; method?: RefundMethod } = {},
+  now = Date.now(),
+): Order {
+  const iso = new Date(now).toISOString();
+  const amount = Math.min(
+    Math.max(input.amount ?? refundAmountOn(order), 0),
+    order.pricing.total,
+  );
+  const life: OrderLifecycle = {
+    ...order.lifecycle,
+    refund: "approved",
+    refundAmount: amount,
+    refundMethod: input.method ?? order.lifecycle.refundMethod ?? refundMethodFor(order),
+    refundDecidedAt: iso,
+  };
+  return withRefundEvent(order, life, "admin", "refund-approved", now);
+}
+
+/** Refuse a refund. The amount is cleared — nothing is owed. */
+export function rejectRefund(order: Order, now = Date.now()): Order {
+  const iso = new Date(now).toISOString();
+  const life: OrderLifecycle = {
+    ...order.lifecycle,
+    refund: "rejected",
+    refundAmount: 0,
+    refundDecidedAt: iso,
+  };
+  return withRefundEvent(order, life, "admin", "refund-rejected", now);
+}
+
+/**
+ * The money is back. Pure.
+ *
+ * Separate from the `refunded` *status* because that status only exists for an
+ * order that ended badly: a goodwill refund on an order the customer received and
+ * ate cannot change its status to `refunded` without lying about what happened to
+ * the food. Both routes stamp the same fields through `stampRefundSettled`, and
+ * both flip the payment, so no consumer has to know which one ran.
+ */
+export function settleRefund(order: Order, now = Date.now()): Order {
+  const iso = new Date(now).toISOString();
+  const life: OrderLifecycle = { ...order.lifecycle };
+  stampRefundSettled(order, life, refundAmountOn(order), iso);
+  const settled = withRefundEvent(order, life, "system", "refund-settled", now);
+  return { ...settled, payment: { ...order.payment, status: "refunded" } };
 }
 
 // ---------------------------------------------------------------------------
@@ -532,7 +735,17 @@ export interface OrderAction {
   key: string;
   tone: "primary" | "danger" | "neutral";
   /** Needs a dialog to collect input before it can be applied. */
-  prompts?: "prep-time" | "reject-reason" | "cancel-reason" | "rider" | "otp" | "fail-reason";
+  prompts?:
+    | "prep-time"
+    | "reject-reason"
+    | "cancel-reason"
+    | "rider"
+    | "otp"
+    | "fail-reason"
+    /** The rider took cash at the door — the `delivered` guard requires it. */
+    | "cash"
+    /** Irreversible, so it is asked twice. */
+    | "confirm";
 }
 
 /** What the restaurant can do to this order right now, in display order. */
@@ -615,9 +828,17 @@ export function customerActions(order: Order): OrderAction[] {
   if (canCustomerCancel(order)) {
     actions.push({ to: "cancelled", key: "cancelOrder", tone: "danger", prompts: "cancel-reason" });
   }
+  /**
+   * Asking for the money back. Rarely reachable now and deliberately so: an order
+   * that ends badly after payment opens its own refund at `requested`, because the
+   * platform owes the money whether or not the customer thinks to ask. What is
+   * left here is the case where nothing was opened, and it is gated on there being
+   * money to return at all — a cash order cancelled before the door was never
+   * paid, and offering to refund it was the old condition's mistake.
+   */
   if (
     (order.status === "cancelled" || order.status === "rejected" || order.status === "returned") &&
-    order.payment.status !== "refunded" &&
+    isRefundable(order) &&
     order.lifecycle.refund === "none"
   ) {
     actions.push({ to: "refund", key: "requestRefund", tone: "neutral" });
@@ -637,4 +858,66 @@ export function customerActions(order: Order): OrderAction[] {
     actions.push({ to: "rate", key: "rateOrder", tone: "neutral" });
   }
   return actions;
+}
+
+/**
+ * Every lifecycle move an admin may make on this order right now (Phase 4, G06).
+ *
+ * Derived from `TRANSITIONS` rather than written out, which is the whole point:
+ * the operations desk's intervention controls are the graph, so a new state or a
+ * new edge appears on the admin surface the moment it is added to the machine and
+ * cannot drift from what the machine will actually accept. `actorCan` is not
+ * consulted because `admin` is exempt from the actor table by design — an
+ * operator stepping in *is* the exception the table describes.
+ *
+ * `prompts` is what each move needs collected before it will pass the guards
+ * above, so the surface never has to know which transitions are guarded: a
+ * refused transition is a bug in this table, not in the page.
+ *
+ * `key` is the target status; the surface labels it ("Move to …") rather than
+ * carrying sixteen strings per locale.
+ *
+ * `refunded` is deliberately absent. Money going back has a decision behind it
+ * (requested → approved/rejected → settled), and offering the bare status
+ * transition here would let an operator return a customer's money with no record
+ * of who approved it or why — see the refund controls in Phase 5.
+ */
+export function adminActions(order: Order): OrderAction[] {
+  const from = stageIndex(order.status, order.fulfillment);
+  return TRANSITIONS[order.status]
+    .filter((to) => to !== "refunded")
+    .map((to) => {
+      const forward = from >= 0 && stageIndex(to, order.fulfillment) === from + 1;
+      return {
+        to,
+        key: to,
+        tone: isFailure(to) ? "danger" : forward ? "primary" : "neutral",
+        prompts: adminPrompt(order, to),
+      } satisfies OrderAction;
+    });
+}
+
+/** What an admin has to supply before a given move will pass the guards. */
+function adminPrompt(order: Order, to: OrderStatus): OrderAction["prompts"] {
+  switch (to) {
+    case "confirmed":
+      return "prep-time";
+    case "rejected":
+      return "reject-reason";
+    case "cancelled":
+      return "cancel-reason";
+    case "delivery-failed":
+      return "fail-reason";
+    case "rider-assigned":
+      return "rider";
+    case "delivered":
+      // Only a cash delivery has money to account for; everything else is a
+      // second look, because a handover cannot be un-done.
+      return order.fulfillment === "delivery" && cashDueOn(order) > 0 ? "cash" : "confirm";
+    case "completed":
+    case "returned":
+      return "confirm";
+    default:
+      return undefined;
+  }
 }

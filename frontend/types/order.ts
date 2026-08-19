@@ -175,7 +175,35 @@ export type OrderCancelReason =
   | "refused-delivery"
   | "other";
 
-export type RefundStatus = "none" | "requested" | "approved" | "rejected";
+/**
+ * Where a refund has got to (Phase 5, G07).
+ *
+ * The spec's lifecycle exactly: `requested → approved | rejected → refunded`.
+ * The last member is the one that was missing, and its absence was the bug — with
+ * `approved` as the terminal state there was no way to say "we decided to pay
+ * this and the money has actually gone back", which is a different fact from "we
+ * agreed to". A wallet refund passes through both in one commit; a card refund
+ * sits at `approved` while the provider works.
+ */
+export type RefundStatus =
+  /** Nobody has asked, and nothing is owed. */
+  | "none"
+  /** The customer asked, or the platform opened one because it owes the money. */
+  | "requested"
+  /** Granted. The money has not moved yet. */
+  | "approved"
+  /** Refused, with a reason on the ticket. */
+  | "rejected"
+  /** Settled — the money is back with the customer. */
+  | "refunded";
+
+/**
+ * How the money goes back. Mirrors the tender it was taken on, because that is
+ * what decides how long it takes and who has to do something: a wallet refund is
+ * a ledger entry this app owns and is instant, a card refund is a request to a
+ * provider, and cash has to be handed back or paid out by a person.
+ */
+export type RefundMethod = "wallet" | "card" | "cash";
 
 /**
  * Everything an order picks up while it is being worked on, kept in one nested
@@ -213,6 +241,16 @@ export interface OrderLifecycle {
   refund: RefundStatus;
   /** Amount refunded / requested, in the order currency. */
   refundAmount: number;
+  /**
+   * How the money goes back, resolved from the tender when the refund opens.
+   * Null while no refund exists — never guessed at read time, because a payment
+   * method can be inspected but a *refund route* is a decision that was made.
+   */
+  refundMethod: RefundMethod | null;
+  /** When it was approved or rejected; null while nobody has decided. */
+  refundDecidedAt: ISODate | null;
+  /** When the money actually reached the customer; null until it has. */
+  refundSettledAt: ISODate | null;
   /** Customer's rating of the completed order, 1–5; null until they rate. */
   rating: number | null;
   /**

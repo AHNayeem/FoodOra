@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Banknote, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { Order } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { OTP_MAX_ATTEMPTS, isOtpLocked } from "@/lib/order-machine";
+import { OTP_MAX_ATTEMPTS, cashDueOn, isOtpLocked } from "@/lib/order-machine";
 import { formatPrice } from "@/lib/format";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -57,10 +57,7 @@ export function OtpDialog({
     if (error) setOtp("");
   }
 
-  const cashDue =
-    order.payment.method === "cash" && order.payment.status === "pending"
-      ? order.pricing.total
-      : 0;
+  const cashDue = cashDueOn(order);
   const locked = isOtpLocked(order);
   const left = Math.max(0, OTP_MAX_ATTEMPTS - order.lifecycle.otpAttempts);
   const ready = otp.length === OTP_LENGTH && (cashDue === 0 || cashCollected) && !locked;

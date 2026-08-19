@@ -28,6 +28,7 @@ export * from "./qr-menus";
 export * from "./meal-plans";
 export * from "./reservations";
 export * from "./delivery-zones";
+export * from "./drop-points";
 export * from "./riders";
 export * from "./delivery-jobs";
 export * from "./reviews";
