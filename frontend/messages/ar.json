@@ -1069,7 +1069,22 @@
     "invoiceSub": "تمت تسوية الطلب {number} — التفاصيل الكاملة أدناه.",
     "deliveredAt": "تم التوصيل في",
     "viewTimeline": "عرض مسار الطلب",
-    "collectedTitle": "تم الاستلام"
+    "collectedTitle": "تم الاستلام",
+    "completeOrder": "إتمام الطلب",
+    "completeConfirmTitle": "هل تريد إتمام هذا الطلب؟",
+    "completeConfirmBody": "أكّد أنك استلمت كل شيء. هذا يُغلق الطلب ويُسوّي حساباته — ولا يمكن التراجع عنه.",
+    "completeConfirm": "نعم، أتمّه",
+    "completeCancel": "ليس بعد",
+    "completeSuccess": "تم إتمام الطلب.",
+    "errors": {
+      "illegalTransition": "هذه ليست خطوة تالية صحيحة لهذا الطلب.",
+      "notPermitted": "هذه الخطوة ليست من صلاحيتك.",
+      "prepTimeRequired": "اختر وقت التحضير أولاً.",
+      "riderRequired": "عيّن سائقاً أولاً.",
+      "otpLocked": "تم قفل هذا التسليم — رموز خاطئة كثيرة.",
+      "notFound": "لم نجد هذا الطلب.",
+      "generic": "حدث خطأ ما. حاول مرة أخرى."
+    }
   },
   "tracking": {
     "title": "تتبّع طلبك",
@@ -1140,7 +1155,9 @@
     "refundRequested": "تم تسجيل طلب الاسترداد — سنتواصل معك.",
     "refundPending": "طلب استرداد بقيمة {amount} قيد المراجعة.",
     "refundedToWallet": "تمت إعادة {amount} إلى محفظة فودأورا الخاصة بك.",
-    "viewWallet": "عرض المحفظة"
+    "viewWallet": "عرض المحفظة",
+    "completeTitle": "استلمت كل شيء؟",
+    "completeHint": "أتمّ الطلب لإغلاقه وتحرير مستحقات المطعم."
   },
   "dashboard": {
     "brand": "FoodOra للتجار",
@@ -1295,7 +1312,16 @@
       "notFound": "تعذّر العثور على هذا الطلب.",
       "noRiderAvailable": "لا يوجد سائق متاح الآن.",
       "generic": "حدث خطأ ما. حاول مرة أخرى."
-    }
+    },
+    "earningsTitle": "الأرباح",
+    "earningsRate": "عمولة {rate}%",
+    "earningsEmpty": "أتمّ طلباً لتظهر أرباحه هنا.",
+    "earningsGross": "إجمالي المبيعات",
+    "earningsCommission": "عمولة المنصة",
+    "earningsNet": "صافي أرباحك",
+    "earningsPending": "هذا الأسبوع (ما زال مفتوحاً):",
+    "earningsAvailable": "جاهز للصرف:",
+    "earningsPeriods": "{count} فترات تسوية"
   },
   "catering": {
     "metaTitle": "خدمات المناسبات",
@@ -2758,7 +2784,15 @@
       "longSms": "أطول من رسالة نصية واحدة — اختصرها أو ألغِ قناة الرسائل.",
       "unknown": "لم يتم الإرسال."
     },
-    "navContent": "المحتوى"
+    "navContent": "المحتوى",
+    "moneyTitle": "حساب اليوم",
+    "moneyHint": "من {count} طلبات مكتملة",
+    "moneyEmpty": "لم يكتمل أي طلب اليوم، فلا شيء لتسويته بعد.",
+    "moneyGmv": "إجمالي قيمة الطلبات",
+    "moneyCommission": "عمولة المنصة",
+    "moneyVendorNet": "صافي المطاعم",
+    "settleTitle": "بانتظار الإتمام ({count})",
+    "settleHint": "تم التسليم ولم تُغلق — إتمامها يُسوّي عمولتها."
   },
   "cms": {
     "title": "المحتوى",

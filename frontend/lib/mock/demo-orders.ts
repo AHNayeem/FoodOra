@@ -11,6 +11,7 @@ import { buildCartLine } from "@/lib/cart";
 import { computeTotals } from "@/lib/checkout";
 import { createLifecycle, riderSnapshot } from "@/lib/order-lifecycle";
 import { RIDE_ALLOWANCE_MIN, stagesFor } from "@/lib/order-machine";
+import { commissionRateFor, settleOrder } from "@/lib/settlement";
 import { foodsByVendor } from "./foods";
 import { riders } from "./riders";
 import { hashSeed, mulberry32, pick } from "./rng";
@@ -124,6 +125,14 @@ interface SeedSpec {
   /** Restaurant asked for extra time — drives the delayed-order demo. */
   delayMinutes?: number;
   reason?: OrderCancelReason;
+  /**
+   * How long ago the order reached its final state, for one that already has.
+   * Defaults to "just now", which is right for an order still in flight and
+   * wrong for a finished one: without it the event log of a week-old completed
+   * order stretches to this instant, so it lands in this week's settlement
+   * however long ago it was placed.
+   */
+  closedAgoMin?: number;
 }
 
 const WORKING_SET: SeedSpec[] = [
@@ -145,6 +154,24 @@ const WORKING_SET: SeedSpec[] = [
   // Finished.
   { status: "completed", ageMin: 96, fulfillment: "delivery", payment: "card" },
   { status: "completed", ageMin: 168, fulfillment: "pickup", payment: "cash" },
+  // Finished *last week*, so a settlement period that has actually closed
+  // exists. Without one, every vendor's payable balance is "pending" and the
+  // difference between money owed and money payable cannot be demonstrated
+  // (G02): a settlement only becomes available once its week is over.
+  {
+    status: "completed",
+    ageMin: 60 * 24 * 8,
+    closedAgoMin: 60 * 24 * 8 - 55,
+    fulfillment: "delivery",
+    payment: "card",
+  },
+  {
+    status: "completed",
+    ageMin: 60 * 24 * 9,
+    closedAgoMin: 60 * 24 * 9 - 40,
+    fulfillment: "delivery",
+    payment: "wallet",
+  },
   // The unhappy endings, so failure states are demonstrable without staging one.
   { status: "rejected", ageMin: 132, fulfillment: "delivery", payment: "card", reason: "out-of-stock" },
   { status: "cancelled", ageMin: 210, fulfillment: "delivery", payment: "wallet", reason: "changed-mind" },
@@ -267,7 +294,16 @@ export function buildDemoOrders(now: number): Order[] {
     const customer = CUSTOMERS[index % CUSTOMERS.length];
     const address = spec.fulfillment === "delivery" ? ADDRESSES[index % ADDRESSES.length] : null;
 
-    const events = backdatedEvents(orderId, spec.status, spec.fulfillment, placedMs, now);
+    // An order that has already finished stopped moving when it finished, not at
+    // this instant — which is what puts it in the right settlement period.
+    const closedMs = spec.closedAgoMin != null ? now - spec.closedAgoMin * MIN : now;
+    const events = backdatedEvents(
+      orderId,
+      spec.status,
+      spec.fulfillment,
+      placedMs,
+      Math.max(closedMs, placedMs + MIN),
+    );
     const lifecycle = createLifecycle(orderId, new Date(placedMs).toISOString());
     lifecycle.events = events;
 
@@ -368,6 +404,9 @@ export function buildDemoOrders(now: number): Order[] {
         cardLast4: spec.payment === "card" ? "4242" : null,
       },
       pricing,
+      // The rate in force when this order was placed, resolved from the vendor
+      // exactly as `services/orders` resolves it for a real checkout.
+      commissionRate: commissionRateFor(vendor),
       status: spec.status,
       placedAt: placedIso,
       estimatedDeliveryAt: etaIso,
@@ -376,6 +415,14 @@ export function buildDemoOrders(now: number): Order[] {
       deletedAt: null,
       lifecycle,
     };
+    // A seeded `completed` order has already been through completion, so it must
+    // carry the commission record completion stamps — otherwise the dashboards
+    // open with finished orders that are missing from every settlement.
+    if (order.status === "completed") {
+      order.lifecycle.financials = settleOrder(order, {
+        now: Date.parse(order.updatedAt),
+      });
+    }
     return order;
   }).filter((o): o is Order => o !== null);
 }

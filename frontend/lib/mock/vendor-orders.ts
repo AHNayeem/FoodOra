@@ -2,6 +2,7 @@ import type { CartVendor, Order, OrderStatus, PaymentMethod } from "@/types";
 import { buildCartLine } from "@/lib/cart";
 import { computeTotals } from "@/lib/checkout";
 import { synthesiseLifecycle } from "@/lib/order-lifecycle";
+import { commissionRateFor } from "@/lib/settlement";
 import { foodsByVendor } from "./foods";
 import { hashSeed, mulberry32 } from "./rng";
 import { vendorById } from "./vendors";
@@ -176,6 +177,7 @@ export function buildVendorOrders(vendorId: string, now: number): Order[] {
           cardLast4: method === "card" ? "4242" : null,
         },
         pricing,
+        commissionRate: commissionRateFor(vendor),
         status,
         placedAt: placedIso,
         estimatedDeliveryAt: etaIso,

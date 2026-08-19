@@ -8,6 +8,7 @@ import type {
 } from "@/types";
 import { otpFor } from "./delivery";
 import { isFailure, isTerminal, stagesFor, stageIndex } from "./order-machine";
+import { settleOrder } from "./settlement";
 
 /**
  * order-lifecycle.ts — building and reading the lifecycle record.
@@ -92,6 +93,8 @@ export function createLifecycle(orderId: string, placedAt: string): OrderLifecyc
     refund: "none",
     refundAmount: 0,
     rating: null,
+    // Nothing financial has happened yet — the `completed` transition stamps it.
+    financials: null,
   };
 }
 
@@ -132,6 +135,12 @@ export function synthesiseLifecycle(order: Order): OrderLifecycle {
     if (stages.slice(0, idx + 1).includes("delivered")) {
       life.otpVerifiedAt = new Date(placedMs + span).toISOString();
     }
+    // An order that is already `completed` has already had its money worked out
+    // — a backfilled one must carry the same record a live completion stamps, or
+    // it would be missing from every settlement it belongs in.
+    if (order.status === "completed") {
+      life.financials = settleOrder(order, { now: Date.parse(order.updatedAt) });
+    }
   } else if (isFailure(order.status)) {
     const byRestaurant = order.status === "rejected";
     life.events.push({
@@ -157,6 +166,34 @@ export function synthesiseLifecycle(order: Order): OrderLifecycle {
 export function ensureLifecycle(order: Order): Order {
   if (order.lifecycle?.events?.length) return order;
   return { ...order, lifecycle: synthesiseLifecycle(order) };
+}
+
+/**
+ * Backfill the financial fields on an order persisted before commission existed
+ * (G01/G02): the rate the order was placed under, and — for one already
+ * `completed` — the commission record its completion would have stamped.
+ *
+ * The rate has to be *given*, not guessed: it belongs to the vendor and only a
+ * caller with the vendor list can resolve it. `fallbackRate` is the standard
+ * platform rate, which is the honest answer for an order whose vendor has since
+ * been removed.
+ *
+ * Idempotent — an order that already has a rate and a record is returned as is.
+ */
+export function ensureFinancials(order: Order, fallbackRate: number): Order {
+  const commissionRate = order.commissionRate ?? fallbackRate;
+  const financials =
+    order.lifecycle.financials ??
+    (order.status === "completed"
+      ? settleOrder(
+          { ...order, commissionRate },
+          { now: Date.parse(order.updatedAt) || Date.now() },
+        )
+      : null);
+  if (order.commissionRate === commissionRate && order.lifecycle.financials === financials) {
+    return order;
+  }
+  return { ...order, commissionRate, lifecycle: { ...order.lifecycle, financials } };
 }
 
 /** The actor a stage is normally performed by — used only when backfilling. */

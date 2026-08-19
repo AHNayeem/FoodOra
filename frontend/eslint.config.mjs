@@ -10,6 +10,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Tooling that is not part of the app: installed skill/plugin scripts are
+    // CommonJS helpers run by the editor, not modules Next ever bundles, so the
+    // app's TypeScript rules do not apply to them.
+    ".claude/**",
   ]),
 ]);
 

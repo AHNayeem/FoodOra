@@ -1069,7 +1069,22 @@
     "invoiceSub": "Order {number} is settled — here's the full breakdown.",
     "deliveredAt": "Delivered at",
     "viewTimeline": "View order timeline",
-    "collectedTitle": "Collected"
+    "collectedTitle": "Collected",
+    "completeOrder": "Complete order",
+    "completeConfirmTitle": "Complete this order?",
+    "completeConfirmBody": "Confirm you have everything. This closes the order and settles it — it can't be undone.",
+    "completeConfirm": "Yes, complete it",
+    "completeCancel": "Not yet",
+    "completeSuccess": "Order completed.",
+    "errors": {
+      "illegalTransition": "That's not a valid next step for this order.",
+      "notPermitted": "That step isn't yours to make.",
+      "prepTimeRequired": "Choose a preparation time first.",
+      "riderRequired": "Assign a rider first.",
+      "otpLocked": "This handover is locked — too many wrong codes.",
+      "notFound": "We couldn't find that order.",
+      "generic": "Something went wrong. Try again."
+    }
   },
   "tracking": {
     "title": "Track your order",
@@ -1140,7 +1155,9 @@
     "refundRequested": "Refund requested — we'll be in touch.",
     "refundPending": "A refund of {amount} has been requested and is being reviewed.",
     "refundedToWallet": "{amount} has been returned to your FoodOra wallet.",
-    "viewWallet": "View wallet"
+    "viewWallet": "View wallet",
+    "completeTitle": "Got everything?",
+    "completeHint": "Complete the order to close it and release payment to the restaurant."
   },
   "dashboard": {
     "brand": "FoodOra Merchant",
@@ -1295,7 +1312,16 @@
       "notFound": "We couldn't find that order.",
       "noRiderAvailable": "No rider is available right now.",
       "generic": "Something went wrong. Try again."
-    }
+    },
+    "earningsTitle": "Earnings",
+    "earningsRate": "{rate}% commission",
+    "earningsEmpty": "Complete an order and its earnings appear here.",
+    "earningsGross": "Gross sales",
+    "earningsCommission": "Platform commission",
+    "earningsNet": "Your net earnings",
+    "earningsPending": "This week (still open):",
+    "earningsAvailable": "Ready to pay out:",
+    "earningsPeriods": "{count} settlement periods"
   },
   "catering": {
     "metaTitle": "Event Catering",
@@ -2758,7 +2784,15 @@
       "longSms": "Too long for one SMS — shorten it or drop the SMS channel.",
       "unknown": "That didn't send."
     },
-    "navContent": "Content"
+    "navContent": "Content",
+    "moneyTitle": "Money today",
+    "moneyHint": "From {count} completed orders",
+    "moneyEmpty": "No orders have completed today, so there is nothing to settle yet.",
+    "moneyGmv": "Gross order value",
+    "moneyCommission": "Platform commission",
+    "moneyVendorNet": "Restaurants' net",
+    "settleTitle": "Awaiting completion ({count})",
+    "settleHint": "Delivered, not yet closed — completing one settles its commission."
   },
   "cms": {
     "title": "Content",

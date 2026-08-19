@@ -11,8 +11,9 @@ import type {
 } from "@/types";
 import { LIVE } from "@/config/backend";
 import { getCartKey } from "@/lib/cart-key";
-import { savedAddresses } from "@/lib/mock";
+import { savedAddresses, vendorById } from "@/lib/mock";
 import { createLifecycle } from "@/lib/order-lifecycle";
+import { commissionRateFor, DEFAULT_COMMISSION_RATE } from "@/lib/settlement";
 import { execute } from "@/lib/graphql/execute";
 import { PLACE_ORDER, type OrderWire } from "@/lib/graphql/order.operations";
 import { mockDelay, ok, type Result } from "./http";
@@ -92,6 +93,19 @@ export const PAYMENT_PROCESSING_MS = 1400;
  * real estimate is stamped when the restaurant accepts and commits to a
  * preparation time — before that, nobody knows.
  */
+/**
+ * The commission rate to stamp on a new order.
+ *
+ * Resolved here rather than sent by the client for the same reason the totals are
+ * recomputed server-side: what the platform charges a vendor is the platform's
+ * business, and a cart snapshot minutes old is not a contract. The cart carries
+ * no rate, so there is nothing for a caller to get wrong.
+ */
+function resolveCommissionRate(vendorId: string): number {
+  const vendor = vendorById.get(vendorId);
+  return vendor ? commissionRateFor(vendor) : DEFAULT_COMMISSION_RATE;
+}
+
 export async function placeOrder(
   input: PlaceOrderInput,
 ): Promise<Result<Order>> {
@@ -131,6 +145,7 @@ export async function placeOrder(
       cardLast4: input.payment.cardLast4,
     },
     pricing: input.pricing,
+    commissionRate: resolveCommissionRate(input.vendor.id),
     status: "placed",
     placedAt: iso,
     estimatedDeliveryAt: etaIso,
@@ -253,6 +268,9 @@ function toOrder(wire: OrderWire): Order {
     notes: wire.notes,
     payment: wire.payment,
     pricing: wire.pricing,
+    // Not on the wire yet: a real API returns the rate it applied, and this
+    // resolves it locally until the schema carries it.
+    commissionRate: resolveCommissionRate(wire.vendor.id),
     status: wire.status,
     placedAt: wire.placedAt,
     estimatedDeliveryAt: wire.estimatedDeliveryAt,
@@ -278,6 +296,9 @@ function toOrder(wire: OrderWire): Order {
       refund: wire.lifecycle.refund as Order["lifecycle"]["refund"],
       refundAmount: wire.lifecycle.refundAmount,
       rating: wire.lifecycle.rating,
+      // Also not on the wire: the commission record is stamped by the transition
+      // that completes the order, and a freshly placed one has none.
+      financials: null,
     },
   };
 }

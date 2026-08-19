@@ -3,8 +3,10 @@ import type {
   Order,
   OrderActor,
   OrderEvent,
+  OrderRiderEarning,
   OrderStatus,
 } from "@/types";
+import { settleOrder } from "./settlement";
 
 /**
  * order-machine.ts — the one place an order's lifecycle is defined.
@@ -260,6 +262,13 @@ export interface TransitionPatch {
   /** Refund amount, when moving to `refunded`. */
   refundAmount?: number;
   rating?: number;
+  /**
+   * Complete: what the rider earned on this order, when the caller knows it.
+   * The payout needs trip geometry the order does not carry, so the delivery
+   * unit computes it and hands it in (G04); null leaves the rider's side of the
+   * order unrecorded rather than guessing at it.
+   */
+  riderEarning?: OrderRiderEarning | null;
 }
 
 export type TransitionError =
@@ -391,6 +400,21 @@ export function transition(
     }
     case "completed": {
       if (patch.rating) life.rating = patch.rating;
+      /**
+       * Completion is the moment the money becomes real (G01/G02): the platform
+       * takes its commission, the vendor is owed its net and the order joins a
+       * weekly settlement. Stamped here rather than by the caller for the same
+       * reason the promised-ready time is — four surfaces can complete an order
+       * and all four must produce identical books.
+       *
+       * Idempotent twice over: `TRANSITIONS.completed` is empty so the machine
+       * refuses a second completion outright, and even a replayed patch finds
+       * this record already present and leaves it untouched. A commission, a
+       * settlement line and a rider earning therefore exist at most once each.
+       */
+      life.financials =
+        order.lifecycle.financials ??
+        settleOrder(order, { now, riderEarning: patch.riderEarning ?? null });
       break;
     }
   }
@@ -598,8 +622,19 @@ export function customerActions(order: Order): OrderAction[] {
   ) {
     actions.push({ to: "refund", key: "requestRefund", tone: "neutral" });
   }
+  /**
+   * Closing the order. The lifecycle could always reach `completed` — the graph
+   * and the actor table both allowed it — but no surface ever offered it, so
+   * with the demo autopilot switched off an order stopped at `delivered` and its
+   * money was never worked out (G03). The customer confirming they have their
+   * food is the natural human trigger; the admin can do it too, through the same
+   * transition, for an order nobody closes.
+   */
+  if (order.status === "delivered") {
+    actions.push({ to: "completed", key: "completeOrder", tone: "primary" });
+  }
   if (order.status === "delivered" && order.lifecycle.rating == null) {
-    actions.push({ to: "rate", key: "rateOrder", tone: "primary" });
+    actions.push({ to: "rate", key: "rateOrder", tone: "neutral" });
   }
   return actions;
 }

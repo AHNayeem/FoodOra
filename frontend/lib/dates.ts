@@ -79,3 +79,60 @@ export function atTime(dateKey: string, time: string): Date {
   date.setMinutes(toMinutes(time));
   return date;
 }
+
+// ---------------------------------------------------------------------------
+// Weeks
+//
+// Settlement periods are weeks (the platform pays out weekly, which is what
+// `lib/mock/pages` has always claimed), so the week needs a canonical reference
+// string that sorts, round-trips and does not depend on a locale's idea of when
+// a week starts. Monday-first, matching `WEEKDAYS`.
+// ---------------------------------------------------------------------------
+
+/** Local Monday 00:00 of the week containing `date`. */
+export function startOfWeek(date: Date): Date {
+  const start = new Date(date);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+/** Local Sunday 23:59:59.999 of the week containing `date`. */
+export function endOfWeek(date: Date): Date {
+  const end = startOfWeek(date);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+/**
+ * ISO-8601 week reference for `date`, e.g. `2026-W34`.
+ *
+ * ISO rules rather than "week containing 1 January", so the reference agrees
+ * with every accounting system that also uses them: weeks run Monday–Sunday and
+ * week 1 is the one containing the first Thursday of the year — which is why a
+ * date in early January can legitimately belong to the previous year's W52/W53.
+ */
+export function weekRef(date: Date): string {
+  // Shift to the Thursday of this week; its calendar year is the ISO year.
+  const thursday = startOfWeek(date);
+  thursday.setDate(thursday.getDate() + 3);
+  const year = thursday.getFullYear();
+  const firstThursday = new Date(year, 0, 4);
+  firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3);
+  const week =
+    1 + Math.round((thursday.getTime() - firstThursday.getTime()) / (7 * 86_400_000));
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+/** `2026-W34` → the local Monday 00:00 that starts it. Null if unparseable. */
+export function weekRefStart(ref: string): Date | null {
+  const match = /^(\d{4})-W(\d{1,2})$/.exec(ref);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const week = Number(match[2]);
+  // Jan 4 is always in ISO week 1; step back to its Monday, then forward.
+  const monday = startOfWeek(new Date(year, 0, 4));
+  monday.setDate(monday.getDate() + (week - 1) * 7);
+  return monday;
+}

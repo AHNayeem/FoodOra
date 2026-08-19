@@ -15,6 +15,7 @@ import { canReviewOrder } from "@/lib/reviews";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { CompleteOrderButton } from "@/components/orders/complete-order-button";
 import { WriteReviewDialog } from "@/components/reviews/write-review-dialog";
 
 /**
@@ -155,6 +156,10 @@ function OrderCard({
             {t("track")}
           </Button>
         )}
+        {/* Delivered but not closed — the last step of the lifecycle, offered
+            here as well as on the tracker so a customer who has navigated away
+            can still finish it (G03). */}
+        <CompleteOrderButton order={order} actor="customer" size="sm" />
         <Button href={`/checkout/success?order=${order.id}`} size="sm" variant="outline">
           {isTerminal(order.status) ? t("viewInvoice") : t("viewReceipt")}
         </Button>

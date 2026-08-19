@@ -33,6 +33,7 @@ import { cartCount } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { OrderTimeline } from "@/components/orders/order-timeline";
+import { CompleteOrderButton } from "@/components/orders/complete-order-button";
 import { ReasonDialog } from "@/components/orders/reason-dialog";
 import { STATUS_ICON } from "@/components/orders/order-status-meta";
 import { TrackingMap } from "@/components/tracking/tracking-map";
@@ -251,6 +252,19 @@ export function OrderTracking({ orderId }: { orderId: string }) {
           {progress.complete ? t("viewInvoice") : t("viewReceipt")}
         </Button>
       </div>
+
+      {/* The order is in the customer's hands but not yet closed (G03). Asking
+          them to confirm is what turns `delivered` into `completed` — and what
+          triggers the commission and settlement that follow from it. */}
+      {order.status === "delivered" && (
+        <div className="animate-pop-in mt-4 flex flex-wrap items-center gap-3 rounded-panel border border-fresh/40 bg-fresh/5 p-5">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-ink">{t("completeTitle")}</p>
+            <p className="mt-0.5 text-sm text-body">{t("completeHint")}</p>
+          </div>
+          <CompleteOrderButton order={order} actor="customer" size="lg" />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">

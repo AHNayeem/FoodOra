@@ -66,6 +66,12 @@ export interface Vendor extends BaseEntity {
   /** Optional active promo headline, e.g. "20% off over ৳500". */
   promoLabel: string | null;
   currency: string;
+  /**
+   * Negotiated platform commission rate, 0–1. Null means the vendor is on the
+   * standard rate for its `type` — resolve with `lib/settlement.commissionRateFor`
+   * rather than reading this field directly, so one answer is given everywhere.
+   */
+  commissionRate: number | null;
 }
 
 /** A section within a vendor's menu ("Starters", "Mains"). */

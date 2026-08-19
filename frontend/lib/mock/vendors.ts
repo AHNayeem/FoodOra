@@ -4,7 +4,16 @@ import { SEED_NOW } from "./cuisines";
 // `ownerId: null` by default — most demo vendors are unclaimed. Bella Napoli
 // overrides it (after `...base`) so it belongs to the `usr_owner` demo account,
 // which is what the vendor dashboard (Phase C10) loads as "my restaurant".
-const base = { ownerId: null, createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };
+// `commissionRate: null` means "the standard rate for this vendor type", resolved
+// by `lib/settlement.commissionRateFor`. Only a vendor that negotiated something
+// different overrides it (Bella Napoli does, after `...base`).
+const base = {
+  ownerId: null,
+  commissionRate: null,
+  createdAt: SEED_NOW,
+  updatedAt: SEED_NOW,
+  deletedAt: null,
+};
 
 /** Standard "open late" hours reused by most vendors. */
 const stdHours: WeeklyHours = {
@@ -60,6 +69,9 @@ export const vendors: Vendor[] = [
     currency: "BDT",
     ...base,
     ownerId: "usr_owner",
+    // The flagship trades volume for a higher take — so the demo has at least
+    // one vendor whose statement is not on the standard rate.
+    commissionRate: 0.18,
   },
   {
     id: "ven_burger_lab",

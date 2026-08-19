@@ -9,6 +9,12 @@ import { getVendorDashboard } from "@/services/vendor";
 import type { CurrencyCode } from "@/config/regions";
 import { useOrders, ordersForVendor } from "@/stores/orders";
 import { vendorStats } from "@/lib/analytics";
+import {
+  buildVendorSettlements,
+  commissionRateFor,
+  settlementsForVendor,
+  vendorBalance,
+} from "@/lib/settlement";
 import { formatPrice, formatRating } from "@/lib/format";
 import { useDashboard } from "./dashboard-context";
 import { StatCard } from "./stat-card";
@@ -21,6 +27,35 @@ import { OrderStatusBadge } from "./order-status-badge";
 function pct(delta: number): string {
   const sign = delta >= 0 ? "+" : "−";
   return `${sign}${Math.abs(Math.round(delta * 100))}%`;
+}
+
+/**
+ * One figure in the earnings statement. Grouped as a `<dl>` because gross,
+ * commission and net are one sentence read left to right, not three KPIs.
+ */
+function Figure({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  tone?: "neutral" | "primary";
+}) {
+  return (
+    <div className="rounded-field bg-surface-muted p-3">
+      <dt className="text-xs font-semibold text-muted">{label}</dt>
+      <dd
+        className={
+          tone === "primary"
+            ? "mt-0.5 text-lg font-extrabold text-primary tabular-nums"
+            : "mt-0.5 text-lg font-extrabold text-ink tabular-nums"
+        }
+      >
+        {value}
+      </dd>
+    </div>
+  );
 }
 
 /** A titled card section used across the overview. */
@@ -122,6 +157,23 @@ export function OverviewView() {
     now,
   );
   const currency = stats.currency as CurrencyCode;
+
+  /**
+   * The vendor's money, from the commission records their completed orders
+   * carry. Built by `lib/settlement` over the same merged order set the KPI cards
+   * use, so the earnings on this page and the revenue above it are two readings
+   * of one data set rather than two independent sums (G01/G02, spec §5.4).
+   */
+  const settlements = settlementsForVendor(
+    buildVendorSettlements(
+      [...data.allOrders.filter((o) => !live.some((l) => l.id === o.id)), ...live],
+      { now },
+    ),
+    vendor.id,
+  );
+  const balance = vendorBalance(settlements, currency);
+  const rate = commissionRateFor(vendor);
+
   const recent = merged
     .sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt))
     .slice(0, 6);
@@ -176,6 +228,57 @@ export function OverviewView() {
           hint={t("reviewsCount", { count: stats.reviewCount })}
         />
       </div>
+
+      {/* Earnings — gross, what the platform took, what is left. The prototype
+          used to show revenue and stop, which meant the commission the marketing
+          page promised to publish was nowhere in the product (G01/G02). */}
+      <Panel
+        title={t("earningsTitle")}
+        action={
+          <span className="rounded-pill bg-surface-muted px-2.5 py-1 text-xs font-semibold text-muted">
+            {t("earningsRate", { rate: Math.round(rate * 100) })}
+          </span>
+        }
+      >
+        {balance.orderCount === 0 ? (
+          <p className="rounded-field bg-surface-muted p-3 text-sm text-muted">
+            {t("earningsEmpty")}
+          </p>
+        ) : (
+          <>
+            <dl className="grid gap-3 sm:grid-cols-3">
+              <Figure
+                label={t("earningsGross")}
+                value={formatPrice(balance.grossAmount, currency)}
+              />
+              <Figure
+                label={t("earningsCommission")}
+                value={`− ${formatPrice(balance.commissionAmount, currency)}`}
+              />
+              <Figure
+                label={t("earningsNet")}
+                value={formatPrice(balance.netAmount, currency)}
+                tone="primary"
+              />
+            </dl>
+            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
+              <span>
+                {t("earningsPending")}{" "}
+                <b className="font-bold text-ink tabular-nums">
+                  {formatPrice(balance.pending, currency)}
+                </b>
+              </span>
+              <span>
+                {t("earningsAvailable")}{" "}
+                <b className="font-bold text-ink tabular-nums">
+                  {formatPrice(balance.available, currency)}
+                </b>
+              </span>
+              <span>{t("earningsPeriods", { count: settlements.length })}</span>
+            </div>
+          </>
+        )}
+      </Panel>
 
       {/* Revenue trend */}
       <Panel title={t("revenueTrend")}>

@@ -13,16 +13,19 @@ import {
   Store,
   TrendingUp,
   Users,
+  Wallet,
 } from "lucide-react";
 import type { Order, Rider, Vendor } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { useOrders, liveOrders } from "@/stores/orders";
+import { useOrders, liveOrders, awaitingCompletion } from "@/stores/orders";
 import { getFleet } from "@/services/delivery";
 import { getVendors } from "@/services/catalog";
 import { isFailure, isWithRider, isInKitchen } from "@/lib/order-machine";
 import { readyInMs, toMinutes } from "@/lib/order-lifecycle";
+import { platformFinancials } from "@/lib/settlement";
 import { formatPrice } from "@/lib/format";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
+import { CompleteOrderButton } from "@/components/orders/complete-order-button";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { cn } from "@/lib/utils";
 
@@ -90,6 +93,28 @@ export function LiveOps() {
           : failed.length / (settled.length + failed.length),
     };
   }, [orders, live, now]);
+
+  /**
+   * Delivered orders nobody has closed. They are off the live board and out of
+   * the books until somebody completes them, which is precisely why the desk
+   * needs them in front of it (G03).
+   */
+  const awaiting = useMemo(() => awaitingCompletion(orders), [orders]);
+
+  /**
+   * Today's money, from the commission records the completed orders carry. Read
+   * from `lib/settlement` rather than summed here, so this strip, the vendor's
+   * earnings page and platform analytics cannot arrive at different answers
+   * (G01/G02).
+   */
+  const money = useMemo(
+    () =>
+      platformFinancials(orders, {
+        from: startOfDay(now),
+        currency: orders[0]?.pricing.currency ?? "BDT",
+      }),
+    [orders, now],
+  );
 
   /** Orders an operator should look at: overdue, or ready with nobody coming. */
   const stuck = useMemo(
@@ -209,6 +234,72 @@ export function LiveOps() {
                 <span className="text-xs text-muted">{order.vendor.name}</span>
                 <span className="ms-auto text-xs font-semibold text-danger">
                   {reasonStuck(order, now, t)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Platform take today — the money half of the lifecycle, which used to
+          have no representation at all. Derived from each completed order's
+          stored commission record, never recomputed here. */}
+      <section className="rounded-card border border-line bg-surface p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-h3 text-ink">
+            <Wallet className="size-4 text-primary" aria-hidden />
+            {t("moneyTitle")}
+          </h2>
+          <p className="text-xs text-muted">
+            {t("moneyHint", { count: money.orderCount })}
+          </p>
+        </div>
+        {money.orderCount === 0 ? (
+          <p className="mt-3 rounded-field bg-surface-muted p-3 text-sm text-muted">
+            {t("moneyEmpty")}
+          </p>
+        ) : (
+          <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+            <MoneyFigure label={t("moneyGmv")} value={formatPrice(money.gmv, money.currency as CurrencyCode)} />
+            <MoneyFigure
+              label={t("moneyCommission")}
+              value={formatPrice(money.commissionAmount, money.currency as CurrencyCode)}
+              tone="primary"
+            />
+            <MoneyFigure
+              label={t("moneyVendorNet")}
+              value={formatPrice(money.vendorNetAmount, money.currency as CurrencyCode)}
+            />
+          </dl>
+        )}
+      </section>
+
+      {/* Awaiting completion — the settle queue. */}
+      {awaiting.length > 0 && (
+        <section className="rounded-card border border-line bg-surface p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-h3 text-ink">
+              {t("settleTitle", { count: awaiting.length })}
+            </h2>
+            <p className="text-xs text-muted">{t("settleHint")}</p>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {awaiting.slice(0, 6).map((order) => (
+              <li
+                key={order.id}
+                className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-field bg-surface-muted px-3 py-2 text-sm"
+              >
+                <span className="font-mono font-bold text-ink">{order.orderNumber}</span>
+                <OrderStatusChip status={order.status} size="sm" />
+                <span className="truncate text-xs text-muted">{order.vendor.name}</span>
+                <span className="text-xs font-semibold text-ink tabular-nums">
+                  {formatPrice(
+                    order.pricing.total,
+                    order.pricing.currency as CurrencyCode,
+                  )}
+                </span>
+                <span className="ms-auto">
+                  <CompleteOrderButton order={order} actor="admin" size="sm" />
                 </span>
               </li>
             ))}
@@ -373,4 +464,32 @@ function reasonStuck(
   }
   const remaining = readyInMs(order, now);
   return t("stuckOverdue", { minutes: remaining == null ? 0 : toMinutes(-remaining) });
+}
+
+/**
+ * One figure in the money strip. A `<dl>` pair rather than a card, because these
+ * three numbers are one statement read together, not three independent KPIs.
+ */
+function MoneyFigure({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  tone?: "neutral" | "primary";
+}) {
+  return (
+    <div className="rounded-field bg-surface-muted p-3">
+      <dt className="text-xs font-semibold text-muted">{label}</dt>
+      <dd
+        className={cn(
+          "mt-0.5 text-lg font-extrabold tabular-nums",
+          tone === "primary" ? "text-primary" : "text-ink",
+        )}
+      >
+        {value}
+      </dd>
+    </div>
+  );
 }

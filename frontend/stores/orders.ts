@@ -8,7 +8,7 @@ import type {
   OrderStatus,
   Rider,
 } from "@/types";
-import { buildDemoOrders, riders } from "@/lib/mock";
+import { buildDemoOrders, riders, vendorById } from "@/lib/mock";
 import { notificationsFor, nearYouNotification } from "@/lib/notifications";
 import {
   addDelay,
@@ -21,9 +21,11 @@ import {
 } from "@/lib/order-machine";
 import {
   dispatchRider,
+  ensureFinancials,
   ensureLifecycle,
   riderSnapshot,
 } from "@/lib/order-lifecycle";
+import { commissionRateFor, DEFAULT_COMMISSION_RATE } from "@/lib/settlement";
 import { emitNotifications, useNotifications } from "./notifications";
 import { useWallet } from "./wallet";
 
@@ -61,7 +63,7 @@ import { useWallet } from "./wallet";
  */
 
 /** Bump when the persisted shape changes; `migrate` backfills the difference. */
-const STORE_VERSION = 2;
+const STORE_VERSION = 3;
 
 interface OrdersState {
   orders: Order[];
@@ -261,13 +263,22 @@ export const useOrders = create<OrdersState>()(
       migrate: (persisted, version) => {
         const state = persisted as { orders?: Order[]; seeded?: boolean } | undefined;
         if (!state?.orders) return { orders: [], seeded: false };
-        if (version < 2) {
-          return {
-            orders: state.orders.map(ensureLifecycle),
-            seeded: state.seeded ?? false,
-          };
+        let orders = state.orders;
+        if (version < 2) orders = orders.map(ensureLifecycle);
+        // v2 orders predate commission (G01/G02): they carry no rate and a
+        // completed one carries no commission record. Backfilling the rate from
+        // the vendor is what keeps an old device's finished orders inside the
+        // settlements they belong to instead of quietly vanishing from the books.
+        if (version < 3) {
+          orders = orders.map((order) => {
+            const vendor = vendorById.get(order.vendor.id);
+            return ensureFinancials(
+              order,
+              vendor ? commissionRateFor(vendor) : DEFAULT_COMMISSION_RATE,
+            );
+          });
         }
-        return state;
+        return { orders, seeded: state.seeded ?? false };
       },
       skipHydration: true,
       onRehydrateStorage: () => (state) => {
@@ -335,6 +346,21 @@ export function completedOrdersForRider(orders: Order[], riderId: string): Order
         (o.status === "delivered" || o.status === "completed"),
     )
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+}
+
+/**
+ * Delivered orders nobody has closed yet — the operations desk's settle queue.
+ *
+ * These are invisible on the live board (they are no longer in flight) and
+ * invisible in the financial views (their money is not worked out until they
+ * complete), which is exactly why they need a surface of their own: before
+ * `completed` had a human actor, this was where every order quietly stopped.
+ * Oldest first — the one that has waited longest is the one to close.
+ */
+export function awaitingCompletion(orders: Order[]): Order[] {
+  return orders
+    .filter((o) => o.status === "delivered")
+    .sort((a, b) => Date.parse(a.updatedAt) - Date.parse(b.updatedAt));
 }
 
 /** Everything still in flight, oldest first — the admin's live board. */

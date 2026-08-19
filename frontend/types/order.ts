@@ -1,5 +1,6 @@
 import type { BaseEntity, ISODate, RiderVehicle } from "./common";
 import type { CartLine, CartVendor } from "./cart";
+import type { OrderFinancials } from "./finance";
 
 /**
  * order.ts — the checkout output and its supporting shapes.
@@ -214,6 +215,11 @@ export interface OrderLifecycle {
   refundAmount: number;
   /** Customer's rating of the completed order, 1–5; null until they rate. */
   rating: number | null;
+  /**
+   * Commission, settlement reference and rider earning — stamped by the
+   * `completed` transition and never recomputed. Null until the order completes.
+   */
+  financials: OrderFinancials | null;
 }
 
 export interface Order extends BaseEntity {
@@ -230,6 +236,13 @@ export interface Order extends BaseEntity {
   notes: string | null;
   payment: OrderPayment;
   pricing: OrderPricing;
+  /**
+   * Platform commission rate agreed with the vendor when this order was placed,
+   * 0–1. Snapshotted rather than looked up at completion: the rate that applied
+   * is a property of the order, and a later renegotiation must not restate it.
+   * Resolved server-side (`services/orders`), never sent by the client.
+   */
+  commissionRate: number;
   status: OrderStatus;
   placedAt: ISODate;
   /** Estimated hand-off time, used by confirmation + tracking. */
