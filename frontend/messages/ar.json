@@ -1329,7 +1329,27 @@
     "earningsNet": "صافي أرباحك",
     "earningsPending": "هذا الأسبوع (ما زال مفتوحاً):",
     "earningsAvailable": "جاهز للصرف:",
-    "earningsPeriods": "{count} فترات تسوية"
+    "earningsPeriods": "{count} فترات تسوية",
+    "riderNotApproved": "غير مصرّح له بالعمل",
+    "gate": {
+      "noneTitle": "لا يوجد مطعم على هذا الحساب",
+      "noneBody": "هذا الحساب لا يدير مطعمًا بعد. قدّم طلبًا وسيتواصل معك المراجع.",
+      "apply": "قدّم طلبًا لإضافة مطعم",
+      "viewApplication": "عرض طلبك",
+      "contactSupport": "تواصل مع الدعم",
+      "draftTitle": "طلبك ما زال مسودة",
+      "draftBody": "أكمله وأرسله، وستُفتح لوحة التحكم بعد الاعتماد.",
+      "pendingTitle": "طلبك قيد المراجعة",
+      "pendingBody": "سنخبرك بمجرد أن يطّلع عليه المراجع. تُفتح لوحة التحكم عند الاعتماد.",
+      "approvedTitle": "معتمد",
+      "approvedBody": "مطعمك نشط.",
+      "rejectedTitle": "تم رفض طلبك",
+      "rejectedBody": "يمكنك تصحيحه وإرساله مرة أخرى من صفحة الطلب.",
+      "suspendedTitle": "هذا المطعم موقوف",
+      "suspendedBody": "لوحة التحكم مغلقة أثناء الإيقاف، فلا يمكن استقبال طلبات جديدة.",
+      "unknownTitle": "لا يوجد طلب مسجّل لهذا المطعم",
+      "unknownBody": "لا تستطيع المنصة تأكيد اعتماد هذا المطعم، لذا تبقى لوحة التحكم مغلقة. الدعم يمكنه معالجة الأمر."
+    }
   },
   "catering": {
     "metaTitle": "خدمات المناسبات",
@@ -2356,7 +2376,26 @@
     "handoffDoneBody": "تم التسليم إلى {name} والتحقق منه.",
     "failTitle": "ما الذي حدث؟",
     "failBody": "سيتم إبلاغ العميل والمطعم معًا.",
-    "confirmFail": "الإبلاغ عن مشكلة"
+    "confirmFail": "الإبلاغ عن مشكلة",
+    "gate": {
+      "viewApplication": "عرض طلبك",
+      "draftTitle": "طلبك ما زال مسودة",
+      "draftBody": "أكمله وأرسله، ويمكنك البدء بالعمل بعد الاعتماد.",
+      "pendingTitle": "طلبك قيد المراجعة",
+      "pendingBody": "سنخبرك بمجرد أن يطّلع عليه المراجع.",
+      "approvedTitle": "معتمد",
+      "approvedBody": "أنت مصرّح لك بالعمل.",
+      "rejectedTitle": "تم رفض طلبك",
+      "rejectedBody": "يمكنك تصحيحه وإرساله مرة أخرى من صفحة الطلب.",
+      "suspendedTitle": "حسابك موقوف",
+      "suspendedBody": "لن تُعرض عليك أعمال أثناء الإيقاف. رحلاتك ومحفظتك ما زالت هنا.",
+      "suspendedBadge": "موقوف",
+      "inactiveTitle": "حسابك غير نشط",
+      "inactiveBody": "لن تُعرض عليك أعمال حتى يُعاد تنشيطه. رحلاتك ومحفظتك ما زالت هنا.",
+      "inactiveBadge": "غير نشط",
+      "unknownTitle": "لا يوجد طلب مسجّل",
+      "unknownBody": "لا تستطيع المنصة تأكيد أنك مندوب معتمد، لذا لن تُعرض عليك أعمال."
+    }
   },
   "notifications": {
     "title": "الإشعارات",
@@ -2589,6 +2628,22 @@
       "broadcastAnnouncement": {
         "title": "إشعار خدمة",
         "body": "لدى FoodOra تحديث لك."
+      },
+      "applicationSubmitted": {
+        "title": "تم إرسال الطلب",
+        "body": "وصل {application} الخاص بـ {restaurant} إلى المنصة."
+      },
+      "applicationApproved": {
+        "title": "تم اعتمادك",
+        "body": "{restaurant} نشط الآن. لوحة التحكم مفتوحة."
+      },
+      "applicationRejected": {
+        "title": "تم رفض الطلب",
+        "body": "لم يُعتمد {restaurant}. {reason}"
+      },
+      "applicationSuspended": {
+        "title": "تم إيقاف المطعم",
+        "body": "تم إيقاف {restaurant}. {reason}"
       }
     },
     "rider": {
@@ -2615,6 +2670,26 @@
       "broadcastAnnouncement": {
         "title": "إشعار خدمة",
         "body": "لدى FoodOra تحديث لك."
+      },
+      "applicationSubmitted": {
+        "title": "تم إرسال الطلب",
+        "body": "وصل {application} إلى المنصة."
+      },
+      "applicationApproved": {
+        "title": "تم اعتمادك",
+        "body": "سجّل الدخول وابدأ دوامك متى شئت."
+      },
+      "applicationRejected": {
+        "title": "تم رفض الطلب",
+        "body": "لم يُعتمد طلبك. {reason}"
+      },
+      "applicationSuspended": {
+        "title": "تم إيقاف الحساب",
+        "body": "لن تُعرض عليك أعمال. {reason}"
+      },
+      "applicationDeactivated": {
+        "title": "تم إلغاء تنشيط الحساب",
+        "body": "لن تُعرض عليك أعمال حتى يُعاد تنشيطه."
       }
     },
     "admin": {
@@ -2677,6 +2752,14 @@
       "supportCustomerReplied": {
         "title": "رد العميل",
         "body": "{ticket} فيها رسالة جديدة من {customer}."
+      },
+      "applicationReceived": {
+        "title": "طلب انضمام مطعم",
+        "body": "قدّم {restaurant} طلبًا — {application}."
+      },
+      "riderApplicationReceived": {
+        "title": "طلب انضمام مندوب",
+        "body": "قدّم {rider} طلبًا — {application}."
       }
     },
     "seeAll": "عرض كل التنبيهات",
@@ -3005,7 +3088,10 @@
     "moneySubtotal": "المجموع الجزئي",
     "moneyDiscount": "الخصم",
     "moneyAgreedRate": "النسبة المتفق عليها",
-    "navSupport": "الدعم"
+    "navSupport": "الدعم",
+    "navRestaurants": "المطاعم",
+    "navRiders": "المندوبون",
+    "riderBlocked": "غير عامل"
   },
   "cms": {
     "title": "المحتوى",
@@ -3768,6 +3854,370 @@
       "notFound": "لم نجد هذا الطلب.",
       "refundNotOpen": "لا يوجد استرداد يمكن اتخاذ قرار بشأنه في هذا الطلب.",
       "refundNotApproved": "لا يوجد استرداد موافَق عليه بانتظار الإعادة."
+    }
+  },
+  "onboarding": {
+    "status": {
+      "draft": "مسودة",
+      "pending": "قيد المراجعة",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "suspended": "موقوف",
+      "inactive": "غير نشط"
+    },
+    "documentStatus": {
+      "missing": "غير مُرفق",
+      "pending": "في انتظار المراجعة",
+      "verified": "موثّق",
+      "rejected": "غير مقبول",
+      "expired": "منتهي الصلاحية"
+    },
+    "document": {
+      "trade-licence": "السجل التجاري",
+      "national-id": "الهوية الوطنية",
+      "tin-certificate": "شهادة الرقم الضريبي",
+      "bank-statement": "كشف حساب بنكي",
+      "food-safety": "شهادة سلامة الغذاء",
+      "premises-photo": "صورة للمقر",
+      "driving-licence": "رخصة القيادة",
+      "vehicle-registration": "رخصة المركبة",
+      "insurance": "التأمين",
+      "profile-photo": "الصورة الشخصية"
+    },
+    "payoutMethod": {
+      "bank-transfer": "تحويل بنكي",
+      "mobile-wallet": "محفظة إلكترونية"
+    },
+    "vendorType": {
+      "restaurant": "مطعم",
+      "cafe": "مقهى",
+      "cloud-kitchen": "مطبخ سحابي",
+      "home-chef": "طاهي منزلي",
+      "catering": "تقديم طعام"
+    },
+    "day": {
+      "mon": "الاثنين",
+      "tue": "الثلاثاء",
+      "wed": "الأربعاء",
+      "thu": "الخميس",
+      "fri": "الجمعة",
+      "sat": "السبت",
+      "sun": "الأحد"
+    },
+    "availability": {
+      "blocked": "غير عامل",
+      "carrying": "في توصيل",
+      "offShift": "خارج الدوام",
+      "free": "متاح"
+    },
+    "logEmpty": "لم يحدث شيء على هذا الطلب بعد.",
+    "log": {
+      "edited": "عدّل {name} الطلب",
+      "submitted": "أرسل {name} الطلب للمراجعة",
+      "note": "أضاف {name} ملاحظة",
+      "document": "راجع {name} {document}",
+      "decision": {
+        "pending": "أعاده {name} إلى المراجعة",
+        "approved": "اعتمده {name}",
+        "rejected": "رفضه {name}",
+        "suspended": "أوقفه {name}",
+        "inactive": "ألغى {name} تنشيطه",
+        "draft": "أعاده {name} إلى المسودة"
+      }
+    },
+    "documentRequired": "مطلوب",
+    "documentNotProvided": "لم يُرفق شيء بعد.",
+    "documentExpires": "ينتهي في {date}",
+    "documentExpired": "انتهى في {date}",
+    "documentSummary": "{verified} من {total} موثّقة",
+    "documentSet": {
+      "verified": "تم توثيق المستند.",
+      "rejected": "لم يُقبل المستند.",
+      "missing": "تم إزالة المستند.",
+      "pending": "أُعيد المستند إلى المراجعة.",
+      "expired": "تم وسم المستند كمنتهي الصلاحية."
+    },
+    "verify": "توثيق",
+    "refuse": "رفض",
+    "refuseConfirm": "رفض المستند",
+    "refuseReasonLabel": "سبب الرفض",
+    "refuseReasonPlaceholder": "ما الخطأ فيه، وما المطلوب إرساله بدلًا منه",
+    "uploadPlaceholder": "المستند أو رقمه المرجعي",
+    "uploadLabel": "المرجع الخاص بـ {document}",
+    "attach": "إرفاق",
+    "uploadNotice": "لا يتضمن هذا النموذج الأولي تخزينًا للملفات، لذا يُسجَّل المستند برقمه المرجعي بدلًا من رفعه. يرى المراجع ما تكتبه هنا بالضبط.",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "continue": "متابعة",
+    "filterAwaiting": "في انتظارنا",
+    "filterAny": "أي حالة",
+    "range": {
+      "7d": "آخر ٧ أيام",
+      "30d": "آخر ٣٠ يومًا",
+      "90d": "آخر ٩٠ يومًا",
+      "all": "كل الفترات"
+    },
+    "restaurantsTitle": "المطاعم",
+    "restaurantsSubtitle": "كل مطعم على المنصة، وكل طلب للانضمام إليها.",
+    "restaurantsSearchPlaceholder": "المطعم أو المالك أو السجل التجاري أو الرقم الضريبي أو العنوان",
+    "restaurantsSearchLabel": "ابحث في المطاعم والطلبات",
+    "statLive": "نشط",
+    "statLiveHint": "معتمد ويستقبل الطلبات",
+    "statPending": "قيد المراجعة",
+    "statPendingHint": "أطول انتظار: {days} يومًا",
+    "statPendingNone": "لا شيء في الانتظار",
+    "statPendingRiders": "طلبات تنتظر مراجعًا",
+    "statSuspended": "موقوف",
+    "statSuspendedHint": "أوقفته المنصة",
+    "queueEmpty": "لا نتائج مطابقة",
+    "queueEmptyHint": "جرّب حالة أخرى أو مدى زمنيًا أوسع، أو امسح البحث.",
+    "newListing": "قائمة جديدة",
+    "submittedAgo": "أُرسل {ago}",
+    "draftSaved": "حُفظ {ago}",
+    "submittedOn": "أُرسل في {date}",
+    "ridersTitle": "المندوبون",
+    "ridersSubtitle": "الأسطول، ومن هو متاح الآن، وكل طلب للانضمام إليه.",
+    "ridersSearchPlaceholder": "الاسم أو الهاتف أو الهوية أو اللوحة أو المنطقة",
+    "ridersSearchLabel": "ابحث في المندوبين والطلبات",
+    "statFleet": "متاح",
+    "statFleetHint": "المتاحون الآن من بين المصرّح لهم بالعمل",
+    "statBlocked": "غير عامل",
+    "statBlockedHint": "موقوف أو غير نشط",
+    "newRider": "مندوب جديد",
+    "noFleetRecord": "لا يوجد سجل أسطول لهذا الطلب بعد، فلا شيء لعرضه.",
+    "earningsSource": "مأخوذة من الطلبات التي وصّلها هذا المندوب — الأرقام نفسها التي تظهر في شاشة أرباحه.",
+    "notFound": "هذا الطلب غير موجود على هذا الجهاز.",
+    "backToRestaurants": "رجوع إلى المطاعم",
+    "backToRiders": "رجوع إلى المندوبين",
+    "reviewerFallback": "مكتب المنصة",
+    "blockedByDocuments": "لا يمكن اعتماده بعد: {documents}.",
+    "decisionNoteTitle": "ما أُبلغ به مقدّم الطلب",
+    "decidedBy": "{name}، {date}",
+    "notProvided": "غير مُقدَّم",
+    "notApplicable": "لا ينطبق",
+    "never": "أبدًا",
+    "closed": "مغلق",
+    "offersDelivery": "توصيل",
+    "offersPickup": "استلام",
+    "etaRange": "{low}–{high} دقيقة",
+    "viewStorefront": "عرض صفحة المطعم",
+    "listingOnApproval": "لا توجد قائمة بعد — اعتماد هذا الطلب يُنشئ واحدة.",
+    "section": {
+      "owner": "المالك",
+      "business": "النشاط التجاري",
+      "restaurant": "المطعم",
+      "hours": "ساعات العمل",
+      "delivery": "التوصيل",
+      "branches": "الفروع",
+      "documents": "المستندات",
+      "payout": "حساب التحويل",
+      "listing": "القائمة",
+      "log": "السجل",
+      "personal": "البيانات الشخصية",
+      "contact": "التواصل",
+      "vehicle": "المركبة",
+      "emergency": "جهة اتصال الطوارئ",
+      "deliverySummary": "التوصيلات",
+      "earningsSummary": "الأرباح"
+    },
+    "field": {
+      "ownerName": "اسم المالك",
+      "ownerEmail": "بريد المالك",
+      "ownerPhone": "هاتف المالك",
+      "nationalId": "الهوية الوطنية",
+      "legalName": "الاسم المسجّل للنشاط",
+      "vendorType": "نوع النشاط",
+      "tradeLicence": "رقم السجل التجاري",
+      "tin": "الرقم الضريبي",
+      "bin": "ضريبة القيمة المضافة",
+      "yearsTrading": "سنوات العمل",
+      "restaurantName": "اسم المطعم",
+      "tagline": "الشعار",
+      "description": "الوصف",
+      "cuisines": "المطابخ",
+      "address": "العنوان",
+      "city": "المدينة",
+      "area": "المنطقة",
+      "phone": "الهاتف",
+      "email": "البريد الإلكتروني",
+      "contactPhone": "هاتف المطعم",
+      "contactEmail": "بريد المطعم",
+      "priceLevel": "مستوى السعر",
+      "fulfilment": "طريقة الخدمة",
+      "deliveryFee": "رسوم التوصيل",
+      "minOrder": "الحد الأدنى للطلب",
+      "freeDeliveryOver": "توصيل مجاني فوق",
+      "eta": "مدة التوصيل",
+      "etaHigh": "أقصى مدة",
+      "zones": "مناطق التوصيل",
+      "zone": "المنطقة الأساسية",
+      "branches": "الفروع",
+      "branchName": "اسم الفرع",
+      "payoutMethod": "طريقة التحويل",
+      "provider": "البنك أو المحفظة",
+      "accountName": "اسم الحساب",
+      "accountNumber": "رقم الحساب",
+      "branchCode": "الفرع أو رقم التوجيه",
+      "documents": "المستندات المرفقة",
+      "fullName": "الاسم الكامل",
+      "dateOfBirth": "تاريخ الميلاد",
+      "age": "العمر",
+      "emergencyName": "اسم جهة الاتصال",
+      "emergencyRelationship": "صلة القرابة",
+      "emergencyPhone": "هاتف جهة الاتصال",
+      "vehicle": "المركبة",
+      "plate": "رقم اللوحة",
+      "model": "الماركة والطراز",
+      "licenceNumber": "رقم الرخصة",
+      "deliveries": "تم توصيلها",
+      "carrying": "بحوزته الآن",
+      "lastDelivery": "آخر توصيل",
+      "earned": "الأرباح",
+      "tips": "الإكراميات",
+      "cashCollected": "النقد المُحصّل"
+    },
+    "action": {
+      "approve": "اعتماد",
+      "reject": "رفض",
+      "suspend": "إيقاف",
+      "reactivate": "إعادة التشغيل",
+      "activate": "تنشيط",
+      "deactivate": "إلغاء التنشيط",
+      "edit": "تعديل"
+    },
+    "decideTitle": {
+      "reject": "رفض هذا الطلب",
+      "suspend": "إيقاف هذا المطعم"
+    },
+    "decideBody": {
+      "reject": "سيُبلَّغ {name} بالسبب، ويمكنه التصحيح والتقديم مرة أخرى.",
+      "suspend": "يفقد {name} الوصول إلى لوحة التحكم حتى إعادة التشغيل. اذكر السبب."
+    },
+    "reasonLabel": "السبب",
+    "reasonPlaceholder": "ما الخطأ، وما الذي سيغيّر القرار",
+    "reasonHint": "سيقرأ مقدّم الطلب هذا النص، فاكتبه موجّهًا إليه.",
+    "decided": {
+      "approve": "تم اعتماد {name}.",
+      "reject": "تم رفض {name}.",
+      "suspend": "تم إيقاف {name}.",
+      "reactivate": "عاد {name} إلى العمل."
+    },
+    "riderDecided": {
+      "approve": "تم اعتماد {name} ويمكنه تلقّي العمل.",
+      "reject": "تم رفض {name}.",
+      "suspend": "تم إيقاف {name}.",
+      "activate": "عاد {name} إلى النشاط.",
+      "deactivate": "تم إلغاء تنشيط {name}."
+    },
+    "editTitle": "تعديل الطلب",
+    "editBody": "لتصحيح ما وصل خطأً — بيانات التواصل، الاسم المسجّل، حساب التحويل. كل تعديل يُسجَّل.",
+    "editNoteLabel": "ما الذي عدّلته",
+    "editNotePlaceholder": "مثال: صُحّح رقم الحساب من خطاب البنك",
+    "saveChanges": "حفظ التعديلات",
+    "editSaved": "تم تحديث الطلب.",
+    "partnerTitle": "قدّم طلبًا لإضافة مطعمك",
+    "partnerSubtitle": "ثماني خطوات قصيرة. يمكنك حفظ مسودة والعودة إليها لاحقًا.",
+    "partnerMetaTitle": "طلب انضمام مطعم",
+    "partnerMetaDescription": "قدّم طلبًا لإضافة مطعمك إلى FoodOra.",
+    "signInHint": "لم تسجّل الدخول. يمكنك تعبئة الطلب وإرساله، لكن تسجيل الدخول أولًا هو ما يربط المطعم بحسابك.",
+    "step": {
+      "owner": "عنك",
+      "business": "النشاط",
+      "restaurant": "المطعم",
+      "hours": "الساعات",
+      "delivery": "التوصيل",
+      "documents": "المستندات",
+      "payout": "التحويل",
+      "review": "المراجعة"
+    },
+    "stepHint": {
+      "owner": "مع من نتحدث بشأن هذا الطلب.",
+      "business": "الجهة المسجّلة التي يتبعها المطعم.",
+      "restaurant": "كيف يظهر المطعم للعملاء.",
+      "hours": "مواعيد عملك. يوم واحد على الأقل.",
+      "delivery": "طريقة الخدمة والرسوم والمناطق.",
+      "documents": "الأوراق التي يتحقق منها المراجع.",
+      "payout": "إلى أين نرسل ما نستحقه لك.",
+      "review": "راجع كل شيء ثم أرسله."
+    },
+    "hint": {
+      "nationalId": "كما هو مكتوب في الهوية أو جواز السفر.",
+      "legalName": "غالبًا يختلف عن الاسم التجاري.",
+      "optional": "اختياري.",
+      "description": "جملتان أو ثلاث. سيقرأها العملاء.",
+      "freeDeliveryOver": "اتركه فارغًا إن لم يكن هناك حد.",
+      "branches": "تُسجَّل الفروع الإضافية على الطلب. لا تصبح قوائم منفصلة في هذا النموذج الأولي.",
+      "minAge": "يجب أن يكون عمرك {age} على الأقل.",
+      "emergency": "شخص نتصل به إذا حدث شيء على الطريق. ليس رقمك أنت.",
+      "docsMotorised": "الرخصة والهوية الوطنية مطلوبتان. أما رخصة المركبة والتأمين فيمكن أن تتبع لاحقًا.",
+      "docsBicycle": "الهوية الوطنية وحدها مطلوبة للدراجة."
+    },
+    "openAt": "{day} يفتح",
+    "closeAt": "{day} يغلق",
+    "addBranch": "إضافة فرع",
+    "removeBranch": "إزالة {name}",
+    "reviewIntro": "هذا ما سيراه المراجع أولًا.",
+    "reviewIncomplete": "{count} من الحقول تحتاج إلى انتباه. تراجع بين الخطوات لتجدها.",
+    "saveDraft": "حفظ المسودة",
+    "submitApplication": "إرسال الطلب",
+    "submitted": "وصل الطلب {reference} إلى المنصة.",
+    "draftSavedToast": "تم حفظ المسودة.",
+    "resubmitTitle": "تم رفض هذا الطلب",
+    "resubmit": "أرسله مرة أخرى",
+    "resubmitted": "عاد طلبك إلى المنصة.",
+    "applicantStatus": {
+      "draft": "ما زال مسودة. لم يره أحد بعد.",
+      "pending": "طلبك لدى المنصة. سنخبرك بمجرد مراجعته.",
+      "approved": "تم اعتمادك. لوحة التحكم مفتوحة.",
+      "rejected": "تم رفض طلبك.",
+      "suspended": "مطعمك موقوف، لذا لوحة التحكم مغلقة حاليًا.",
+      "inactive": "مطعمك غير نشط حاليًا."
+    },
+    "openDashboard": "افتح لوحة التحكم",
+    "openRiderApp": "افتح تطبيق المندوب",
+    "riderTitle": "قدّم طلبًا للعمل مندوبًا مع FoodOra",
+    "riderSubtitle": "ست خطوات قصيرة. يمكنك حفظ مسودة والعودة إليها لاحقًا.",
+    "riderMetaTitle": "طلب انضمام مندوب",
+    "riderMetaDescription": "قدّم طلبًا للتوصيل مع FoodOra.",
+    "riderStep": {
+      "personal": "عنك",
+      "contact": "التواصل",
+      "vehicle": "المركبة",
+      "documents": "المستندات",
+      "payout": "التحويل",
+      "review": "المراجعة"
+    },
+    "riderStepHint": {
+      "personal": "من أنت وأين تقيم.",
+      "contact": "كيف نتواصل معك، ومن نتصل به في الطوارئ.",
+      "vehicle": "ما تقوده، وأين تريد العمل.",
+      "documents": "الأوراق التي يتحقق منها المراجع.",
+      "payout": "إلى أين تُحوَّل أرباحك.",
+      "review": "راجع كل شيء ثم أرسله."
+    },
+    "riderReviewIntro": "هذا ما سيراه المراجع أولًا.",
+    "riderApplicantStatus": {
+      "draft": "ما زال مسودة. لم يره أحد بعد.",
+      "pending": "طلبك لدى المنصة. سنخبرك بمجرد مراجعته.",
+      "approved": "تم اعتمادك. سجّل الدخول إلى تطبيق المندوب وابدأ دوامك.",
+      "rejected": "تم رفض طلبك.",
+      "suspended": "حسابك موقوف، لذا لن تُعرض عليك أعمال.",
+      "inactive": "حسابك غير نشط. اطلب من المنصة تنشيطه عندما تريد العمل مرة أخرى."
+    },
+    "errors": {
+      "required": "هذا الحقل مطلوب.",
+      "invalidEmail": "لا يبدو هذا بريدًا إلكترونيًا.",
+      "invalidPhone": "لا يبدو هذا رقم هاتف.",
+      "pickOne": "اختر واحدًا على الأقل.",
+      "pickOneDay": "اختر يومًا واحدًا على الأقل تعمل فيه.",
+      "invalidRange": "يجب أن يكون الرقم الثاني أكبر من الأول.",
+      "documentsMissing": "مستند مطلوب غير مرفق.",
+      "tooYoung": "يجب أن يكون عمرك ١٨ عامًا على الأقل.",
+      "sameAsOwnPhone": "يجب أن يكون رقم شخص آخر.",
+      "applicationNotFound": "هذا الطلب غير موجود على هذا الجهاز.",
+      "illegalApplicationMove": "لا يمكن لهذا الطلب فعل ذلك من هنا.",
+      "applicationIncomplete": "ما زال هناك شيء مطلوب ناقص.",
+      "decisionReasonRequired": "اكتب السبب الذي سيقرأه مقدّم الطلب."
     }
   }
 }

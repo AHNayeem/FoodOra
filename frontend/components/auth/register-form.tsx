@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, User as UserIcon, Store } from "lucide-react";
+import { Bike, Eye, EyeOff, Loader2, User as UserIcon, Store } from "lucide-react";
 import { register as registerAccount } from "@/services/auth";
 import { useAuth } from "@/stores/auth";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,12 @@ const registerSchema = z.object({
 });
 type RegisterValues = z.infer<typeof registerSchema>;
 
-type Role = "customer" | "restaurant-owner";
+/**
+ * Phase 7: riders can register. The account is all this creates — being a rider
+ * takes an approved application (`/rider/apply`), which is what the rider app
+ * gates on.
+ */
+type Role = "customer" | "restaurant-owner" | "delivery-rider";
 
 export function RegisterForm({ next = "/" }: { next?: string }) {
   const t = useTranslations("auth");
@@ -62,6 +67,7 @@ export function RegisterForm({ next = "/" }: { next?: string }) {
   const roles: Array<{ key: Role; icon: typeof UserIcon }> = [
     { key: "customer", icon: UserIcon },
     { key: "restaurant-owner", icon: Store },
+    { key: "delivery-rider", icon: Bike },
   ];
 
   return (
@@ -70,7 +76,7 @@ export function RegisterForm({ next = "/" }: { next?: string }) {
         {/* Role picker */}
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-ink">{t("iWantTo")}</span>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {roles.map(({ key, icon: Icon }) => (
               <button
                 key={key}

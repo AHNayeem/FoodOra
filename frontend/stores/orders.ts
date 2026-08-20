@@ -41,6 +41,7 @@ import {
 import { commissionRateFor, DEFAULT_COMMISSION_RATE } from "@/lib/settlement";
 import { riderEarningForOrder } from "@/services/delivery";
 import { offShiftRiderIds, useFleet } from "./fleet";
+import { undispatchableRiderIds, useOnboarding } from "./onboarding";
 import { emitNotifications, useNotifications } from "./notifications";
 import { useWallet } from "./wallet";
 
@@ -295,7 +296,15 @@ export const useOrders = create<OrdersState>()(
         const order = get().orders.find((o) => o.id === id);
         if (!order) return { order: null, error: "errors.notFound" };
         const zoneId = zoneForOrder(order);
-        const rider = dispatchRider(order, riders, zoneId, unavailableRiderIds(get().orders));
+        // The fleet is the seed plus whoever this device has approved (Phase 7):
+        // a rider the desk admitted this morning has to be pickable, or their
+        // approval is a status with no work behind it.
+        const rider = dispatchRider(
+          order,
+          dispatchableFleet(),
+          zoneId,
+          unavailableRiderIds(get().orders),
+        );
         if (!rider) return { order: null, error: "errors.noRiderAvailable" };
         return get().assignRider(id, rider, "auto");
       },
@@ -524,9 +533,27 @@ export function busyRiderIds(orders: Order[]): Set<string> {
  * does not mirror orders — so the union is computed once, here, and injected into
  * `dispatchRider`.
  */
+/**
+ * Everyone dispatch may choose from: the seeded fleet plus the riders this device
+ * admitted by approving an application. Who among them is *available* is a
+ * separate question — see `unavailableRiderIds`.
+ */
+export function dispatchableFleet(): Rider[] {
+  return [...riders, ...useOnboarding.getState().admittedRiders].filter(
+    (r) => !r.deletedAt,
+  );
+}
+
 export function unavailableRiderIds(orders: Order[]): Set<string> {
   const ids = busyRiderIds(orders);
   for (const id of offShiftRiderIds(useFleet.getState().shifts)) ids.add(id);
+  // Phase 7: onboarding is the third half. A rider who is suspended, deactivated
+  // or not approved yet is not "busy" and not "off shift" — they may not be given
+  // work at all — and this is where that reaches dispatch, so no caller has to
+  // remember a second check.
+  for (const id of undispatchableRiderIds(useOnboarding.getState().riderApplications)) {
+    ids.add(id);
+  }
   return ids;
 }
 

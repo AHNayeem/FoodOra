@@ -26,16 +26,46 @@ import { mockDelay } from "./http";
  */
 
 /**
- * Resolve the vendor a signed-in account manages. Returns the account's owned
- * vendor, or — so any staff demo account can preview the dashboard — falls back
- * to the flagship demo vendor. Null only if there are no vendors at all.
+ * Resolve the vendor a signed-in account manages.
+ *
+ * **No fallback (spec §5.3, G09).** This used to return the flagship demo
+ * restaurant whenever the account owned nothing, which meant any management login
+ * landed on somebody else's dashboard and could accept their orders, edit their
+ * menu and read their revenue. Nothing about that was visible on screen — the
+ * dashboard simply showed *a* restaurant — which is why the audit classed it as one
+ * of the prototype's worst untruths rather than a convenience. An account that owns
+ * no restaurant now gets `null`, and `DashboardShell` says so.
+ *
+ * `admitted` is the listings this device minted by approving an application
+ * (Phase 6). Injected rather than looked up, exactly as `dispatchRider` takes the
+ * unavailable set: this module cannot read a store, and a resolver that consults
+ * one would be a second source of "my restaurant". Phase E drops the parameter and
+ * queries both from one table.
  */
-export async function getDashboardVendor(userId: string): Promise<Vendor | null> {
-  const owned = vendors.find((v) => v.ownerId === userId && !v.deletedAt);
-  if (owned) return mockDelay(owned, 200);
-  const flagship =
-    vendors.find((v) => v.ownerId != null && !v.deletedAt) ?? vendors[0] ?? null;
-  return mockDelay(flagship, 200);
+export async function getDashboardVendor(
+  userId: string,
+  admitted: Vendor[] = [],
+): Promise<Vendor | null> {
+  const mine = [...admitted, ...vendors].find(
+    (v) => v.ownerId === userId && !v.deletedAt,
+  );
+  return mockDelay(mine ?? null, 200);
+}
+
+/**
+ * One listing by id — what the admin's restaurant page links to (Phase 6).
+ *
+ * Needed because an application stores the listing's *id*, and a storefront link
+ * needs its slug. Deriving the slug from the restaurant's name would be wrong for
+ * every vendor whose slug is not a plain slugification of it ("Sugar & Spoon" is
+ * `sugar-and-spoon`), and a broken link on a review screen is worse than none.
+ */
+export async function getVendorListing(
+  vendorId: string,
+  admitted: Vendor[] = [],
+): Promise<Vendor | null> {
+  const minted = admitted.find((v) => v.id === vendorId && !v.deletedAt);
+  return mockDelay(minted ?? vendorById.get(vendorId) ?? null, 150);
 }
 
 /** Everything the overview page renders, derived from one order snapshot. */

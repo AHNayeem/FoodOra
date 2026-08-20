@@ -19,6 +19,7 @@ import {
 import { useDemo, SPEED_OPTIONS } from "@/stores/demo";
 import { useOrders, liveOrders } from "@/stores/orders";
 import { useSupport } from "@/stores/support";
+import { useOnboarding } from "@/stores/onboarding";
 import { cn } from "@/lib/utils";
 
 /**
@@ -47,6 +48,7 @@ export function DemoBar() {
   const orders = useOrders((s) => s.orders);
   const resetDemo = useOrders((s) => s.resetDemo);
   const resetTickets = useSupport((s) => s.resetDemo);
+  const resetApplications = useOnboarding((s) => s.resetDemo);
 
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
@@ -185,6 +187,10 @@ export function DemoBar() {
                 // rebuilt in the same breath or every ticket points at an order
                 // that no longer exists (Phase 5).
                 resetTickets();
+                // Applications are seeded independently of the orders, but a
+                // reset that left a device-approved restaurant behind would leave
+                // a listing with no application to explain it (Phases 6–7).
+                resetApplications();
                 toast.success(t("resetToast"));
               }}
               className="ms-auto inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5"

@@ -13,14 +13,18 @@ import type {
   NotifyChannel,
   NotifySubject,
   NotifyTone,
+  OnboardingEvent,
+  OnboardingStatus,
   Order,
   OrderEvent,
   OrderStatus,
   RefundStatus,
   Reservation,
+  RiderApplication,
   Subscription,
   SupportEvent,
   SupportTicket,
+  VendorApplication,
   WalletTransaction,
 } from "@/types";
 
@@ -626,6 +630,179 @@ export function supportNotifications(
 function supportSubject(ticket: SupportTicket): NotifySubject {
   return { kind: "support", id: ticket.id, label: ticket.ticketNumber };
 }
+
+// ---------------------------------------------------------------------------
+// 5. Onboarding — a restaurant or a rider joining (Phases 6–7)
+// ---------------------------------------------------------------------------
+
+/**
+ * A restaurant application changed state (Phase 6, G08/G09/G12).
+ *
+ * Driven by the application's own event log, exactly as the support fan-out is
+ * driven by the ticket's: the log is what actually happened, so a new application
+ * state cannot ship without somebody deciding who hears about it.
+ *
+ * A draft produces nothing. Saving your own half-finished form is not news to
+ * anybody, least of all to the reviewer whose queue it is not in yet.
+ */
+export function applicationNotifications(
+  application: VendorApplication,
+  event: OnboardingEvent,
+): AppNotification[] {
+  const params = {
+    application: application.applicationNumber,
+    restaurant: application.restaurant.name,
+    owner: application.owner.name,
+    reason: application.decisionNote ?? "",
+  };
+  const subject: NotifySubject = {
+    kind: "application",
+    id: application.id,
+    label: application.applicationNumber,
+  };
+  const id = (audience: NotifyAudience) => `ntf_${event.id}_${audience}`;
+
+  // Sent for review: the desk gains work, the applicant gains a receipt.
+  if (event.kind === "submitted") {
+    return [
+      build({
+        id: id("restaurant"),
+        audience: "restaurant",
+        category: "system",
+        key: "applicationSubmitted",
+        params,
+        tone: "info",
+        subject,
+        href: "/partner/apply",
+        at: event.at,
+      }),
+      build({
+        id: id("admin"),
+        audience: "admin",
+        category: "system",
+        key: "applicationReceived",
+        params,
+        tone: "warning",
+        subject,
+        href: `/admin/restaurants/${application.id}`,
+        at: event.at,
+      }),
+    ];
+  }
+
+  if (event.kind === "decision" && event.status) {
+    const key = VENDOR_DECISION_KEYS[event.status];
+    if (!key) return [];
+    return [
+      build({
+        id: id("restaurant"),
+        audience: "restaurant",
+        category: "system",
+        key,
+        params: { ...params, reason: event.body ?? params.reason },
+        tone: event.status === "approved" ? "success" : "danger",
+        subject,
+        // An approved restaurant is sent to the dashboard it just gained; a
+        // refused or suspended one to the application that explains why.
+        href: event.status === "approved" ? "/dashboard" : "/partner/apply",
+        at: event.at,
+      }),
+    ];
+  }
+
+  return [];
+}
+
+/** Which message a restaurant decision produces. Drafts and edits produce none. */
+const VENDOR_DECISION_KEYS: Partial<Record<OnboardingStatus, string>> = {
+  approved: "applicationApproved",
+  rejected: "applicationRejected",
+  suspended: "applicationSuspended",
+};
+
+/**
+ * A rider application changed state (Phase 7, G10/G11/G13).
+ *
+ * The same shape as the restaurant fan-out, with one extra state: `inactive` is a
+ * message of its own because being deactivated and being suspended feel completely
+ * different to the person receiving them, and one message for both would tell a
+ * rider who asked for a break that they are in trouble.
+ */
+export function riderApplicationNotifications(
+  application: RiderApplication,
+  event: OnboardingEvent,
+): AppNotification[] {
+  const params = {
+    application: application.applicationNumber,
+    rider: application.personal.name,
+    reason: application.decisionNote ?? "",
+  };
+  const subject: NotifySubject = {
+    kind: "application",
+    id: application.id,
+    label: application.applicationNumber,
+  };
+  const id = (audience: NotifyAudience) => `ntf_${event.id}_${audience}`;
+
+  if (event.kind === "submitted") {
+    return [
+      build({
+        id: id("rider"),
+        audience: "rider",
+        category: "system",
+        key: "applicationSubmitted",
+        params,
+        tone: "info",
+        subject,
+        href: "/rider/apply",
+        at: event.at,
+      }),
+      build({
+        id: id("admin"),
+        audience: "admin",
+        category: "system",
+        key: "riderApplicationReceived",
+        params,
+        tone: "warning",
+        subject,
+        href: `/admin/riders/${application.id}`,
+        at: event.at,
+      }),
+    ];
+  }
+
+  if (event.kind === "decision" && event.status) {
+    const key = RIDER_DECISION_KEYS[event.status];
+    if (!key) return [];
+    return [
+      build({
+        id: id("rider"),
+        audience: "rider",
+        category: "system",
+        key,
+        params: { ...params, reason: event.body ?? params.reason },
+        tone:
+          event.status === "approved"
+            ? "success"
+            : event.status === "inactive"
+              ? "info"
+              : "danger",
+        subject,
+        href: event.status === "approved" ? "/delivery" : "/rider/apply",
+        at: event.at,
+      }),
+    ];
+  }
+
+  return [];
+}
+
+const RIDER_DECISION_KEYS: Partial<Record<OnboardingStatus, string>> = {
+  approved: "applicationApproved",
+  rejected: "applicationRejected",
+  suspended: "applicationSuspended",
+  inactive: "applicationDeactivated",
+};
 
 /** A ticket landed in the wallet (C21). */
 export function couponClaimedNotification(coupon: Coupon, at: string): AppNotification {

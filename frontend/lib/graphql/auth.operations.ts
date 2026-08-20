@@ -113,7 +113,9 @@ export const REGISTER: TypedDocumentNode<
       email: string;
       phone?: string;
       password: string;
-      role: "customer" | "restaurant-owner";
+      // Phase 7 (G10) added the rider role; the API's `RegisterInput` enum
+      // carries the same three, and `services/auth.RegisterInput` is the source.
+      role: "customer" | "restaurant-owner" | "delivery-rider";
       marketingOptIn: boolean;
       device?: DeviceInput;
     };

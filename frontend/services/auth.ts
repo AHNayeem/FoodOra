@@ -53,7 +53,13 @@ export interface RegisterInput {
   email: string;
   phone: string;
   password: string;
-  role: Extract<UserRole, "customer" | "restaurant-owner">;
+  /**
+   * Phase 7 (G10) added `delivery-rider`: `/rider` had no way to create an
+   * account at all, so "become a rider" was unreachable even after the
+   * application form existed. Registering as a rider creates the *account*, not
+   * the fleet record — that is minted when an application is approved.
+   */
+  role: Extract<UserRole, "customer" | "restaurant-owner" | "delivery-rider">;
 }
 
 export interface OtpVerifyInput {

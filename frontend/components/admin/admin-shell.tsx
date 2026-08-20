@@ -16,12 +16,19 @@ import {
   ShieldCheck,
   ShoppingBag,
   LifeBuoy,
+  Store,
+  Bike,
 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { useAuth } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { useCms } from "@/stores/cms";
 import { liveTicketCount, useSupport } from "@/stores/support";
+import {
+  pendingRiderCount,
+  pendingVendorCount,
+  useOnboarding,
+} from "@/stores/onboarding";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -49,6 +56,11 @@ const NAV = [
   { href: "/admin/orders", key: "navOrders", icon: ShoppingBag },
   // Phase 5: `customer-support` was already an admin role with no queue behind it.
   { href: "/admin/support", key: "navSupport", icon: LifeBuoy },
+  // Phases 6–7: the two onboarding queues. Separate entries rather than one
+  // "Partners" section — a restaurant application and a rider application are
+  // reviewed by different people against different paperwork.
+  { href: "/admin/restaurants", key: "navRestaurants", icon: Store },
+  { href: "/admin/riders", key: "navRiders", icon: Bike },
   { href: "/admin/cms", key: "navContent", icon: FileText },
   { href: "/admin/notifications", key: "navNotifications", icon: Bell },
 ] as const;
@@ -89,6 +101,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const supportHydrated = useSupport((s) => s.hydrated);
   const waiting = supportHydrated ? liveTicketCount(tickets) : 0;
 
+  // The onboarding queues badge for the same reason: an application nobody has
+  // looked at is somebody waiting on the platform to answer.
+  const onboardingHydrated = useOnboarding((s) => s.hydrated);
+  const vendorApplications = useOnboarding((s) => s.vendorApplications);
+  const riderApplications = useOnboarding((s) => s.riderApplications);
+  const badges: Record<string, number> = {
+    navSupport: waiting,
+    navRestaurants: onboardingHydrated ? pendingVendorCount(vendorApplications) : 0,
+    navRiders: onboardingHydrated ? pendingRiderCount(riderApplications) : 0,
+  };
+
   useEffect(() => {
     useAuth.persist.rehydrate();
     useOrders.persist.rehydrate();
@@ -96,6 +119,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     // gated on this store's `hydrated` flag.
     void useCms.persist.rehydrate();
     useSupport.persist.rehydrate();
+    useOnboarding.persist.rehydrate();
   }, []);
 
   if (!hydrated) {
@@ -191,9 +215,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="size-4" aria-hidden />
                   {t(key)}
-                  {key === "navSupport" && waiting > 0 && (
+                  {(badges[key] ?? 0) > 0 && (
                     <span className="inline-flex min-w-5 items-center justify-center rounded-pill bg-danger px-1.5 text-[11px] font-bold text-white tabular-nums">
-                      {waiting > 99 ? "99+" : waiting}
+                      {badges[key] > 99 ? "99+" : badges[key]}
                     </span>
                   )}
                 </Link>

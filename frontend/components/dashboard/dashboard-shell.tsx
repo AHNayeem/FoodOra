@@ -21,9 +21,11 @@ import {
   ShieldAlert,
   Lock,
 } from "lucide-react";
-import type { UserRole, Vendor } from "@/types";
+import type { UserRole, Vendor, VendorApplication } from "@/types";
 import { useAuth } from "@/stores/auth";
 import { useMerchant } from "@/stores/merchant";
+import { useOnboarding } from "@/stores/onboarding";
+import { canManageVendor } from "@/lib/vendor-onboarding";
 import { getDashboardVendor } from "@/services/vendor";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
@@ -82,17 +84,27 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loadingVendor, setLoadingVendor] = useState(true);
 
+  // Phase 6: onboarding decides whether this dashboard opens at all, so it is
+  // rehydrated with the session rather than by whichever page happens to read it.
+  const onboardingHydrated = useOnboarding((s) => s.hydrated);
+  const vendorApplications = useOnboarding((s) => s.vendorApplications);
+  const admittedVendors = useOnboarding((s) => s.admittedVendors);
+
   useEffect(() => {
     useAuth.persist.rehydrate();
     useMerchant.persist.rehydrate();
+    useOnboarding.persist.rehydrate();
   }, []);
 
   const canManage = !!user && MANAGEMENT_ROLES.includes(user.role);
 
   useEffect(() => {
-    if (!canManage || !user) return;
+    if (!canManage || !user || !onboardingHydrated) return;
     let active = true;
-    getDashboardVendor(user.id)
+    // The admitted listings are injected rather than looked up by the service —
+    // see `getDashboardVendor`. There is no flagship fallback any more: an account
+    // that owns nothing resolves to null and lands on the state below.
+    getDashboardVendor(user.id, admittedVendors)
       .then((v) => {
         if (active) setVendor(v);
       })
@@ -102,7 +114,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [canManage, user]);
+  }, [canManage, user, onboardingHydrated, admittedVendors]);
+
+  /**
+   * This account's onboarding record.
+   *
+   * Looked up by vendor first and by owner second, and the order matters: a
+   * restaurant that exists is governed by *its* application, while an account with
+   * no listing yet is governed by whatever it applied with.
+   */
+  const application: VendorApplication | undefined = vendor
+    ? vendorApplications.find((a) => a.vendorId === vendor.id && !a.deletedAt)
+    : user
+      ? vendorApplications.find((a) => a.ownerId === user.id && !a.deletedAt)
+      : undefined;
 
   function handleSignOut() {
     signOut();
@@ -148,10 +173,72 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (loadingVendor || !vendor) {
+  if (!onboardingHydrated || loadingVendor) {
     return (
       <CenterState>
         <div className="size-8 animate-spin rounded-full border-2 border-line border-t-primary" />
+      </CenterState>
+    );
+  }
+
+  /**
+   * No restaurant on this account (spec §5.3, G09).
+   *
+   * The old shell could not reach this state: `getDashboardVendor` handed back the
+   * flagship demo restaurant, so a management account that owned nothing quietly
+   * managed somebody else's. Now it says so — and, if the account has an
+   * application in flight, says where that stands, because "you have no restaurant"
+   * is the wrong answer for somebody who applied on Tuesday.
+   */
+  if (!vendor) {
+    return (
+      <CenterState>
+        <span className="inline-flex size-16 items-center justify-center rounded-pill bg-surface-muted text-muted">
+          <Store className="size-7" aria-hidden />
+        </span>
+        <h1 className="text-h2 text-ink">
+          {application ? t(`gate.${application.status}Title`) : t("gate.noneTitle")}
+        </h1>
+        <p className="max-w-sm text-body">
+          {application ? t(`gate.${application.status}Body`) : t("gate.noneBody")}
+        </p>
+        {application?.decisionNote && (
+          <p className="max-w-sm rounded-card border border-line bg-surface p-3 text-sm text-body">
+            {application.decisionNote}
+          </p>
+        )}
+        <Button href="/partner/apply" className="mt-2">
+          {application ? t("gate.viewApplication") : t("gate.apply")}
+        </Button>
+      </CenterState>
+    );
+  }
+
+  /**
+   * The restaurant exists but is not live — the spec's "approval must affect
+   * restaurant dashboard access", enforced in one place through the domain's own
+   * guard rather than by testing statuses here.
+   */
+  if (!application || !canManageVendor(application.status)) {
+    return (
+      <CenterState>
+        <span className="inline-flex size-16 items-center justify-center rounded-pill bg-danger/10 text-danger">
+          <ShieldAlert className="size-7" aria-hidden />
+        </span>
+        <h1 className="text-h2 text-ink">
+          {application ? t(`gate.${application.status}Title`) : t("gate.unknownTitle")}
+        </h1>
+        <p className="max-w-sm text-body">
+          {application ? t(`gate.${application.status}Body`) : t("gate.unknownBody")}
+        </p>
+        {application?.decisionNote && (
+          <p className="max-w-sm rounded-card border border-line bg-surface p-3 text-sm text-body">
+            {application.decisionNote}
+          </p>
+        )}
+        <Button href="/help" variant="outline" className="mt-2">
+          {t("gate.contactSupport")}
+        </Button>
       </CenterState>
     );
   }

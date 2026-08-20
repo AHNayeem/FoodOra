@@ -18,6 +18,7 @@ import type { Order, OrderCancelReason, OrderStatus, Rider } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { useOrders, busyRiderIds, ordersForVendor } from "@/stores/orders";
 import { offShiftRiderIds, useFleet } from "@/stores/fleet";
+import { undispatchableRiderIds, useOnboarding } from "@/stores/onboarding";
 import { getFleet } from "@/services/delivery";
 import {
   restaurantActions,
@@ -102,7 +103,7 @@ export function OrdersBoard() {
     useOrders.persist.rehydrate();
     // Availability spans both stores; the dispatch dialog has to see both halves.
     useFleet.persist.rehydrate();
-    getFleet().then(setFleet);
+    getFleet(undefined, useOnboarding.getState().admittedRiders).then(setFleet);
   }, []);
 
   useEffect(() => {
@@ -123,6 +124,13 @@ export function OrdersBoard() {
    */
   const busy = useMemo(() => busyRiderIds(allOrders), [allOrders]);
   const offShift = useMemo(() => offShiftRiderIds(shifts), [shifts]);
+  // Phase 7: onboarding is the third reason a courier cannot be picked, and the
+  // manual dialog has to know it or it would offer work dispatch would refuse.
+  const riderApplications = useOnboarding((s) => s.riderApplications);
+  const notApproved = useMemo(
+    () => undispatchableRiderIds(riderApplications),
+    [riderApplications],
+  );
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -307,6 +315,7 @@ export function OrdersBoard() {
         <AssignRiderDialog
           busy={busy}
           offShift={offShift}
+          notApproved={notApproved}
           open
           order={dialog.order}
           fleet={fleet}

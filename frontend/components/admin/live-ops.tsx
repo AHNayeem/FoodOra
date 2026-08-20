@@ -24,6 +24,7 @@ import {
   liveOrders,
 } from "@/stores/orders";
 import { offShiftRiderIds, useFleet } from "@/stores/fleet";
+import { undispatchableRiderIds, useOnboarding } from "@/stores/onboarding";
 import { getFleet } from "@/services/delivery";
 import { getVendors } from "@/services/catalog";
 import { isFailure, isWithRider, isInKitchen } from "@/lib/order-machine";
@@ -67,7 +68,7 @@ export function LiveOps() {
     useOrders.persist.rehydrate();
     // The shift board is what turns "who has an order" into "who can take one".
     useFleet.persist.rehydrate();
-    getFleet().then(setFleet);
+    getFleet(undefined, useOnboarding.getState().admittedRiders).then(setFleet);
     getVendors().then((res) => setVendors(res.items ?? []));
   }, []);
 
@@ -143,6 +144,13 @@ export function LiveOps() {
    */
   const carrying = useMemo(() => busyRiderIds(orders), [orders]);
   const offShift = useMemo(() => offShiftRiderIds(shifts), [shifts]);
+  // Phase 7 added a third state to the fleet strip: a courier onboarding will not
+  // let work, which is neither busy nor merely offline.
+  const riderApplications = useOnboarding((s) => s.riderApplications);
+  const notApproved = useMemo(
+    () => undispatchableRiderIds(riderApplications),
+    [riderApplications],
+  );
 
   /** Restaurants with live orders, and how many each has. */
   const vendorLoad = useMemo(() => {
@@ -420,23 +428,29 @@ export function LiveOps() {
             </h2>
             <ul className="mt-3 space-y-2">
               {fleet.map((rider) => {
-                // Carrying something is the stronger fact: a rider mid-delivery is
-                // "busy", not "off shift", even if they flipped the switch.
-                const state = carrying.has(rider.id)
-                  ? "riderBusy"
-                  : offShift.has(rider.id)
-                    ? "riderOffline"
-                    : "riderFree";
+                // Onboarding first — a suspended courier is not "off shift" —
+                // then carrying something, which is the stronger of the remaining
+                // two: a rider mid-delivery is "busy" even if they flipped the
+                // switch.
+                const state = notApproved.has(rider.id)
+                  ? "riderBlocked"
+                  : carrying.has(rider.id)
+                    ? "riderBusy"
+                    : offShift.has(rider.id)
+                      ? "riderOffline"
+                      : "riderFree";
                 return (
                   <li key={rider.id} className="flex items-center gap-2 text-sm">
                     <span
                       className={cn(
                         "size-2 shrink-0 rounded-full",
-                        state === "riderBusy"
-                          ? "bg-accent"
-                          : state === "riderOffline"
-                            ? "bg-line"
-                            : "bg-fresh",
+                        state === "riderBlocked"
+                          ? "bg-danger"
+                          : state === "riderBusy"
+                            ? "bg-accent"
+                            : state === "riderOffline"
+                              ? "bg-line"
+                              : "bg-fresh",
                       )}
                       aria-hidden
                     />

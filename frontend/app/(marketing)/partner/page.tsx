@@ -16,6 +16,9 @@ export async function generateMetadata(): Promise<Metadata> {
  * Partner with us — the vendor acquisition page linked from the footer's "For
  * business" column. Shares {@link PitchPage} with `/rider`; the content comes
  * from the pages seam and the chrome from the `partner` namespace.
+ *
+ * The page itself is unchanged by Phase 6 — it persuades, and it did that already.
+ * What changed is where it sends somebody who is persuaded: `/partner/apply`.
  */
 export default async function PartnerPage() {
   const [t, locale] = await Promise.all([getTranslations("partner"), getLocale()]);
@@ -26,7 +29,10 @@ export default async function PartnerPage() {
     <PitchPage
       content={content}
       docKey="partner"
-      signUpHref="/register"
+      // Phase 6: the CTA used to be `/register`, which created an account and
+      // dropped the owner on a dashboard belonging to the flagship demo vendor.
+      // It now leads to the application (G08).
+      signUpHref="/partner/apply"
       secondaryHref="/help"
       copy={{
         eyebrow: t("eyebrow"),

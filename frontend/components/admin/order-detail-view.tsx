@@ -23,6 +23,7 @@ import type { OrderCancelReason, OrderStatus, Rider } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { useOrders, busyRiderIds } from "@/stores/orders";
 import { offShiftRiderIds, useFleet } from "@/stores/fleet";
+import { undispatchableRiderIds, useOnboarding } from "@/stores/onboarding";
 import { getFleet, jobForOrder } from "@/services/delivery";
 import { zoneById, zoneIdForArea } from "@/lib/mock";
 import {
@@ -106,7 +107,7 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
   useEffect(() => {
     useOrders.persist.rehydrate();
     useFleet.persist.rehydrate();
-    getFleet().then(setFleet);
+    getFleet(undefined, useOnboarding.getState().admittedRiders).then(setFleet);
   }, []);
 
   useEffect(() => {
@@ -116,6 +117,13 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
 
   const busy = useMemo(() => busyRiderIds(allOrders), [allOrders]);
   const offShift = useMemo(() => offShiftRiderIds(shifts), [shifts]);
+  // Phase 7: onboarding is the third reason a courier cannot be picked, and the
+  // manual dialog has to know it or it would offer work dispatch would refuse.
+  const riderApplications = useOnboarding((s) => s.riderApplications);
+  const notApproved = useMemo(
+    () => undispatchableRiderIds(riderApplications),
+    [riderApplications],
+  );
 
   /**
    * The delivery as the rider app sees it — route, stops, distance and payout.
@@ -696,6 +704,7 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
           fleet={fleet}
           busy={busy}
           offShift={offShift}
+          notApproved={notApproved}
           submitting={submitting}
           title={dialog.reassign ? t("reassignTitle") : undefined}
           body={

@@ -1329,7 +1329,27 @@
     "earningsNet": "আপনার নিট আয়",
     "earningsPending": "এই সপ্তাহ (চলমান):",
     "earningsAvailable": "পরিশোধের জন্য প্রস্তুত:",
-    "earningsPeriods": "{count}টি নিষ্পত্তির সময়কাল"
+    "earningsPeriods": "{count}টি নিষ্পত্তির সময়কাল",
+    "riderNotApproved": "কাজের অনুমতি নেই",
+    "gate": {
+      "noneTitle": "এই অ্যাকাউন্টে কোনো রেস্টুরেন্ট নেই",
+      "noneBody": "এই অ্যাকাউন্ট এখনো কোনো রেস্টুরেন্ট পরিচালনা করে না। আবেদন করুন, যাচাইকারী আপনাকে জানাবেন।",
+      "apply": "রেস্টুরেন্ট তালিকাভুক্ত করার আবেদন",
+      "viewApplication": "আপনার আবেদন দেখুন",
+      "contactSupport": "সহায়তায় যোগাযোগ",
+      "draftTitle": "আপনার আবেদন এখনো খসড়া",
+      "draftBody": "শেষ করে পাঠান; অনুমোদিত হলেই ড্যাশবোর্ড খুলে যাবে।",
+      "pendingTitle": "আপনার আবেদন পর্যালোচনায়",
+      "pendingBody": "যাচাইকারী দেখলেই আমরা জানাব। অনুমোদনের পর ড্যাশবোর্ড খুলবে।",
+      "approvedTitle": "অনুমোদিত",
+      "approvedBody": "আপনার রেস্টুরেন্ট সক্রিয়।",
+      "rejectedTitle": "আপনার আবেদন প্রত্যাখ্যাত হয়েছে",
+      "rejectedBody": "আবেদনের পাতা থেকে ঠিক করে আবার পাঠাতে পারেন।",
+      "suspendedTitle": "এই রেস্টুরেন্ট স্থগিত",
+      "suspendedBody": "স্থগিতাদেশ থাকতে ড্যাশবোর্ড বন্ধ, তাই নতুন অর্ডার নেওয়া যাবে না।",
+      "unknownTitle": "এই রেস্টুরেন্টের কোনো আবেদন নথিতে নেই",
+      "unknownBody": "প্ল্যাটফর্ম নিশ্চিত করতে পারছে না যে এই রেস্টুরেন্ট অনুমোদিত, তাই ড্যাশবোর্ড বন্ধ থাকল। সহায়তা বিভাগ এটি ঠিক করতে পারবে।"
+    }
   },
   "catering": {
     "metaTitle": "ইভেন্ট ক্যাটারিং",
@@ -2356,7 +2376,26 @@
     "handoffDoneBody": "{name}-কে হস্তান্তর ও যাচাই সম্পন্ন।",
     "failTitle": "কী সমস্যা হয়েছে?",
     "failBody": "গ্রাহক ও রেস্তোরাঁ দুজনকেই জানানো হবে।",
-    "confirmFail": "সমস্যা জানান"
+    "confirmFail": "সমস্যা জানান",
+    "gate": {
+      "viewApplication": "আপনার আবেদন দেখুন",
+      "draftTitle": "আপনার আবেদন এখনো খসড়া",
+      "draftBody": "শেষ করে পাঠান; অনুমোদিত হলেই রাইড শুরু করতে পারবেন।",
+      "pendingTitle": "আপনার আবেদন পর্যালোচনায়",
+      "pendingBody": "যাচাইকারী দেখলেই আমরা জানাব।",
+      "approvedTitle": "অনুমোদিত",
+      "approvedBody": "আপনি রাইড করার অনুমতি পেয়েছেন।",
+      "rejectedTitle": "আপনার আবেদন প্রত্যাখ্যাত হয়েছে",
+      "rejectedBody": "আবেদনের পাতা থেকে ঠিক করে আবার পাঠাতে পারেন।",
+      "suspendedTitle": "আপনার অ্যাকাউন্ট স্থগিত",
+      "suspendedBody": "স্থগিতাদেশ থাকতে কোনো কাজ দেওয়া হবে না। আপনার ট্রিপ ও ওয়ালেট এখানেই আছে।",
+      "suspendedBadge": "স্থগিত",
+      "inactiveTitle": "আপনার অ্যাকাউন্ট নিষ্ক্রিয়",
+      "inactiveBody": "আবার সক্রিয় না হওয়া পর্যন্ত কোনো কাজ দেওয়া হবে না। আপনার ট্রিপ ও ওয়ালেট এখানেই আছে।",
+      "inactiveBadge": "নিষ্ক্রিয়",
+      "unknownTitle": "নথিতে কোনো আবেদন নেই",
+      "unknownBody": "প্ল্যাটফর্ম নিশ্চিত করতে পারছে না যে আপনি অনুমোদিত রাইডার, তাই কোনো কাজ দেওয়া হবে না।"
+    }
   },
   "notifications": {
     "title": "নোটিফিকেশন",
@@ -2589,6 +2628,22 @@
       "broadcastAnnouncement": {
         "title": "সার্ভিস নোটিশ",
         "body": "FoodOra থেকে একটি আপডেট আছে।"
+      },
+      "applicationSubmitted": {
+        "title": "আবেদন পাঠানো হয়েছে",
+        "body": "{restaurant}-এর {application} প্ল্যাটফর্মে পৌঁছেছে।"
+      },
+      "applicationApproved": {
+        "title": "আপনি অনুমোদিত",
+        "body": "{restaurant} সক্রিয়। আপনার ড্যাশবোর্ড খোলা।"
+      },
+      "applicationRejected": {
+        "title": "আবেদন প্রত্যাখ্যাত",
+        "body": "{restaurant} অনুমোদিত হয়নি। {reason}"
+      },
+      "applicationSuspended": {
+        "title": "রেস্টুরেন্ট স্থগিত",
+        "body": "{restaurant} স্থগিত করা হয়েছে। {reason}"
       }
     },
     "rider": {
@@ -2615,6 +2670,26 @@
       "broadcastAnnouncement": {
         "title": "সার্ভিস নোটিশ",
         "body": "FoodOra থেকে একটি আপডেট আছে।"
+      },
+      "applicationSubmitted": {
+        "title": "আবেদন পাঠানো হয়েছে",
+        "body": "{application} প্ল্যাটফর্মে পৌঁছেছে।"
+      },
+      "applicationApproved": {
+        "title": "আপনি অনুমোদিত",
+        "body": "সাইন ইন করে যেকোনো সময় শিফটে যান।"
+      },
+      "applicationRejected": {
+        "title": "আবেদন প্রত্যাখ্যাত",
+        "body": "আপনার আবেদন অনুমোদিত হয়নি। {reason}"
+      },
+      "applicationSuspended": {
+        "title": "অ্যাকাউন্ট স্থগিত",
+        "body": "আপনাকে কোনো কাজ দেওয়া হবে না। {reason}"
+      },
+      "applicationDeactivated": {
+        "title": "অ্যাকাউন্ট নিষ্ক্রিয়",
+        "body": "আবার সক্রিয় না হওয়া পর্যন্ত কোনো কাজ দেওয়া হবে না।"
       }
     },
     "admin": {
@@ -2677,6 +2752,14 @@
       "supportCustomerReplied": {
         "title": "ক্রেতা উত্তর দিয়েছেন",
         "body": "{ticket}-এ {customer}-এর নতুন বার্তা আছে।"
+      },
+      "applicationReceived": {
+        "title": "রেস্টুরেন্টের আবেদন",
+        "body": "{restaurant} আবেদন করেছে — {application}।"
+      },
+      "riderApplicationReceived": {
+        "title": "রাইডারের আবেদন",
+        "body": "{rider} আবেদন করেছেন — {application}।"
       }
     },
     "seeAll": "সব নোটিফিকেশন দেখুন",
@@ -3005,7 +3088,10 @@
     "moneySubtotal": "উপমোট",
     "moneyDiscount": "ছাড়",
     "moneyAgreedRate": "চুক্তির হার",
-    "navSupport": "সাপোর্ট"
+    "navSupport": "সাপোর্ট",
+    "navRestaurants": "রেস্টুরেন্ট",
+    "navRiders": "রাইডার",
+    "riderBlocked": "কাজ করছেন না"
   },
   "cms": {
     "title": "কনটেন্ট",
@@ -3768,6 +3854,370 @@
       "notFound": "সেই অর্ডার পাওয়া যায়নি।",
       "refundNotOpen": "এই অর্ডারে সিদ্ধান্ত নেওয়ার মতো কোনো ফেরত নেই।",
       "refundNotApproved": "ফেরত দেওয়ার অপেক্ষায় কোনো অনুমোদিত ফেরত নেই।"
+    }
+  },
+  "onboarding": {
+    "status": {
+      "draft": "খসড়া",
+      "pending": "পর্যালোচনায়",
+      "approved": "অনুমোদিত",
+      "rejected": "প্রত্যাখ্যাত",
+      "suspended": "স্থগিত",
+      "inactive": "নিষ্ক্রিয়"
+    },
+    "documentStatus": {
+      "missing": "দেওয়া হয়নি",
+      "pending": "যাচাইয়ের অপেক্ষায়",
+      "verified": "যাচাই হয়েছে",
+      "rejected": "গ্রহণ করা হয়নি",
+      "expired": "মেয়াদ শেষ"
+    },
+    "document": {
+      "trade-licence": "ট্রেড লাইসেন্স",
+      "national-id": "জাতীয় পরিচয়পত্র",
+      "tin-certificate": "টিআইএন সার্টিফিকেট",
+      "bank-statement": "ব্যাংক স্টেটমেন্ট",
+      "food-safety": "খাদ্য নিরাপত্তা সনদ",
+      "premises-photo": "প্রাঙ্গণের ছবি",
+      "driving-licence": "ড্রাইভিং লাইসেন্স",
+      "vehicle-registration": "যানবাহন রেজিস্ট্রেশন",
+      "insurance": "বীমা",
+      "profile-photo": "প্রোফাইল ছবি"
+    },
+    "payoutMethod": {
+      "bank-transfer": "ব্যাংক ট্রান্সফার",
+      "mobile-wallet": "মোবাইল ওয়ালেট"
+    },
+    "vendorType": {
+      "restaurant": "রেস্টুরেন্ট",
+      "cafe": "ক্যাফে",
+      "cloud-kitchen": "ক্লাউড কিচেন",
+      "home-chef": "হোম শেফ",
+      "catering": "ক্যাটারিং"
+    },
+    "day": {
+      "mon": "সোম",
+      "tue": "মঙ্গল",
+      "wed": "বুধ",
+      "thu": "বৃহঃ",
+      "fri": "শুক্র",
+      "sat": "শনি",
+      "sun": "রবি"
+    },
+    "availability": {
+      "blocked": "কাজ করছেন না",
+      "carrying": "ডেলিভারিতে",
+      "offShift": "শিফটে নেই",
+      "free": "ফাঁকা"
+    },
+    "logEmpty": "এই আবেদনে এখনো কিছু ঘটেনি।",
+    "log": {
+      "edited": "{name} আবেদনটি সম্পাদনা করেছেন",
+      "submitted": "{name} আবেদনটি পর্যালোচনার জন্য পাঠিয়েছেন",
+      "note": "{name} একটি নোট যোগ করেছেন",
+      "document": "{name} {document} যাচাই করেছেন",
+      "decision": {
+        "pending": "{name} এটি আবার পর্যালোচনায় পাঠিয়েছেন",
+        "approved": "{name} এটি অনুমোদন করেছেন",
+        "rejected": "{name} এটি প্রত্যাখ্যান করেছেন",
+        "suspended": "{name} এটি স্থগিত করেছেন",
+        "inactive": "{name} এটি নিষ্ক্রিয় করেছেন",
+        "draft": "{name} এটি খসড়ায় ফিরিয়েছেন"
+      }
+    },
+    "documentRequired": "আবশ্যক",
+    "documentNotProvided": "এখনো কিছু সংযুক্ত হয়নি।",
+    "documentExpires": "মেয়াদ শেষ {date}",
+    "documentExpired": "মেয়াদ শেষ হয়েছে {date}",
+    "documentSummary": "{total}টির মধ্যে {verified}টি যাচাই হয়েছে",
+    "documentSet": {
+      "verified": "ডকুমেন্ট যাচাই হয়েছে।",
+      "rejected": "ডকুমেন্ট গ্রহণ করা হয়নি।",
+      "missing": "ডকুমেন্ট মুছে ফেলা হয়েছে।",
+      "pending": "ডকুমেন্ট আবার পর্যালোচনায় গেল।",
+      "expired": "ডকুমেন্ট মেয়াদোত্তীর্ণ হিসেবে চিহ্নিত।"
+    },
+    "verify": "যাচাই",
+    "refuse": "বাতিল",
+    "refuseConfirm": "ডকুমেন্ট বাতিল",
+    "refuseReasonLabel": "কেন বাতিল হলো",
+    "refuseReasonPlaceholder": "কী সমস্যা, আর বদলে কী পাঠাতে হবে",
+    "uploadPlaceholder": "ডকুমেন্ট বা রেফারেন্স নম্বর",
+    "uploadLabel": "{document}-এর রেফারেন্স",
+    "attach": "সংযুক্ত করুন",
+    "uploadNotice": "এই প্রোটোটাইপে ফাইল সংরক্ষণ নেই, তাই ডকুমেন্ট আপলোডের বদলে রেফারেন্স নম্বর দিয়ে রাখা হয়। আপনি যা লিখবেন, যাচাইকারী ঠিক সেটাই দেখবেন।",
+    "cancel": "বাতিল",
+    "back": "পেছনে",
+    "continue": "এগিয়ে যান",
+    "filterAwaiting": "আমাদের অপেক্ষায়",
+    "filterAny": "যেকোনো অবস্থা",
+    "range": {
+      "7d": "শেষ ৭ দিন",
+      "30d": "শেষ ৩০ দিন",
+      "90d": "শেষ ৯০ দিন",
+      "all": "সব সময়"
+    },
+    "restaurantsTitle": "রেস্টুরেন্ট",
+    "restaurantsSubtitle": "প্ল্যাটফর্মের প্রতিটি রেস্টুরেন্ট, আর যোগ দেওয়ার প্রতিটি আবেদন।",
+    "restaurantsSearchPlaceholder": "রেস্টুরেন্ট, মালিক, ট্রেড লাইসেন্স, টিআইএন বা ঠিকানা",
+    "restaurantsSearchLabel": "রেস্টুরেন্ট ও আবেদন খুঁজুন",
+    "statLive": "সক্রিয়",
+    "statLiveHint": "অনুমোদিত ও অর্ডার নিচ্ছে",
+    "statPending": "পর্যালোচনায়",
+    "statPendingHint": "সবচেয়ে বেশি অপেক্ষা: {days} দিন",
+    "statPendingNone": "কিছু অপেক্ষায় নেই",
+    "statPendingRiders": "যাচাইকারীর অপেক্ষায় থাকা আবেদন",
+    "statSuspended": "স্থগিত",
+    "statSuspendedHint": "প্ল্যাটফর্ম থামিয়েছে",
+    "queueEmpty": "কিছু মেলেনি",
+    "queueEmptyHint": "অন্য অবস্থা, বড় সময়সীমা বেছে নিন বা সার্চ মুছে দিন।",
+    "newListing": "নতুন তালিকা",
+    "submittedAgo": "পাঠানো হয়েছে {ago}",
+    "draftSaved": "সংরক্ষিত {ago}",
+    "submittedOn": "পাঠানো হয়েছে {date}",
+    "ridersTitle": "রাইডার",
+    "ridersSubtitle": "ফ্লিট, এখন কে ফাঁকা, আর যোগ দেওয়ার প্রতিটি আবেদন।",
+    "ridersSearchPlaceholder": "নাম, ফোন, এনআইডি, নম্বরপ্লেট বা এলাকা",
+    "ridersSearchLabel": "রাইডার ও আবেদন খুঁজুন",
+    "statFleet": "ফাঁকা",
+    "statFleetHint": "কাজের অনুমতি পাওয়াদের মধ্যে এখন ফাঁকা",
+    "statBlocked": "কাজ করছেন না",
+    "statBlockedHint": "স্থগিত বা নিষ্ক্রিয়",
+    "newRider": "নতুন রাইডার",
+    "noFleetRecord": "এই আবেদনের এখনো কোনো ফ্লিট রেকর্ড নেই, তাই দেখানোর কিছু নেই।",
+    "earningsSource": "এই রাইডার যে অর্ডারগুলো পৌঁছে দিয়েছেন তা থেকে নেওয়া — তাঁর নিজের আয়ের পর্দায় ঠিক এই হিসাবই দেখা যায়।",
+    "notFound": "এই ডিভাইসে ওই আবেদনটি নেই।",
+    "backToRestaurants": "রেস্টুরেন্টে ফিরুন",
+    "backToRiders": "রাইডারে ফিরুন",
+    "reviewerFallback": "প্ল্যাটফর্ম ডেস্ক",
+    "blockedByDocuments": "এখনই অনুমোদন করা যাবে না: {documents}।",
+    "decisionNoteTitle": "আবেদনকারীকে যা জানানো হয়েছে",
+    "decidedBy": "{name}, {date}",
+    "notProvided": "দেওয়া হয়নি",
+    "notApplicable": "প্রযোজ্য নয়",
+    "never": "কখনো নয়",
+    "closed": "বন্ধ",
+    "offersDelivery": "ডেলিভারি",
+    "offersPickup": "পিকআপ",
+    "etaRange": "{low}–{high} মিনিট",
+    "viewStorefront": "দোকানের পাতা দেখুন",
+    "listingOnApproval": "এখনো কোনো তালিকা নেই — এই আবেদন অনুমোদন করলে একটি তৈরি হবে।",
+    "section": {
+      "owner": "মালিক",
+      "business": "ব্যবসা",
+      "restaurant": "রেস্টুরেন্ট",
+      "hours": "খোলার সময়",
+      "delivery": "ডেলিভারি",
+      "branches": "শাখা",
+      "documents": "ডকুমেন্ট",
+      "payout": "পেমেন্ট অ্যাকাউন্ট",
+      "listing": "তালিকা",
+      "log": "ইতিহাস",
+      "personal": "ব্যক্তিগত তথ্য",
+      "contact": "যোগাযোগ",
+      "vehicle": "যানবাহন",
+      "emergency": "জরুরি যোগাযোগ",
+      "deliverySummary": "ডেলিভারি",
+      "earningsSummary": "আয়"
+    },
+    "field": {
+      "ownerName": "মালিকের নাম",
+      "ownerEmail": "মালিকের ইমেইল",
+      "ownerPhone": "মালিকের ফোন",
+      "nationalId": "জাতীয় পরিচয়পত্র",
+      "legalName": "নিবন্ধিত ব্যবসার নাম",
+      "vendorType": "ব্যবসার ধরন",
+      "tradeLicence": "ট্রেড লাইসেন্স নম্বর",
+      "tin": "টিআইএন",
+      "bin": "ভ্যাট / বিআইএন",
+      "yearsTrading": "কত বছর চলছে",
+      "restaurantName": "রেস্টুরেন্টের নাম",
+      "tagline": "ট্যাগলাইন",
+      "description": "বিবরণ",
+      "cuisines": "খাবারের ধরন",
+      "address": "ঠিকানা",
+      "city": "শহর",
+      "area": "এলাকা",
+      "phone": "ফোন",
+      "email": "ইমেইল",
+      "contactPhone": "রেস্টুরেন্টের ফোন",
+      "contactEmail": "রেস্টুরেন্টের ইমেইল",
+      "priceLevel": "দামের স্তর",
+      "fulfilment": "কীভাবে সেবা দেন",
+      "deliveryFee": "ডেলিভারি ফি",
+      "minOrder": "সর্বনিম্ন অর্ডার",
+      "freeDeliveryOver": "এর বেশি হলে ফ্রি ডেলিভারি",
+      "eta": "ডেলিভারির সময়",
+      "etaHigh": "সর্বোচ্চ সময়",
+      "zones": "ডেলিভারি জোন",
+      "zone": "নিজের জোন",
+      "branches": "শাখা",
+      "branchName": "শাখার নাম",
+      "payoutMethod": "পেমেন্টের মাধ্যম",
+      "provider": "ব্যাংক বা ওয়ালেট",
+      "accountName": "অ্যাকাউন্টের নাম",
+      "accountNumber": "অ্যাকাউন্ট নম্বর",
+      "branchCode": "শাখা বা রাউটিং",
+      "documents": "সংযুক্ত ডকুমেন্ট",
+      "fullName": "পুরো নাম",
+      "dateOfBirth": "জন্মতারিখ",
+      "age": "বয়স",
+      "emergencyName": "যোগাযোগের নাম",
+      "emergencyRelationship": "সম্পর্ক",
+      "emergencyPhone": "যোগাযোগের ফোন",
+      "vehicle": "যানবাহন",
+      "plate": "নম্বরপ্লেট",
+      "model": "ব্র্যান্ড ও মডেল",
+      "licenceNumber": "লাইসেন্স নম্বর",
+      "deliveries": "পৌঁছে দেওয়া",
+      "carrying": "এখন হাতে",
+      "lastDelivery": "শেষ ডেলিভারি",
+      "earned": "আয়",
+      "tips": "টিপ",
+      "cashCollected": "নগদ সংগ্রহ"
+    },
+    "action": {
+      "approve": "অনুমোদন",
+      "reject": "প্রত্যাখ্যান",
+      "suspend": "স্থগিত",
+      "reactivate": "পুনর্বহাল",
+      "activate": "সক্রিয় করুন",
+      "deactivate": "নিষ্ক্রিয় করুন",
+      "edit": "সম্পাদনা"
+    },
+    "decideTitle": {
+      "reject": "এই আবেদন প্রত্যাখ্যান করুন",
+      "suspend": "এই রেস্টুরেন্ট স্থগিত করুন"
+    },
+    "decideBody": {
+      "reject": "{name}-কে কারণ জানানো হবে, আর ঠিক করে আবার আবেদন করতে পারবে।",
+      "suspend": "পুনর্বহাল না হওয়া পর্যন্ত {name} ড্যাশবোর্ডে ঢুকতে পারবে না। কারণ জানান।"
+    },
+    "reasonLabel": "কারণ",
+    "reasonPlaceholder": "কী সমস্যা, আর কী হলে উত্তর বদলাবে",
+    "reasonHint": "আবেদনকারী এটি পড়বেন, তাই তাঁকে উদ্দেশ্য করেই লিখুন।",
+    "decided": {
+      "approve": "{name} অনুমোদিত হয়েছে।",
+      "reject": "{name} প্রত্যাখ্যাত হয়েছে।",
+      "suspend": "{name} স্থগিত করা হয়েছে।",
+      "reactivate": "{name} আবার সক্রিয়।"
+    },
+    "riderDecided": {
+      "approve": "{name} অনুমোদিত এবং কাজ নিতে পারবেন।",
+      "reject": "{name} প্রত্যাখ্যাত হয়েছেন।",
+      "suspend": "{name} স্থগিত হয়েছেন।",
+      "activate": "{name} আবার সক্রিয়।",
+      "deactivate": "{name} নিষ্ক্রিয় করা হয়েছে।"
+    },
+    "editTitle": "আবেদন সম্পাদনা",
+    "editBody": "ভুল আসা তথ্য ঠিক করার জন্য — যোগাযোগের তথ্য, নিবন্ধিত নাম, পেমেন্ট অ্যাকাউন্ট। প্রতিটি সম্পাদনা রেকর্ড হয়।",
+    "editNoteLabel": "আপনি কী বদলেছেন",
+    "editNotePlaceholder": "যেমন, ব্যাংকের চিঠি দেখে অ্যাকাউন্ট নম্বর ঠিক করা হলো",
+    "saveChanges": "পরিবর্তন সংরক্ষণ",
+    "editSaved": "আবেদন হালনাগাদ হয়েছে।",
+    "partnerTitle": "আপনার রেস্টুরেন্ট তালিকাভুক্ত করার আবেদন",
+    "partnerSubtitle": "আটটি ছোট ধাপ। যেকোনো সময় খসড়া রেখে পরে ফিরে আসতে পারেন।",
+    "partnerMetaTitle": "রেস্টুরেন্ট আবেদন",
+    "partnerMetaDescription": "FoodOra-তে আপনার রেস্টুরেন্ট তালিকাভুক্ত করার আবেদন করুন।",
+    "signInHint": "আপনি সাইন ইন করা নেই। এটি পূরণ করে পাঠাতে পারবেন, তবে আগে সাইন ইন করলেই রেস্টুরেন্টটি আপনার অ্যাকাউন্টের সঙ্গে জুড়বে।",
+    "step": {
+      "owner": "আপনি",
+      "business": "ব্যবসা",
+      "restaurant": "রেস্টুরেন্ট",
+      "hours": "সময়",
+      "delivery": "ডেলিভারি",
+      "documents": "ডকুমেন্ট",
+      "payout": "পেমেন্ট",
+      "review": "পর্যালোচনা"
+    },
+    "stepHint": {
+      "owner": "এই আবেদন নিয়ে আমরা কার সঙ্গে কথা বলব।",
+      "business": "রেস্টুরেন্টের পেছনের নিবন্ধিত প্রতিষ্ঠান।",
+      "restaurant": "ক্রেতার কাছে রেস্টুরেন্ট যেভাবে দেখাবে।",
+      "hours": "কখন খোলা থাকেন। অন্তত একদিন।",
+      "delivery": "কীভাবে সেবা দেন, কত নেন, আর কোথায়।",
+      "documents": "যাচাইকারী যে কাগজপত্র দেখবেন।",
+      "payout": "আপনার প্রাপ্য কোথায় পাঠাব।",
+      "review": "দেখে নিন, তারপর পাঠান।"
+    },
+    "hint": {
+      "nationalId": "আপনার এনআইডি বা পাসপোর্টে যেমন লেখা।",
+      "legalName": "প্রায়ই ব্যবসায়িক নাম থেকে আলাদা হয়।",
+      "optional": "ঐচ্ছিক।",
+      "description": "দুই-তিন বাক্য। ক্রেতারা এটি পড়বেন।",
+      "freeDeliveryOver": "কখনো না হলে খালি রাখুন।",
+      "branches": "অতিরিক্ত শাখা আবেদনে রেকর্ড হয়। এই প্রোটোটাইপে সেগুলো আলাদা তালিকা হয় না।",
+      "minAge": "আপনার বয়স অন্তত {age} হতে হবে।",
+      "emergency": "রাস্তায় কিছু ঘটলে যাঁকে ফোন করা যাবে। আপনার নিজের নম্বর নয়।",
+      "docsMotorised": "লাইসেন্স ও জাতীয় পরিচয়পত্র আবশ্যক। রেজিস্ট্রেশন ও বীমা পরে দিতে পারবেন।",
+      "docsBicycle": "সাইকেলের জন্য শুধু জাতীয় পরিচয়পত্র আবশ্যক।"
+    },
+    "openAt": "{day} খোলে",
+    "closeAt": "{day} বন্ধ হয়",
+    "addBranch": "শাখা যোগ করুন",
+    "removeBranch": "{name} সরান",
+    "reviewIntro": "যাচাইকারী প্রথমে এটাই দেখবেন।",
+    "reviewIncomplete": "{count}টি ঘর এখনো ঠিক করা বাকি। ধাপগুলোতে ফিরে দেখে নিন।",
+    "saveDraft": "খসড়া সংরক্ষণ",
+    "submitApplication": "আবেদন পাঠান",
+    "submitted": "আবেদন {reference} প্ল্যাটফর্মে পৌঁছেছে।",
+    "draftSavedToast": "খসড়া সংরক্ষিত হয়েছে।",
+    "resubmitTitle": "এই আবেদন প্রত্যাখ্যাত হয়েছিল",
+    "resubmit": "আবার পাঠান",
+    "resubmitted": "আপনার আবেদন আবার প্ল্যাটফর্মে গেছে।",
+    "applicantStatus": {
+      "draft": "এটি এখনো খসড়া। কেউ দেখেনি।",
+      "pending": "আপনার আবেদন প্ল্যাটফর্মে আছে। পর্যালোচনা হলেই জানাব।",
+      "approved": "আপনি অনুমোদিত। আপনার ড্যাশবোর্ড খোলা।",
+      "rejected": "আপনার আবেদন প্রত্যাখ্যাত হয়েছে।",
+      "suspended": "আপনার রেস্টুরেন্ট স্থগিত, তাই ড্যাশবোর্ড এখন বন্ধ।",
+      "inactive": "আপনার রেস্টুরেন্ট এখন সক্রিয় নয়।"
+    },
+    "openDashboard": "ড্যাশবোর্ড খুলুন",
+    "openRiderApp": "রাইডার অ্যাপ খুলুন",
+    "riderTitle": "FoodOra-র সঙ্গে রাইড করার আবেদন",
+    "riderSubtitle": "ছয়টি ছোট ধাপ। যেকোনো সময় খসড়া রেখে পরে ফিরে আসতে পারেন।",
+    "riderMetaTitle": "রাইডার আবেদন",
+    "riderMetaDescription": "FoodOra-র সঙ্গে ডেলিভারি করার আবেদন করুন।",
+    "riderStep": {
+      "personal": "আপনার সম্পর্কে",
+      "contact": "যোগাযোগ",
+      "vehicle": "যানবাহন",
+      "documents": "ডকুমেন্ট",
+      "payout": "পেমেন্ট",
+      "review": "পর্যালোচনা"
+    },
+    "riderStepHint": {
+      "personal": "আপনি কে আর কোথায় থাকেন।",
+      "contact": "আপনাকে কীভাবে পাব, আর জরুরি অবস্থায় কাকে ফোন করব।",
+      "vehicle": "কী চালান, আর কোথায় কাজ করতে চান।",
+      "documents": "যাচাইকারী যে কাগজপত্র দেখবেন।",
+      "payout": "আপনার আয় কোথায় পাঠানো হবে।",
+      "review": "দেখে নিন, তারপর পাঠান।"
+    },
+    "riderReviewIntro": "যাচাইকারী প্রথমে এটাই দেখবেন।",
+    "riderApplicantStatus": {
+      "draft": "এটি এখনো খসড়া। কেউ দেখেনি।",
+      "pending": "আপনার আবেদন প্ল্যাটফর্মে আছে। পর্যালোচনা হলেই জানাব।",
+      "approved": "আপনি অনুমোদিত। রাইডার অ্যাপে সাইন ইন করে শিফটে যান।",
+      "rejected": "আপনার আবেদন প্রত্যাখ্যাত হয়েছে।",
+      "suspended": "আপনার অ্যাকাউন্ট স্থগিত, তাই কোনো কাজ দেওয়া হবে না।",
+      "inactive": "আপনার অ্যাকাউন্ট নিষ্ক্রিয়। আবার কাজ চাইলে প্ল্যাটফর্মকে সক্রিয় করতে বলুন।"
+    },
+    "errors": {
+      "required": "এটি দরকার।",
+      "invalidEmail": "এটি ইমেইল ঠিকানার মতো লাগছে না।",
+      "invalidPhone": "এটি ফোন নম্বরের মতো লাগছে না।",
+      "pickOne": "অন্তত একটি বাছুন।",
+      "pickOneDay": "খোলা থাকার অন্তত একটি দিন বাছুন।",
+      "invalidRange": "দ্বিতীয় সংখ্যাটি প্রথমটির চেয়ে বড় হতে হবে।",
+      "documentsMissing": "একটি আবশ্যক ডকুমেন্ট নেই।",
+      "tooYoung": "আপনার বয়স অন্তত ১৮ হতে হবে।",
+      "sameAsOwnPhone": "এটি অন্য কারও নম্বর হতে হবে।",
+      "applicationNotFound": "এই ডিভাইসে ওই আবেদনটি নেই।",
+      "illegalApplicationMove": "এখান থেকে এই আবেদনে ওটা করা যায় না।",
+      "applicationIncomplete": "আবশ্যক কিছু এখনো বাকি আছে।",
+      "decisionReasonRequired": "আবেদনকারী যে কারণ পড়বেন সেটি লিখুন।"
     }
   }
 }

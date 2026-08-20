@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * Become a rider — the courier acquisition page linked from the footer's "For
  * business" column. Shares {@link PitchPage} with `/partner`; the rider app
- * itself is Phase C18.
+ * itself is Phase C18 and the application is Phase 7 (`/rider/apply`).
  */
 export default async function RiderPage() {
   const [t, locale] = await Promise.all([getTranslations("rider"), getLocale()]);
@@ -26,7 +26,9 @@ export default async function RiderPage() {
     <PitchPage
       content={content}
       docKey="rider"
-      signUpHref="/register"
+      // Phase 7: `/register` could not create a rider at all — the role was not in
+      // `RegisterInput`. The CTA now leads to the application (G10).
+      signUpHref="/rider/apply"
       secondaryHref="/help"
       appLink={{ href: "/delivery", label: t("openApp") }}
       copy={{

@@ -250,14 +250,27 @@ function resolveRemittances(
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve "me" for a signed-in account. Falls back to the flagship rider when
- * the account has no rider record, exactly as `getDashboardVendor` falls back to
- * a flagship restaurant — so any rider-role demo account can open the app.
+ * Resolve "me" for a signed-in account.
+ *
+ * **No fallback (spec §5.3, G11).** This had the same bug `getDashboardVendor` did
+ * and the comment here used to cite it as precedent: any rider-role account with no
+ * fleet record was handed the flagship rider, so it could accept trips as them, see
+ * their wallet and collect their cash. Phase 7 removes both. An account with no
+ * rider record now gets `null`, and `RiderShell` shows them their application
+ * instead of somebody else's day.
+ *
+ * `admitted` is the fleet records this device minted by approving an application.
+ * Injected rather than looked up, for the reason stated on `getDashboardVendor`.
  */
-export async function getRiderProfile(userId: string): Promise<Rider | null> {
-  const mine = riderByUserId.get(userId);
-  const rider = mine ?? riders.find((r) => !r.deletedAt) ?? null;
-  return mockDelay(rider, 250);
+export async function getRiderProfile(
+  userId: string,
+  admitted: Rider[] = [],
+): Promise<Rider | null> {
+  const mine =
+    admitted.find((r) => r.userId === userId && !r.deletedAt) ??
+    riderByUserId.get(userId) ??
+    null;
+  return mockDelay(mine, 250);
 }
 
 export async function getRiderZone(zoneId: string): Promise<DeliveryZone | null> {
@@ -269,8 +282,14 @@ export async function getRiderZone(zoneId: string): Promise<DeliveryZone | null>
  * assign-rider dialog and the admin's rider board list. Optionally narrowed to
  * one zone, which is how a dispatcher normally looks at it.
  */
-export async function getFleet(zoneId?: string): Promise<Rider[]> {
-  const active = riders.filter((r) => !r.deletedAt);
+export async function getFleet(
+  zoneId?: string,
+  admitted: Rider[] = [],
+): Promise<Rider[]> {
+  // `admitted` is the riders this device approved (Phase 7). Injected for the
+  // reason stated on `getRiderProfile`: a service cannot read a store, and a
+  // courier who was approved this morning still has to appear on the board.
+  const active = [...riders, ...admitted].filter((r) => !r.deletedAt);
   return mockDelay(zoneId ? active.filter((r) => r.zoneId === zoneId) : active, 150);
 }
 

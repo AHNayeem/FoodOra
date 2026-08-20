@@ -1329,7 +1329,27 @@
     "earningsNet": "Your net earnings",
     "earningsPending": "This week (still open):",
     "earningsAvailable": "Ready to pay out:",
-    "earningsPeriods": "{count} settlement periods"
+    "earningsPeriods": "{count} settlement periods",
+    "riderNotApproved": "Not cleared to work",
+    "gate": {
+      "noneTitle": "No restaurant on this account",
+      "noneBody": "This account does not manage a restaurant yet. Apply and a reviewer will get back to you.",
+      "apply": "Apply to list a restaurant",
+      "viewApplication": "View your application",
+      "contactSupport": "Contact support",
+      "draftTitle": "Your application is still a draft",
+      "draftBody": "Finish it and send it, and the dashboard opens once it is approved.",
+      "pendingTitle": "Your application is in review",
+      "pendingBody": "We will let you know as soon as a reviewer has looked at it. The dashboard opens on approval.",
+      "approvedTitle": "Approved",
+      "approvedBody": "Your restaurant is live.",
+      "rejectedTitle": "Your application was refused",
+      "rejectedBody": "You can correct it and send it again from the application page.",
+      "suspendedTitle": "This restaurant is suspended",
+      "suspendedBody": "The dashboard is closed while the suspension stands, so no new orders can be accepted.",
+      "unknownTitle": "This restaurant has no application on file",
+      "unknownBody": "The platform cannot confirm this restaurant is approved, so the dashboard stays closed. Support can sort it out."
+    }
   },
   "catering": {
     "metaTitle": "Event Catering",
@@ -2356,7 +2376,26 @@
     "handoffDoneBody": "Handed over to {name} and verified.",
     "failTitle": "What went wrong?",
     "failBody": "The customer and the restaurant are both told.",
-    "confirmFail": "Report problem"
+    "confirmFail": "Report problem",
+    "gate": {
+      "viewApplication": "View your application",
+      "draftTitle": "Your application is still a draft",
+      "draftBody": "Finish it and send it, and you can start riding once it is approved.",
+      "pendingTitle": "Your application is in review",
+      "pendingBody": "We will let you know as soon as a reviewer has looked at it.",
+      "approvedTitle": "Approved",
+      "approvedBody": "You are cleared to ride.",
+      "rejectedTitle": "Your application was refused",
+      "rejectedBody": "You can correct it and send it again from the application page.",
+      "suspendedTitle": "Your account is suspended",
+      "suspendedBody": "You will not be offered work while the suspension stands. Your trips and wallet are still here.",
+      "suspendedBadge": "Suspended",
+      "inactiveTitle": "Your account is deactivated",
+      "inactiveBody": "You will not be offered work until it is activated again. Your trips and wallet are still here.",
+      "inactiveBadge": "Inactive",
+      "unknownTitle": "No application on file",
+      "unknownBody": "The platform cannot confirm you are an approved rider, so no work will be offered."
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -2589,6 +2628,22 @@
       "broadcastAnnouncement": {
         "title": "Service notice",
         "body": "There's an update from FoodOra."
+      },
+      "applicationSubmitted": {
+        "title": "Application sent",
+        "body": "{application} for {restaurant} is with the platform."
+      },
+      "applicationApproved": {
+        "title": "You're approved",
+        "body": "{restaurant} is live. Your dashboard is open."
+      },
+      "applicationRejected": {
+        "title": "Application refused",
+        "body": "{restaurant} was not approved. {reason}"
+      },
+      "applicationSuspended": {
+        "title": "Restaurant suspended",
+        "body": "{restaurant} has been suspended. {reason}"
       }
     },
     "rider": {
@@ -2615,6 +2670,26 @@
       "broadcastAnnouncement": {
         "title": "Service notice",
         "body": "There's an update from FoodOra."
+      },
+      "applicationSubmitted": {
+        "title": "Application sent",
+        "body": "{application} is with the platform."
+      },
+      "applicationApproved": {
+        "title": "You're approved",
+        "body": "Sign in and go on shift whenever you're ready."
+      },
+      "applicationRejected": {
+        "title": "Application refused",
+        "body": "Your application was not approved. {reason}"
+      },
+      "applicationSuspended": {
+        "title": "Account suspended",
+        "body": "You will not be offered work. {reason}"
+      },
+      "applicationDeactivated": {
+        "title": "Account deactivated",
+        "body": "You will not be offered work until it is activated again."
       }
     },
     "admin": {
@@ -2677,6 +2752,14 @@
       "supportCustomerReplied": {
         "title": "Customer replied",
         "body": "{ticket} has a new message from {customer}."
+      },
+      "applicationReceived": {
+        "title": "Restaurant application",
+        "body": "{restaurant} applied — {application}."
+      },
+      "riderApplicationReceived": {
+        "title": "Rider application",
+        "body": "{rider} applied — {application}."
       }
     },
     "seeAll": "See all notifications",
@@ -3005,7 +3088,10 @@
     "moneySubtotal": "Subtotal",
     "moneyDiscount": "Discount",
     "moneyAgreedRate": "Agreed rate",
-    "navSupport": "Support"
+    "navSupport": "Support",
+    "navRestaurants": "Restaurants",
+    "navRiders": "Riders",
+    "riderBlocked": "Not working"
   },
   "cms": {
     "title": "Content",
@@ -3768,6 +3854,370 @@
       "notFound": "We couldn't find that order.",
       "refundNotOpen": "There's no refund to decide on this order.",
       "refundNotApproved": "No approved refund is waiting to be returned."
+    }
+  },
+  "onboarding": {
+    "status": {
+      "draft": "Draft",
+      "pending": "In review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "suspended": "Suspended",
+      "inactive": "Inactive"
+    },
+    "documentStatus": {
+      "missing": "Not provided",
+      "pending": "Awaiting review",
+      "verified": "Verified",
+      "rejected": "Refused",
+      "expired": "Expired"
+    },
+    "document": {
+      "trade-licence": "Trade licence",
+      "national-id": "National ID",
+      "tin-certificate": "TIN certificate",
+      "bank-statement": "Bank statement",
+      "food-safety": "Food safety certificate",
+      "premises-photo": "Photo of the premises",
+      "driving-licence": "Driving licence",
+      "vehicle-registration": "Vehicle registration",
+      "insurance": "Insurance",
+      "profile-photo": "Profile photo"
+    },
+    "payoutMethod": {
+      "bank-transfer": "Bank transfer",
+      "mobile-wallet": "Mobile wallet"
+    },
+    "vendorType": {
+      "restaurant": "Restaurant",
+      "cafe": "Cafe",
+      "cloud-kitchen": "Cloud kitchen",
+      "home-chef": "Home chef",
+      "catering": "Catering"
+    },
+    "day": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "availability": {
+      "blocked": "Not working",
+      "carrying": "On a delivery",
+      "offShift": "Off shift",
+      "free": "Available"
+    },
+    "logEmpty": "Nothing has happened to this application yet.",
+    "log": {
+      "edited": "{name} edited the application",
+      "submitted": "{name} sent the application for review",
+      "note": "{name} added a note",
+      "document": "{name} reviewed the {document}",
+      "decision": {
+        "pending": "{name} sent it back for review",
+        "approved": "{name} approved it",
+        "rejected": "{name} refused it",
+        "suspended": "{name} suspended it",
+        "inactive": "{name} deactivated it",
+        "draft": "{name} returned it to draft"
+      }
+    },
+    "documentRequired": "Required",
+    "documentNotProvided": "Nothing attached yet.",
+    "documentExpires": "Expires {date}",
+    "documentExpired": "Expired {date}",
+    "documentSummary": "{verified} of {total} verified",
+    "documentSet": {
+      "verified": "Document verified.",
+      "rejected": "Document refused.",
+      "missing": "Document cleared.",
+      "pending": "Document set back to review.",
+      "expired": "Document marked expired."
+    },
+    "verify": "Verify",
+    "refuse": "Refuse",
+    "refuseConfirm": "Refuse document",
+    "refuseReasonLabel": "Why it was refused",
+    "refuseReasonPlaceholder": "What is wrong with it, and what to send instead",
+    "uploadPlaceholder": "Document or reference number",
+    "uploadLabel": "Reference for the {document}",
+    "attach": "Attach",
+    "uploadNotice": "This prototype has no file storage, so a document is recorded by its reference number rather than uploaded. A reviewer sees exactly what you type here.",
+    "cancel": "Cancel",
+    "back": "Back",
+    "continue": "Continue",
+    "filterAwaiting": "Waiting on us",
+    "filterAny": "Any status",
+    "range": {
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days",
+      "all": "All time"
+    },
+    "restaurantsTitle": "Restaurants",
+    "restaurantsSubtitle": "Every restaurant on the platform, and every application to join it.",
+    "restaurantsSearchPlaceholder": "Restaurant, owner, trade licence, TIN or address",
+    "restaurantsSearchLabel": "Search restaurants and applications",
+    "statLive": "Live",
+    "statLiveHint": "Approved and taking orders",
+    "statPending": "In review",
+    "statPendingHint": "Longest wait: {days} days",
+    "statPendingNone": "Nothing waiting",
+    "statPendingRiders": "Applications waiting on a reviewer",
+    "statSuspended": "Suspended",
+    "statSuspendedHint": "Stopped by the platform",
+    "queueEmpty": "Nothing matches",
+    "queueEmptyHint": "Try a different status, a wider date range, or clear the search.",
+    "newListing": "New listing",
+    "submittedAgo": "sent {ago}",
+    "draftSaved": "saved {ago}",
+    "submittedOn": "sent {date}",
+    "ridersTitle": "Riders",
+    "ridersSubtitle": "The fleet, who is available right now, and every application to join it.",
+    "ridersSearchPlaceholder": "Name, phone, national ID, plate or area",
+    "ridersSearchLabel": "Search riders and applications",
+    "statFleet": "Available",
+    "statFleetHint": "Free now, out of everyone cleared to work",
+    "statBlocked": "Not working",
+    "statBlockedHint": "Suspended or deactivated",
+    "newRider": "New rider",
+    "noFleetRecord": "This application has no fleet record yet, so there is nothing to report.",
+    "earningsSource": "Taken from the orders this rider delivered — the same figures their own earnings screen shows.",
+    "notFound": "That application is not on this device.",
+    "backToRestaurants": "Back to restaurants",
+    "backToRiders": "Back to riders",
+    "reviewerFallback": "Platform desk",
+    "blockedByDocuments": "This cannot be approved yet: {documents}.",
+    "decisionNoteTitle": "What the applicant was told",
+    "decidedBy": "{name}, {date}",
+    "notProvided": "Not provided",
+    "notApplicable": "Not applicable",
+    "never": "Never",
+    "closed": "Closed",
+    "offersDelivery": "Delivery",
+    "offersPickup": "Pickup",
+    "etaRange": "{low}–{high} min",
+    "viewStorefront": "View storefront",
+    "listingOnApproval": "No listing yet — approving this application creates one.",
+    "section": {
+      "owner": "Owner",
+      "business": "Business",
+      "restaurant": "Restaurant",
+      "hours": "Opening hours",
+      "delivery": "Delivery",
+      "branches": "Branches",
+      "documents": "Documents",
+      "payout": "Payout account",
+      "listing": "Listing",
+      "log": "History",
+      "personal": "Personal details",
+      "contact": "Contact",
+      "vehicle": "Vehicle",
+      "emergency": "Emergency contact",
+      "deliverySummary": "Deliveries",
+      "earningsSummary": "Earnings"
+    },
+    "field": {
+      "ownerName": "Owner name",
+      "ownerEmail": "Owner email",
+      "ownerPhone": "Owner phone",
+      "nationalId": "National ID",
+      "legalName": "Registered business name",
+      "vendorType": "Kind of business",
+      "tradeLicence": "Trade licence number",
+      "tin": "TIN",
+      "bin": "VAT / BIN",
+      "yearsTrading": "Years trading",
+      "restaurantName": "Restaurant name",
+      "tagline": "Tagline",
+      "description": "Description",
+      "cuisines": "Cuisines",
+      "address": "Address",
+      "city": "City",
+      "area": "Area",
+      "phone": "Phone",
+      "email": "Email",
+      "contactPhone": "Restaurant phone",
+      "contactEmail": "Restaurant email",
+      "priceLevel": "Price level",
+      "fulfilment": "How you serve",
+      "deliveryFee": "Delivery fee",
+      "minOrder": "Minimum order",
+      "freeDeliveryOver": "Free delivery over",
+      "eta": "Delivery estimate",
+      "etaHigh": "Longest estimate",
+      "zones": "Delivery zones",
+      "zone": "Home zone",
+      "branches": "Branches",
+      "branchName": "Branch name",
+      "payoutMethod": "Payout method",
+      "provider": "Bank or wallet",
+      "accountName": "Account name",
+      "accountNumber": "Account number",
+      "branchCode": "Branch or routing",
+      "documents": "Documents attached",
+      "fullName": "Full name",
+      "dateOfBirth": "Date of birth",
+      "age": "Age",
+      "emergencyName": "Contact name",
+      "emergencyRelationship": "Relationship",
+      "emergencyPhone": "Contact phone",
+      "vehicle": "Vehicle",
+      "plate": "Plate number",
+      "model": "Make and model",
+      "licenceNumber": "Licence number",
+      "deliveries": "Delivered",
+      "carrying": "Carrying now",
+      "lastDelivery": "Last delivery",
+      "earned": "Earned",
+      "tips": "Tips",
+      "cashCollected": "Cash collected"
+    },
+    "action": {
+      "approve": "Approve",
+      "reject": "Refuse",
+      "suspend": "Suspend",
+      "reactivate": "Reinstate",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "edit": "Edit"
+    },
+    "decideTitle": {
+      "reject": "Refuse this application",
+      "suspend": "Suspend this restaurant"
+    },
+    "decideBody": {
+      "reject": "{name} will be told why, and can correct it and apply again.",
+      "suspend": "{name} loses dashboard access until it is reinstated. Tell them why."
+    },
+    "reasonLabel": "Reason",
+    "reasonPlaceholder": "What is wrong, and what would change the answer",
+    "reasonHint": "The applicant reads this, so write it to them.",
+    "decided": {
+      "approve": "{name} is approved.",
+      "reject": "{name} was refused.",
+      "suspend": "{name} is suspended.",
+      "reactivate": "{name} is live again."
+    },
+    "riderDecided": {
+      "approve": "{name} is approved and can take work.",
+      "reject": "{name} was refused.",
+      "suspend": "{name} is suspended.",
+      "activate": "{name} is active again.",
+      "deactivate": "{name} is deactivated."
+    },
+    "editTitle": "Edit application",
+    "editBody": "For correcting what arrived wrong — contact details, the registered name, a payout account. Every edit is recorded.",
+    "editNoteLabel": "What you changed",
+    "editNotePlaceholder": "e.g. corrected the account number from the bank letter",
+    "saveChanges": "Save changes",
+    "editSaved": "Application updated.",
+    "partnerTitle": "Apply to list your restaurant",
+    "partnerSubtitle": "Eight short steps. Save a draft at any point and come back to it.",
+    "partnerMetaTitle": "Restaurant application",
+    "partnerMetaDescription": "Apply to list your restaurant on FoodOra.",
+    "signInHint": "You are not signed in. You can fill this in and send it, but signing in first is what links the restaurant to your account.",
+    "step": {
+      "owner": "You",
+      "business": "Business",
+      "restaurant": "Restaurant",
+      "hours": "Hours",
+      "delivery": "Delivery",
+      "documents": "Documents",
+      "payout": "Payout",
+      "review": "Review"
+    },
+    "stepHint": {
+      "owner": "Who we should talk to about this application.",
+      "business": "The registered entity behind the restaurant.",
+      "restaurant": "How the restaurant appears to customers.",
+      "hours": "When you are open. At least one day.",
+      "delivery": "How you serve, what you charge, and where.",
+      "documents": "The paperwork a reviewer checks.",
+      "payout": "Where we send what we owe you.",
+      "review": "Check it over, then send it."
+    },
+    "hint": {
+      "nationalId": "As printed on your NID or passport.",
+      "legalName": "Often different from the trading name.",
+      "optional": "Optional.",
+      "description": "A couple of sentences. Customers read this.",
+      "freeDeliveryOver": "Leave empty for never.",
+      "branches": "Additional outlets are recorded on the application. In this prototype they do not become separate listings.",
+      "minAge": "You must be at least {age}.",
+      "emergency": "Somebody we can call if something happens on the road. Not your own number.",
+      "docsMotorised": "A licence and your national ID are required. Registration and insurance can follow.",
+      "docsBicycle": "Only your national ID is required for a bicycle."
+    },
+    "openAt": "{day} opens",
+    "closeAt": "{day} closes",
+    "addBranch": "Add branch",
+    "removeBranch": "Remove {name}",
+    "reviewIntro": "This is what a reviewer will see first.",
+    "reviewIncomplete": "{count} fields still need attention. Step back through to find them.",
+    "saveDraft": "Save draft",
+    "submitApplication": "Send application",
+    "submitted": "Application {reference} is with the platform.",
+    "draftSavedToast": "Draft saved.",
+    "resubmitTitle": "This application was refused",
+    "resubmit": "Send it again",
+    "resubmitted": "Your application is back with the platform.",
+    "applicantStatus": {
+      "draft": "This is still a draft. Nobody has seen it yet.",
+      "pending": "Your application is with the platform. We will let you know as soon as it is reviewed.",
+      "approved": "You are approved. Your dashboard is open.",
+      "rejected": "Your application was refused.",
+      "suspended": "Your restaurant is suspended, so the dashboard is closed for now.",
+      "inactive": "Your restaurant is not currently active."
+    },
+    "openDashboard": "Open your dashboard",
+    "openRiderApp": "Open the rider app",
+    "riderTitle": "Apply to ride with FoodOra",
+    "riderSubtitle": "Six short steps. Save a draft at any point and come back to it.",
+    "riderMetaTitle": "Rider application",
+    "riderMetaDescription": "Apply to deliver with FoodOra.",
+    "riderStep": {
+      "personal": "About you",
+      "contact": "Contact",
+      "vehicle": "Vehicle",
+      "documents": "Documents",
+      "payout": "Payout",
+      "review": "Review"
+    },
+    "riderStepHint": {
+      "personal": "Who you are and where you are based.",
+      "contact": "How we reach you, and who we call in an emergency.",
+      "vehicle": "What you ride, and where you want to work.",
+      "documents": "The paperwork a reviewer checks.",
+      "payout": "Where your earnings are paid.",
+      "review": "Check it over, then send it."
+    },
+    "riderReviewIntro": "This is what a reviewer will see first.",
+    "riderApplicantStatus": {
+      "draft": "This is still a draft. Nobody has seen it yet.",
+      "pending": "Your application is with the platform. We will let you know as soon as it is reviewed.",
+      "approved": "You are approved. Sign in to the rider app and go on shift.",
+      "rejected": "Your application was refused.",
+      "suspended": "Your account is suspended, so you will not be offered work.",
+      "inactive": "Your account is deactivated. Ask the platform to activate it when you want work again."
+    },
+    "errors": {
+      "required": "This is needed.",
+      "invalidEmail": "That does not look like an email address.",
+      "invalidPhone": "That does not look like a phone number.",
+      "pickOne": "Pick at least one.",
+      "pickOneDay": "Pick at least one day you are open.",
+      "invalidRange": "The second number has to be larger than the first.",
+      "documentsMissing": "A required document is missing.",
+      "tooYoung": "You have to be at least 18.",
+      "sameAsOwnPhone": "This has to be somebody else's number.",
+      "applicationNotFound": "That application is not on this device.",
+      "illegalApplicationMove": "That is not something this application can do from here.",
+      "applicationIncomplete": "Something required is still missing.",
+      "decisionReasonRequired": "Write the reason the applicant will read."
     }
   }
 }

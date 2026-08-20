@@ -17,9 +17,11 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
-import type { DeliveryZone, Rider, UserRole } from "@/types";
+import type { DeliveryZone, Rider, RiderApplication, UserRole } from "@/types";
 import { useAuth } from "@/stores/auth";
 import { useRider } from "@/stores/rider";
+import { useOnboarding } from "@/stores/onboarding";
+import { canDispatchToRider, canUseRiderApp } from "@/lib/rider-onboarding";
 import { getRiderProfile, getRiderZone, nextStopOf } from "@/services/delivery";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
@@ -75,17 +77,25 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
     zone: DeliveryZone | null;
   } | null>(null);
 
+  // Phase 7: onboarding decides whether this app opens and whether the rider may
+  // be given work, so it is rehydrated with the session.
+  const onboardingHydrated = useOnboarding((s) => s.hydrated);
+  const riderApplications = useOnboarding((s) => s.riderApplications);
+  const admittedRiders = useOnboarding((s) => s.admittedRiders);
+
   useEffect(() => {
     useAuth.persist.rehydrate();
     useRider.persist.rehydrate();
+    useOnboarding.persist.rehydrate();
   }, []);
 
   const canRide = !!user && RIDER_ROLES.includes(user.role);
 
   useEffect(() => {
-    if (!canRide || !user) return;
+    if (!canRide || !user || !onboardingHydrated) return;
     let active = true;
-    getRiderProfile(user.id)
+    // Injected admitted riders, no flagship fallback — see `getRiderProfile`.
+    getRiderProfile(user.id, admittedRiders)
       .then(async (rider) => {
         const zone = rider ? await getRiderZone(rider.zoneId) : null;
         if (active) setResolved({ rider, zone });
@@ -96,7 +106,18 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [canRide, user]);
+  }, [canRide, user, onboardingHydrated, admittedRiders]);
+
+  /**
+   * This account's application: by fleet record when there is one, by account when
+   * there is not — the same two-step the dashboard shell uses, and for the same
+   * reason.
+   */
+  const application: RiderApplication | undefined = resolved?.rider
+    ? riderApplications.find((a) => a.riderId === resolved.rider!.id && !a.deletedAt)
+    : user
+      ? riderApplications.find((a) => a.userId === user.id && !a.deletedAt)
+      : undefined;
 
   const setRider = useCallback((rider: Rider) => {
     setResolved((prev) => (prev ? { ...prev, rider } : prev));
@@ -147,7 +168,7 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!resolved) {
+  if (!resolved || !onboardingHydrated) {
     return (
       <CenterState>
         <div className="size-8 animate-spin rounded-full border-2 border-line border-t-primary" />
@@ -155,22 +176,70 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  /**
+   * No fleet record on this account (spec §5.3, G11).
+   *
+   * Reachable for the first time in Phase 7: `getRiderProfile` used to hand back
+   * the flagship rider, so any rider-role account silently worked as Rakib. If the
+   * account has an application in flight, its status is what they are shown —
+   * "you are not a rider" is the wrong answer for somebody who applied yesterday.
+   */
   if (!resolved.rider || !resolved.zone) {
     return (
       <CenterState>
         <span className="inline-flex size-16 items-center justify-center rounded-pill bg-surface-muted text-muted">
           <Bike className="size-7" aria-hidden />
         </span>
-        <h1 className="text-h2 text-ink">{t("noRiderTitle")}</h1>
-        <p className="max-w-sm text-body">{t("noRiderBody")}</p>
-        <Button href="/rider" variant="outline" className="mt-2">
-          {t("gateBecomeRider")}
+        <h1 className="text-h2 text-ink">
+          {application ? t(`gate.${application.status}Title`) : t("noRiderTitle")}
+        </h1>
+        <p className="max-w-sm text-body">
+          {application ? t(`gate.${application.status}Body`) : t("noRiderBody")}
+        </p>
+        {application?.decisionNote && (
+          <p className="max-w-sm rounded-card border border-line bg-surface p-3 text-sm text-body">
+            {application.decisionNote}
+          </p>
+        )}
+        <Button href="/rider/apply" variant="outline" className="mt-2">
+          {application ? t("gate.viewApplication") : t("gateBecomeRider")}
+        </Button>
+      </CenterState>
+    );
+  }
+
+  /**
+   * A fleet record whose application was never approved. Rare — the seed gives
+   * every rider a record — but the honest answer if it happens, rather than opening
+   * an app that dispatch will never send anything to.
+   */
+  if (!application || !canUseRiderApp(application.status)) {
+    return (
+      <CenterState>
+        <span className="inline-flex size-16 items-center justify-center rounded-pill bg-danger/10 text-danger">
+          <ShieldAlert className="size-7" aria-hidden />
+        </span>
+        <h1 className="text-h2 text-ink">
+          {application ? t(`gate.${application.status}Title`) : t("gate.unknownTitle")}
+        </h1>
+        <p className="max-w-sm text-body">
+          {application ? t(`gate.${application.status}Body`) : t("gate.unknownBody")}
+        </p>
+        <Button href="/rider/apply" variant="outline" className="mt-2">
+          {t("gate.viewApplication")}
         </Button>
       </CenterState>
     );
   }
 
   const { rider, zone } = resolved;
+  /**
+   * Approved and therefore allowed to take work. A suspended or deactivated rider
+   * gets the app — their history, their wallet, and the reason — but not the shift
+   * switch, because turning it on would put them back in a pool dispatch is already
+   * refusing to draw from, and the switch would appear to do nothing.
+   */
+  const working = canDispatchToRider(application.status);
 
   return (
     <RiderProvider rider={rider} zone={zone} setRider={setRider}>
@@ -186,7 +255,14 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
               </p>
               <p className="truncate text-xs text-muted">{zone.name}</p>
             </div>
-            <ShiftToggle />
+            {working ? (
+              <ShiftToggle />
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-pill border border-danger/30 bg-danger/10 px-2.5 py-1.5 text-xs font-semibold text-danger">
+                <ShieldAlert className="size-3.5" aria-hidden />
+                {t(`gate.${application.status}Badge`)}
+              </span>
+            )}
             <div className="flex items-center">
               <LocaleSwitcher className="hidden sm:inline-flex" />
               <ThemeToggle />

@@ -17,11 +17,12 @@ import { cn } from "@/lib/utils";
  * path is the proof that the automatic path is not the only thing wired up.
  *
  * Riders who cannot take the job are shown struck out rather than hidden — a
- * dispatcher needs to see *why* the obvious choice is not available. Three
+ * dispatcher needs to see *why* the obvious choice is not available. Four
  * reasons, each said plainly: they handed this job back, they are already
- * carrying something, or they are off shift (G40). Before this the last two were
- * invisible here, so the manual path could assign work the automatic path would
- * have refused.
+ * carrying something, they are off shift (G40), or onboarding will not let them
+ * work at all (Phase 7 — suspended, deactivated, or never approved). Before this
+ * the last three were invisible here, so the manual path could assign work the
+ * automatic path would have refused.
  */
 export function AssignRiderDialog({
   open,
@@ -29,6 +30,7 @@ export function AssignRiderDialog({
   fleet,
   busy,
   offShift,
+  notApproved,
   title,
   body,
   submitting = false,
@@ -43,6 +45,8 @@ export function AssignRiderDialog({
   busy?: ReadonlySet<string>;
   /** Riders off shift, or on a trip of their own. */
   offShift?: ReadonlySet<string>;
+  /** Riders onboarding has not cleared for work — the strongest of the four. */
+  notApproved?: ReadonlySet<string>;
   /**
    * Heading and lead, for a caller whose job is not a first assignment — the
    * admin reassigning a courier is the same choice made for a different reason,
@@ -64,6 +68,10 @@ export function AssignRiderDialog({
 
   /** Why this rider cannot be picked, or null when they can. */
   function blockedReason(rider: Rider): string | null {
+    // Onboarding comes first: it is not a scheduling problem, and telling a
+    // dispatcher "off shift" about a suspended rider would send them to the wrong
+    // screen to fix it.
+    if (notApproved?.has(rider.id)) return "riderNotApproved";
     if (declined.has(rider.id)) return "riderDeclined";
     if (busy?.has(rider.id)) return "riderCarrying";
     if (offShift?.has(rider.id)) return "riderOffShift";
