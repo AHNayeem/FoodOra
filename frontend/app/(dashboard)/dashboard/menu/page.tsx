@@ -1,6 +1,9 @@
-import { MenuManager } from "@/components/dashboard/menu-manager";
+import { MenuBuilder } from "@/components/dashboard/menu/menu-builder";
 
-/** Menu management (Phase C10). Live menu + availability toggles (client). */
+/**
+ * Menu management (Phase 9). The menu builder: sections, items, option groups and
+ * stock, folded over the read-only catalog (client).
+ */
 export default function DashboardMenuPage() {
-  return <MenuManager />;
+  return <MenuBuilder />;
 }

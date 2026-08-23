@@ -79,7 +79,7 @@ import { useWallet } from "./wallet";
  */
 
 /** Bump when the persisted shape changes; `migrate` backfills the difference. */
-const STORE_VERSION = 4;
+const STORE_VERSION = 5;
 
 interface OrdersState {
   orders: Order[];
@@ -172,6 +172,36 @@ function owesWalletRefund(order: Order): boolean {
     // twice or firing on an order nobody actually paid for.
     canDecideRefund(order)
   );
+}
+
+/**
+ * Fill in the courier's half of a completed order's books, if it is missing.
+ *
+ * Two callers, one reason. A *seeded* completed delivery was never transitioned by
+ * anybody, so nothing ever called `riderEarningForOrder` for it; a *migrated* one
+ * completed before Phase 8 needed the record. Either way the order names a
+ * courier and carries a commission record, so the earning is recoverable — and it
+ * is recovered by the same function the real `completed` transition calls, priced
+ * at the instant the order actually closed rather than now. A courier's week must
+ * not move because somebody reloaded the page.
+ *
+ * Resolved in the store because only the store can reach `services/delivery`:
+ * `lib/order-lifecycle`'s migration helpers are pure and cannot see the zones and
+ * drop points a payout needs. An order with nothing to recover — a pickup, or one
+ * dispatch never touched — is returned untouched rather than given a zero payout,
+ * because "no courier" and "a courier who earned nothing" are different facts.
+ */
+function withRiderEarning(order: Order): Order {
+  const financials = order.lifecycle.financials;
+  if (!financials || financials.riderEarning) return order;
+  if (order.fulfillment !== "delivery" || !order.lifecycle.rider) return order;
+
+  const earning = riderEarningForOrder(order, Date.parse(financials.settledAt));
+  if (!earning) return order;
+  return {
+    ...order,
+    lifecycle: { ...order.lifecycle, financials: { ...financials, riderEarning: earning } },
+  };
 }
 
 export const useOrders = create<OrdersState>()(
@@ -419,7 +449,7 @@ export const useOrders = create<OrdersState>()(
 
       seed: (now = Date.now()) => {
         if (get().seeded) return;
-        const demo = buildDemoOrders(now);
+        const demo = buildDemoOrders(now).map(withRiderEarning);
         set((s) => {
           const known = new Set(s.orders.map((o) => o.id));
           return {
@@ -431,7 +461,7 @@ export const useOrders = create<OrdersState>()(
 
       resetDemo: (now = Date.now()) => {
         useNotifications.getState().resetAll();
-        set({ orders: buildDemoOrders(now), seeded: true });
+        set({ orders: buildDemoOrders(now).map(withRiderEarning), seeded: true });
       },
 
       setHydrated: () => set({ hydrated: true }),
@@ -468,6 +498,11 @@ export const useOrders = create<OrdersState>()(
         // route and no decision/settlement dates, and their `approved` meant what
         // `refunded` means now.
         if (version < 4) orders = orders.map(ensureRefundRecord);
+        // v4 orders were completed before the payout run existed (Phase 8): the
+        // commission half of their books is there, the courier's half is null.
+        // Without the backfill a device that has been running since Phase 2 shows
+        // an empty rider payout list and no way to tell that from "nobody rode".
+        if (version < 5) orders = orders.map(withRiderEarning);
         return { orders, seeded: state.seeded ?? false };
       },
       skipHydration: true,

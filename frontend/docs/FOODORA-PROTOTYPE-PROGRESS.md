@@ -14,6 +14,8 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 5 — Refunds + Support + Disputes Done
 - Phase 6 — Restaurant Onboarding + Approval Done
 - Phase 7 — Rider Onboarding + Approval Done
+- Phase 8 — Restaurant Financials + Admin Payouts Done
+- Phase 9 — Restaurant Menu Builder Done
 
 ---
 
@@ -154,12 +156,20 @@ pass at the end. **Closed for vendor and rider status in Phases 6–7**
 (`lib/mock/vendor-applications.ts`, `lib/mock/rider-applications.ts`); scheduled
 orders remain absent (Phase 17).
 
+**Phase 8 closed the rider half of the seeded books** rather than by adding a seed
+file: `stores/orders.withRiderEarning` fills a completed delivery's
+`OrderRiderEarning` at seed and on the v4 → v5 migration, using the same
+`services/delivery.riderEarningForOrder` the real `completed` transition calls.
+So the courier payout list has real data without a second, hand-written set of
+payout numbers to keep in step with the fare rules.
+
 ---
 
 ## Current Phase
 
-None in progress. Phases 1–7 complete. Next per the spec: **PHASE 8 — Restaurant
-Financials (G16, G17)**, which is not started and needs an explicit instruction.
+None in progress. Phases 1–9 complete. Next per the spec: **PHASE 10 — Restaurant
+Settings + Staff + Handover + Analytics (G18, G22, G23, G24)**, which is not
+started and needs an explicit instruction.
 
 ---
 

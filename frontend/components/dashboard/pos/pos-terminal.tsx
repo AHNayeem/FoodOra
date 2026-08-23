@@ -21,6 +21,7 @@ import { formatPrice } from "@/lib/format";
 import { computePosTotals, ticketCount } from "@/lib/pos";
 import { useAuth } from "@/stores/auth";
 import { useMerchant } from "@/stores/merchant";
+import { menuBoardFor, useMenu } from "@/stores/menu";
 import { usePos } from "@/stores/pos";
 import { Modal } from "@/components/ui/modal";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
@@ -58,6 +59,10 @@ export function PosTerminal() {
   const merchantUnavailable = useMerchant((s) => s.unavailable);
   const merchantHydrated = useMerchant((s) => s.hydrated);
 
+  // Phase 9: the register sells the menu the restaurant authored, not the seed.
+  const drafts = useMenu((s) => s.drafts);
+  const menuHydrated = useMenu((s) => s.hydrated);
+
   const sales = usePos((s) => s.sales);
   const heldTickets = usePos((s) => s.heldTickets);
   const posHydrated = usePos((s) => s.hydrated);
@@ -85,6 +90,7 @@ export function PosTerminal() {
 
   useEffect(() => {
     usePos.persist.rehydrate();
+    void useMenu.persist.rehydrate();
   }, []);
 
   useEffect(() => {
@@ -101,9 +107,49 @@ export function PosTerminal() {
     [lines, discount, currency, countryCode],
   );
 
+  /**
+   * The sellable menu, and what on it cannot be sold right now.
+   *
+   * Phase 9 routed this through `menuBoardFor` instead of reading the 86 list
+   * alone. The register sells the *authored* menu — the merchant's own prices,
+   * their own sections, their own option groups — because a till that charges the
+   * seed price for a dish the kitchen re-priced this morning is worse than no till.
+   * "Unavailable" now folds in all three reasons a dish is off (86'd, sold out, in
+   * a switched-off section) through the same `isLive` the storefront uses.
+   */
+  const board = useMemo(
+    () =>
+      catalog && menuHydrated
+        ? menuBoardFor(
+            drafts,
+            vendor.id,
+            catalog,
+            merchantHydrated ? merchantUnavailable : [],
+          )
+        : null,
+    [catalog, menuHydrated, drafts, vendor.id, merchantHydrated, merchantUnavailable],
+  );
+
+  const sellable = useMemo(
+    () =>
+      board
+        ? board
+            .filter((s) => s.enabled)
+            .map((s) => ({ ...s.section, items: s.items.map((i) => i.item) }))
+        : catalog,
+    [board, catalog],
+  );
+
   const unavailableIds = useMemo(
-    () => new Set(merchantHydrated ? merchantUnavailable : []),
-    [merchantUnavailable, merchantHydrated],
+    () =>
+      new Set(
+        board
+          ? board.flatMap((s) => s.items).filter((i) => !i.live).map((i) => i.item.id)
+          : merchantHydrated
+            ? merchantUnavailable
+            : [],
+      ),
+    [board, merchantHydrated, merchantUnavailable],
   );
 
   const tableLabel = tables.find((tbl) => tbl.id === tableId)?.label ?? null;
@@ -268,12 +314,12 @@ export function PosTerminal() {
         </div>
       </header>
 
-      {catalog === null ? (
+      {sellable === null ? (
         <PosSkeleton />
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[1fr_22rem]">
           <PosProductGrid
-            sections={catalog}
+            sections={sellable}
             currency={currency}
             unavailableIds={unavailableIds}
             onAdd={addItem}

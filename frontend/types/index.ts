@@ -1,6 +1,7 @@
 /** Barrel for domain types — import from "@/types". */
 export * from "./common";
 export * from "./catalog";
+export * from "./menu";
 export * from "./user";
 export * from "./settings";
 export * from "./cart";

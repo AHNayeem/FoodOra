@@ -102,6 +102,18 @@ export interface FoodItem extends BaseEntity {
   optionGroups: FoodOptionGroup[];
 }
 
+/**
+ * A menu section with its items attached, ordered for display.
+ *
+ * Declared here rather than in `services/catalog` (where it was born) because
+ * Phase 9's menu builder folds a draft over exactly this shape, and `lib/` must not
+ * import a service. `services/catalog` re-exports it, so every existing caller is
+ * unchanged.
+ */
+export interface MenuSectionWithItems extends MenuSection {
+  items: FoodItem[];
+}
+
 export interface FoodOptionGroup {
   id: string;
   name: string;

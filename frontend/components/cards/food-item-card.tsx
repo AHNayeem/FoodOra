@@ -14,6 +14,12 @@ import { cn } from "@/lib/utils";
  * component: text (price, badges) is region/locale-aware. The only interactive
  * part is the client AddToCartButton, which needs the vendor snapshot to seed
  * the single-vendor cart.
+ *
+ * Phase 9 moved the availability decision *into* that button rather than choosing
+ * here between it and a badge. The button resolves the restaurant's authored menu
+ * (which this server render cannot see) and renders the badge itself when the dish
+ * is not orderable — so there is one answer to "can this be added", and it is given
+ * by the component that would do the adding.
  */
 export async function FoodItemCard({
   item,
@@ -77,11 +83,7 @@ export async function FoodItemCard({
           />
         </div>
         <div className="absolute -bottom-2 end-2">
-          {item.isAvailable ? (
-            <AddToCartButton item={item} vendor={vendor} />
-          ) : (
-            <Badge tone="danger">{t("unavailable")}</Badge>
-          )}
+          <AddToCartButton item={item} vendor={vendor} />
         </div>
       </div>
     </article>

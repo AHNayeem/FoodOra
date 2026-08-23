@@ -1,5 +1,9 @@
 import type { BaseEntity, ISODate } from "./common";
 import type { DeliveryPayout } from "./delivery";
+// The method a payout uses is the one the payee registered during onboarding, so
+// it is the *same* union — `PayoutAccount.method`. Redeclaring it here would let a
+// payout run offer a route the application never collected details for.
+import type { PayoutMethod } from "./onboarding";
 
 /**
  * finance.ts — the money half of the order lifecycle.
@@ -132,20 +136,43 @@ export interface SettlementAdjustment {
 }
 
 /**
- * A payout run's record of paying one settlement. Stored (a payout is an event,
- * not a derivation); the settlement's `status`/`paidAt` are projected from it.
+ * What every payout record carries, whoever it pays.
+ *
+ * Stored rather than derived, because a payout is an *event*: it happened at an
+ * instant, a named account did it, and it has a reference somebody can quote on
+ * the phone. The settlement's `status`/`paidAt` are projected from it, which is
+ * the same division `OrderCommission` / `VendorSettlement` draws above.
  */
-export interface SettlementPayout extends BaseEntity {
+interface PayoutRecord extends BaseEntity {
   /** Human-facing reference, e.g. `PAY-8F3A21`. */
   payoutRef: string;
-  vendorId: string;
+  /** The period being paid, e.g. `2026-W34`. */
   periodRef: string;
   amount: number;
   currency: string;
   paidAt: ISODate;
   /** The admin account that ran it. */
   paidBy: string;
-  method: "bank-transfer" | "mobile-wallet";
+  method: PayoutMethod;
+}
+
+/** A payout run's record of paying one vendor settlement. */
+export interface SettlementPayout extends PayoutRecord {
+  vendorId: string;
+}
+
+/**
+ * A payout run's record of paying one rider's week.
+ *
+ * A separate record from `SettlementPayout` rather than one row with a `payee`
+ * column, because the two are not the same transaction: a vendor is paid their
+ * net food money less adjustments, while a rider is paid their fares *less the
+ * cash they are still holding*. Collapsing them would need a nullable field for
+ * each side's half, and a reviewer reading the ledger could not tell which
+ * arithmetic produced a given row.
+ */
+export interface RiderPayout extends PayoutRecord {
+  riderId: string;
 }
 
 /**
@@ -181,6 +208,68 @@ export interface VendorSettlement {
   status: SettlementStatus;
   paidAt: ISODate | null;
   payoutRef: string | null;
+}
+
+/**
+ * One rider's money for one weekly period — derived, never stored.
+ *
+ * Built from the `OrderRiderEarning` records completed orders carry, so a rider's
+ * wallet, the order's books and this payout line are three readings of one number
+ * rather than three sums. Itemised the way `DeliveryPayout` itemises a trip,
+ * because a courier querying their week asks *which part* is short.
+ *
+ * `cashCollected` is subtracted rather than ignored: doorstep cash is platform
+ * money the rider is holding, so what the platform actually transfers is the
+ * fares less the float. A week where the rider collected more cash than they
+ * earned in fares is a real outcome, and `netPayable` is allowed to be negative
+ * so the ledger says so instead of clamping to zero.
+ */
+export interface RiderSettlement {
+  /** Deterministic: `rst_<riderId>_<periodRef>`. Stable across recomputation. */
+  id: string;
+  riderId: string;
+  riderName: string;
+  currency: string;
+  /** e.g. `2026-W34`. */
+  periodRef: string;
+  periodStart: ISODate;
+  periodEnd: ISODate;
+  orderIds: string[];
+  /** Deliveries earned from in the period. */
+  tripCount: number;
+  baseFare: number;
+  distanceFee: number;
+  peakBonus: number;
+  batchBonus: number;
+  tips: number;
+  /** Sum of trip payouts — what the rider earned. */
+  earnedAmount: number;
+  /** Doorstep cash taken in the period: a liability, not earnings. */
+  cashCollected: number;
+  /** What the platform transfers: `earnedAmount − cashCollected`. */
+  netPayable: number;
+  status: SettlementStatus;
+  paidAt: ISODate | null;
+  payoutRef: string | null;
+}
+
+/**
+ * The bottom line under a list of settlements, whichever side they pay.
+ *
+ * Computed by `lib/settlement.settlementTotals` over exactly the rows on screen,
+ * so a filtered list's total is the total of what is filtered — a totals row that
+ * silently reports the unfiltered set is the most quietly wrong number a payout
+ * screen can show.
+ */
+export interface SettlementTotals {
+  currency: string;
+  count: number;
+  /** Still accruing — the period has not closed. */
+  pending: number;
+  /** Closed, unpaid: what a payout run would transfer today. */
+  available: number;
+  paid: number;
+  netPayable: number;
 }
 
 /**

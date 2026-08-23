@@ -12,6 +12,7 @@ import {
   CookingPot,
   UtensilsCrossed,
   Calculator,
+  Banknote,
   QrCode,
   Ticket,
   Star,
@@ -48,6 +49,9 @@ const MANAGEMENT_ROLES: readonly UserRole[] = [
 const NAV = [
   { href: "/dashboard", key: "overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/orders", key: "orders", icon: ClipboardList, exact: false },
+  // Phase 8: the commission the platform has been charging since Phase 2 now has
+  // somewhere to be read, which is what the marketing copy always promised.
+  { href: "/dashboard/earnings", key: "earnings", icon: Banknote, exact: false },
   { href: "/dashboard/kitchen", key: "kitchen", icon: CookingPot, exact: false },
   { href: "/dashboard/reservations", key: "reservations", icon: CalendarCheck, exact: false },
   { href: "/dashboard/pos", key: "pos", icon: Calculator, exact: false },

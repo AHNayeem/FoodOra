@@ -8,13 +8,10 @@ import type { VendorDashboard } from "@/services/vendor";
 import { getVendorDashboard } from "@/services/vendor";
 import type { CurrencyCode } from "@/config/regions";
 import { useOrders, ordersForVendor } from "@/stores/orders";
+import { adjustmentsForVendor, usePayouts } from "@/stores/payouts";
 import { vendorStats } from "@/lib/analytics";
-import {
-  buildVendorSettlements,
-  commissionRateFor,
-  settlementsForVendor,
-  vendorBalance,
-} from "@/lib/settlement";
+import type { VendorEarnings } from "@/services/finance";
+import { getVendorEarnings } from "@/services/finance";
 import { formatPrice, formatRating } from "@/lib/format";
 import { useDashboard } from "./dashboard-context";
 import { StatCard } from "./stat-card";
@@ -103,8 +100,16 @@ export function OverviewView() {
   const liveAll = useOrders((s) => s.orders);
   const ordersHydrated = useOrders((s) => s.hydrated);
 
+  // Phase 8: the money on this page is the money on `/dashboard/earnings`,
+  // resolved by the same service call — see the earnings panel below.
+  const [earnings, setEarnings] = useState<VendorEarnings | null>(null);
+  const payouts = usePayouts((s) => s.payouts);
+  const adjustments = usePayouts((s) => s.adjustments);
+  const payoutsHydrated = usePayouts((s) => s.hydrated);
+
   useEffect(() => {
     useOrders.persist.rehydrate();
+    usePayouts.persist.rehydrate();
   }, []);
 
   useEffect(() => {
@@ -130,6 +135,28 @@ export function OverviewView() {
     () => (ordersHydrated ? ordersForVendor(liveAll, vendor.id) : []),
     [liveAll, vendor.id, ordersHydrated],
   );
+
+  const myAdjustments = useMemo(
+    () => adjustmentsForVendor(adjustments, vendor.id),
+    [adjustments, vendor.id],
+  );
+
+  useEffect(() => {
+    if (!ordersHydrated || !payoutsHydrated) return;
+    let active = true;
+    getVendorEarnings({
+      vendorId: vendor.id,
+      live: liveAll,
+      payouts,
+      adjustments: myAdjustments,
+      now,
+    }).then((result) => {
+      if (active) setEarnings(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [ordersHydrated, payoutsHydrated, vendor.id, liveAll, payouts, myAdjustments, now]);
 
   if (loading || !data) {
     return (
@@ -159,20 +186,18 @@ export function OverviewView() {
   const currency = stats.currency as CurrencyCode;
 
   /**
-   * The vendor's money, from the commission records their completed orders
-   * carry. Built by `lib/settlement` over the same merged order set the KPI cards
-   * use, so the earnings on this page and the revenue above it are two readings
-   * of one data set rather than two independent sums (G01/G02, spec §5.4).
+   * The vendor's money, from the commission records their completed orders carry
+   * (G01/G02, spec §5.4).
+   *
+   * Phase 8 moved this behind `services/finance.getVendorEarnings` rather than
+   * building the settlements here. It used to merge its own order set and call
+   * `lib/settlement` directly, which was fine until `/dashboard/earnings` needed
+   * the same answer: two callers each resolving their own book would have anchored
+   * the synthesised week to two different instants, and the summary here would have
+   * disagreed with the statement there by a few orders. One resolver, one answer.
    */
-  const settlements = settlementsForVendor(
-    buildVendorSettlements(
-      [...data.allOrders.filter((o) => !live.some((l) => l.id === o.id)), ...live],
-      { now },
-    ),
-    vendor.id,
-  );
-  const balance = vendorBalance(settlements, currency);
-  const rate = commissionRateFor(vendor);
+  const balance = earnings?.balance ?? null;
+  const rate = earnings?.rate ?? 0;
 
   const recent = merged
     .sort((a, b) => Date.parse(b.placedAt) - Date.parse(a.placedAt))
@@ -235,12 +260,23 @@ export function OverviewView() {
       <Panel
         title={t("earningsTitle")}
         action={
-          <span className="rounded-pill bg-surface-muted px-2.5 py-1 text-xs font-semibold text-muted">
-            {t("earningsRate", { rate: Math.round(rate * 100) })}
+          <span className="flex items-center gap-2">
+            <span className="rounded-pill bg-surface-muted px-2.5 py-1 text-xs font-semibold text-muted">
+              {t("earningsRate", { rate: Math.round(rate * 100) })}
+            </span>
+            {/* The statements, the payout history and the two balances live on
+                their own page (Phase 8); this panel is the headline. */}
+            <Link
+              href="/dashboard/earnings"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+            >
+              {t("viewAll")}
+              <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
+            </Link>
           </span>
         }
       >
-        {balance.orderCount === 0 ? (
+        {!balance || balance.orderCount === 0 ? (
           <p className="rounded-field bg-surface-muted p-3 text-sm text-muted">
             {t("earningsEmpty")}
           </p>
@@ -274,7 +310,7 @@ export function OverviewView() {
                   {formatPrice(balance.available, currency)}
                 </b>
               </span>
-              <span>{t("earningsPeriods", { count: settlements.length })}</span>
+              <span>{t("earningsPeriods", { count: earnings?.statements.length ?? 0 })}</span>
             </div>
           </>
         )}

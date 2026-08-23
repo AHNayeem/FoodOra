@@ -20,6 +20,8 @@ import { useDemo, SPEED_OPTIONS } from "@/stores/demo";
 import { useOrders, liveOrders } from "@/stores/orders";
 import { useSupport } from "@/stores/support";
 import { useOnboarding } from "@/stores/onboarding";
+import { usePayouts } from "@/stores/payouts";
+import { useMenu } from "@/stores/menu";
 import { cn } from "@/lib/utils";
 
 /**
@@ -49,6 +51,8 @@ export function DemoBar() {
   const resetDemo = useOrders((s) => s.resetDemo);
   const resetTickets = useSupport((s) => s.resetDemo);
   const resetApplications = useOnboarding((s) => s.resetDemo);
+  const resetPayouts = usePayouts((s) => s.resetDemo);
+  const resetMenus = useMenu((s) => s.resetDemo);
 
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
@@ -191,6 +195,15 @@ export function DemoBar() {
                 // reset that left a device-approved restaurant behind would leave
                 // a listing with no application to explain it (Phases 6–7).
                 resetApplications();
+                // A payout is recorded against a settlement period, and a reset
+                // rebuilds the order book those periods were derived from — so a
+                // surviving transfer would mark a week paid that no longer has the
+                // orders to explain the amount (Phase 8).
+                resetPayouts();
+                // And the authored menus (Phase 9): a reset is for the next
+                // audience, and a menu edited during the last demonstration would
+                // be the one thing on screen nobody could explain.
+                resetMenus();
                 toast.success(t("resetToast"));
               }}
               className="ms-auto inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5"

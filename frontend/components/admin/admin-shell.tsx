@@ -18,6 +18,7 @@ import {
   LifeBuoy,
   Store,
   Bike,
+  Banknote,
 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { useAuth } from "@/stores/auth";
@@ -61,6 +62,9 @@ const NAV = [
   // reviewed by different people against different paperwork.
   { href: "/admin/restaurants", key: "navRestaurants", icon: Store },
   { href: "/admin/riders", key: "navRiders", icon: Bike },
+  // Phase 8: `finance-manager` has been an admin role with no surface behind it
+  // since the auth seed, and the money owed had nowhere to be paid from.
+  { href: "/admin/payouts", key: "navPayouts", icon: Banknote },
   { href: "/admin/cms", key: "navContent", icon: FileText },
   { href: "/admin/notifications", key: "navNotifications", icon: Bell },
 ] as const;

@@ -541,6 +541,51 @@ export function refundNotifications(
 }
 
 /**
+ * A payout run sent money (Phase 8, G16/G17).
+ *
+ * One message, to whoever was paid. Not a fan-out over several audiences, and
+ * that is the point: the desk that ran the payout does not need its own inbox
+ * entry for the transfer it just authorised (the C19 rule the refund fan-out
+ * applies to `approved`), and nobody else is entitled to know what a restaurant
+ * or a courier was paid.
+ *
+ * Takes the payment rather than a settlement, because the two payees carry
+ * different records (`SettlementPayout` / `RiderPayout`) and a factory that took
+ * either would spend its body working out which. What a notification actually
+ * needs is the same five facts in both cases.
+ */
+export function payoutNotifications(input: {
+  audience: Extract<NotifyAudience, "restaurant" | "rider">;
+  payeeName: string;
+  payoutRef: string;
+  periodRef: string;
+  amount: number;
+  currency: string;
+  at: string;
+  href: string;
+}): AppNotification[] {
+  return [
+    build({
+      id: `ntf_payout_${input.payoutRef}_${input.audience}`,
+      audience: input.audience,
+      category: "payment",
+      key: "payoutSent",
+      params: {
+        payout: input.payoutRef,
+        period: input.periodRef,
+        amount: input.amount,
+        currency: input.currency,
+        payee: input.payeeName,
+      },
+      tone: "success",
+      subject: { kind: "payout", id: input.payoutRef, label: input.payoutRef },
+      href: input.href,
+      at: input.at,
+    }),
+  ];
+}
+
+/**
  * A support ticket moved (Phase 5, G25/G26).
  *
  * Driven by the ticket's own event log rather than by the caller choosing a

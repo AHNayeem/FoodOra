@@ -29,7 +29,7 @@ import type {
   Category,
   Cuisine,
   FoodItem,
-  MenuSection,
+  MenuSectionWithItems,
   Vendor,
   VendorType,
 } from "@/types";
@@ -311,10 +311,14 @@ export async function getVendorCuisines(vendor: Vendor): Promise<Cuisine[]> {
   );
 }
 
-/** A menu section with its (available) items attached, ordered for display. */
-export interface MenuSectionWithItems extends MenuSection {
-  items: FoodItem[];
-}
+/**
+ * A menu section with its items attached, ordered for display.
+ *
+ * The shape moved to `types/catalog` in Phase 9 so `lib/menu` can fold a draft over
+ * it without a service import; re-exported here because every caller learned the
+ * name from this module.
+ */
+export type { MenuSectionWithItems };
 
 /** Full menu for a vendor — sections in order, each with its food items. */
 export async function getVendorMenu(vendorId: string): Promise<MenuSectionWithItems[]> {

@@ -9,6 +9,7 @@ import type { CartLine, CartVendor, FoodItem } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { buildCartLine } from "@/lib/cart";
 import { ItemCustomizer } from "@/components/cart/item-customizer";
+import { useMenuItem } from "@/components/menu/use-menu-item";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -22,9 +23,14 @@ import { cn } from "@/lib/utils";
  * via its `onAdd` escape hatch — the sitting store, not the delivery cart,
  * receives the line. Venues that only browse (`ordering: false`) get the same
  * row without any action.
+ *
+ * Phase 9: the dish is resolved through `useMenuItem`, so a table menu prices and
+ * customises what the kitchen has actually authored. A venue that sells out of
+ * something mid-service takes it off the table's menu, which is the whole reason a
+ * QR menu beats a printed one.
  */
 export function QrItemRow({
-  item,
+  item: itemProp,
   vendor,
   ordering,
   onAdd,
@@ -37,9 +43,13 @@ export function QrItemRow({
   const t = useTranslations("qr");
   const [customizing, setCustomizing] = useState(false);
 
+  const resolved = useMenuItem(itemProp);
+  const item = resolved?.item ?? itemProp;
+  const live = resolved?.live ?? false;
+
   const currency = vendor.currency as CurrencyCode;
   const hasOptions = item.optionGroups.length > 0;
-  const actionable = ordering && item.isAvailable;
+  const actionable = ordering && live;
 
   function commit(line: CartLine) {
     onAdd(line);
@@ -59,7 +69,7 @@ export function QrItemRow({
       <div
         className={cn(
           "relative flex gap-3 rounded-card border border-line bg-surface p-3",
-          !item.isAvailable && "opacity-60",
+          !live && "opacity-60",
         )}
       >
         <div className="min-w-0 flex-1">
@@ -104,7 +114,7 @@ export function QrItemRow({
               alt=""
               fill
               sizes="80px"
-              className={cn("object-cover", !item.isAvailable && "grayscale")}
+              className={cn("object-cover", !live && "grayscale")}
             />
           </div>
           {actionable ? (
@@ -117,9 +127,9 @@ export function QrItemRow({
               <Plus className="size-5" aria-hidden />
             </button>
           ) : (
-            !item.isAvailable && (
+            !live && (
               <Badge tone="danger" className="absolute -bottom-2 end-0">
-                {t("unavailable")}
+                {resolved?.outOfStock ? t("soldOut") : t("unavailable")}
               </Badge>
             )
           )}
