@@ -21,6 +21,7 @@ import {
   canSettleRefund,
   canTransition,
   isTerminal,
+  recordHandoverFailure,
   recordOtpFailure,
   refundIsInstant,
   refundMethodFor,
@@ -34,6 +35,7 @@ import {
 import {
   dispatchRider,
   ensureFinancials,
+  ensureHandoverRecord,
   ensureLifecycle,
   ensureRefundRecord,
   riderSnapshot,
@@ -79,7 +81,7 @@ import { useWallet } from "./wallet";
  */
 
 /** Bump when the persisted shape changes; `migrate` backfills the difference. */
-const STORE_VERSION = 5;
+const STORE_VERSION = 6;
 
 interface OrdersState {
   orders: Order[];
@@ -123,6 +125,15 @@ interface OrdersState {
   autoDispatch: (id: string) => { order: Order | null; error: string | null };
   /** Log a wrong handoff code. */
   failOtp: (id: string) => Order | null;
+  /**
+   * Log a wrong courier code at the counter (Phase 10, G22).
+   *
+   * Separate from `advance` because a refused transition is pure and leaves the
+   * order untouched by design — counting the attempt is a *write*, and the same
+   * split already exists for the doorstep (`failOtp` beside the `delivered`
+   * guard). Three of them and `errors.handoverLocked` is what the guard returns.
+   */
+  failHandover: (id: string) => Order | null;
   /** Customer asks for their money back on a failed order. */
   askRefund: (id: string) => void;
   /**
@@ -347,6 +358,14 @@ export const useOrders = create<OrdersState>()(
         return next;
       },
 
+      failHandover: (id) => {
+        const current = get().orders.find((o) => o.id === id);
+        if (!current) return null;
+        const next = recordHandoverFailure(current);
+        set((s) => ({ orders: s.orders.map((o) => (o.id === id ? next : o)) }));
+        return next;
+      },
+
       askRefund: (id) => {
         const current = get().orders.find((o) => o.id === id);
         if (!current) return;
@@ -503,6 +522,12 @@ export const useOrders = create<OrdersState>()(
         // Without the backfill a device that has been running since Phase 2 shows
         // an empty rider payout list and no way to tell that from "nobody rode".
         if (version < 5) orders = orders.map(withRiderEarning);
+        // v5 orders predate the counter handover (Phase 10, G22): they carry no
+        // attempt counter and no verification stamp, and the `picked-up` guard
+        // would read `undefined >= 3` as false but `handoverChecks.includes` as a
+        // crash. The backfill records that an already-collected order *was* handed
+        // over, and leaves its checklist empty rather than inventing one.
+        if (version < 6) orders = orders.map(ensureHandoverRecord);
         return { orders, seeded: state.seeded ?? false };
       },
       skipHydration: true,

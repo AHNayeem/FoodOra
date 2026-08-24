@@ -1,18 +1,6 @@
-import type {
-  BestSeller,
-  HourlyPoint,
-  Order,
-  RevenuePoint,
-  Vendor,
-  VendorStats,
-} from "@/types";
+import type { Order, Vendor, VendorStats } from "@/types";
 import { buildVendorOrders, vendorById, vendors } from "@/lib/mock";
-import {
-  bestSellers,
-  peakHours,
-  revenueSeries,
-  vendorStats,
-} from "@/lib/analytics";
+import { vendorStats } from "@/lib/analytics";
 import { mockDelay } from "./http";
 
 /**
@@ -68,13 +56,21 @@ export async function getVendorListing(
   return mockDelay(minted ?? vendorById.get(vendorId) ?? null, 150);
 }
 
-/** Everything the overview page renders, derived from one order snapshot. */
+/**
+ * Everything the overview page renders, derived from one order snapshot.
+ *
+ * **The three chart series are no longer here (Phase 10).** They were computed on
+ * the synthesised week alone, so the trend, the peak-hours bars and the best-seller
+ * list all ignored the orders the restaurant had actually taken on this device — the
+ * charts and the KPI cards above them were describing different sets of orders. The
+ * overview now reads them from `services/finance.getVendorAnalytics`, which is the
+ * same shared order book `/dashboard/analytics` and `/dashboard/earnings` read, so
+ * there is one analytics path rather than two. Leaving the fields here as well
+ * would have been the dead read path G41 already flags once.
+ */
 export interface VendorDashboard {
   vendor: Vendor;
   stats: VendorStats;
-  revenue: RevenuePoint[];
-  peak: HourlyPoint[];
-  bestSellers: BestSeller[];
   recentOrders: Order[];
   /**
    * The whole synthesised window. The overview re-runs `vendorStats` over this
@@ -97,9 +93,6 @@ export async function getVendorDashboard(
     {
       vendor,
       stats: vendorStats(orders, vendor, now),
-      revenue: revenueSeries(orders, now),
-      peak: peakHours(orders),
-      bestSellers: bestSellers(orders, 5),
       recentOrders: orders.slice(0, 6),
       allOrders: orders,
     },

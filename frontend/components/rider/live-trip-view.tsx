@@ -34,6 +34,7 @@ import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
 import { OrderTimeline } from "@/components/orders/order-timeline";
+import { HandoverDialog } from "@/components/orders/handover-dialog";
 import { OtpDialog } from "@/components/orders/otp-dialog";
 import { ReasonDialog } from "@/components/orders/reason-dialog";
 import { cn } from "@/lib/utils";
@@ -67,13 +68,16 @@ export function LiveTripView({ orderId }: { orderId: string }) {
   const order = useOrders((s) => s.orders.find((o) => o.id === orderId));
   const advance = useOrders((s) => s.advance);
   const failOtp = useOrders((s) => s.failOtp);
+  const failHandover = useOrders((s) => s.failHandover);
   const notifyNearby = useOrders((s) => s.notifyNearby);
 
   const [now, setNow] = useState(() => Date.now());
   const [otpOpen, setOtpOpen] = useState(false);
   const [failOpen, setFailOpen] = useState(false);
+  const [handoverOpen, setHandoverOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [handoverError, setHandoverError] = useState<string | null>(null);
 
   useEffect(() => {
     useOrders.persist.rehydrate();
@@ -137,6 +141,11 @@ export function LiveTripView({ orderId }: { orderId: string }) {
     }
     if (action.prompts === "fail-reason") {
       setFailOpen(true);
+      return;
+    }
+    if (action.prompts === "handover") {
+      setHandoverError(null);
+      setHandoverOpen(true);
       return;
     }
     run(action.to as OrderStatus);
@@ -292,6 +301,33 @@ export function LiveTripView({ orderId }: { orderId: string }) {
         error={otpError}
         onClose={() => setOtpOpen(false)}
         onConfirm={submitOtp}
+      />
+
+      {/* Collecting the food from the counter (Phase 10, G22). The code is
+          *revealed* here: it is the courier's, derived from the order and their own
+          assignment, and this is the screen they read it out from. The checklist is
+          the same four items the counter confirms, because both parties are
+          confirming the same bag. */}
+      <HandoverDialog
+        open={handoverOpen}
+        order={order}
+        revealCode
+        submitting={submitting}
+        error={handoverError}
+        onClose={() => setHandoverOpen(false)}
+        onConfirm={(handover) => {
+          const result = advance(order.id, "picked-up", "rider", { handover });
+          if (result.error) {
+            // Counted in the store, because a refused transition is pure — the
+            // same split as the doorstep OTP a few lines above.
+            if (result.error === "errors.handoverCodeInvalid") failHandover(order.id);
+            setHandoverError(t(result.error));
+            return;
+          }
+          setHandoverError(null);
+          setHandoverOpen(false);
+          toast.success(t("advanced.picked-up"));
+        }}
       />
 
       <ReasonDialog

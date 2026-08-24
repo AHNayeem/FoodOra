@@ -1192,7 +1192,9 @@
       "coupons": "Coupons",
       "kitchen": "Kitchen",
       "reviews": "Reviews",
-      "earnings": "Earnings"
+      "earnings": "Earnings",
+      "analytics": "Analytics",
+      "settings": "Settings"
     },
     "overviewTitle": "Overview",
     "overviewSubtitle": "How your restaurant is doing today.",
@@ -1321,7 +1323,11 @@
       "notFound": "We couldn't find that order.",
       "noRiderAvailable": "No rider is available right now.",
       "riderBusy": "That rider is already carrying an order.",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "handoverChecklistIncomplete": "Work through the handover checklist first.",
+      "handoverCodeInvalid": "That is not this courier's code.",
+      "handoverLocked": "Too many wrong codes — ask the operations desk.",
+      "cashNotConfirmed": "The courier has to confirm the cash before this can close."
     },
     "earningsTitle": "Earnings",
     "earningsRate": "{rate}% commission",
@@ -1351,7 +1357,9 @@
       "suspendedBody": "The dashboard is closed while the suspension stands, so no new orders can be accepted.",
       "unknownTitle": "This restaurant has no application on file",
       "unknownBody": "The platform cannot confirm this restaurant is approved, so the dashboard stays closed. Support can sort it out."
-    }
+    },
+    "viewAnalytics": "Full report",
+    "handoverDone": "Handed to the courier."
   },
   "catering": {
     "metaTitle": "Event Catering",
@@ -2338,7 +2346,10 @@
       "riderRequired": "No rider is assigned to this order.",
       "otpLocked": "This handover is locked — too many wrong codes.",
       "notFound": "We couldn't find that order.",
-      "otpMismatch": "That code doesn't match. Ask the customer to read it again."
+      "otpMismatch": "That code doesn't match. Ask the customer to read it again.",
+      "handoverChecklistIncomplete": "Confirm the handover checklist first.",
+      "handoverCodeInvalid": "The counter typed the wrong code.",
+      "handoverLocked": "Too many wrong codes — ask the operations desk."
     },
     "confirmPickup": "Confirm pickup",
     "handBack": "Hand job back",
@@ -2949,7 +2960,10 @@
       "riderBusy": "That rider is already carrying an order.",
       "riderUnchanged": "That courier already has this order.",
       "refundNotOpen": "There's no refund to decide on this order.",
-      "refundNotApproved": "No approved refund is waiting to be returned."
+      "refundNotApproved": "No approved refund is waiting to be returned.",
+      "handoverChecklistIncomplete": "Work through the handover checklist first.",
+      "handoverCodeInvalid": "That is not this courier's code.",
+      "handoverLocked": "Too many wrong codes on this handover."
     },
     "navContent": "Content",
     "moneyTitle": "Money today",
@@ -4461,6 +4475,307 @@
       "optionRangeInvalid": "Check the min and max — a required group needs a minimum of at least one, and the max cannot exceed the options listed.",
       "optionsRequired": "Add at least one option.",
       "stockInvalid": "Stock has to be a whole number, zero or more."
+    }
+  },
+  "handover": {
+    "title": "Hand over to the courier",
+    "body": "Check the bag and the courier for {number} before it leaves the kitchen.",
+    "checklistTitle": "Before it goes",
+    "check": {
+      "identity": "The courier matches the assignment",
+      "orderNumber": "The order number on the bag is right",
+      "items": "Every item on the docket is in the bag",
+      "sealed": "Bag sealed, drinks upright"
+    },
+    "checkHint": {
+      "identity": "Same name, same vehicle, same plate as shown above.",
+      "orderNumber": "The label, not the receipt inside.",
+      "items": "Including sides, sauces and cutlery.",
+      "sealed": "Hot and cold kept apart."
+    },
+    "codeTitle": "Courier's handover code",
+    "codeReveal": "Read this out to the counter:",
+    "codeHint": "The code belongs to this courier and this order. If it does not match, this is not the courier we sent.",
+    "confirm": "Confirm handover",
+    "cancel": "Not yet",
+    "locked": "Too many wrong codes. Check with the operations desk before releasing this order.",
+    "attemptsLeft": "{count, plural, one {# attempt left} other {# attempts left}}",
+    "vehicle": {
+      "bike": "Motorbike",
+      "scooter": "Scooter",
+      "bicycle": "Bicycle",
+      "car": "Car"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Your own orders, over any window you choose.",
+    "export": "Export CSV",
+    "exported": "Downloaded.",
+    "errorBody": "We could not read this restaurant's orders.",
+    "emptyRange": "No orders were placed in this window.",
+    "range": {
+      "today": "Today",
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days",
+      "custom": "Custom"
+    },
+    "rangeFrom": "From",
+    "rangeTo": "To",
+    "rangeSummary": "{from} to {to} · {days, plural, one {# day} other {# days}}",
+    "kpiRevenue": "Revenue",
+    "kpiRevenueHint": "Everything that did not end badly.",
+    "kpiOrders": "Orders",
+    "kpiOrdersHint": "{days, plural, one {Across # day} other {Across # days}}",
+    "kpiAov": "Average order",
+    "kpiAovHint": "Revenue divided by orders.",
+    "kpiCancelled": "Cancelled or failed",
+    "kpiCancelledHint": "Cancelled, rejected, returned or failed at the door.",
+    "moneyTitle": "Commission and net revenue",
+    "moneyEmpty": "No order in this window has completed yet, so there is no commission to report.",
+    "moneyHint": "Commission is charged when an order completes, so these figures cover completed orders only — the same records your earnings page settles from.",
+    "settledOf": "{settled} of {total} completed",
+    "kpiCompleted": "Completed orders",
+    "kpiSettled": "Completed orders",
+    "kpiSettledGross": "Completed value",
+    "kpiCommission": "Commission",
+    "kpiNet": "Net revenue",
+    "trendTitle": "Revenue trend",
+    "peakTitle": "Peak hours",
+    "productsTitle": "Top products",
+    "productsHint": "By units sold",
+    "csv": {
+      "metric": "Metric",
+      "value": "Value",
+      "restaurant": "Restaurant",
+      "from": "From",
+      "to": "To",
+      "currency": "Currency",
+      "settledGross": "Completed value",
+      "bucketStart": "Period start",
+      "bucketDays": "Days in period",
+      "revenue": "Revenue",
+      "orders": "Orders",
+      "product": "Product",
+      "units": "Units sold"
+    }
+  },
+  "vendorSettings": {
+    "title": "Restaurant settings",
+    "subtitle": "Your listing, your hours, your terms and your team.",
+    "tab": {
+      "profile": "Profile",
+      "hours": "Opening hours",
+      "delivery": "Delivery",
+      "branches": "Branches",
+      "staff": "Staff"
+    },
+    "save": "Save",
+    "saved": "Saved.",
+    "saveFailed": "Check the fields marked below.",
+    "cancel": "Cancel",
+    "close": "Close",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "minutes": "minutes",
+    "discard": "Discard changes",
+    "discardTitle": "Discard your changes?",
+    "discardBody": "Your restaurant goes back to the published listing. This cannot be undone.",
+    "discarded": "Back to the published listing.",
+    "lastSaved": "Saved {when}",
+    "profile": {
+      "title": "Profile",
+      "subtitle": "What customers see on your listing and your storefront."
+    },
+    "contact": {
+      "title": "Contact",
+      "subtitle": "How customers and the operations desk reach the restaurant."
+    },
+    "field": {
+      "name": "Restaurant name",
+      "tagline": "Tagline",
+      "description": "Description",
+      "cuisines": "Cuisines",
+      "priceLevel": "Price level",
+      "promoLabel": "Promo headline",
+      "logo": "Logo URL",
+      "cover": "Cover image URL",
+      "address": "Street address",
+      "city": "City",
+      "phone": "Phone",
+      "phoneOptional": "Phone (optional)",
+      "email": "Email",
+      "branchName": "Branch name",
+      "area": "Area",
+      "role": "Role",
+      "deliveryFee": "Delivery fee ({currency})",
+      "minOrder": "Minimum order ({currency})",
+      "eta": "Delivery estimate",
+      "etaLow": "Fastest, minutes",
+      "etaHigh": "Slowest, minutes"
+    },
+    "hint": {
+      "tagline": "One short line under your name.",
+      "description": "At least a couple of sentences — this is your listing's opening paragraph.",
+      "promoLabel": "Shown as a badge on your card. Leave empty for none.",
+      "image": "A link to an image. There is no file storage in this prototype, so nothing is uploaded.",
+      "coordinates": "Map position stays at {lat}, {lng}. Ask the operations desk to move it — riders navigate by it.",
+      "eta": "The window customers are quoted, before the ride."
+    },
+    "hours": {
+      "title": "Opening hours",
+      "subtitle": "When the storefront takes orders.",
+      "closed": "Closed",
+      "openAt": "{day} opens at",
+      "closeAt": "{day} closes at",
+      "overnight": "Closing after midnight is fine — set 18:00 to 02:00 for a late kitchen."
+    },
+    "delivery": {
+      "title": "Delivery and pickup",
+      "subtitle": "Your own terms. These price every order a customer places.",
+      "modes": "How you fulfil orders",
+      "offersDelivery": "Delivery",
+      "offersDeliveryHint": "A courier collects and rides it out.",
+      "offersPickup": "Pickup",
+      "offersPickupHint": "The customer collects from the counter.",
+      "freeOver": "Free delivery over a threshold",
+      "freeOverHint": "Above this order value, the customer pays no delivery fee.",
+      "preview": "{fee} delivery · {min} minimum · free over {free}",
+      "previewNoFree": "{fee} delivery · {min} minimum"
+    },
+    "zones": {
+      "title": "Delivery zones",
+      "subtitle": "Where the platform will dispatch a courier for you.",
+      "readOnly": "Zones are set by the platform, because they decide how a delivery is priced and routed. Ask the operations desk to change the zones you serve."
+    },
+    "branches": {
+      "title": "Branches",
+      "subtitle": "Additional outlets recorded against your restaurant.",
+      "add": "Add branch",
+      "addTitle": "Add a branch",
+      "editTitle": "Edit branch",
+      "empty": "No branches recorded.",
+      "notOrderable": "A branch is recorded, not listed. Orders still come to this restaurant and are cooked here — a second listing sharing one menu and one kitchen would be an outlet nobody could fulfil.",
+      "ownHours": "Its own hours",
+      "mainHours": "Follows the main hours",
+      "ownHoursToggle": "This branch keeps its own hours",
+      "ownHoursHint": "Leave off and it follows the restaurant's hours.",
+      "remove": "Remove",
+      "removeTitle": "Remove this branch?",
+      "removeBody": "{name} will be taken off your record. This cannot be undone.",
+      "removed": "Branch removed.",
+      "noApplication": "This restaurant has no onboarding record on this device, so branches cannot be saved."
+    },
+    "staff": {
+      "title": "Staff",
+      "subtitle": "Who works here, in what role, and whether they still do.",
+      "invite": "Invite",
+      "inviteTitle": "Invite a colleague",
+      "inviteBody": "They are added to your team straight away and start as invited.",
+      "sendInvite": "Add to team",
+      "invited": "Added to the team.",
+      "editTitle": "Edit colleague",
+      "editBody": "Change their details or their role.",
+      "empty": "Nobody on the team yet.",
+      "notEnforced": "Roles and permissions are recorded here. There is no mail server in this prototype and nobody can sign in as somebody you invite, so what you set is not yet enforced across the platform.",
+      "noAccount": "Sign in again to manage the team.",
+      "isYou": "you",
+      "invitedOn": "Invited {date} by {by}",
+      "permissionCount": "{count, plural, one {# permission} other {# permissions}}",
+      "permissions": "Permissions",
+      "permissionsTitle": "Permissions",
+      "permissionsBody": "{name} is a {role}. Switches below change what their role grants — everything else follows the role.",
+      "permissionsInactive": "This person is not active, so none of these apply right now.",
+      "activate": "Activate",
+      "activated": "Activated.",
+      "deactivate": "Deactivate",
+      "deactivated": "Deactivated.",
+      "withdraw": "Withdraw invitation",
+      "withdrawTitle": "Withdraw this invitation?",
+      "withdrawBody": "{name} has not started yet, so their record is removed. Somebody who has worked a shift is deactivated instead.",
+      "withdrawn": "Invitation withdrawn.",
+      "roleGrants": "This role grants",
+      "status": {
+        "active": "Active",
+        "invited": "Invited",
+        "inactive": "Inactive"
+      },
+      "role": {
+        "owner": "Owner",
+        "manager": "Manager",
+        "kitchen": "Kitchen",
+        "cashier": "Cashier",
+        "support": "Customer support"
+      },
+      "roleHint": {
+        "owner": "Everything, including the team and the settings.",
+        "manager": "Runs the shift: orders, kitchen, menu, till, bookings and reports.",
+        "kitchen": "The pass: orders and the kitchen board.",
+        "cashier": "The counter: orders, the till and bookings.",
+        "support": "Answers customers: orders and review replies."
+      },
+      "permission": {
+        "orders": {
+          "manage": "Orders"
+        },
+        "kitchen": {
+          "operate": "Kitchen board"
+        },
+        "menu": {
+          "manage": "Menu"
+        },
+        "pos": {
+          "operate": "Till"
+        },
+        "reservations": {
+          "manage": "Bookings"
+        },
+        "coupons": {
+          "manage": "Coupons"
+        },
+        "reviews": {
+          "respond": "Review replies"
+        },
+        "finance": {
+          "view": "Earnings"
+        },
+        "settings": {
+          "manage": "Settings"
+        },
+        "staff": {
+          "manage": "Team"
+        },
+        "analytics": {
+          "view": "Analytics"
+        }
+      },
+      "origin": {
+        "role": "From their role.",
+        "granted": "Granted to them specially.",
+        "revoked": "Withheld from their role.",
+        "none": "Their role does not grant this."
+      }
+    },
+    "errors": {
+      "required": "This is needed.",
+      "tooShort": "This is too short.",
+      "invalidEmail": "That does not look like an email address.",
+      "invalidPhone": "That does not look like a phone number.",
+      "pickOne": "Pick at least one.",
+      "pickOneDay": "Pick at least one day you are open.",
+      "invalidRange": "The second number has to be larger than the first.",
+      "invalidHours": "Set both an opening and a closing time, or mark the day closed.",
+      "negative": "This cannot be negative.",
+      "notFound": "That is not on this device.",
+      "duplicateEmail": "Somebody on your team already uses that address.",
+      "illegalTransition": "That is not something this record can do from here.",
+      "lastOwner": "Your restaurant needs one active owner.",
+      "ownerIsAccount": "This record belongs to a sign-in account and cannot be removed.",
+      "applicationNotFound": "That application is not on this device.",
+      "illegalApplicationMove": "That is not something this application can do from here.",
+      "applicationIncomplete": "Something required is still missing.",
+      "decisionReasonRequired": "Write the reason the applicant will read."
     }
   }
 }

@@ -1,9 +1,12 @@
 import type {
+  AnalyticsRange,
+  AnalyticsRangeKey,
   BestSeller,
   HourlyPoint,
   Order,
   RevenuePoint,
   Vendor,
+  VendorAnalytics,
   VendorStats,
 } from "@/types";
 import { isFailure } from "./order-machine";
@@ -164,4 +167,237 @@ export function bestSellers(orders: Order[], limit = 5): BestSeller[] {
   return [...map.values()]
     .sort((a, b) => b.unitsSold - a.unitsSold)
     .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------
+// Reporting windows (Phase 10, G23)
+// ---------------------------------------------------------------------------
+
+/** How many days each preset looks back over, counting today. */
+const PRESET_DAYS: Record<Exclude<AnalyticsRangeKey, "custom">, number> = {
+  today: 1,
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+};
+
+/** Widest window the range control will resolve, in days — two years. */
+const MAX_RANGE_DAYS = 730;
+
+/** Whole days from `from` to `to` inclusive, at least 1. */
+function daysBetween(fromMs: number, toMs: number): number {
+  return Math.max(1, Math.round((startOfDay(toMs) - startOfDay(fromMs)) / DAY) + 1);
+}
+
+/**
+ * Turn a preset (or a pair of dates) into the window every figure is computed
+ * over.
+ *
+ * The single place a preset means anything. A component that turned "30d" into
+ * dates itself would disagree with the CSV export's header row by a day whenever
+ * one of them read the clock either side of midnight, and the export would then be
+ * quietly describing a different month from the chart above it.
+ *
+ * Both ends are snapped to day boundaries — `from` to midnight, `to` to the last
+ * millisecond of its day — because a restaurant asking for "last 7 days" means
+ * seven whole trading days, not 168 hours ending at 14:23. A custom range with the
+ * dates the wrong way round is swapped rather than refused: the intent is
+ * unambiguous and refusing it would be pedantry at a date picker.
+ */
+export function resolveRange(
+  key: AnalyticsRangeKey,
+  now: number,
+  custom?: { from: string; to: string },
+): AnalyticsRange {
+  if (key === "custom") {
+    const a = Date.parse(custom?.from ?? "");
+    const b = Date.parse(custom?.to ?? "");
+    // An unparsable or missing pair falls back to the default preset rather than
+    // producing `NaN` bounds that would silently match no orders at all.
+    if (Number.isNaN(a) || Number.isNaN(b)) return resolveRange("7d", now);
+    const lo = startOfDay(Math.min(a, b));
+    const hi = endOfDay(Math.max(a, b));
+    const clamped = Math.min(daysBetween(lo, hi), MAX_RANGE_DAYS);
+    return {
+      key: "custom",
+      from: new Date(startOfDay(endOfDay(hi) - (clamped - 1) * DAY)).toISOString(),
+      to: new Date(hi).toISOString(),
+      days: clamped,
+    };
+  }
+
+  const days = PRESET_DAYS[key];
+  const to = endOfDay(now);
+  const from = startOfDay(now) - (days - 1) * DAY;
+  return {
+    key,
+    from: new Date(from).toISOString(),
+    to: new Date(to).toISOString(),
+    days,
+  };
+}
+
+/** Last millisecond (local) of the day containing `ms`. */
+function endOfDay(ms: number): number {
+  return startOfDay(ms) + DAY - 1;
+}
+
+/** The default window a restaurant lands on. A week is what a rota is planned in. */
+export const DEFAULT_RANGE_KEY: AnalyticsRangeKey = "7d";
+
+/** Presets the range control offers, in the order it reads them. */
+export const RANGE_KEYS: readonly AnalyticsRangeKey[] = [
+  "today",
+  "7d",
+  "30d",
+  "90d",
+  "custom",
+];
+
+/**
+ * Orders placed inside a window.
+ *
+ * **Placed**, not completed or settled — and every figure in a report uses this
+ * one predicate. It is what makes revenue, the commission beneath it and the
+ * cancellation count describe the *same set of orders*: bucketing takings by
+ * placement and commission by settlement date would produce two windows whose
+ * numbers cannot be reconciled by anyone reading the page, and the difference
+ * would be largest exactly at a period boundary, which is when somebody is most
+ * likely to be checking.
+ */
+export function ordersInRange(
+  orders: Order[],
+  range: Pick<AnalyticsRange, "from" | "to">,
+): Order[] {
+  const from = Date.parse(range.from);
+  const to = Date.parse(range.to);
+  return orders.filter((order) => {
+    const placed = Date.parse(order.placedAt);
+    return placed >= from && placed <= to;
+  });
+}
+
+/**
+ * How wide one bucket in the trend chart should be, in days.
+ *
+ * Daily up to a fortnight, then weekly. The rule is about legibility rather than
+ * arithmetic: a bar chart with ninety bars on a phone in a kitchen is a smear, and
+ * a restaurant reading a quarter is asking which *weeks* were good.
+ */
+export function bucketDaysFor(rangeDays: number): number {
+  return rangeDays <= 14 ? 1 : 7;
+}
+
+/**
+ * Revenue and order counts bucketed across an arbitrary window, oldest first.
+ *
+ * The generalisation of `revenueSeries`, which stays as it is: it answers "the
+ * last N days" for the overview and has a caller that wants exactly that. This
+ * one answers "this window, at a sensible resolution" and is what the range
+ * control drives.
+ */
+export function revenueBuckets(
+  orders: Order[],
+  range: Pick<AnalyticsRange, "from" | "to"> & { days: number },
+): RevenuePoint[] {
+  const span = bucketDaysFor(range.days);
+  const first = startOfDay(Date.parse(range.from));
+  const last = startOfDay(Date.parse(range.to));
+  const count = Math.max(1, Math.ceil((last - first) / DAY / span) + 1);
+
+  const buckets: RevenuePoint[] = [];
+  for (let i = 0; i < count; i++) {
+    const startMs = first + i * span * DAY;
+    const date = new Date(startMs);
+    buckets.push({
+      date: date.toISOString(),
+      dayKey: DAY_KEYS[date.getDay()],
+      // Only set when it is not one day, so the overview's seven daily points
+      // stay byte-identical to what they were before this phase.
+      ...(span === 1 ? {} : { spanDays: span }),
+      revenue: 0,
+      orders: 0,
+    });
+  }
+
+  for (const order of ordersInRange(orders, range)) {
+    if (!isRevenue(order)) continue;
+    const index = Math.floor((startOfDay(Date.parse(order.placedAt)) - first) / DAY / span);
+    const bucket = buckets[index];
+    if (!bucket) continue;
+    bucket.revenue += order.pricing.total;
+    bucket.orders++;
+  }
+
+  return buckets;
+}
+
+/**
+ * Everything the analytics page shows, over one window (G23).
+ *
+ * Pure, and it invents nothing. The spec's binding constraint for this phase is
+ * that analytics read actual shared order data, and the two figures a plausible
+ * implementation would get wrong are commission and net revenue: both are read off
+ * the `OrderFinancials.commission` record the `completed` transition stamped
+ * (Phase 2), never recomputed from a rate. Multiplying revenue by 15% would look
+ * right and would disagree with `/dashboard/earnings` for every vendor on a
+ * negotiated rate — the flagship's is 0.18 — which is §5.4's fake value wearing a
+ * chart.
+ *
+ * Commission is therefore reported over a **subset**: only completed orders carry
+ * a record, so `settledGross`/`settledCount` are carried alongside it and the
+ * screen shows them together. Presenting commission against total revenue would
+ * imply the platform had taken a cut of orders it has not settled yet.
+ */
+export function analyticsFor(
+  orders: Order[],
+  {
+    range,
+    currency,
+    topLimit = 8,
+  }: { range: AnalyticsRange; currency: string; topLimit?: number },
+): VendorAnalytics {
+  const windowed = ordersInRange(orders, range);
+
+  let revenue = 0;
+  let orderCount = 0;
+  let completedCount = 0;
+  let cancelledCount = 0;
+  let settledGross = 0;
+  let settledCount = 0;
+  let commissionAmount = 0;
+  let netRevenue = 0;
+
+  for (const order of windowed) {
+    if (order.status === "completed") completedCount++;
+    if (isFailure(order.status)) cancelledCount++;
+    if (isRevenue(order)) {
+      revenue += order.pricing.total;
+      orderCount++;
+    }
+    const commission = order.lifecycle.financials?.commission;
+    if (commission) {
+      settledCount++;
+      settledGross += commission.grossAmount;
+      commissionAmount += commission.commissionAmount;
+      netRevenue += commission.vendorNetAmount;
+    }
+  }
+
+  return {
+    currency,
+    range,
+    revenue,
+    orderCount,
+    avgOrderValue: orderCount > 0 ? revenue / orderCount : 0,
+    completedCount,
+    cancelledCount,
+    settledGross,
+    settledCount,
+    commissionAmount,
+    netRevenue,
+    series: revenueBuckets(orders, range),
+    peak: peakHours(windowed),
+    topProducts: bestSellers(windowed, topLimit),
+  };
 }

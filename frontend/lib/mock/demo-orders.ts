@@ -456,6 +456,18 @@ export function buildDemoOrders(now: number): Order[] {
       }
     }
 
+    /**
+     * A seeded order that has already been collected was handed over — at the
+     * `picked-up` event, not now. `handoverChecks` stays empty on purpose: the
+     * working set is a history, and claiming a checklist was ticked by somebody
+     * who never stood at a counter would be exactly the fabricated detail §5.4
+     * rules out. An order that reached the counter shows a verified handover with
+     * no recorded checklist, which is distinguishable on screen from one driven
+     * on this device.
+     */
+    const collectedAt = events.find((e) => e.status === "picked-up")?.at ?? null;
+    if (collectedAt) lifecycle.handoverVerifiedAt = collectedAt;
+
     if (events.some((e) => e.status === "delivered")) {
       lifecycle.otpVerifiedAt = events.find((e) => e.status === "delivered")!.at;
       lifecycle.rating = spec.status === "completed" ? pick([4, 5, 5], rand) : null;

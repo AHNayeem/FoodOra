@@ -210,6 +210,25 @@ export type RefundMethod = "wallet" | "card" | "cash";
  * object so `Order` stays readable and so a persisted order can be migrated by
  * filling exactly one field.
  */
+/**
+ * One thing the counter and the courier confirm before the food leaves the
+ * kitchen (Phase 10, G22).
+ *
+ * A closed vocabulary rather than free text, because the point of a checklist is
+ * that the *same* four things are checked every time and can be counted
+ * afterwards. `identity` is the one that needs the courier's code: the other three
+ * are things either party can see.
+ */
+export type HandoverCheck =
+  /** The courier at the counter is the one dispatch assigned. */
+  | "identity"
+  /** The order number on the bag matches the docket. */
+  | "orderNumber"
+  /** Every line on the docket is in the bag. */
+  | "items"
+  /** Bag sealed, drinks upright, hot and cold separated. */
+  | "sealed";
+
 export interface OrderLifecycle {
   /** Append-only log, oldest first. */
   events: OrderEvent[];
@@ -238,6 +257,20 @@ export interface OrderLifecycle {
   /** Failed handoff attempts — the rider is locked out after `OTP_MAX_ATTEMPTS`. */
   otpAttempts: number;
   otpVerifiedAt: ISODate | null;
+  /**
+   * Wrong courier codes typed at the counter — the restaurant is locked out of
+   * the handover after `HANDOVER_MAX_ATTEMPTS`, exactly as the rider is locked out
+   * of the doorstep. Phase 10, G22.
+   */
+  handoverAttempts: number;
+  /** When the food actually changed hands, verified. Null until it has. */
+  handoverVerifiedAt: ISODate | null;
+  /**
+   * Which checks were confirmed at the handover. Empty until it happens — and
+   * recorded rather than merely required, because a checklist nobody can look up
+   * afterwards is a decoration.
+   */
+  handoverChecks: HandoverCheck[];
   refund: RefundStatus;
   /** Amount refunded / requested, in the order currency. */
   refundAmount: number;

@@ -9,9 +9,10 @@ import { getVendorDashboard } from "@/services/vendor";
 import type { CurrencyCode } from "@/config/regions";
 import { useOrders, ordersForVendor } from "@/stores/orders";
 import { adjustmentsForVendor, usePayouts } from "@/stores/payouts";
-import { vendorStats } from "@/lib/analytics";
+import type { VendorAnalytics } from "@/types";
+import { DEFAULT_RANGE_KEY, resolveRange, vendorStats } from "@/lib/analytics";
 import type { VendorEarnings } from "@/services/finance";
-import { getVendorEarnings } from "@/services/finance";
+import { getVendorAnalytics, getVendorEarnings } from "@/services/finance";
 import { formatPrice, formatRating } from "@/lib/format";
 import { useDashboard } from "./dashboard-context";
 import { StatCard } from "./stat-card";
@@ -79,12 +80,15 @@ function Panel({
 /**
  * OverviewView — the dashboard home (Phase C10).
  *
- * Two sources, deliberately: the synthesised week behind the charts (a
- * prototype cannot have a real trailing week) and the **live** order store for
- * anything about right now. Before this, "3 orders pending" came from the
- * synthesiser too, so it counted invented orders and ignored the real one the
- * restaurant had just been sent — the number on the busiest card was the one
- * least connected to reality.
+ * Everything on this page reads the **same** order book: the synthesised trailing
+ * week (a prototype cannot have a real one) merged with every order live on this
+ * device, resolved once by `services/finance.vendorOrderBook`. Before Phase 1 the
+ * "3 orders pending" figure came from the synthesiser alone, so it counted invented
+ * orders and ignored the real one the restaurant had just been sent — the number on
+ * the busiest card was the one least connected to reality. Phase 10 closed the last
+ * remaining split by moving the three charts onto that book too; they were still on
+ * the synthesiser-only path and were quietly describing a different set of orders
+ * from the cards above them.
  */
 export function OverviewView() {
   const t = useTranslations("dashboard");
@@ -103,6 +107,18 @@ export function OverviewView() {
   // Phase 8: the money on this page is the money on `/dashboard/earnings`,
   // resolved by the same service call — see the earnings panel below.
   const [earnings, setEarnings] = useState<VendorEarnings | null>(null);
+  /**
+   * Phase 10: and the charts are the charts on `/dashboard/analytics`, resolved by
+   * the same call over the same order book.
+   *
+   * They used to come off `getVendorDashboard`, which only ever saw the synthesised
+   * week — so the trend, the peak-hours bars and the best-seller list all ignored
+   * the orders this restaurant had actually taken on this device, while the KPI
+   * cards directly above them counted them. Two sets of numbers on one screen
+   * describing different sets of orders is the failure mode G23 is about, and the
+   * fix is one read path rather than a second correction.
+   */
+  const [analytics, setAnalytics] = useState<VendorAnalytics | null>(null);
   const payouts = usePayouts((s) => s.payouts);
   const adjustments = usePayouts((s) => s.adjustments);
   const payoutsHydrated = usePayouts((s) => s.hydrated);
@@ -141,6 +157,26 @@ export function OverviewView() {
     [adjustments, vendor.id],
   );
 
+  /**
+   * The overview's window. A week, matching what the trend chart has always shown,
+   * and resolved through the same function the analytics page's range control uses
+   * so "the last 7 days" means one thing on both screens.
+   */
+  const range = useMemo(() => resolveRange(DEFAULT_RANGE_KEY, now), [now]);
+
+  useEffect(() => {
+    if (!ordersHydrated) return;
+    let active = true;
+    getVendorAnalytics({ vendorId: vendor.id, live: liveAll, range, now }).then(
+      (result) => {
+        if (active) setAnalytics(result);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [ordersHydrated, vendor.id, liveAll, range, now]);
+
   useEffect(() => {
     if (!ordersHydrated || !payoutsHydrated) return;
     let active = true;
@@ -175,8 +211,10 @@ export function OverviewView() {
     );
   }
 
-  // Charts stay on the synthesised week; the headline numbers are recomputed
-  // over the week *plus* everything live, so today's card counts real orders.
+  // The headline numbers are recomputed over the synthesised week *plus*
+  // everything live, so today's card counts real orders. The charts below read
+  // the same merged book through `getVendorAnalytics` — Phase 10 removed the
+  // second, synthesiser-only path they used to be on.
   const merged = [...live, ...data.recentOrders.filter((o) => !live.some((l) => l.id === o.id))];
   const stats = vendorStats(
     [...data.allOrders.filter((o) => !live.some((l) => l.id === o.id)), ...live],
@@ -316,17 +354,41 @@ export function OverviewView() {
         )}
       </Panel>
 
-      {/* Revenue trend */}
-      <Panel title={t("revenueTrend")}>
-        <RevenueChart data={data.revenue} currency={currency} />
+      {/* Revenue trend — over the shared order book, and linked to the page where
+          the window can be changed (Phase 10, G23). */}
+      <Panel
+        title={t("revenueTrend")}
+        action={
+          <Link
+            href="/dashboard/analytics"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+          >
+            {t("viewAnalytics")}
+            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
+          </Link>
+        }
+      >
+        {analytics ? (
+          <RevenueChart data={analytics.series} currency={currency} />
+        ) : (
+          <div className="h-64 animate-pulse rounded-field bg-surface-muted" />
+        )}
       </Panel>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title={t("peakHours")}>
-          <PeakHoursChart data={data.peak} />
+          {analytics ? (
+            <PeakHoursChart data={analytics.peak} />
+          ) : (
+            <div className="h-56 animate-pulse rounded-field bg-surface-muted" />
+          )}
         </Panel>
         <Panel title={t("bestSellers")}>
-          <BestSellers items={data.bestSellers} currency={currency} />
+          {analytics ? (
+            <BestSellers items={analytics.topProducts.slice(0, 5)} currency={currency} />
+          ) : (
+            <div className="h-56 animate-pulse rounded-field bg-surface-muted" />
+          )}
         </Panel>
       </div>
 

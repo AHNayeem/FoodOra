@@ -113,7 +113,27 @@ export function buildVendorOrders(vendorId: string, now: number): Order[] {
     for (let i = 0; i < DAY_COUNTS[day]; i++) {
       const hour = pick(HOUR_POOL);
       const minute = Math.floor(rng() * 60);
-      const placedMs = todayMidnight - day * DAY + (hour * 60 + minute) * MIN;
+      /**
+       * Seconds, derived from the index within the day.
+       *
+       * Not decoration — it is what makes an order's *identity* unique. Both
+       * `id` and `orderNumber` below are derived from `placedMs`, and this
+       * timestamp was minute-granular: with a dozen or more orders a day drawn
+       * from a pool of a few hundred minute slots, two of them collided
+       * regularly, and two orders sharing one id is one order the books counted
+       * twice. It surfaced as `buildVendorSettlements` listing 83 order ids for
+       * 81 orders, so the restaurant's settlement, the platform's payout run and
+       * this phase's analytics all over-reported by exactly the value of the
+       * duplicated orders — the failure `mergeOrders` warns about in its own
+       * comment, arriving from inside the synthesiser rather than from the merge.
+       *
+       * `i` is unique within a day and the day offset separates the days, so the
+       * instant — and therefore the id and the reference — is now unique by
+       * construction rather than by luck. Determinism is untouched: the same
+       * vendor and clock still produce the same set.
+       */
+      const placedMs =
+        todayMidnight - day * DAY + (hour * 60 + minute) * MIN + i * 1000;
 
       // Skip anything still in the future or too fresh to have a sensible stage.
       const ageMin = (now - placedMs) / MIN;

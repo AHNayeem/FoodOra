@@ -1,4 +1,5 @@
 import type {
+  AnalyticsRange,
   Order,
   PlatformFinancials,
   RiderPayout,
@@ -6,9 +7,11 @@ import type {
   SettlementAdjustment,
   SettlementPayout,
   SettlementTotals,
+  VendorAnalytics,
   VendorSettlement,
 } from "@/types";
 import { buildVendorOrders, vendorById, vendors } from "@/lib/mock";
+import { analyticsFor } from "@/lib/analytics";
 import {
   buildRiderSettlements,
   buildVendorSettlements,
@@ -179,6 +182,49 @@ export async function getVendorEarnings({
     },
     350,
   );
+}
+
+// ---------------------------------------------------------------------------
+// The restaurant's analytics (Phase 10, G23)
+// ---------------------------------------------------------------------------
+
+/**
+ * Everything the analytics page renders, over one window.
+ *
+ * **This lives here, beside `getVendorEarnings`, and not in `services/vendor`.**
+ * The spec's binding constraint for Phase 10 is that analytics read actual shared
+ * order data, and `vendorOrderBook` above is that shared set. A second resolver in
+ * another module would anchor the synthesised week to a different instant on every
+ * load, and the counts on this page would then disagree with the money on
+ * `/dashboard/earnings` by a few orders — which is precisely the bug the comment
+ * on `overview-view`'s earnings panel records Phase 8 fixing. One resolver, one
+ * answer, and the commission on the analytics page is the same commission on the
+ * earnings page because both are read off the records the orders themselves carry.
+ *
+ * The range is resolved by the *caller* (`lib/analytics.resolveRange`) and passed
+ * in whole, so the figures, the chart buckets and the CSV header all describe the
+ * same window rather than three readings of "last 30 days" taken milliseconds
+ * apart either side of midnight.
+ */
+export async function getVendorAnalytics({
+  vendorId,
+  live,
+  range,
+  now = Date.now(),
+}: {
+  vendorId: string;
+  live: Order[];
+  range: AnalyticsRange;
+  now?: number;
+}): Promise<VendorAnalytics | null> {
+  const vendor = vendorById.get(vendorId);
+  const book = vendorOrderBook(vendorId, live, now);
+  // A device-minted listing has no catalog row and no synthesised week; its
+  // currency comes off whatever it has actually sold, exactly as in
+  // `getVendorEarnings`. Falling back to a platform default would label a
+  // restaurant's own takings in a currency it does not trade in.
+  const currency = vendor?.currency ?? book[0]?.pricing.currency ?? "BDT";
+  return mockDelay(analyticsFor(book, { range, currency }), 350);
 }
 
 // ---------------------------------------------------------------------------

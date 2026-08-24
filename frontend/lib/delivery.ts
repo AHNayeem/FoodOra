@@ -253,6 +253,44 @@ export function otpFor(orderId: string): string {
   return String(value).padStart(OTP_LENGTH, "0");
 }
 
+/**
+ * The courier's handover code for one order — the code the counter types before
+ * the food leaves the kitchen (Phase 10, G22).
+ *
+ * Hashed from the order id **and the assigned courier's id**, and that pairing is
+ * the whole point: the code is a property of the *assignment*, so a courier who
+ * was never dispatched to this order cannot produce it, and reassigning the order
+ * (`stores/orders.reassignRider`) retires the old code without anything having to
+ * remember to. Derived rather than stored for the same reason `otpFor` is — the
+ * restaurant board and the rider app reach the same value with no backend between
+ * them.
+ *
+ * What it does **not** claim to be is a secret from the courier: they are standing
+ * at the counter and their own app shows it to them. It verifies identity of
+ * assignment, not confidentiality, and `HandoverDialog` says as much on screen.
+ *
+ * Null while no courier is assigned — there is nobody for a code to belong to.
+ */
+export function handoverCodeFor(orderId: string, riderId: string | null): string | null {
+  if (!riderId) return null;
+  // Salted differently from `otpFor` so the doorstep code and the counter code
+  // can never coincide on one order — two codes that sometimes match are a
+  // verification step somebody will learn to skip.
+  let h = 2166136261 ^ 0x9e3779b9;
+  const seed = `handover:${orderId}:${riderId}`;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  }
+  const value = (h >>> 0) % 10 ** OTP_LENGTH;
+  return String(value).padStart(OTP_LENGTH, "0");
+}
+
+/** Does the code the counter typed match the courier's? Whitespace-tolerant. */
+export function handoverMatches(expected: string | null, entered: string): boolean {
+  if (!expected) return false;
+  return expected === entered.replace(/\D/g, "");
+}
+
 /** Does the code the customer read out match this stop's? Whitespace-tolerant. */
 export function otpMatches(stop: DeliveryStop, entered: string): boolean {
   if (!stop.otp) return true; // pickups have nothing to verify

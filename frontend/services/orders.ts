@@ -293,6 +293,11 @@ function toOrder(wire: OrderWire): Order {
       otp: wire.lifecycle.otp,
       otpAttempts: wire.lifecycle.otpAttempts,
       otpVerifiedAt: wire.lifecycle.otpVerifiedAt,
+      // Also not on the wire: the counter handover is a Phase 10 field, and a
+      // freshly placed order has not been to the counter.
+      handoverAttempts: 0,
+      handoverVerifiedAt: null,
+      handoverChecks: [],
       refund: wire.lifecycle.refund as Order["lifecycle"]["refund"],
       refundAmount: wire.lifecycle.refundAmount,
       // Not on the wire yet: the refund route and its two timestamps are Phase 5

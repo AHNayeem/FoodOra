@@ -16,13 +16,14 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 7 — Rider Onboarding + Approval Done
 - Phase 8 — Restaurant Financials + Admin Payouts Done
 - Phase 9 — Restaurant Menu Builder Done
+- Phase 10 — Restaurant Settings + Staff + Handover + Analytics Done
 
 ---
 
 ## Audit reference (Phase 0, 2026-08-19)
 
 Kept because the remaining phases are planned off it. The per-phase write-ups for
-Phases 1–7 were removed; the architecture each of them left behind is recorded
+Phases 1–10 were removed; the architecture each of them left behind is recorded
 under *Important Architecture* below.
 
 Repository audited against `FOODORA-PROTOTYPE-GAP-ANALYSIS.md`. **No application
@@ -167,9 +168,81 @@ payout numbers to keep in step with the fare rules.
 
 ## Current Phase
 
-None in progress. Phases 1–9 complete. Next per the spec: **PHASE 10 — Restaurant
-Settings + Staff + Handover + Analytics (G18, G22, G23, G24)**, which is not
-started and needs an explicit instruction.
+None in progress. Phases 1–10 complete.
+
+### Phase 10 — Restaurant Settings + Staff + Handover + Analytics (2026-08-25)
+
+**Done.** All four gaps closed: G18 (settings/hours/branches), G22 (handover
+verification), G23 (restaurant analytics) and G24 (staff/roles). Every open
+question the previous session listed was settled *before* implementation rather
+than mid-phase, and each answer is recorded in the code that acts on it:
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| Export format | CSV from the already-derived rows. A PDF needs a renderer the prototype does not have, and a button producing a blank-looking page is worse than no button. | `lib/export.ts` header |
+| Delivery settings vs. platform zones | A restaurant sets its own fee, minimum, free-over threshold and ETA window. Zones stay the platform's (G30, unassigned) and are shown read-only with who to ask. | `components/dashboard/settings/delivery-panel.tsx` header + `zones.readOnly` on screen |
+| Whether a branch becomes a second `Vendor` | **No** — Phases 6–7's decision is honoured, not overturned. A branch stays a record on `VendorApplication.branches`, edited through `stores/onboarding.editVendor` so it lands in the reviewer's audit log. | `types/vendor-settings.ts` header, `branches-panel.tsx` header, and `branches.notOrderable` on screen |
+| Permissions now, or defer to Phase 14 | Build the grant table, the fold and `staffCan` now — they are correct today. Do **not** fake a session for an invited colleague. The screen says enforcement is not yet platform-wide. | `types/staff.ts` + `lib/staff.ts` headers, `staff.notEnforced` on screen |
+
+**One pre-existing bug was found and fixed**, because it broke this phase's own
+binding constraint. `lib/mock/vendor-orders.ts` derived both `id` and
+`orderNumber` from a *minute-granular* `placedMs`, so with a dozen-plus orders a
+day drawn from a few hundred minute slots two of them collided regularly:
+`buildVendorSettlements` was listing **83 order ids for 81 orders** on the
+flagship's book. That is one order counted twice — exactly the failure
+`services/finance.mergeOrders` warns about in its own comment, arriving from
+inside the synthesiser rather than from the merge — and it was over-reporting
+Phase 8's restaurant earnings and the platform payout run as well as this phase's
+analytics. The fix adds seconds derived from the index within the day, so the
+instant (and therefore the identity) is unique by construction rather than by
+luck; determinism is untouched. Verified catalog-wide: no vendor's synthesised
+week now contains a duplicate id or reference, and every settled order lands in
+exactly one settlement line.
+
+**Verification session, 2026-08-25 — no code changed.** Phases 8 and 9 were
+re-checked against §6 of `GAP - Implement v2.md` because the doc's *Next Phase*
+section still named Phase 8 and could not be trusted on its own. Both are in fact
+complete; every item on both spec checklists was confirmed against the file that
+implements it, not against this document. The stale *Next Phase* section has been
+rewritten to Phase 10 and the architecture the two phases left behind is now
+recorded under *Important Architecture → Added in Phases 8–9*, which was the
+missing piece that made the doc read as if Phase 8 were still open.
+
+What was confirmed, item by item:
+
+| Spec item (§Phase 8) | Confirmed in |
+|---|---|
+| earnings, pending + available balance, gross, commission, net | `components/dashboard/earnings-view.tsx` → `/dashboard/earnings` |
+| commission statements | `components/finance/commission-statement.tsx` |
+| settlement history | `earnings-view.tsx` — one row per period, expanding into its statement |
+| payout history | `earnings-view.tsx` — separate section, read-only by design |
+| vendor settlements, rider remittance, status, period filter, payout runs, totals | `components/admin/payouts-view.tsx` → `/admin/payouts` |
+| details | `components/admin/payout-detail-view.tsx` → `/admin/payouts/[id]` |
+
+| Spec item (§Phase 9) | Confirmed in |
+|---|---|
+| sections: create / rename / reorder / delete / enable-disable | `menu-builder.tsx` via `useMenu` — reorder is up/down buttons, not a drag handle |
+| items: create / edit / delete / price / description / image / availability / dietary | `components/dashboard/menu/item-editor.tsx` (+ spice level) |
+| option groups: create / edit / delete / required / min-max / option prices | `item-editor.tsx` — `OptionGroupEditor` |
+| inventory: quantity, low-stock threshold, out-of-stock, automatic unavailable, manual adjustment | `components/dashboard/menu/stock-dialog.tsx` + `lib/menu.stockStateOf` |
+| the customer customiser consumes the same menu/option data | `components/menu/use-menu-item.ts`, read by `add-to-cart-button.tsx` and `qr-item-row.tsx` |
+
+Two spec constraints were checked specifically, because they are the ones a
+plausible-looking implementation would miss:
+
+* **"Use the Phase 2 financial domain. Do not invent separate financial numbers."**
+  Held. Every figure on both surfaces resolves through `lib/settlement` over the
+  commission records orders already carry. `earnings-view` takes all of its numbers
+  from `services/finance.getVendorEarnings` and imports no arithmetic of its own;
+  `payouts-view` calls `getPlatformPayouts` and reaches into `lib/settlement` only
+  for `isPayable` and `settlementTotals`, which are that domain's own functions. So
+  there is no second set of numbers to keep in step.
+* **"Do not introduce a second menu model."** Held. `MenuSectionWithItems` lives in
+  `types/catalog` and is re-exported by `services/catalog`, so the builder's fold and
+  the storefront's read return the same shape. The customiser resolves its dish
+  through `lib/menu.effectiveItem` — the same fold the merchant's board uses — so a
+  group the restaurant authored is the same `FoodOptionGroup` record the customer
+  configures and the cart line prices, not two readings of one.
 
 ---
 
@@ -181,12 +254,58 @@ started and needs an explicit instruction.
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
 
+Re-run on 2026-08-25 after Phase 10, all three still **PASS**. The build's route
+table lists `/dashboard/earnings`, `/dashboard/menu`, `/admin/payouts`,
+`/admin/payouts/[id]` and now `/dashboard/analytics` and `/dashboard/settings`,
+which is the compiled evidence that Phases 8–10 are wired and not merely present
+as files.
+
+One transient build failure is worth naming so it is not mistaken for a
+regression: `bun run build` occasionally aborts with `Failed to fetch
+'Plus Jakarta Sans' from Google Fonts`. It is `next/font` reaching the network at
+build time and nothing to do with any phase — the same tree builds cleanly on
+retry (confirmed three consecutive times).
+
+Message catalogues were checked the same way, because a builder whose labels are
+missing is a builder that renders blank: `menuBuilder` (104 keys), `finance` (95)
+and `dietary` (7) are key-for-key identical across `en`, `bn` and `ar`, and every
+`t("…")` key these components ask for resolves — including the nested
+`finance.errors.settlementNotPayable` that `lib/settlement` returns as a
+`PayoutError`.
+
+Phase 10 added three namespaces — `handover` (22 keys), `analytics` (48) and
+`vendorSettings` (161) — plus additions to `dashboard`, `delivery` and `admin`.
+All three locales are **key-for-key identical** (4041 keys each, zero symmetric
+difference), every literal `t("…")` in the new and changed components resolves,
+and each dynamic key union was enumerated and checked member by member (the four
+handover checks and their hints, the five range presets, the five settings tabs,
+the five staff roles and their hints, the three staff statuses, all eleven
+permissions, the four permission origins, and every `SettingsError` / `StaffError`
+/ `OnboardingError` member the surfaces can render).
+
+That last check caught a real defect before it shipped: `next-intl` reads a `.` in
+a key as a path separator, so a literal `"orders.manage"` key under
+`staff.permission` could never have resolved and the permission editor would have
+rendered eleven raw slugs. The catalogue now nests them (`permission.orders.manage`),
+which mirrors the slug exactly rather than transforming it in the component. The
+same pass also found `dashboard.errors.cashNotConfirmed` missing — a
+`TransitionError` member the restaurant board's toast could ask for — and added it.
+
+One standing build note, unrelated to any phase: `bun run build` logs
+`[catalog] vendor failed against the API and fell back to the mock layer` once per
+prerendered restaurant page, because `config/backend.ts::LIVE` has the catalog slice
+on and no GraphQL server answers on `localhost:4000` during a build. The fallback is
+the designed behaviour and the build succeeds; the noise stays until the API runs or
+the flag is unset.
+
 ### Flows actually exercised
 
 Verified by driving the real modules and the real persisted store (throwaway
 harnesses, not committed — 156 domain checks and 58 store checks for Phases 6–7,
-57 domain/seam checks and 37 store checks for Phase 3), plus a dev-server smoke
-test of every touched route:
+57 domain/seam checks and 37 store checks for Phase 3, and **269 checks for
+Phase 10** across four harnesses: 57 on the handover, 126 on settings and staff,
+80 on analytics and the CSV export, 6 on order-book uniqueness), plus a
+dev-server smoke test of every touched route:
 
 | Flow | Result |
 |---|---|
@@ -289,6 +408,50 @@ test of every touched route:
 | A demo reset drops the device-minted listings and fleet records and restores both seeded queues | PASS |
 | Dev-server render of `/partner`, `/partner/apply`, `/rider`, `/rider/apply`, `/admin/restaurants`, `/admin/riders`, `/admin/restaurants/[id]`, `/admin/riders/[id]`, `/register`, `/dashboard`, `/delivery` | 200, no new errors |
 | Every `t()` key the new surfaces use exists in `en`, and `bn`/`ar` carry an identical key set (0 shape differences) | PASS |
+| **Phase 10 — handover** the code is 4 digits, deterministic, never equal to the order's doorstep OTP, and null when no courier is assigned | PASS |
+| The code is bound to the *assignment*: another courier's code is refused, and a courier dispatch never sent cannot produce one | PASS |
+| `picked-up` refused with no handover, with a partial checklist, and with a wrong code — order byte-identical after each refusal | PASS |
+| Accepted with all four checks and the right code; stamps `handoverVerifiedAt` at the transition instant, records the checks in the domain's own order, appends exactly one event, leaves the attempt counter alone | PASS |
+| Code entry tolerates separators (`12 34`) | PASS |
+| Restaurant, rider and admin may all complete it and all three are gated; the customer is still refused (`errors.notPermitted`) | PASS |
+| Three failures lock the handover (`errors.handoverLocked`) and the right code is then refused too; two failures do not lock; each failure logs its own event | PASS |
+| `requiresHandover` is false for a pickup order and for a delivery with no courier — absences, not exemptions | PASS |
+| All three surfaces' action lists *derive* the prompt from the machine (`restaurantActions`, `riderActions`, `adminActions`); admin's `picked-up` falls back to a plain confirm when there is nothing to verify | PASS |
+| The demo autopilot proposes a collect, carries a valid handover patch, and the machine accepts it — it satisfies the same guard rather than bypassing it | PASS |
+| v5 → v6 migration: backfills the counter, records an already-collected order as verified at its own `picked-up` event, invents **no** checklist, idempotent, and returns a modern order by reference | PASS |
+| Seeded working set: every collected order is stamped verified at its `picked-up` event time, none carries a fabricated checklist, uncollected orders stay unverified, still deterministic | PASS |
+| **Phase 10 — settings** an empty draft folds to the *same object* (no re-render churn); the fold renames the listing, patches the address without moving the coordinates, and leaves rating, review count and commission rate alone | PASS |
+| A blank promo headline becomes null rather than an empty badge; a refused save leaves the draft untouched by reference | PASS |
+| Profile validation: short description, no cuisine and empty name each refused | PASS |
+| Contact falls back to the application, is empty (not invented) with no application, and a saved contact wins over both | PASS |
+| Hours: an all-closed week refused; a half-filled day refused; identical open/close refused; an unparsable time refused; **overnight service (18:00–02:00) allowed**; one trading day is enough | PASS |
+| Delivery: neither mode refused, pickup-only fine, negative fee/minimum/free-over refused, reversed and zero-floor ETA windows refused; the fold carries fee, ETA and free-over to the listing the storefront prices from | PASS |
+| Delivery modes resolve from the *application* (`Vendor` has no such field) and the four numbers from the listing | PASS |
+| Branches: deterministic id from vendor + instant, validation on all four fields, edit in place keeps the id, editing an absent branch refused, removal and no-op removal both correct | PASS |
+| `effectiveSettings` reads branches from the application and never from the draft, and reports `authored` correctly both ways | PASS |
+| **Phase 10 — staff** the owner record is minted active, keyed on the *account* not the clock (so a second device finds it rather than minting a rival owner), and holds every permission | PASS |
+| Role grants are materially distinct: kitchen cannot see earnings, manager cannot manage staff or settings, cashier cannot edit the menu | PASS |
+| Invite: duplicate address refused case-insensitively *per restaurant*, the same person may work at two, bad email refused, an optional phone still validated, empty phone stored as null, id deterministic | PASS |
+| An invited member holds **no** permissions until activated; activation stamps its date; activating an active member is refused (`errors.illegalTransition`); the graph forbids returning to `invited` | PASS |
+| Deactivation stamps its own date, keeps the start date, and folds the member to **nothing** — a deactivated colleague cannot do their old job | PASS |
+| The last *active* owner cannot be deactivated or demoted; an **invited** second owner does not count as cover; with two active owners both moves are allowed | PASS |
+| Permissions are stored as the *difference* from the role: turning on what the role grants records nothing, turning it off records a revoke, granting-then-revoking leaves neither, and a revoke beats a grant | PASS |
+| Only an invitation can be withdrawn (and as a soft delete); an active member and the owner's own account record are both refused | PASS |
+| `teamFor` scopes to one restaurant, orders active before invited, and hides soft-deleted members | PASS |
+| **Phase 10 — analytics** every preset resolves; windows snap to whole days and are stable across a clock tick inside the same day; a reversed custom range is swapped, an unparsable one falls back to the default rather than producing `NaN` bounds, an absurd one is clamped to 730 days | PASS |
+| Windowing is by *placement* for every figure, so revenue, commission and the cancellation count describe the same set of orders | PASS |
+| Revenue and order count exclude every bad ending; AOV is revenue over orders; completed counts `completed`; cancelled counts every failure mode | PASS |
+| **Commission and net revenue are read off the stamped `OrderFinancials.commission` records, never recomputed** — verified by summing the records directly, and by `net + commission` equalling the *commissionable* base rather than the gross | PASS |
+| Buckets: daily to a fortnight, weekly beyond; a 90-day window yields ≤14 legible buckets; the buckets sum to the reported revenue and order count; the series is oldest-first | PASS |
+| Peak hours and top products are the windowed orders', ranked by units, and never exceed the order count | PASS |
+| The report is deterministic, and an empty window reports zeros rather than `NaN` | PASS |
+| **One order book, two readings:** `getVendorAnalytics` and `getVendorEarnings` quote the same currency, and analytics' commission and net revenue equal the earnings page's over the same window — the spec's "analytics must use actual shared order data", checked rather than asserted | PASS |
+| A vendor with no listing and no orders resolves to a zeroed report rather than throwing | PASS |
+| CSV: CRLF, commas quoted, embedded quotes doubled, full numeric precision, null cells empty — and a leading `=`, `+`, `-` or `@` neutralised, so a dish called `=Wagyu (2kg)` is not a formula in the restaurant's own spreadsheet | PASS |
+| Export filename is slugged, date-stamped, stable for the same window, and still produced for a vendor whose name slugs to nothing | PASS |
+| **Order book (the fix)** no vendor's synthesised week contains a duplicate id or reference; the unioned platform book has none; every settled order lands in exactly one settlement line; no duplicate vendor+period; determinism survives; every seeded order is distinct | PASS |
+| Dev-server render of `/`, `/dashboard`, `/dashboard/analytics`, `/dashboard/settings`, `/dashboard/orders`, `/dashboard/earnings`, `/dashboard/menu`, `/admin`, `/admin/orders`, `/delivery`, `/account/orders` | 200, no new errors |
+| The two new routes render under `bn` and `ar` with no `MISSING_MESSAGE` / `IntlError` in the dev log | PASS |
 
 Not verified: a click-through in a real browser. No browser automation is
 available in this environment, so the assertions above drive the store actions the
@@ -532,32 +695,330 @@ components/onboarding/*    (shared: chip · log · documents · filters · stepp
   order machine is untouched, and the two onboarding collections live in one store
   because onboarding is one domain with two entities.
 
-No architectural violations were introduced in Phases 1–7.
+No architectural violations were introduced by Phases 6–7, and none by Phases 1–7
+as a whole.
+
+---
+
+### Added in Phases 8–9
+
+```text
+lib/settlement.ts          (extended: rider settlements, payout minting, adjustments, totals)
+lib/payout-search.ts       (pure: one query object, both ledgers)
+   ↓
+stores/payouts.ts          (the transfers themselves — the one financial fact that is not derived)
+   ↓
+services/finance.ts        (the seam Phase 2 deferred: getVendorEarnings · getPlatformPayouts · getPayoutStatement)
+   ↓
+components/finance/*       (shared: commission statement · status chip · payout filters)
+   ↓
+/dashboard/earnings · /admin/payouts · /admin/payouts/[id]
+
+types/menu.ts              (MenuDraft · MenuItemStock · StockState · MenuBoardSection · OptionGroupDraft)
+   ↓
+lib/menu.ts                (pure: sections, items, option groups, stock, and `buildMenuBoard` — the fold)
+   ↓
+stores/menu.ts             (one draft per vendor, expressed in the catalog's own types)
+   ↓                                    ↘
+components/dashboard/menu/*              components/menu/use-menu-item.ts
+   (builder · item editor · stock)         ↓
+   ↓                                     add-to-cart-button · qr-item-row → ItemCustomizer
+/dashboard/menu
+```
+
+* **Everything financial stays derived except the transfer.** A commission is
+  stamped on an order at completion (Phase 2) and every settlement, balance and
+  total is recomputed from those stamps on demand. `stores/payouts` holds the single
+  fact that *cannot* be recomputed — that money moved, at an instant, run by a named
+  account, with a reference somebody can quote. A settlement's `paid` status is then
+  projected back **from** the payout by `lib/settlement`; no status is written
+  anywhere. That is why Phase 8 needed no change to `buildVendorSettlements`: it was
+  already clock-injected and already accepted `payouts` and `adjustments`, so the
+  phase supplied data rather than logic.
+* **`services/finance.ts` is the seam Phase 2 deliberately deferred.** Phase 2
+  recorded that a finance service with one consumer would be a wrapper; Phase 8 gave
+  it the two real consumers it was waiting for — the restaurant's earnings page and
+  the platform's payout run — and the module exists now for that reason and not
+  before.
+* **A period is paid at most once, guarded on the period and not the settlement.**
+  The guard is `vendorId`/`riderId` + `periodRef`, because a settlement object is
+  recomputed on every render and its identity is not stable across a rehydrate. A
+  replay — second tab, double click, restored store — has to find the *period*
+  already paid.
+* **Two ledgers, one screen, one query.** A vendor settlement and a rider
+  settlement are the same shape over different payees, so `/admin/payouts` makes
+  them tabs over one `PayoutQuery` rather than two routes, and the filter, the
+  status counts and the totals row are shared components. The totals row totals the
+  **filtered** rows: a total that ignored the filter is the most plausibly wrong
+  number the screen could show.
+* **The restaurant's payout column is read-only on purpose.** A restaurant does not
+  run its own payout — the desk does, on `/admin/payouts` — so the earnings page
+  shows the result of a run and never a control that would start one.
+* **Pending and available are two different facts.** Pending is money from the
+  period still running; available is money from closed, unpaid periods. Collapsing
+  them into one "balance" is what makes a restaurant think it can withdraw this
+  week's takings.
+* **The authored menu is a diff, not a second menu.** The catalog is a read-only
+  seed (and, behind `LIVE.catalog`, a server-owned table), so `stores/menu` holds one
+  draft per vendor — created rows, field patches, removals, ordering, stock —
+  expressed in the catalog's own types, exactly the arrangement
+  `stores/merchant.unavailable` has always used for the 86 switch.
+  `lib/menu.buildMenuBoard` folds it back over the catalog and that fold is the only
+  reader, so there is no second menu model to keep in step.
+* **The customiser resolves through the same fold.** This is Phase 9's explicit spec
+  requirement and the one a plausible implementation would miss. The storefront menu
+  is server-rendered and cannot see a client draft, but its *interactive* half can:
+  `useMenuItem` folds the draft through `lib/menu.effectiveItem`, so an option group
+  the restaurant authored is the same `FoodOptionGroup` record the customiser renders
+  and the cart line prices. It returns the prop unchanged before hydration — the
+  first client render has to match the server's, and assuming an edit exists while
+  the draft is still being read would swap a price under the customer's cursor. It
+  returns null for a deleted dish, because a cached page must not keep something
+  orderable after the restaurant removed it.
+* **Availability is derived from the count, never stored beside it.** The 86 switch
+  stays in `stores/merchant.unavailable` where the POS already reads it, and the
+  automatic out-of-stock state comes from `lib/menu.stockStateOf` over the quantity.
+  A boolean written next to a count is how a menu ends up with a dish that is in
+  stock and unavailable at the same time.
+* **A required group with a minimum of zero cannot be saved.** The item editor
+  raises the minimum with the required flag, and `optionGroupError` enforces it in
+  `lib/menu` rather than in the dialog — otherwise the customiser would render a
+  group it claims is required and let the customer past it.
+* **Section reorder is two buttons, not a drag handle.** Deliberate: it has to be
+  operable by keyboard and on a phone in a kitchen, and a drag handle is neither.
+* **No second lifecycle, no second store, no service reading a store.** Nothing in
+  `lib/` reads a store in either phase; the order machine is untouched; the payout
+  run emits its notifications through the same routing gate as everything else, so
+  money moving cannot be silent to the person receiving it.
+
+No architectural violations were introduced in Phases 1–9. Both stores state their
+Phase E exit in their own header: `stores/payouts` becomes a cache of a server-owned
+`payouts` table and `payVendor` becomes a mutation call; `stores/menu` replays its
+patches as catalog mutations and the draft becomes an optimistic cache. Neither
+action signature changes.
+
+---
+
+### Added in Phase 10
+
+```text
+types/order.ts             (OrderLifecycle: handoverAttempts · handoverVerifiedAt · handoverChecks)
+   ↓
+lib/delivery.ts            (handoverCodeFor — hashed from order + COURIER, beside otpFor)
+lib/order-machine.ts       (`picked-up` guard, HANDOVER_CHECKS, lockout, recordHandoverFailure)
+   ↓
+stores/orders.ts           (failHandover; v5 → v6 migration)
+   ↓
+components/orders/handover-dialog.tsx   (shared: board · rider trip · admin order page)
+
+types/vendor-settings.ts   (VendorSettingsDraft · VendorSettings — a diff, not a second listing)
+types/staff.ts             (StaffMember · StaffRole · StaffPermission)
+   ↓
+lib/vendor-settings.ts     (pure: the fold `effectiveVendor`/`effectiveSettings`, validators, branches)
+lib/staff.ts               (pure: the grant table, `effectivePermissions`, `staffCan`, the graph, guards)
+lib/export.ts              (pure: toCsv + the browser half, kept apart)
+   ↓
+stores/vendor-settings.ts  (one draft per vendor)   stores/staff.ts  (one flat table, FK on the row)
+   ↓                                    ↘
+components/dashboard/settings/*          stores/onboarding.editVendor   (branches' only home)
+   ↓
+/dashboard/settings   (tabs: profile · hours · delivery · branches · staff)
+
+types/dashboard.ts         (AnalyticsRange · VendorAnalytics · RevenuePoint.spanDays)
+   ↓
+lib/analytics.ts           (resolveRange · ordersInRange · revenueBuckets · analyticsFor)
+   ↓
+services/finance.ts        (getVendorAnalytics — beside getVendorEarnings, over ONE order book)
+   ↓
+components/dashboard/analytics-view.tsx + analytics-range.tsx
+   ↓                                    ↘
+/dashboard/analytics                      overview-view.tsx  (its three charts now read the same call)
+```
+
+* **The handover code is a property of the *assignment*, not a secret.** It is
+  hashed from the order id **and the assigned courier's id**, which is what makes
+  it verify something the prototype can actually verify: a courier dispatch never
+  sent cannot produce it, and `reassignRider` retires the old code with nothing
+  having to remember to. It is deliberately *not* claimed to be confidential —
+  both parties are standing at one counter and the courier's own app shows it — and
+  `HandoverDialog` says so on screen. Derived rather than stored, for the same
+  reason `otpFor` is: the board and the rider app reach the same value with no
+  backend between them, and salted differently so the two codes on one order can
+  never coincide.
+* **The guard is in the machine, not in the dialog.** Three surfaces can collect an
+  order — the restaurant's board, the courier's trip screen, the operations desk —
+  and a check written into one dialog is a check the other two do not perform. So
+  `transition()` refuses `picked-up` without both halves, `adminActions` derives
+  the prompt from the graph, and **the demo autopilot has to satisfy the same guard**
+  (it supplies the checklist and quotes the order's own code) rather than having a
+  privileged path. Only three fields were added to `OrderLifecycle`, mirroring
+  `otp`/`otpAttempts`/`otpVerifiedAt` exactly.
+* **A migration records what happened, not what would have looked tidy.** An order
+  that had already been collected is stamped verified *at its `picked-up` event's
+  own time*, and its `handoverChecks` stays **empty** — an old handover happened and
+  had no checklist behind it, which is the truth and is distinguishable on screen
+  from one driven on this device. The seeded working set follows the same rule.
+* **Settings are a diff over the listing, and the fold is the only reader.**
+  `stores/vendor-settings` holds one draft per vendor expressed in the catalog's own
+  fields; `lib/vendor-settings.effectiveVendor` folds it back. `DashboardShell` folds
+  once and passes the result down the context every page already reads, so the topbar
+  shows the same name the settings form is editing. The fold returns the *same object*
+  for an empty draft, so a restaurant that has changed nothing pays nothing for it and
+  no clock tick re-renders the tree. The storefront still reads the seed — it is
+  server-rendered and cannot see a client draft — which is the same honest boundary
+  Phase 9 drew for `useMenuItem`.
+* **Two fields the catalog genuinely lacks are recorded, not invented.** `Vendor` has
+  no phone number and no pickup/delivery switch, and both are things the spec asks a
+  restaurant to set. They resolve from the onboarding application — where the
+  applicant already answered them — and fall back to empty rather than to a plausible
+  placeholder. That is the same call `types/menu.ts` made for stock counts.
+* **Branches stayed a record.** Phases 6–7 declined to mint a listing per outlet
+  because a second listing sharing one menu and one kitchen is a branch a customer
+  could order from and nobody could fulfil. Phase 10 honours that instead of
+  overturning it: branches live on `VendorApplication.branches` and are edited through
+  `stores/onboarding.editVendor`, so the change lands in the reviewer's audit log and
+  there is no second answer to how many outlets exist. The screen says so too.
+* **A role grants permissions; a person carries only the difference.**
+  `STAFF_PERMISSIONS` is the one answer to "what may a manager do", and a member
+  stores `grants`/`revokes` — so changing the table reaches everybody who was not
+  explicitly excepted, and there is no stored copy to drift. `effectivePermissions`
+  folds it and returns **nothing** for a member who is not active, because that is
+  what deactivation *is* — the same reasoning that routed rider suspension through
+  the one availability chokepoint in Phase 7.
+* **Analytics reads the shared order book and does no arithmetic on money.** The
+  binding constraint for this phase was "analytics must use actual shared order
+  data", and `getVendorAnalytics` sits beside `getVendorEarnings` in
+  `services/finance` precisely so both go through `vendorOrderBook`: a resolver in
+  another module would anchor the synthesised week to a different instant and the
+  counts would drift from the money by a few orders. Commission and net revenue are
+  read off the `OrderFinancials.commission` records the `completed` transition
+  stamped in Phase 2 — multiplying revenue by 15% would look right and would
+  disagree with `/dashboard/earnings` for every vendor on a negotiated rate.
+* **The overview's second analytics path is gone.** Its three charts came off
+  `getVendorDashboard`, which only ever saw the synthesised week, so they described a
+  different set of orders from the KPI cards directly above them. They now read
+  `getVendorAnalytics`, and `revenue`/`peak`/`bestSellers` were **removed** from
+  `VendorDashboard` rather than left behind as the dead read path G41 already flags
+  once.
+* **A pure module still formats nothing.** `RevenuePoint` gained `spanDays`, not a
+  pre-rendered label: `lib/analytics` has no `next-intl`, and hard-coding "Aug" into
+  the domain layer is how a localised dashboard ends up with one English axis. The
+  chart formats the bucket with the request's own formatter.
+* **No second lifecycle, no second store reading another, no service reading a
+  store.** Nothing in `lib/` reads a store in this phase either; the order machine
+  gained one guard and one case rather than a parallel path; and both new stores state
+  their Phase E exit in their own header — `stores/vendor-settings` replays its patches
+  as catalog mutations, `stores/staff` becomes a cache of a server-owned `staff` table
+  whose `invite` actually sends the mail. Neither action signature changes.
+
+No architectural violations were introduced in Phases 1–10.
 
 ---
 
 ## Next Phase
 
-**PHASE 8 — Restaurant Financials (G16, G17).** Not started; needs an explicit
-instruction.
+**PHASE 11 — Admin Customer Management (G15).** Not started; needs an explicit
+instruction. Phases 1–10 are complete and verified, so this is the first open item
+in §6's order.
 
-What Phases 1–7 leave ready for it:
+### What the spec asks for
 
-1. `lib/settlement.ts` is already pure and clock-injected, and
-   `buildVendorSettlements` already accepts `payouts` and `adjustments` and projects
-   `SettlementStatus` from them — so Phase 8 supplies data rather than changing
-   logic. `SettlementStatus` still only ever reaches `pending`.
-2. **`PayoutAccount` now exists**, on every restaurant's and rider's application
-   (`types/onboarding.ts`), collected by the two application forms and visible to a
-   reviewer. A payout run has somewhere to send money to.
-3. There is still **no `services/finance.ts`** — deliberately, as Phase 2 recorded.
-   Phase 8 is where the seam belongs, because the restaurant earnings page and the
-   admin payout run are its first two real consumers.
-4. `/admin/restaurants` and `/admin/riders` are the template for a payout-run
-   surface: a pure query module, a list holding one query object, and a detail route
-   whose controls are the domain's own action list.
-5. `stores/onboarding` is the pattern for a payout store: one authority, mutations
-   only through `lib/`, an append-only log, and notifications emitted on commit.
+Create `/admin/customers`, with: customer list, search, filters, detail, account
+status, order history, spending summary, support tickets, and block/unblock where
+appropriate. Binding constraint: **"Use shared customer/order records."** — the
+same rule Phase 8 obeyed for money and Phase 10 for counts, applied to people.
+
+### What Phases 1–10 leave ready for it
+
+1. **The order is already the customer record.** An `Order` snapshots
+   `contact: { name, phone }` and its `address`, and `services/finance.mergeOrders`
+   /`platformOrderBook` already union every vendor's book with the live store. A
+   customer's order history and spending summary are projections of that set, not a
+   new query — and after Phase 10's fix that book contains no duplicates, so a
+   spending total computed from it is correct by construction.
+2. **The search and filter pattern is settled three times over.** `lib/order-search`,
+   `lib/onboarding-search` and `lib/payout-search` are the same shape: one pure query
+   object, one predicate, counts that move with the search but not with the selection
+   being counted. A fourth (`lib/customer-search`) writes itself, and
+   `components/onboarding/application-filters` / `components/finance/payout-filters`
+   are the shared-filter precedents.
+3. **Support tickets are already attached to orders but not to customers.** Phase 5
+   recorded this deliberately: `SupportTicket` snapshots the name and phone off the
+   order rather than carrying a customer id, because the prototype has one customer
+   account per device. Phase 11 is where that join is needed, and it is the phase's
+   first real decision — whether a customer is *identified* by phone number (which the
+   orders and tickets both carry) or a `User` record is minted for the seeded
+   customers. The phone is the honest key; there are no accounts behind the
+   synthesised names.
+4. **"Account status" and "block/unblock" have no home yet.** `User` has
+   `isVerified` and nothing else, and there is no customer status union. This is the
+   same shape as G09/G11 (vendor and rider approval), and Phases 6–7's answer applies:
+   put the lifecycle on **one** record with a graph and guards in a pure `lib/`
+   module, and do not add a second status field to an entity the catalog owns.
+5. **Blocking must reach a chokepoint or it means nothing.** Phase 7's lesson —
+   suspending a rider had to reach `unavailableRiderIds` for the suspension to
+   suspend anything. The equivalent for a blocked customer is checkout
+   (`services/orders` / `lib/checkout`), and that seam should be identified before
+   the list is built rather than after.
+
+### Open questions to settle before starting
+
+* **What identifies a customer.** Phone number off the order and the ticket, or a
+  minted `User`? The synthesised names have no accounts behind them, so a `User` per
+  name would be inventing records.
+* **Where blocking is enforced.** A block that only greys out a row is the assignee
+  column Phases 5–7 declined to ship. Name the chokepoint first.
+* **Whether spending is gross or net.** `/admin/payouts` shows the platform's take
+  and a restaurant's net; a *customer's* spend is the gross they paid. Say which,
+  and read it from the same commission records rather than re-summing prices.
+
+---
+
+## Deliberately deferred by Phase 10 (not omissions)
+
+* **A staff member cannot sign in, and the permissions are not enforced across the
+  platform.** There is no mail server, so an invitation is a record saying somebody
+  was asked rather than a login that exists. `lib/staff.staffCan` is the predicate
+  Phase 14 (G31, RBAC) will ask from every shell — it is correct today and needs no
+  change; what it is waiting for is a *session* belonging to a staff member to be
+  asked about. The staff screen says this in plain words rather than only in a
+  comment, which is the same call Phase 5 made in declining an assignee column on
+  the support queue and Phases 6–7 made on the onboarding queues.
+* **An edited profile is not visible on the storefront.** The listing the customer
+  browses is server-rendered from the catalog and cannot see a client draft, so the
+  fold reaches every dashboard surface and stops at the storefront. Identical to
+  Phase 9's menu boundary, and stated for the same reason: resolving both from one
+  query is Phase E's job, and adding a client read to the server page would be the
+  second source of truth this arrangement exists to avoid.
+* **A branch is recorded, not orderable.** Carried forward unchanged from Phases 6–7
+  rather than quietly overturned — see the architecture note above. The screen tells
+  the person adding an outlet that orders still come to the one kitchen.
+* **Logo and cover are URLs, not uploads.** No file storage exists, and the field's
+  own hint says nothing is uploaded. A picker that appeared to accept a photograph
+  and kept nothing is the decoration Phases 6–7 refused for documents.
+* **Map coordinates are not editable.** There is no geocoder, so the address is a
+  free-text patch and the coordinate stays put, with the panel saying which point
+  riders are navigating by. A hand-typed latitude would silently move the restaurant
+  on the courier's map.
+* **Delivery zones are read-only.** They are the platform's geography and decide how
+  a delivery is priced and routed. G30 (platform settings) is assigned to **no phase**
+  in the v2 spec, so the boundary is stated on the panel rather than crossed.
+* **Analytics has no comparison against a previous period.** The spec's list does not
+  ask for one, and a "+12% vs last month" figure needs a second window resolved and
+  reconciled against the first — worth doing once (Phase 16's admin analytics needs
+  the same thing) rather than twice differently.
+* **The export is CSV only.** "Local/prototype export where practical" — a PDF needs
+  a layout engine the prototype does not have, and the rows are already derived, so a
+  spreadsheet is where a restaurant actually does the arithmetic the dashboard does
+  not do for them.
+* **The handover code is not confidential, and does not claim to be.** Both parties
+  are at one counter and the courier's app shows it. It verifies *identity of
+  assignment* — that this is the courier dispatch sent — and the dialog's own hint
+  says exactly that. A code presented as a secret that the other party can read off a
+  screen would be the kind of security theatre this prototype is meant not to have.
+* **A migrated handover has no checklist.** Recorded as having happened with nothing
+  behind it, because that is what happened. Backfilling four ticks nobody made would
+  be a fabricated audit trail.
 
 ---
 

@@ -6,7 +6,7 @@ import type {
   OrderStatus,
   Rider,
 } from "@/types";
-import { otpFor } from "./delivery";
+import { handoverCodeFor, otpFor } from "./delivery";
 import { isFailure, isTerminal, stagesFor, stageIndex } from "./order-machine";
 import { settleOrder } from "./settlement";
 
@@ -90,6 +90,12 @@ export function createLifecycle(orderId: string, placedAt: string): OrderLifecyc
     otp: otpFor(orderId),
     otpAttempts: 0,
     otpVerifiedAt: null,
+    // The counter's handover code is not stored: it belongs to the *assignment*,
+    // so it is derived from the order and the courier on demand — see
+    // `handoverCodeOf` below. What is stored is what happened at the counter.
+    handoverAttempts: 0,
+    handoverVerifiedAt: null,
+    handoverChecks: [],
     refund: "none",
     refundAmount: 0,
     refundMethod: null,
@@ -241,6 +247,47 @@ export function ensureRefundRecord(order: Order): Order {
       refundSettledAt: refund === "refunded" ? settledAt : null,
     },
   };
+}
+
+/**
+ * Backfill the handover record on an order persisted before the counter check
+ * existed (Phase 10, G22).
+ *
+ * An order that already reached `picked-up` was handed over — nobody verified it,
+ * because there was nothing to verify, and pretending otherwise would be inventing
+ * a check that never happened. So the timestamp is the `picked-up` event's own,
+ * and `handoverChecks` stays **empty**: an old handover is recorded as having
+ * happened and as having no checklist behind it, which is the truth and is
+ * distinguishable on screen from one that was checked.
+ *
+ * Idempotent: an order that already carries the fields is returned untouched.
+ */
+export function ensureHandoverRecord(order: Order): Order {
+  const life = order.lifecycle;
+  if (life.handoverVerifiedAt !== undefined && life.handoverAttempts !== undefined) {
+    return order;
+  }
+  const pickedUp = life.events?.find((e) => e.status === "picked-up") ?? null;
+  return {
+    ...order,
+    lifecycle: {
+      ...life,
+      handoverAttempts: life.handoverAttempts ?? 0,
+      handoverVerifiedAt: life.handoverVerifiedAt ?? pickedUp?.at ?? null,
+      handoverChecks: life.handoverChecks ?? [],
+    },
+  };
+}
+
+/**
+ * The handover code for this order, bound to whoever is carrying it.
+ *
+ * A one-line bind of `lib/delivery.handoverCodeFor` to the order, so no surface
+ * has to know that the code is keyed on the *courier* as well as the order. Null
+ * until dispatch has chosen somebody.
+ */
+export function handoverCodeOf(order: Order): string | null {
+  return handoverCodeFor(order.id, order.lifecycle.rider?.id ?? null);
 }
 
 /** The actor a stage is normally performed by — used only when backfilling. */

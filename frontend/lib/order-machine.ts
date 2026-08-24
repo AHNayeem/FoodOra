@@ -1,5 +1,6 @@
 import type {
   FulfillmentType,
+  HandoverCheck,
   Order,
   OrderActor,
   OrderEvent,
@@ -8,6 +9,7 @@ import type {
   OrderStatus,
   RefundMethod,
 } from "@/types";
+import { handoverCodeFor, handoverMatches } from "./delivery";
 import { settleOrder } from "./settlement";
 
 /**
@@ -246,6 +248,65 @@ export function isOtpLocked(order: Order): boolean {
   return order.lifecycle.otpAttempts >= OTP_MAX_ATTEMPTS;
 }
 
+// ---------------------------------------------------------------------------
+// The counter handover (Phase 10, G22)
+// ---------------------------------------------------------------------------
+
+/** Wrong courier codes before the counter is locked out. Mirrors the doorstep. */
+export const HANDOVER_MAX_ATTEMPTS = 3;
+
+/**
+ * The checks that must be confirmed before food leaves the kitchen, in the order
+ * the counter works down them.
+ *
+ * All four are required, which is why there is no `required` flag: a checklist
+ * with optional items is a checklist whose optional items are never ticked. If a
+ * check ever needs to be conditional it belongs in `handoverChecksFor(order)`
+ * rather than as a flag on the item.
+ */
+export const HANDOVER_CHECKS: readonly HandoverCheck[] = [
+  "identity",
+  "orderNumber",
+  "items",
+  "sealed",
+];
+
+/**
+ * Does this order need a verified handover before it can be collected?
+ *
+ * Only a *delivery* order with a courier on it. A pickup order never reaches
+ * `picked-up` — the customer collects it and the restaurant marks it `delivered`
+ * (see `restaurantActions`) — and an order with no courier cannot have a code,
+ * because the code is a property of the assignment. Both cases are absences
+ * rather than exemptions: there is nothing to verify, not a check being skipped.
+ */
+export function requiresHandover(order: Order): boolean {
+  return order.fulfillment === "delivery" && order.lifecycle.rider != null;
+}
+
+/** The counter is locked out of this handover after too many wrong codes. */
+export function isHandoverLocked(order: Order): boolean {
+  return order.lifecycle.handoverAttempts >= HANDOVER_MAX_ATTEMPTS;
+}
+
+/** Has this order's handover already been verified? */
+export function isHandoverVerified(order: Order): boolean {
+  return order.lifecycle.handoverVerifiedAt != null;
+}
+
+/**
+ * What the counter still has to confirm. Empty means the checklist is satisfied.
+ *
+ * Exported so the dialog can disable its own button from the domain's answer
+ * rather than counting ticks itself — the same arrangement as `payoutFieldErrors`
+ * and `optionGroupError`: the surface asks, it does not decide.
+ */
+export function missingHandoverChecks(
+  checks: readonly HandoverCheck[],
+): HandoverCheck[] {
+  return HANDOVER_CHECKS.filter((check) => !checks.includes(check));
+}
+
 /**
  * Cash still to be handed over on this order, in the order currency; 0 for a
  * prepaid one or one already settled.
@@ -285,6 +346,15 @@ export interface TransitionPatch {
    */
   cashCollected?: boolean;
   /**
+   * Collect: the counter's verification of the handover (Phase 10, G22).
+   *
+   * Required to move a delivery order to `picked-up`. Carries both halves so the
+   * guard can refuse a partial one: a checklist with no code proves nothing about
+   * *who* took the food, and a code with no checklist proves nothing about what
+   * was in the bag.
+   */
+  handover?: { code: string; checks: HandoverCheck[] };
+  /**
    * Complete: what the rider earned on this order, when the caller knows it.
    * The payout needs trip geometry the order does not carry, so the delivery
    * unit computes it and hands it in (G04); null leaves the rider's side of the
@@ -299,7 +369,10 @@ export type TransitionError =
   | "errors.prepTimeRequired"
   | "errors.riderRequired"
   | "errors.otpLocked"
-  | "errors.cashNotConfirmed";
+  | "errors.cashNotConfirmed"
+  | "errors.handoverChecklistIncomplete"
+  | "errors.handoverCodeInvalid"
+  | "errors.handoverLocked";
 
 export type TransitionResult =
   | { order: Order; event: OrderEvent; error: null }
@@ -339,6 +412,32 @@ export function transition(
     return fail("errors.riderRequired");
   }
   if (to === "delivered" && isOtpLocked(order)) return fail("errors.otpLocked");
+  /**
+   * Food does not leave the kitchen unverified (G22).
+   *
+   * The rule lives here rather than in the handover dialog for the same reason the
+   * cash rule below does, and the reason Phases 6–7 put every refusal in
+   * `decideVendorApplication`: there are three surfaces that can collect an order
+   * — the restaurant's board, the courier's trip screen and the operations desk —
+   * and a check implemented in one dialog is a check the other two do not perform.
+   * The autopilot goes through the same guard and has to satisfy it too.
+   *
+   * Both halves are required. The checklist is what was in the bag; the code is
+   * *who* took it, and it is derived from the order **and the assigned courier**,
+   * so a courier dispatch never sent cannot produce one and a reassignment retires
+   * the old code without anything having to remember to.
+   */
+  if (to === "picked-up" && requiresHandover(order)) {
+    if (isHandoverLocked(order)) return fail("errors.handoverLocked");
+    const handover = patch.handover;
+    if (!handover || missingHandoverChecks(handover.checks).length > 0) {
+      return fail("errors.handoverChecklistIncomplete");
+    }
+    const expected = handoverCodeFor(order.id, order.lifecycle.rider?.id ?? null);
+    if (!handoverMatches(expected, handover.code)) {
+      return fail("errors.handoverCodeInvalid");
+    }
+  }
   /**
    * A cash delivery cannot close until the rider says the money changed hands
    * (G05). Refusing it here rather than in the doorstep dialog is what makes the
@@ -402,6 +501,18 @@ export function transition(
         life.rider = null;
         life.assignment = null;
         life.assignedAt = null;
+      }
+      break;
+    }
+    case "picked-up": {
+      // Stamped here, not by the caller — the same rule that puts the promised
+      // ready time and the cash settle in this switch. A surface that stamped its
+      // own would be a fourth place the handover could be recorded differently.
+      if (patch.handover) {
+        life.handoverVerifiedAt = iso;
+        life.handoverChecks = HANDOVER_CHECKS.filter((c) =>
+          patch.handover!.checks.includes(c),
+        );
       }
       break;
     }
@@ -719,6 +830,37 @@ export function settleRefund(order: Order, now = Date.now()): Order {
   return { ...settled, payment: { ...order.payment, status: "refunded" } };
 }
 
+/**
+ * Record a wrong courier code at the counter. Pure.
+ *
+ * The counterpart of `recordOtpFailure`, and deliberately identical in shape: an
+ * attempt is a fact about the order, it is logged where every other fact about the
+ * order is logged, and three of them close the handover. `actor` is the restaurant
+ * because it is the counter typing, even when the courier is reading the digits out.
+ */
+export function recordHandoverFailure(order: Order, now = Date.now()): Order {
+  const iso = new Date(now).toISOString();
+  const attempts = order.lifecycle.handoverAttempts + 1;
+  return {
+    ...order,
+    updatedAt: iso,
+    lifecycle: {
+      ...order.lifecycle,
+      handoverAttempts: attempts,
+      events: [
+        ...order.lifecycle.events,
+        {
+          id: `${eventId(order.id, order.status, now)}_handover${attempts}`,
+          status: order.status,
+          at: iso,
+          actor: "restaurant",
+          note: `handover-failed:${attempts}`,
+        },
+      ],
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Actor-facing action lists — what a surface should offer, derived not hardcoded
 // ---------------------------------------------------------------------------
@@ -744,6 +886,8 @@ export interface OrderAction {
     | "fail-reason"
     /** The rider took cash at the door — the `delivered` guard requires it. */
     | "cash"
+    /** The counter is releasing the food — the `picked-up` guard requires it. */
+    | "handover"
     /** Irreversible, so it is asked twice. */
     | "confirm";
 }
@@ -781,7 +925,14 @@ export function restaurantActions(order: Order): OrderAction[] {
       }
       break;
     case "rider-assigned":
-      actions.push({ to: "picked-up", key: "handToRider", tone: "primary" });
+      // Releasing the food is a verified step now (G22), so it prompts. The guard
+      // in `transition` is what enforces it; this only says a dialog is needed.
+      actions.push({
+        to: "picked-up",
+        key: "handToRider",
+        tone: "primary",
+        prompts: "handover",
+      });
       break;
     case "returned":
       break;
@@ -797,7 +948,10 @@ export function riderActions(order: Order): OrderAction[] {
   switch (order.status) {
     case "rider-assigned":
       return [
-        { to: "picked-up", key: "confirmPickup", tone: "primary" },
+        // The courier can complete the handover from their own screen, and is held
+        // to the same checklist and the same code — their app is where the code is
+        // shown, so this is the natural side to run it from.
+        { to: "picked-up", key: "confirmPickup", tone: "primary", prompts: "handover" },
         { to: "ready", key: "handBack", tone: "danger" },
       ];
     case "picked-up":
@@ -910,6 +1064,10 @@ function adminPrompt(order: Order, to: OrderStatus): OrderAction["prompts"] {
       return "fail-reason";
     case "rider-assigned":
       return "rider";
+    case "picked-up":
+      // The desk is not exempt from the counter check either — an operator who
+      // could wave food out of a kitchen would make the checklist advisory.
+      return requiresHandover(order) ? "handover" : "confirm";
     case "delivered":
       // Only a cash delivery has money to account for; everything else is a
       // second look, because a handover cannot be un-done.

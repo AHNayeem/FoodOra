@@ -1,5 +1,6 @@
 import type { Order, OrderActor, OrderStatus } from "@/types";
-import { PREP_TIME_OPTIONS } from "./order-lifecycle";
+import { PREP_TIME_OPTIONS, handoverCodeOf } from "./order-lifecycle";
+import { HANDOVER_CHECKS, requiresHandover } from "./order-machine";
 import type { TransitionPatch } from "./order-machine";
 
 /**
@@ -106,6 +107,26 @@ export function nextMove(order: Order, now: number, speed = 1): AutoMove | null 
     const prepMinutes =
       items >= 5 ? PREP_TIME_OPTIONS[2] : items >= 3 ? PREP_TIME_OPTIONS[1] : PREP_TIME_OPTIONS[0];
     return { kind: "transition", to: move.to, actor: move.actor, patch: { prepMinutes } };
+  }
+
+  /**
+   * Collecting the food is a verified step (Phase 10, G22), and the autopilot is
+   * not exempt — property 1 above is the whole point: it proposes a move through
+   * the same guard a person's tap goes through, so it has to satisfy the same
+   * checklist and quote the same courier code. It can do so honestly because both
+   * are derived from the order it is looking at, which is also why a presenter
+   * watching a demo order collect itself is watching the real check pass rather
+   * than a bypass.
+   */
+  if (move.to === "picked-up" && requiresHandover(order)) {
+    const code = handoverCodeOf(order);
+    if (!code) return null;
+    return {
+      kind: "transition",
+      to: move.to,
+      actor: move.actor,
+      patch: { handover: { code, checks: [...HANDOVER_CHECKS] } },
+    };
   }
 
   return { kind: "transition", to: move.to, actor: move.actor };

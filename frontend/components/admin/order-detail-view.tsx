@@ -48,6 +48,7 @@ import { OrderTimeline } from "@/components/orders/order-timeline";
 import { PrepTimeDialog } from "@/components/orders/prep-time-dialog";
 import { ReasonDialog } from "@/components/orders/reason-dialog";
 import { AssignRiderDialog } from "@/components/orders/assign-rider-dialog";
+import { HandoverDialog } from "@/components/orders/handover-dialog";
 import { PayoutBreakdown } from "@/components/rider/payout-breakdown";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,7 @@ type Dialog =
   | { kind: "fail-reason" }
   | { kind: "rider"; reassign: boolean }
   | { kind: "cash"; to: OrderStatus }
+  | { kind: "handover" }
   | { kind: "confirm"; to: OrderStatus };
 
 /**
@@ -98,10 +100,17 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
   const assignRider = useOrders((s) => s.assignRider);
   const reassignRider = useOrders((s) => s.reassignRider);
   const autoDispatch = useOrders((s) => s.autoDispatch);
+  const failHandover = useOrders((s) => s.failHandover);
 
   const [now, setNow] = useState(() => Date.now());
   const [fleet, setFleet] = useState<Rider[]>([]);
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  /**
+   * The counter check's last refusal (Phase 10, G22). Held separately from the
+   * toast the other refusals use, because a wrong code is answered *inside* the
+   * dialog — the operator has to be able to try again without reopening it.
+   */
+  const [handoverError, setHandoverError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -193,6 +202,9 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
         return setDialog({ kind: "rider", reassign: false });
       case "cash":
         return setDialog({ kind: "cash", to: target });
+      case "handover":
+        setHandoverError(null);
+        return setDialog({ kind: "handover" });
       case "confirm":
         return setDialog({ kind: "confirm", to: target });
       default:
@@ -762,6 +774,35 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
           submitting={submitting}
           onClose={() => setDialog(null)}
           onConfirm={() => run(dialog.to, { cashCollected: true })}
+        />
+      )}
+
+      {/* Collecting the food needs a verified handover, and the desk is not exempt
+          (G22) — an operator who could wave food out of a kitchen would make the
+          checklist advisory. The code is revealed here because the desk *is* the
+          platform; it is not revealed on the restaurant's own board. */}
+      {dialog?.kind === "handover" && (
+        <HandoverDialog
+          open
+          order={order}
+          revealCode
+          submitting={submitting}
+          error={handoverError}
+          onClose={() => setDialog(null)}
+          onConfirm={(handover) => {
+            const result = advance(orderId, "picked-up", "admin", { handover });
+            if (result.error) {
+              // A wrong code is counted on the order, exactly as a wrong doorstep
+              // code is — the store does the counting because a refused
+              // transition is pure and leaves the order untouched.
+              if (result.error === "errors.handoverCodeInvalid") failHandover(orderId);
+              setHandoverError(t(result.error));
+              return;
+            }
+            setHandoverError(null);
+            setDialog(null);
+            toast.success(t("interveneDone", { status: to("status.picked-up") }));
+          }}
         />
       )}
 

@@ -38,6 +38,7 @@ import { OrderTimeline } from "@/components/orders/order-timeline";
 import { PrepTimeDialog } from "@/components/orders/prep-time-dialog";
 import { ReasonDialog } from "@/components/orders/reason-dialog";
 import { AssignRiderDialog } from "@/components/orders/assign-rider-dialog";
+import { HandoverDialog } from "@/components/orders/handover-dialog";
 import { useDashboard } from "./dashboard-context";
 
 /** Countdown cadence for the kitchen timers. */
@@ -85,6 +86,7 @@ export function OrdersBoard() {
   const allOrders = useOrders((s) => s.orders);
   const shifts = useFleet((s) => s.shifts);
   const advance = useOrders((s) => s.advance);
+  const failHandover = useOrders((s) => s.failHandover);
   const delayOrder = useOrders((s) => s.delayOrder);
   const assignRider = useOrders((s) => s.assignRider);
   const autoDispatch = useOrders((s) => s.autoDispatch);
@@ -94,10 +96,19 @@ export function OrdersBoard() {
   const [fleet, setFleet] = useState<Rider[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [dialog, setDialog] = useState<
-    | { kind: "prep-time" | "reject-reason" | "cancel-reason" | "rider"; order: Order }
+    | {
+        kind: "prep-time" | "reject-reason" | "cancel-reason" | "rider" | "handover";
+        order: Order;
+      }
     | null
   >(null);
   const [submitting, setSubmitting] = useState(false);
+  /**
+   * The counter check's last refusal (Phase 10, G22). Held here rather than
+   * toasted, because a wrong courier code is answered *inside* the dialog — the
+   * counter has to be able to ask for it again without reopening everything.
+   */
+  const [handoverError, setHandoverError] = useState<string | null>(null);
 
   useEffect(() => {
     useOrders.persist.rehydrate();
@@ -153,6 +164,7 @@ export function OrdersBoard() {
 
   function onAction(order: Order, action: OrderAction) {
     if (action.prompts) {
+      if (action.prompts === "handover") setHandoverError(null);
       setDialog({ kind: action.prompts as never, order });
       return;
     }
@@ -176,6 +188,10 @@ export function OrdersBoard() {
 
   const visible = orders.filter((o) => GROUPS[tab].includes(o.status));
   const newCount = counts.new;
+  /** The dialog's order as the store currently holds it — see the handover block. */
+  const liveDialogOrder = dialog
+    ? (orders.find((o) => o.id === dialog.order.id) ?? dialog.order)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -306,6 +322,37 @@ export function OrdersBoard() {
             if (run(dialog.order, "cancelled", { reason, note: note || null })) {
               setDialog(null);
             }
+          }}
+        />
+      )}
+
+      {/* Releasing the food — the counter checklist and the courier's code (G22).
+          `liveDialogOrder` re-reads the order from the store rather than using the
+          captured one, because a wrong code writes an attempt onto the order and
+          the dialog's "2 attempts left" has to move with it. */}
+      {dialog?.kind === "handover" && liveDialogOrder && (
+        <HandoverDialog
+          open
+          order={liveDialogOrder}
+          submitting={submitting}
+          error={handoverError}
+          onClose={() => setDialog(null)}
+          onConfirm={(handover) => {
+            const result = advance(liveDialogOrder.id, "picked-up", "restaurant", {
+              handover,
+            });
+            if (result.error) {
+              // Counted in the store, because a refused transition is pure and
+              // leaves the order untouched — the same split as the doorstep OTP.
+              if (result.error === "errors.handoverCodeInvalid") {
+                failHandover(liveDialogOrder.id);
+              }
+              setHandoverError(t(result.error));
+              return;
+            }
+            setHandoverError(null);
+            setDialog(null);
+            toast.success(t("handoverDone"));
           }}
         />
       )}

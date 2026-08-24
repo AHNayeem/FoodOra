@@ -22,6 +22,8 @@ import { useSupport } from "@/stores/support";
 import { useOnboarding } from "@/stores/onboarding";
 import { usePayouts } from "@/stores/payouts";
 import { useMenu } from "@/stores/menu";
+import { useStaff } from "@/stores/staff";
+import { useVendorSettings } from "@/stores/vendor-settings";
 import { cn } from "@/lib/utils";
 
 /**
@@ -53,6 +55,8 @@ export function DemoBar() {
   const resetApplications = useOnboarding((s) => s.resetDemo);
   const resetPayouts = usePayouts((s) => s.resetDemo);
   const resetMenus = useMenu((s) => s.resetDemo);
+  const resetSettings = useVendorSettings((s) => s.resetDemo);
+  const resetStaff = useStaff((s) => s.resetDemo);
 
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
@@ -204,6 +208,14 @@ export function DemoBar() {
                 // audience, and a menu edited during the last demonstration would
                 // be the one thing on screen nobody could explain.
                 resetMenus();
+                // And Phase 10's two: an edited profile and an invited colleague are
+                // both decisions this device made about a restaurant, and leaving
+                // them would open the next demonstration on somebody else's
+                // settings. The owner's staff record is re-minted from the account
+                // the moment the settings screen opens, so nothing is lost that the
+                // accounts do not already say.
+                resetSettings();
+                resetStaff();
                 toast.success(t("resetToast"));
               }}
               className="ms-auto inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5"

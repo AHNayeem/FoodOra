@@ -17,6 +17,8 @@ import {
   Ticket,
   Star,
   Store,
+  Settings,
+  BarChart3,
   ExternalLink,
   LogOut,
   ShieldAlert,
@@ -27,6 +29,8 @@ import { useAuth } from "@/stores/auth";
 import { useMerchant } from "@/stores/merchant";
 import { useOnboarding } from "@/stores/onboarding";
 import { canManageVendor } from "@/lib/vendor-onboarding";
+import { effectiveVendor, emptySettingsDraft } from "@/lib/vendor-settings";
+import { useVendorSettings } from "@/stores/vendor-settings";
 import { getDashboardVendor } from "@/services/vendor";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
@@ -59,6 +63,10 @@ const NAV = [
   { href: "/dashboard/coupons", key: "coupons", icon: Ticket, exact: false },
   { href: "/dashboard/reviews", key: "reviews", icon: Star, exact: false },
   { href: "/dashboard/qr", key: "qr", icon: QrCode, exact: false },
+  // Phase 10: the report a restaurant used to have to read off three range-less
+  // charts on the overview, and the settings it had no way to change at all.
+  { href: "/dashboard/analytics", key: "analytics", icon: BarChart3, exact: false },
+  { href: "/dashboard/settings", key: "settings", icon: Settings, exact: false },
 ] as const;
 
 /** Centered state (spinner / gate messages) used before the dashboard renders. */
@@ -94,10 +102,23 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const vendorApplications = useOnboarding((s) => s.vendorApplications);
   const admittedVendors = useOnboarding((s) => s.admittedVendors);
 
+  /**
+   * Phase 10: the restaurant's own edits to its listing.
+   *
+   * Rehydrated with the session rather than by whichever page happens to read it,
+   * for the same reason onboarding is: the *topbar* shows the restaurant's name, so
+   * the fold has to be available before the frame renders. The gate below waits on
+   * it — an unfolded first paint would show the seeded name and then swap it, which
+   * looks like the edit failed.
+   */
+  const settingsHydrated = useVendorSettings((s) => s.hydrated);
+  const settingsDrafts = useVendorSettings((s) => s.drafts);
+
   useEffect(() => {
     useAuth.persist.rehydrate();
     useMerchant.persist.rehydrate();
     useOnboarding.persist.rehydrate();
+    useVendorSettings.persist.rehydrate();
   }, []);
 
   const canManage = !!user && MANAGEMENT_ROLES.includes(user.role);
@@ -177,7 +198,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!onboardingHydrated || loadingVendor) {
+  if (!onboardingHydrated || !settingsHydrated || loadingVendor) {
     return (
       <CenterState>
         <div className="size-8 animate-spin rounded-full border-2 border-line border-t-primary" />
@@ -247,8 +268,27 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  /**
+   * The restaurant as it actually is — the catalog listing with this restaurant's
+   * own edits folded over it (Phase 10, G18).
+   *
+   * Folded here, once, and handed down through the context every dashboard page
+   * already reads. `effectiveVendor` returns the *same object* when there is no
+   * draft, so this costs nothing for a restaurant that has changed nothing and does
+   * not re-render every page under it on a clock tick.
+   *
+   * The storefront still reads the catalog: it is server-rendered and cannot see a
+   * client draft. That is the same honest boundary Phase 9 drew for the menu — the
+   * merchant's surfaces read the fold, the server's read the seed, and Phase E
+   * resolves both from one query.
+   */
+  const managed = effectiveVendor(
+    vendor,
+    settingsDrafts[vendor.id] ?? emptySettingsDraft(vendor.id),
+  );
+
   return (
-    <DashboardProvider vendor={vendor}>
+    <DashboardProvider vendor={managed}>
       <div className="flex min-h-screen bg-surface-muted">
         {/* Desktop sidebar */}
         <aside className="hidden w-64 shrink-0 flex-col border-e border-line bg-surface lg:flex">
@@ -297,7 +337,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {/* Topbar */}
           <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur sm:px-6">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-ink">{vendor.name}</p>
+              <p className="truncate text-sm font-bold text-ink">{managed.name}</p>
               <p className="truncate text-xs text-muted">{t("topbarTagline")}</p>
             </div>
 
