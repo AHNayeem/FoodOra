@@ -19,11 +19,13 @@ import {
   Store,
   Bike,
   Banknote,
+  Users,
 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { useAuth } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { useCms } from "@/stores/cms";
+import { useCustomers } from "@/stores/customers";
 import { liveTicketCount, useSupport } from "@/stores/support";
 import {
   pendingRiderCount,
@@ -57,6 +59,9 @@ const NAV = [
   { href: "/admin/orders", key: "navOrders", icon: ShoppingBag },
   // Phase 5: `customer-support` was already an admin role with no queue behind it.
   { href: "/admin/support", key: "navSupport", icon: LifeBuoy },
+  // Phase 11: the orders list finds an order and the queue finds a dispute;
+  // neither could find a *person*, which is what a support call is about.
+  { href: "/admin/customers", key: "navCustomers", icon: Users },
   // Phases 6–7: the two onboarding queues. Separate entries rather than one
   // "Partners" section — a restaurant application and a rider application are
   // reviewed by different people against different paperwork.
@@ -124,6 +129,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     void useCms.persist.rehydrate();
     useSupport.persist.rehydrate();
     useOnboarding.persist.rehydrate();
+    // Phase 11: hydrated here as well as on the directory itself, so the
+    // seeded accounts exist before any surface asks whether somebody is blocked.
+    useCustomers.persist.rehydrate();
   }, []);
 
   if (!hydrated) {

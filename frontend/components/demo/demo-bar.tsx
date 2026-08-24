@@ -23,6 +23,7 @@ import { useOnboarding } from "@/stores/onboarding";
 import { usePayouts } from "@/stores/payouts";
 import { useMenu } from "@/stores/menu";
 import { useStaff } from "@/stores/staff";
+import { useCustomers } from "@/stores/customers";
 import { useVendorSettings } from "@/stores/vendor-settings";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,7 @@ export function DemoBar() {
   const resetMenus = useMenu((s) => s.resetDemo);
   const resetSettings = useVendorSettings((s) => s.resetDemo);
   const resetStaff = useStaff((s) => s.resetDemo);
+  const resetCustomers = useCustomers((s) => s.resetDemo);
 
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
@@ -216,6 +218,10 @@ export function DemoBar() {
                 // accounts do not already say.
                 resetSettings();
                 resetStaff();
+                // And Phase 11's directory: a block laid down during the last
+                // demonstration would silently refuse the next reviewer's checkout
+                // with no order history left on screen to explain why.
+                resetCustomers();
                 toast.success(t("resetToast"));
               }}
               className="ms-auto inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5"

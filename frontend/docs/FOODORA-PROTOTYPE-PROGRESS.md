@@ -17,6 +17,7 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 8 — Restaurant Financials + Admin Payouts Done
 - Phase 9 — Restaurant Menu Builder Done
 - Phase 10 — Restaurant Settings + Staff + Handover + Analytics Done
+- Phase 11 — Admin Customer Management Done
 
 ---
 
@@ -168,7 +169,51 @@ payout numbers to keep in step with the fare rules.
 
 ## Current Phase
 
-None in progress. Phases 1–10 complete.
+None in progress. Phases 1–11 complete.
+
+### Phase 11 — Admin Customer Management (2026-08-25)
+
+**Done.** G15 closed: `/admin/customers` and `/admin/customers/[id]`, with the
+list, search, segments, sort, detail, account status, order history, spending
+summary, support tickets and block/unblock the spec asks for.
+
+The three open questions the previous session recorded were settled before any
+code was written, and each answer is stated in the file that acts on it:
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| What identifies a customer | **The normalised phone**, and `Customer.id` is derived from it (`customerIdFor`). Not a minted `User`: the synthesised names have no accounts behind them, and inventing one per name would have been the "disconnected copy" §5.2 forbids. Not a new `Order.customerId` either — that is a GraphQL wire-format change plus a store migration to backfill a value nobody ever collected. | `types/customer.ts` header, `lib/customers.ts` header |
+| Where blocking is enforced | **Checkout**, at submit, before `placeOrder`. Phase 7's lesson applied: a suspension that never reaches dispatch suspends nothing, so the chokepoint was named first and `isPhoneBlocked` was written for it. | `components/checkout/checkout-view.tsx`, the guard's own comment; `stores/customers.isPhoneBlocked` |
+| Gross or net spending | **Both, labelled.** `grossSpend` counts only orders the customer was actually charged for — `payment.status` of `paid` or `refunded`, the same test `openRefundOwed` uses — and `netSpend` takes the settled refunds off. Nothing is re-summed from prices: the charge test and the refund amounts are read off the order records. | `types/customer.ts` (`CustomerStats`), `lib/customers.customerStats` |
+
+**The list is derived, not stored.** This is the phase's one structural decision
+and everything else follows from it. `lib/customers.buildDirectory` folds the
+shared order and ticket stores into one row per phone and hangs a managed account
+record off it where one exists; `stores/customers` persists **only the accounts
+somebody has acted on**. Two consequences worth stating:
+
+* A reviewer who checks out with a phone number nobody has seen appears in
+  `/admin/customers` on the next render, because there is no table anyone has to
+  remember to write to.
+* There is no cached `lifetimeSpend` anywhere, so the spending summary a moderator
+  blocks somebody over cannot drift from the money the platform settles (§5.4).
+
+Blocking a *derived* row mints its managed record as part of the same action
+(`stores/customers.moderate`), so the persisted set stays the size of the work the
+desk has actually done rather than growing a row per guest checkout.
+
+**The two write paths are deliberately asymmetric.** Blocking demands grounds
+*and* a written reason of at least 8 characters — the category is what gets
+counted, the sentence is what the person is owed when they appeal, which is the
+same rule vendor suspension already follows. Unblocking asks only for
+confirmation, with an optional note: a reinstatement that is hard to perform is a
+reinstatement that quietly does not happen.
+
+**Nothing was rewritten.** No change to `Order`, `SupportTicket`, `User`, the
+order machine, the GraphQL wire format, or any store's persisted shape. The four
+touched files gained an import and a few lines each: a nav entry and a rehydrate
+in `admin-shell`, a block gate in `checkout-view`, a reset call in `demo-bar`, one
+line in the `types` barrel.
 
 ### Phase 10 — Restaurant Settings + Staff + Handover + Analytics (2026-08-25)
 
@@ -254,11 +299,11 @@ plausible-looking implementation would miss:
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
 
-Re-run on 2026-08-25 after Phase 10, all three still **PASS**. The build's route
+Re-run on 2026-08-25 after Phase 11, all three still **PASS**. The build's route
 table lists `/dashboard/earnings`, `/dashboard/menu`, `/admin/payouts`,
-`/admin/payouts/[id]` and now `/dashboard/analytics` and `/dashboard/settings`,
-which is the compiled evidence that Phases 8–10 are wired and not merely present
-as files.
+`/admin/payouts/[id]`, `/dashboard/analytics`, `/dashboard/settings` and now
+`/admin/customers` and `/admin/customers/[id]`, which is the compiled evidence
+that Phases 8–11 are wired and not merely present as files.
 
 One transient build failure is worth naming so it is not mistaken for a
 regression: `bun run build` occasionally aborts with `Failed to fetch
@@ -283,6 +328,20 @@ the five staff roles and their hints, the three staff statuses, all eleven
 permissions, the four permission origins, and every `SettingsError` / `StaffError`
 / `OnboardingError` member the surfaces can render).
 
+Phase 11 added one namespace — `customers` (126 keys) — plus `admin.navCustomers`
+and `checkout.errors.accountBlocked`. All three locales are **key-for-key
+identical** (4169 keys each, zero symmetric difference), every literal `t("…")` in
+the two new components resolves, and each dynamic key union was enumerated member
+by member (the seven segments, the five sorts, the seven block reasons, the three
+moderation actions and the five `CustomerError` members the surfaces can render).
+
+The catalogues were also checked the harder way, because key symmetry does not
+catch a malformed plural: every `customers.*` message in all three locales was
+parsed and formatted with `intl-messageformat` — next-intl's own ICU engine — at
+counts 0, 1 and 3, so the `=0` / `one` / `other` branches of the Bengali and
+Arabic plurals were each rendered rather than merely present. **384 messages
+parsed and formatted, none failed.**
+
 That last check caught a real defect before it shipped: `next-intl` reads a `.` in
 a key as a path separator, so a literal `"orders.manage"` key under
 `staff.permission` could never have resolved and the permission editor would have
@@ -302,10 +361,11 @@ the flag is unset.
 
 Verified by driving the real modules and the real persisted store (throwaway
 harnesses, not committed — 156 domain checks and 58 store checks for Phases 6–7,
-57 domain/seam checks and 37 store checks for Phase 3, and **269 checks for
-Phase 10** across four harnesses: 57 on the handover, 126 on settings and staff,
-80 on analytics and the CSV export, 6 on order-book uniqueness), plus a
-dev-server smoke test of every touched route:
+57 domain/seam checks and 37 store checks for Phase 3, **269 checks for Phase 10**
+across four harnesses (57 on the handover, 126 on settings and staff, 80 on
+analytics and the CSV export, 6 on order-book uniqueness), and **141 checks for
+Phase 11** across two harnesses: 115 on the customer domain and 26 on the store
+and the checkout gate), plus a dev-server smoke test of every touched route:
 
 | Flow | Result |
 |---|---|
@@ -452,6 +512,20 @@ dev-server smoke test of every touched route:
 | **Order book (the fix)** no vendor's synthesised week contains a duplicate id or reference; the unioned platform book has none; every settled order lands in exactly one settlement line; no duplicate vendor+period; determinism survives; every seeded order is distinct | PASS |
 | Dev-server render of `/`, `/dashboard`, `/dashboard/analytics`, `/dashboard/settings`, `/dashboard/orders`, `/dashboard/earnings`, `/dashboard/menu`, `/admin`, `/admin/orders`, `/delivery`, `/account/orders` | 200, no new errors |
 | The two new routes render under `bn` and `ar` with no `MISSING_MESSAGE` / `IntlError` in the dev log | PASS |
+| **Phase 11 — identity** formatting variants of the same number (`+880 1711 223344`, `(017) 1122 3344`) collapse to one key and one id; different numbers never collide; the id is URL-safe and carries no phone number; an empty number resolves to `cus_unknown` rather than an empty id | PASS |
+| **Phase 11 — blocking** a block stamps status, grounds, who and when and appends one log entry carrying the moderator's prose; a *second* block is refused (`errors.alreadyBlocked`) and leaves the record byte-identical; a note shorter than 8 characters is refused; missing grounds are refused | PASS |
+| Unblocking restores the status and clears grounds, `blockedAt` and `blockedBy` — and keeps both entries in the log, so what happened survives the reinstatement; unblocking an active account is refused; the note is optional | PASS |
+| A note changes no status, carries no grounds, and is refused when it says nothing; two actions committed at the same instant keep distinct event ids | PASS |
+| **Phase 11 — money is derived, never invented** gross counts only orders the customer was charged for (a pending cash order in flight is excluded); settled refunds subtract; an over-refund clamps net spend at zero rather than going negative; the average is over charged orders and is `0` not `NaN` when there are none | PASS |
+| Favourite restaurant, last delivery area, average rating and first/last order date are all read off the order records; a customer with no orders reports zeroes and nulls rather than throwing; only *live* tickets count as open | PASS |
+| **Phase 11 — the join** orders and tickets match on the normalised phone regardless of how either was typed; soft-deleted orders are skipped; an empty phone matches nothing rather than everything | PASS |
+| **Phase 11 — the directory** a guest with orders and no managed row appears unbidden, unverified, with `joinedAt` set to their first order and their newest name; a managed row's block survives an incoming order while its *name* is refreshed from it; a seeded account with no orders is still listed, with zero spend; the list is sorted by most recent activity | PASS |
+| **Phase 11 — search** multi-word search is an intersection over name, phone, email, reference and area; segment counts narrow with the search box but do **not** collapse when a segment is picked; never-ordered is not counted as lapsed; every sort is descending on its own key and the name tie-break makes the order independent of input order | PASS |
+| **Phase 11 — the seed** is deterministic; ids match their phones and are unique; it contains a verified, an unverified, a blocked and a never-ordered account plus one linked to the `usr_customer` sign-in; every blocked seed carries grounds *and* prose; no active seed carries a stale block stamp | PASS |
+| **Phase 11 — the store** blocking a guest who has only ever been an order contact mints exactly one account row, keeps the name from their order, and is then refused a second time; blocking an unknown id is refused; unblocking reinstates without deleting the row and leaves both decisions in the log; seeding twice is idempotent | PASS |
+| **Phase 11 — the gate bites** `isPhoneBlocked` refuses the blocked number, refuses it written with spaces, and lets an unrelated number through; after an unblock the same number passes again. This is the seam `components/checkout/checkout-view.tsx` calls at submit, so a block stops an order rather than colouring a row | PASS |
+| Directory derived over the *seeded* device: every seeded order's contact is present, total net spend is non-zero, and no row's net exceeds its gross | PASS |
+| Dev-server render of `/admin/customers`, `/admin/customers/[id]`, `/admin/orders` and `/checkout` under `en`, `bn` and `ar` | 200, no new errors |
 
 Not verified: a click-through in a real browser. No browser automation is
 available in this environment, so the assertions above drive the store actions the
@@ -915,62 +989,156 @@ No architectural violations were introduced in Phases 1–10.
 
 ---
 
+### Added in Phase 11
+
+```text
+types/customer.ts          (Customer · CustomerStats · CustomerRecord · CustomerModerationEvent)
+   ↓
+lib/customers.ts           (pure: normalisePhone · customerIdFor · block/unblock/note guards ·
+                            customerStats · buildDirectory — the join, and every derived number)
+lib/customer-search.ts     (pure: CustomerQuery · inSegment · filterCustomers · countBySegment)
+lib/mock/customers.ts      (buildDemoCustomers(now) — profile + status only, no numbers)
+   ↓
+stores/customers.ts        (accounts the desk has acted on; `directory()` derives the rest
+                            from stores/orders + stores/support at read time)
+   ↓                                    ↘
+components/admin/customers-view.tsx      components/checkout/checkout-view.tsx
+components/admin/customer-detail-view.tsx   (the gate: isPhoneBlocked at submit)
+   ↓
+/admin/customers   ·   /admin/customers/[id]
+```
+
+**The phone is the join key, and that is a decision rather than a shortcut.** An
+`Order` carries `contact.phone` and a `SupportTicket` carries `customerPhone`;
+neither carries an account id, because checkout has always been open to guests.
+The alternatives were both worse: minting a `User` per synthesised name invents
+records §5.2 forbids, and adding `Order.customerId` means changing the GraphQL
+wire format (`lib/graphql/order.operations`) and migrating every persisted order to
+backfill a value nobody ever collected. `customerIdFor` hashes the normalised phone
+instead — deterministic across devices and reloads, so a `/admin/customers/cus_…`
+link is shareable, and a hash rather than the number itself because an id ends up
+in a URL.
+
+**What is stored is only what a person decided.** Profile, verification, account
+status and the moderation log. Every countable — spend, order counts, disputes,
+favourite restaurant, average rating — is derived on read by
+`lib/customers.customerStats`, so there is no cached total that can drift from the
+books (§5.4). `grossSpend` uses the order machine's own test for "was this customer
+charged" (`payment.status` of `paid` or `refunded`, the condition `openRefundOwed`
+guards on) rather than a second opinion about which statuses mean money moved.
+
+**A block reaches a chokepoint.** Phase 7's lesson, applied: `stores/customers.isPhoneBlocked`
+is read by `components/checkout/checkout-view.tsx` at submit, before `placeOrder`,
+so blocking somebody in the admin directory refuses their next order. Checked at
+submit rather than on the contact field, because the number can be edited up to the
+last keystroke and refusing mid-typing would tell somebody they are blocked before
+they have finished saying who they are.
+
+* **No second lifecycle, no second store reading a service, nothing in `lib/`
+  reading a store.** `lib/customers` and `lib/customer-search` are pure and
+  clock-injected like `lib/support`, `lib/settlement` and `lib/onboarding`; the
+  store reads the other two stores the way `stores/support.resolve` already does.
+  The order machine is untouched, and no persisted shape changed — `stores/customers`
+  is new at version 1, so no migration exists to get wrong.
+* **The demo reset was extended, not left behind.** `resetCustomers` joins the
+  other seven in `components/demo/demo-bar.tsx`: a block laid down during the last
+  demonstration would otherwise silently refuse the next reviewer's checkout with no
+  order history left on screen to explain why.
+* **Phase E exit, stated in the store's own header.** `stores/customers` becomes a
+  cache of a server-owned `customers` table and `block`/`unblock`/`addNote` become
+  mutation calls; `buildDirectory` becomes the server's query. No action signature
+  changes.
+
+No architectural violations were introduced in Phases 1–11.
+
+---
+
 ## Next Phase
 
-**PHASE 11 — Admin Customer Management (G15).** Not started; needs an explicit
-instruction. Phases 1–10 are complete and verified, so this is the first open item
+**PHASE 12 — Admin Coupons / Campaigns (G28).** Not started; needs an explicit
+instruction. Phases 1–11 are complete and verified, so this is the first open item
 in §6's order.
 
 ### What the spec asks for
 
-Create `/admin/customers`, with: customer list, search, filters, detail, account
-status, order history, spending summary, support tickets, and block/unblock where
-appropriate. Binding constraint: **"Use shared customer/order records."** — the
-same rule Phase 8 obeyed for money and Phase 10 for counts, applied to people.
+Admin must be able to create a platform coupon, activate and deactivate it, and
+define eligibility, validity, usage limits, discount and minimum order — plus
+inspect usage and performance. Two binding constraints: **"Keep restaurant coupons
+separate from platform campaigns"** and **"Preserve the existing coupon engine."**
 
-### What Phases 1–10 leave ready for it
+### What Phases 1–11 leave ready for it
 
-1. **The order is already the customer record.** An `Order` snapshots
-   `contact: { name, phone }` and its `address`, and `services/finance.mergeOrders`
-   /`platformOrderBook` already union every vendor's book with the live store. A
-   customer's order history and spending summary are projections of that set, not a
-   new query — and after Phase 10's fix that book contains no duplicates, so a
-   spending total computed from it is correct by construction.
-2. **The search and filter pattern is settled three times over.** `lib/order-search`,
-   `lib/onboarding-search` and `lib/payout-search` are the same shape: one pure query
-   object, one predicate, counts that move with the search but not with the selection
-   being counted. A fourth (`lib/customer-search`) writes itself, and
-   `components/onboarding/application-filters` / `components/finance/payout-filters`
-   are the shared-filter precedents.
-3. **Support tickets are already attached to orders but not to customers.** Phase 5
-   recorded this deliberately: `SupportTicket` snapshots the name and phone off the
-   order rather than carrying a customer id, because the prototype has one customer
-   account per device. Phase 11 is where that join is needed, and it is the phase's
-   first real decision — whether a customer is *identified* by phone number (which the
-   orders and tickets both carry) or a `User` record is minted for the seeded
-   customers. The phone is the honest key; there are no accounts behind the
-   synthesised names.
-4. **"Account status" and "block/unblock" have no home yet.** `User` has
-   `isVerified` and nothing else, and there is no customer status union. This is the
-   same shape as G09/G11 (vendor and rider approval), and Phases 6–7's answer applies:
-   put the lifecycle on **one** record with a graph and guards in a pure `lib/`
-   module, and do not add a second status field to an entity the catalog owns.
-5. **Blocking must reach a chokepoint or it means nothing.** Phase 7's lesson —
-   suspending a rider had to reach `unavailableRiderIds` for the suspension to
-   suspend anything. The equivalent for a blocked customer is checkout
-   (`services/orders` / `lib/checkout`), and that seam should be identified before
-   the list is built rather than after.
+1. **The coupon engine already exists and must not be rewritten.** `lib/coupons.ts`,
+   `types/coupon.ts`, `lib/mock/coupons.ts`, `services/coupons.ts` and
+   `stores/coupons.ts` are the engine checkout validates against, and
+   `components/dashboard/coupons/*` is the *restaurant's* editor. Phase 12's first
+   job is to read those five files and establish what a "platform campaign" is in
+   the type that already exists, rather than adding a parallel one.
+2. **The admin list/filter pattern is settled four times over.** `lib/order-search`,
+   `lib/onboarding-search`, `lib/payout-search` and now `lib/customer-search` are the
+   same shape: one pure query object, one predicate, counts that move with the search
+   but not with the selection being counted. A fifth writes itself.
+3. **The moderation-with-a-log pattern is settled twice.** Phases 6–7 put a status
+   graph plus an append-only event log on one record; Phase 11 did the same for
+   accounts. Activating and deactivating a campaign is the same shape, and a campaign
+   whose activation history is unreadable is the same defect a status-only customer
+   record would have been.
+4. **"Usage and performance" has a source.** Orders snapshot
+   `pricing.couponCode` and `pricing.discount`, so a campaign's redemptions and the
+   discount it cost are a projection of the shared order set — the same rule Phase 8
+   obeyed for money, Phase 10 for counts and Phase 11 for spend. Nothing needs to be
+   tallied into a counter as coupons are redeemed.
 
 ### Open questions to settle before starting
 
-* **What identifies a customer.** Phone number off the order and the ticket, or a
-  minted `User`? The synthesised names have no accounts behind them, so a `User` per
-  name would be inventing records.
-* **Where blocking is enforced.** A block that only greys out a row is the assignee
-  column Phases 5–7 declined to ship. Name the chokepoint first.
-* **Whether spending is gross or net.** `/admin/payouts` shows the platform's take
-  and a restaurant's net; a *customer's* spend is the gross they paid. Say which,
-  and read it from the same commission records rather than re-summing prices.
+* **What separates a platform campaign from a restaurant coupon in the type.** A
+  new `scope` member on the existing `Coupon`, or a distinct entity? The spec says
+  keep them separate; it does not say keep them in separate types, and two types
+  would mean checkout validating against two engines.
+* **Who bears the discount.** A restaurant's coupon reduces its own take; a platform
+  campaign is marketing spend. `OrderFinancials` currently has no line for it, and
+  Phase 2's rule — commission is computed on `subtotal − discount` — means the
+  answer changes what a vendor is paid. Settle this before the editor is built, or
+  the settlement will quietly be wrong.
+* **Whether deactivating a live campaign invalidates carts that already hold it.**
+  `stores/coupons` holds claimed codes and checkout re-validates at submit; say
+  which behaviour is intended rather than discovering it.
+
+---
+
+## Deliberately deferred by Phase 11 (not omissions)
+
+* **The customer's own surfaces are untouched.** A blocked customer meets the block
+  at checkout and nowhere else — no banner on `/account`, no email. §5.5 lists the
+  customer app among the things not to rewrite, and the spec's Phase 11 list is an
+  admin list. Telling somebody they are blocked, and how to appeal, is a product
+  decision with a notification and a copy deck behind it; inventing one here would
+  have been the larger change.
+* **Blocking does not touch their orders in flight.** An order already accepted is
+  food a kitchen has committed to and a courier may be carrying. Stopping the *next*
+  order is what a block is; cancelling live ones is an intervention the admin order
+  page already offers, deliberately, one order at a time.
+* **`isVerified` is read-only.** It is shown and filtered on, but a moderator cannot
+  set it. Marking somebody verified from the desk would record a verification that
+  never happened, which is the class of fake state Phases 2 and 5 both went out of
+  their way to remove.
+* **Moderation is gated by the admin shell, not by role.** `/admin/customers` admits
+  the same four roles the rest of `/admin` admits. Restricting block/unblock to
+  `moderator` and `super-admin` is **Phase 14 (RBAC)**, and `staffCan` — Phase 10's
+  grant table — is the mechanism it will use. Adding a second, page-local permission
+  check now would be the thing Phase 14 then has to unpick.
+* **There is no platform audit log yet.** Moderation events live on the customer
+  record, append-only and attributed, which is what a customer's own page needs.
+  **Phase 15** builds the cross-entity log, and these events are a source for it
+  rather than something it will have to reconstruct.
+* **Two people sharing one phone are one row; one person with two numbers is two.**
+  The honest consequence of joining on the phone, and it is stated in
+  `types/customer.ts` rather than left to be discovered. It resolves itself the day
+  accounts are real and `Order` carries a customer id — the directory's shape does
+  not change, only what `buildDirectory` groups on.
+* **No erase / export of a customer's data.** `BaseEntity.deletedAt` is on the record
+  and honoured by every read here, so the soft-delete half already works; a
+  right-to-erasure flow is not in §6's list for any phase and was not invented.
 
 ---
 

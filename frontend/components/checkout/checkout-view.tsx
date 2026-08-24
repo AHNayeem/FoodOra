@@ -15,6 +15,7 @@ import { useOrders } from "@/stores/orders";
 import { useAddresses } from "@/stores/addresses";
 import { useCoupons } from "@/stores/coupons";
 import { useWallet } from "@/stores/wallet";
+import { isPhoneBlocked, useCustomers } from "@/stores/customers";
 import { authorisePayment, placeOrder } from "@/services/orders";
 import { getAddressBook } from "@/services/account";
 import { authoriseWalletPayment, getWallet } from "@/services/wallet";
@@ -109,6 +110,10 @@ export function CheckoutView() {
   const walletBalance = useWallet((s) => s.balance);
   const payFromWallet = useWallet((s) => s.pay);
   const pastOrders = useOrders((s) => s.orders);
+  // Phase 11: the accounts platform moderation has acted on. Read here so that
+  // blocking somebody in `/admin/customers` actually stops them ordering — a
+  // block that only paints a chip on an admin table is not a block.
+  const managedAccounts = useCustomers((s) => s.accounts);
 
   // Rehydrate the persisted stores on the client (they skip auto-hydration).
   useEffect(() => {
@@ -118,6 +123,7 @@ export function CheckoutView() {
     useAddresses.persist.rehydrate();
     useCoupons.persist.rehydrate();
     useWallet.persist.rehydrate();
+    useCustomers.persist.rehydrate();
   }, []);
 
   const [fulfillment, setFulfillment] = useState<Fulfillment>("delivery");
@@ -349,6 +355,14 @@ export function CheckoutView() {
     setErrors(next);
     if (Object.keys(next).length > 0) {
       toast.error(t("errors.generic"));
+      return;
+    }
+
+    // Checked at submit rather than on the contact field: the number can be
+    // edited up to the last keystroke, and refusing mid-typing would tell somebody
+    // they are blocked before they have finished saying who they are.
+    if (isPhoneBlocked(managedAccounts, contactPhone.trim())) {
+      toast.error(t("errors.accountBlocked"));
       return;
     }
 
