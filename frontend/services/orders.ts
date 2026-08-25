@@ -9,13 +9,16 @@ import type {
   PaymentMethod,
   SavedAddress,
 } from "@/types";
+import type { MenuSectionWithItems } from "@/types";
 import { LIVE } from "@/config/backend";
 import { getCartKey } from "@/lib/cart-key";
+import { toCartVendor } from "@/lib/cart";
 import { savedAddresses, vendorById } from "@/lib/mock";
 import { createLifecycle } from "@/lib/order-lifecycle";
 import { commissionRateFor, DEFAULT_COMMISSION_RATE } from "@/lib/settlement";
 import { execute } from "@/lib/graphql/execute";
 import { PLACE_ORDER, type OrderWire } from "@/lib/graphql/order.operations";
+import { getVendorBySlug, getVendorMenu } from "./catalog";
 import { mockDelay, ok, type Result } from "./http";
 
 /**
@@ -128,6 +131,17 @@ export async function placeOrder(
   // Provisional until the kitchen commits to a prep time (see the machine).
   const etaIso = input.scheduledFor ?? new Date(now + 40 * 60_000).toISOString();
   const id = `ord_${now.toString(36)}`;
+  /**
+   * Where a scheduled order starts (Phase 17, G34).
+   *
+   * `scheduledFor` used to be captured, displayed on the confirmation and then
+   * ignored: the order entered `placed` immediately and the board, dispatch and
+   * the autopilot all treated a dinner booked for tomorrow as one wanted now.
+   * The slot now decides the *entry state*, and `stores/orders.releaseScheduled`
+   * moves it to `placed` when the kitchen needs to start — one lifecycle, one
+   * extra edge at the front of it.
+   */
+  const status: Order["status"] = input.scheduledFor ? "scheduled" : "placed";
 
   const order: Order = {
     id,
@@ -146,13 +160,13 @@ export async function placeOrder(
     },
     pricing: input.pricing,
     commissionRate: resolveCommissionRate(input.vendor.id),
-    status: "placed",
+    status,
     placedAt: iso,
     estimatedDeliveryAt: etaIso,
     createdAt: iso,
     updatedAt: iso,
     deletedAt: null,
-    lifecycle: createLifecycle(id, iso),
+    lifecycle: createLifecycle(id, iso, status),
   };
 
   return ok(order);
@@ -311,6 +325,32 @@ function toOrder(wire: OrderWire): Order {
       financials: null,
     },
   };
+}
+
+/**
+ * Everything a reorder has to be re-checked against (Phase 17, G35).
+ *
+ * The restaurant *now* — its fees, minimum and free-delivery threshold — and its
+ * menu now. Both are reads that already have a live body behind them
+ * (`services/catalog`), so a reorder is verified against the API the moment the
+ * catalog goes live, with nothing here to change.
+ *
+ * `vendor` is null when the restaurant has gone from the catalog entirely, which
+ * `lib/reorder` treats as "keep the order's own snapshot and let every line fail
+ * its availability check" — the honest outcome, and different from a menu that
+ * merely came back empty.
+ */
+export interface ReorderSource {
+  vendor: CartVendor | null;
+  menu: MenuSectionWithItems[];
+}
+
+export async function getReorderSource(order: Order): Promise<ReorderSource> {
+  const [vendor, menu] = await Promise.all([
+    getVendorBySlug(order.vendor.slug),
+    getVendorMenu(order.vendor.id),
+  ]);
+  return { vendor: vendor ? toCartVendor(vendor) : null, menu };
 }
 
 /**

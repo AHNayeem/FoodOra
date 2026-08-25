@@ -11,6 +11,7 @@ export * from "./settings";
 export * from "./cart";
 export * from "./order";
 export * from "./support";
+export * from "./conversation";
 export * from "./onboarding";
 export * from "./finance";
 export * from "./notification";

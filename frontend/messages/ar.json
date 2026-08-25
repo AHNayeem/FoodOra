@@ -434,10 +434,10 @@
       "press": "الصحافة",
       "other": "شيء آخر"
     },
-    "message": "الرسالة",
+    "message": "رسالة",
     "messageHint": "{count, plural, zero {لا مساحة متبقية} one {بقي حرف واحد} two {بقي حرفان} few {بقيت # أحرف} many {بقي # حرفًا} other {بقي # حرف}}",
     "sending": "جارٍ الإرسال…",
-    "send": "إرسال الرسالة",
+    "send": "إرسال",
     "sent": "سُجِّلت الرسالة.",
     "sentNote": "سُجِّلت على هذا الجهاز وعُرضت على فريق التشغيل. لم يُرسل بريد — فالنموذج الأولي بلا مزوّد بريد.",
     "officesTitle": "أين نحن",
@@ -450,6 +450,38 @@
       "topic": "اختر موضوع الرسالة.",
       "short": "اكتب قليلًا أكثر — 20 حرفًا على الأقل.",
       "long": "هذه رسالة أطول من اللازم."
+    },
+    "call": "اتصال",
+    "close": "إغلاق",
+    "placeholder": "اكتب رسالة",
+    "aboutOrder": "بخصوص الطلب {number}",
+    "empty": "لا شيء بعد — ألقِ التحية على {name}.",
+    "closed": "انتهى هذا الطلب، لذا أُغلقت الرسائل.",
+    "callLogged": "سجّلنا أنك حاولت الاتصال بـ {name}.",
+    "calledBy": "{name} حاول الاتصال",
+    "restaurantTitle": "راسل المطعم",
+    "restaurantHint": "اسأل {vendor} عن أي شيء يخص طلبك.",
+    "party": {
+      "rider": "مندوبك",
+      "restaurant": "المطعم"
+    },
+    "quick": {
+      "atGate": "أنا عند البوابة الرئيسية.",
+      "callOnArrival": "اتصل بي عند وصولك من فضلك.",
+      "leaveAtDoor": "اتركه عند الباب، شكرًا.",
+      "whereAreYou": "أين أنت الآن؟",
+      "addCutlery": "هل يمكن إضافة أدوات المائدة؟",
+      "noOnions": "بدون بصل من فضلك.",
+      "howLong": "كم بقي من الوقت؟",
+      "changeAddress": "أحتاج إلى تغيير العنوان.",
+      "onMyWay": "في الطريق.",
+      "atTheDoor": "أنا عند بابك.",
+      "cannotFind": "لا أستطيع العثور على العنوان.",
+      "delayedTraffic": "تأخرت بسبب الزحام — آسف.",
+      "noted": "تم، شكرًا.",
+      "runningLate": "نحن متأخرون قليلًا.",
+      "outOfStock": "أحد الأصناف غير متوفر.",
+      "onItsWay": "في طريقه إليك."
     }
   },
   "legal": {
@@ -630,7 +662,8 @@
       "serviceUnavailable": "نواجه مشكلة في الوصول إلى الخدمة. حاول بعد قليل.",
       "tooManyRequests": "طلبات كثيرة جدًا. يرجى الانتظار قليلاً.",
       "network": "لا يمكن الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى."
-    }
+    },
+    "verifyPrompt": "وثّق رقم هاتفك من صفحة حسابك."
   },
   "account": {
     "myAccount": "حسابي",
@@ -765,7 +798,8 @@
       "topUpDeclined": "رفض البنك عملية الشحن. جرّب مبلغًا أو طريقة أخرى.",
       "topUpRange": "أدخل مبلغًا بين {min} و {max}."
     },
-    "rateOrder": "قيّم الطلب"
+    "rateOrder": "قيّم الطلب",
+    "yourRating": "تقييمك"
   },
   "favorites": {
     "title": "المفضلة",
@@ -989,7 +1023,9 @@
       "vendorClosed": "هذا المطعم مغلق حالياً. حدّد موعداً لاحقاً لطلبك، أو اختر مطعماً آخر.",
       "belowMinimum": "طلبك أقل من الحد الأدنى لهذا المطعم.",
       "couponRejected": "رمز الخصم لم يعد صالحاً. أزِله وتحقّق من الإجمالي مرة أخرى.",
-      "accountBlocked": "حظرت المنصّة هذا الحساب. تواصل مع الدعم قبل الطلب مرّة أخرى."
+      "accountBlocked": "حظرت المنصّة هذا الحساب. تواصل مع الدعم قبل الطلب مرّة أخرى.",
+      "outsideNetwork": "لا نوصّل إلى تلك المنطقة بعد.",
+      "tooFar": "هذا المطعم لا يوصّل إلى هذه المسافة."
     },
     "discountWithCode": "الخصم ({code})"
   },
@@ -1028,7 +1064,8 @@
       "rejected": "مرفوض",
       "delivery-failed": "فشل التوصيل",
       "returned": "أُعيد الطلب",
-      "refunded": "تم الاسترداد"
+      "refunded": "تم الاسترداد",
+      "scheduled": "مجدول لوقت لاحق"
     },
     "payment": {
       "cash": "الدفع عند الاستلام",
@@ -1069,7 +1106,8 @@
       "reassigned": "أعاد الدعم الإسناد",
       "refundApproved": "وافق الدعم على الاسترداد",
       "refundRejected": "رفض الدعم الاسترداد",
-      "refundSettled": "أُعيد المال إلى العميل"
+      "refundSettled": "أُعيد المال إلى العميل",
+      "scheduledRelease": "أُرسل إلى المطعم استعدادًا لموعده المجدول"
     },
     "now": "الآن",
     "back": "رجوع",
@@ -1123,7 +1161,8 @@
       "rider-assigned": "{rider} في طريقه إلى {vendor} لاستلام طلبك.",
       "arrived": "{rider} عند بابك — شارك الرمز أدناه.",
       "delivered": "تم التوصيل. بالهناء والشفاء!",
-      "completed": "اكتمل هذا الطلب."
+      "completed": "اكتمل هذا الطلب.",
+      "scheduled": "تم الحجز لدى {vendor}. سنُسلّمه إلى المطبخ في الوقت المناسب لموعدك."
     },
     "courierTitle": "مندوبك",
     "vehicle": {
@@ -1167,7 +1206,18 @@
     "refundedToWallet": "تمت إعادة {amount} إلى محفظة فودأورا الخاصة بك.",
     "viewWallet": "عرض المحفظة",
     "completeTitle": "استلمت كل شيء؟",
-    "completeHint": "أتمّ الطلب لإغلاقه وتحرير مستحقات المطعم."
+    "completeHint": "أتمّ الطلب لإغلاقه وتحرير مستحقات المطعم.",
+    "scheduledSlot": "موعدك",
+    "kitchenStarts": "يبدأ المطبخ",
+    "kitchenStartsIn": "خلال {minutes} دقيقة",
+    "kitchenStartsNow": "في أي لحظة",
+    "rateTitle": "كيف كان {vendor}؟",
+    "rateHint": "اضغط على نجمة، ويمكنك إضافة التفاصيل لاحقًا.",
+    "ratedTitle": "شكرًا على تقييمك",
+    "ratedHint": "أعطيت هذا الطلب {rating} من {max}.",
+    "rateAria": "قيّم طلبك من {vendor}",
+    "writeReview": "اكتب مراجعة",
+    "ratingSaved": "تم حفظ التقييم."
   },
   "dashboard": {
     "brand": "FoodOra للتجار",
@@ -1226,7 +1276,8 @@
       "preparing": "في المطبخ",
       "ready": "قيد التوصيل",
       "completed": "مكتمل",
-      "cancelled": "مشاكل"
+      "cancelled": "مشاكل",
+      "scheduled": "مجدولة"
     },
     "noOrdersInTab": "لا توجد طلبات هنا الآن.",
     "payment": {
@@ -1363,7 +1414,9 @@
       "unknownBody": "لا تستطيع المنصة تأكيد اعتماد هذا المطعم، لذا تبقى لوحة التحكم مغلقة. الدعم يمكنه معالجة الأمر."
     },
     "viewAnalytics": "التقرير الكامل",
-    "handoverDone": "سُلّم إلى المندوب."
+    "handoverDone": "سُلّم إلى المندوب.",
+    "scheduledFor": "لموعد {time}",
+    "releasesIn": "يبدأ خلال {minutes} دقيقة"
   },
   "catering": {
     "metaTitle": "خدمات المناسبات",
@@ -2600,6 +2653,10 @@
       "supportUpdated": {
         "title": "تحديث التقرير",
         "body": "{ticket} تقدّمت."
+      },
+      "scheduled": {
+        "title": "تم جدولة الطلب",
+        "body": "طلبك {order} محجوز لدى {vendor} في وقت لاحق."
       }
     },
     "restaurant": {
@@ -2666,6 +2723,10 @@
       "payoutSent": {
         "title": "تم إرسال التحويل",
         "body": "{currency} {amount} للفترة {period} في الطريق ({payout})."
+      },
+      "scheduledOrder": {
+        "title": "طلب مجدول",
+        "body": "الطلب {order} من {customer} محجوز لوقت لاحق."
       }
     },
     "rider": {
@@ -5412,6 +5473,70 @@
       "entityId": "معرّف السجل",
       "description": "الوصف",
       "metadata": "التفاصيل"
+    }
+  },
+  "reorder": {
+    "action": "اطلب مرة أخرى",
+    "title": "اطلب مرة أخرى من {vendor}",
+    "fromOrder": "من الطلب {number}",
+    "close": "إغلاق",
+    "checking": "نتحقق من القائمة…",
+    "loadFailed": "تعذّر تحميل القائمة. حاول مرة أخرى.",
+    "nothingLeft": "لم يعد أي صنف من هذا الطلب موجودًا في قائمة {vendor}.",
+    "subtotal": "المجموع الفرعي",
+    "previously": "دفعت {amount} في المرة السابقة",
+    "changedNotice": "تغيّرت بعض الأشياء منذ طلبك الأخير.",
+    "cartConflict": "سلتك تحتوي أصنافًا من مطعم آخر، والمتابعة ستبدأ سلة جديدة.",
+    "cancel": "إلغاء",
+    "browseMenu": "تصفّح القائمة",
+    "addToBasket": "أضف إلى السلة",
+    "startNewBasket": "ابدأ سلة جديدة",
+    "added": "{count, plural, zero {لم يُضف شيء} one {أُضيف صنف واحد إلى سلتك} two {أُضيف صنفان إلى سلتك} few {أُضيفت # أصناف إلى سلتك} many {أُضيف # صنفًا إلى سلتك} other {أُضيف # صنف إلى سلتك}}",
+    "chooseAgain": "اختر من جديد",
+    "issue": {
+      "unavailable": "لم يعد متاحًا",
+      "needs-choice": "تغيّرت خياراتك — اخترها من جديد",
+      "repriced": "تغيّر السعر",
+      "optionsChanged": "لم يعد متاحًا: {options}"
+    }
+  },
+  "location": {
+    "setLocation": "حدّد موقعك",
+    "title": "أين أنت؟",
+    "subtitle": "لنعرض ما يستطيع الوصول إليك فعلًا فقط.",
+    "close": "إغلاق",
+    "searchPlaceholder": "ابحث عن منطقة",
+    "savedAddresses": "عناوينك",
+    "servedAreas": "المناطق التي نوصّل إليها",
+    "delivers": "يوصّل إلى {area} · {zone}",
+    "reason": {
+      "noLocation": "حدّد موقعك لمعرفة ما إذا كان هذا المطعم يوصّل إليك.",
+      "outsideNetwork": "لا نوصّل إلى {area} بعد.",
+      "tooFar": "{vendor} لا يوصّل إلى {area}."
+    }
+  },
+  "verification": {
+    "title": "وثّق رقم هاتفك",
+    "hint": "سنرسل رمزًا من ٦ أرقام إلى {destination}.",
+    "hintNoPhone": "أضف رقم هاتف إلى ملفك الشخصي أولًا.",
+    "addPhone": "أضف رقمًا",
+    "sendCode": "أرسل الرمز",
+    "sendAgain": "أرسل مرة أخرى",
+    "resendIn": "أرسل مرة أخرى بعد {seconds} ثانية",
+    "verify": "توثيق",
+    "verified": "موثّق",
+    "nowVerified": "تم توثيق رقمك.",
+    "codeSent": "أُرسل الرمز إلى {destination}.",
+    "codeLabel": "رمز التوثيق",
+    "attemptsLeft": "{count, plural, zero {لم تبق محاولات} one {بقيت محاولة واحدة} two {بقيت محاولتان} few {بقيت # محاولات} many {بقيت # محاولة} other {بقيت # محاولة}}",
+    "demoHint": "نموذج أولي: الرمز هو {code}.",
+    "errors": {
+      "noChallenge": "أرسل لنفسك رمزًا أولًا.",
+      "codeExpired": "انتهت صلاحية الرمز — أرسل رمزًا جديدًا.",
+      "tooManyAttempts": "أدخلت رموزًا خاطئة كثيرة. أرسل رمزًا جديدًا.",
+      "invalidCode": "الرمز غير صحيح.",
+      "destinationRequired": "أضف رقم هاتف صحيحًا أولًا.",
+      "generic": "حدث خطأ ما. حاول مرة أخرى."
     }
   }
 }

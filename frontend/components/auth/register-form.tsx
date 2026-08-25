@@ -61,6 +61,16 @@ export function RegisterForm({ next = "/" }: { next?: string }) {
     }
     signIn(res.data);
     toast.success(t("welcomeName", { name: res.data.name }));
+    /**
+     * The account exists; it is not verified (Phase 17, G43).
+     *
+     * Said here rather than silently, because `register` no longer returns
+     * `isVerified: true` and an unexplained "unverified" chip appearing on the
+     * account page later is worse than one sentence now. The step itself lives on
+     * the account page — interrupting a registration with an OTP screen would
+     * block a reviewer who only wanted to look around.
+     */
+    if (!res.data.isVerified) toast.info(t("verifyPrompt"));
     router.push(next);
   }
 

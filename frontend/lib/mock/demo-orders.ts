@@ -1,17 +1,24 @@
 import type {
+  CartSelectedOption,
   CartVendor,
   DeliveryAddress,
   Order,
   OrderCancelReason,
   OrderEvent,
   OrderStatus,
+  FoodItem,
   PaymentMethod,
   RefundStatus,
 } from "@/types";
 import { buildCartLine } from "@/lib/cart";
 import { computeTotals } from "@/lib/checkout";
 import { createLifecycle, riderSnapshot } from "@/lib/order-lifecycle";
-import { RIDE_ALLOWANCE_MIN, stagesFor, TERMINAL_STATUSES } from "@/lib/order-machine";
+import {
+  RIDE_ALLOWANCE_MIN,
+  SCHEDULE_LEAD_MINUTES,
+  stagesFor,
+  TERMINAL_STATUSES,
+} from "@/lib/order-machine";
 import { commissionRateFor, settleOrder } from "@/lib/settlement";
 import { foodsByVendor } from "./foods";
 import { riders } from "./riders";
@@ -153,6 +160,14 @@ interface SeedSpec {
    * order without a reviewer having to stage one.
    */
   refund?: RefundStatus;
+  /**
+   * Minutes from now to this order's booked slot (Phase 17, G34). Present makes
+   * the order a *scheduled* one; §7 asks for both an ASAP and a scheduled order in
+   * the working set, and one of each state a scheduled order can be in — still
+   * waiting, and already released — is what makes the difference demonstrable
+   * without a reviewer having to book one and wait.
+   */
+  scheduledInMin?: number;
 }
 
 /** Who performs each off-path ending. */
@@ -253,6 +268,26 @@ const WORKING_SET: SeedSpec[] = [
     reason: "wrong-address",
     refund: "requested",
   },
+  // Booked for tonight and still waiting: the restaurant can see it, the kitchen
+  // cannot act on it, and the autopilot leaves it alone until it is released.
+  {
+    status: "scheduled",
+    ageMin: 25,
+    scheduledInMin: 3 * 60,
+    fulfillment: "delivery",
+    payment: "card",
+  },
+  // Booked, released, and now being cooked — the other end of the same lifecycle,
+  // so "released" is a state somebody can look at rather than only infer.
+  {
+    // `ageMin` is when it was *booked* — a scheduled order's `placedAt` is the
+    // moment the customer committed, not the moment a kitchen was told.
+    status: "preparing",
+    ageMin: 44,
+    scheduledInMin: 35,
+    fulfillment: "delivery",
+    payment: "wallet",
+  },
   // Cancelled and settled — the terminal `refunded` status, which nothing seeded.
   {
     status: "refunded",
@@ -267,6 +302,36 @@ const WORKING_SET: SeedSpec[] = [
   },
 ];
 
+/**
+ * The choices a dish's option groups *demand*, taken in menu order.
+ *
+ * Seeded lines used to carry no options at all, which was a shortcut with a
+ * consequence: a dish whose size group is required was seeded in a state checkout
+ * would have refused, and Phase 17's reorder — which re-resolves every line
+ * against the menu — correctly reported that such a line could not be rebuilt
+ * without the customer choosing again. The fix belongs here rather than there. A
+ * seeded order has to be a *possible* order.
+ *
+ * Deterministic (the first `min`), because the working set has to be the same on
+ * every reload; the options a customer would actually pick are not something a
+ * seed can know.
+ */
+function requiredOptions(item: FoodItem): CartSelectedOption[] {
+  const chosen: CartSelectedOption[] = [];
+  for (const group of item.optionGroups) {
+    const need = group.required ? Math.max(1, group.min) : group.min;
+    for (const option of group.options.slice(0, need)) {
+      chosen.push({
+        groupId: group.id,
+        optionId: option.id,
+        name: option.name,
+        priceDelta: option.priceDelta,
+      });
+    }
+  }
+  return chosen;
+}
+
 /** Human order reference, matching `services/orders`. */
 function orderNumberFrom(ms: number): string {
   return `FO-${ms.toString(36).toUpperCase().slice(-6).padStart(6, "0")}`;
@@ -279,6 +344,13 @@ function cartVendorOf(vendor: (typeof vendors)[number]): CartVendor {
     name: vendor.name,
     currency: vendor.currency,
     countryCode: vendor.location.countryCode,
+    // Phase 17 (G37): the snapshot carries where the restaurant is, so a seeded
+    // order can be zone-checked and reordered on the same terms as a real one.
+    location: {
+      lat: vendor.location.lat,
+      lng: vendor.location.lng,
+      place: vendor.location.address,
+    },
     deliveryFee: vendor.deliveryFee,
     minOrder: vendor.minOrder,
     freeDeliveryOver: vendor.freeDeliveryOver,
@@ -300,6 +372,15 @@ function backdatedEvents(
   placedMs: number,
   nowMs: number,
 ): OrderEvent[] {
+  // A booked slot is not a stage of the journey (see `OrderStatus.scheduled`), so
+  // it is not on `stagesFor` and cannot be walked to — it is where the order
+  // started, and the only event it has.
+  if (target === "scheduled") {
+    return [
+      { id: `evt_${orderId}_scheduled`, status: "scheduled", at: new Date(placedMs).toISOString(), actor: "customer", note: null },
+    ];
+  }
+
   const stages = stagesFor(fulfillment);
   const idx = stages.indexOf(target);
   if (idx <= 0) {
@@ -391,11 +472,30 @@ export function buildDemoOrders(now: number): Order[] {
     const placedMs = now - spec.ageMin * MIN;
     const orderId = `ord_demo_${index}_${Math.floor(placedMs / MIN).toString(36)}`;
 
+    /**
+     * The booked slot, and when the kitchen was handed the order (G34).
+     *
+     * `placedMs` is when the *customer* committed either way; a scheduled order
+     * that has already been released was handed over at the machine's own release
+     * point (`SCHEDULE_LEAD_MINUTES` before the slot), and its walked stages start
+     * from there rather than from the booking — which is both what makes the gap
+     * between "booked" and "cooking" visible on a timeline, and what stops the
+     * seed describing a release the release rule would not have made.
+     */
+    const scheduledFor =
+      spec.scheduledInMin != null
+        ? new Date(now + spec.scheduledInMin * MIN).toISOString()
+        : null;
+    const released = scheduledFor !== null && spec.status !== "scheduled";
+    const startMs = released
+      ? Date.parse(scheduledFor) - SCHEDULE_LEAD_MINUTES * MIN
+      : placedMs;
+
     const lineCount = 1 + Math.floor(rand() * Math.min(3, foods.length));
     const lines = [...foods]
       .sort(() => rand() - 0.5)
       .slice(0, lineCount)
-      .map((food) => buildCartLine(food, [], rand() > 0.78 ? 2 : 1));
+      .map((food) => buildCartLine(food, requiredOptions(food), rand() > 0.78 ? 2 : 1));
 
     const tipPercent = spec.fulfillment === "delivery" ? pick([0, 0, 0.05, 0.1], rand) : 0;
     const pricing = computeTotals({
@@ -416,11 +516,32 @@ export function buildDemoOrders(now: number): Order[] {
       orderId,
       spec.via ?? spec.status,
       spec.fulfillment,
-      placedMs,
-      Math.max(closedMs, placedMs + MIN),
+      startMs,
+      Math.max(closedMs, startMs + MIN),
     );
-    const lifecycle = createLifecycle(orderId, new Date(placedMs).toISOString());
-    lifecycle.events = events;
+    const lifecycle = createLifecycle(
+      orderId,
+      new Date(placedMs).toISOString(),
+      spec.status === "scheduled" ? "scheduled" : "placed",
+    );
+    lifecycle.events = released
+      ? [
+          {
+            id: `evt_${orderId}_scheduled`,
+            status: "scheduled",
+            at: new Date(placedMs).toISOString(),
+            actor: "customer",
+            note: null,
+          },
+          // The release is a `system` move carrying the note the store writes, so
+          // a seeded scheduled order's timeline reads exactly like a real one's.
+          ...events.map((event) =>
+            event.status === "placed"
+              ? { ...event, actor: "system" as const, note: "scheduled-release" }
+              : event,
+          ),
+        ]
+      : events;
 
     // Prep promise, for anything the restaurant accepted.
     const acceptedAt = events.find((e) => e.status === "confirmed")?.at ?? null;
@@ -488,7 +609,11 @@ export function buildDemoOrders(now: number): Order[] {
      */
     const endings =
       spec.endings ??
-      (stagesFor(spec.fulfillment).includes(spec.status) ? [] : [spec.status]);
+      // `scheduled` is off the happy path but is not an *ending* — it is where a
+      // booked order starts, and it is already the first event above.
+      (spec.status === "scheduled" || stagesFor(spec.fulfillment).includes(spec.status)
+        ? []
+        : [spec.status]);
     let endCursor = Math.max(
       Date.parse(lifecycle.events[lifecycle.events.length - 1]?.at ?? ""),
       placedMs,
@@ -543,10 +668,12 @@ export function buildDemoOrders(now: number): Order[] {
       (a, b) => Date.parse(a.at) - Date.parse(b.at),
     );
 
-    // ETA: the promise plus the ride, or the moment it actually landed.
+    // ETA: the booked slot where there is one, else the promise plus the ride, or
+    // the moment it actually landed.
     const deliveredAt = events.find((e) => e.status === "delivered")?.at;
     const etaIso =
       deliveredAt ??
+      scheduledFor ??
       (lifecycle.promisedReadyAt
         ? new Date(
             Date.parse(lifecycle.promisedReadyAt) +
@@ -562,7 +689,7 @@ export function buildDemoOrders(now: number): Order[] {
       lines,
       fulfillment: spec.fulfillment,
       address,
-      scheduledFor: null,
+      scheduledFor,
       contact: customer,
       notes: pick(NOTES, rand),
       payment: {

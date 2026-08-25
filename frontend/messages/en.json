@@ -437,7 +437,7 @@
     "message": "Message",
     "messageHint": "{count, plural, =0 {No characters left} one {# character left} other {# characters left}}",
     "sending": "Sending…",
-    "send": "Send message",
+    "send": "Send",
     "sent": "Message recorded.",
     "sentNote": "Recorded on this device and shown to operations. Nothing was emailed — the prototype has no mail provider.",
     "officesTitle": "Where we are",
@@ -450,6 +450,38 @@
       "topic": "Pick what this is about.",
       "short": "A few more words, please — at least 20 characters.",
       "long": "That is too long for one message."
+    },
+    "call": "Call",
+    "close": "Close",
+    "placeholder": "Write a message",
+    "aboutOrder": "About order {number}",
+    "empty": "Nothing yet — say hello to {name}.",
+    "closed": "This order is finished, so messages are closed.",
+    "callLogged": "We've noted that you tried to call {name}.",
+    "calledBy": "{name} tried to call",
+    "restaurantTitle": "Message the restaurant",
+    "restaurantHint": "Ask {vendor} anything about your order.",
+    "party": {
+      "rider": "Your courier",
+      "restaurant": "The restaurant"
+    },
+    "quick": {
+      "atGate": "I'm at the main gate.",
+      "callOnArrival": "Please call when you arrive.",
+      "leaveAtDoor": "Leave it at the door, thanks.",
+      "whereAreYou": "Where are you now?",
+      "addCutlery": "Could you add cutlery?",
+      "noOnions": "No onions, please.",
+      "howLong": "How much longer will it be?",
+      "changeAddress": "I need to change the address.",
+      "onMyWay": "On my way.",
+      "atTheDoor": "I'm at your door.",
+      "cannotFind": "I can't find the address.",
+      "delayedTraffic": "Held up in traffic — sorry.",
+      "noted": "Noted, thanks.",
+      "runningLate": "We're running a little late.",
+      "outOfStock": "One item is out of stock.",
+      "onItsWay": "It's on its way."
     }
   },
   "legal": {
@@ -630,7 +662,8 @@
       "tooManyRequests": "Too many requests. Please wait a moment.",
       "serviceUnavailable": "We're having trouble reaching the service. Try again shortly.",
       "network": "Can't reach the server. Check your connection and try again."
-    }
+    },
+    "verifyPrompt": "Verify your phone number from your account page."
   },
   "account": {
     "myAccount": "My account",
@@ -765,7 +798,8 @@
       "topUpDeclined": "Your bank declined the top-up. Try another amount or method.",
       "topUpRange": "Enter an amount between {min} and {max}."
     },
-    "rateOrder": "Rate order"
+    "rateOrder": "Rate order",
+    "yourRating": "Your rating"
   },
   "favorites": {
     "title": "Favorites",
@@ -989,7 +1023,9 @@
       "vendorClosed": "This restaurant is closed right now. Schedule your order for later, or try another.",
       "belowMinimum": "Your order is below this restaurant's minimum.",
       "couponRejected": "That promo code is no longer valid. Remove it and check your total again.",
-      "accountBlocked": "This account has been blocked by the platform. Contact support before ordering again."
+      "accountBlocked": "This account has been blocked by the platform. Contact support before ordering again.",
+      "outsideNetwork": "We don't deliver to that area yet.",
+      "tooFar": "This restaurant doesn't deliver that far."
     },
     "discountWithCode": "Discount ({code})"
   },
@@ -1028,7 +1064,8 @@
       "rejected": "Rejected",
       "delivery-failed": "Delivery failed",
       "returned": "Returned",
-      "refunded": "Refunded"
+      "refunded": "Refunded",
+      "scheduled": "Scheduled for later"
     },
     "payment": {
       "cash": "Cash on delivery",
@@ -1069,7 +1106,8 @@
       "reassigned": "Reassigned by support",
       "refundApproved": "Refund approved by support",
       "refundRejected": "Refund refused by support",
-      "refundSettled": "Refund returned to the customer"
+      "refundSettled": "Refund returned to the customer",
+      "scheduledRelease": "Released to the restaurant for its scheduled slot"
     },
     "now": "Now",
     "back": "Back",
@@ -1123,7 +1161,8 @@
       "rider-assigned": "{rider} is on the way to {vendor} to collect your order.",
       "arrived": "{rider} is at your door — share the code below.",
       "delivered": "Delivered. Enjoy your meal!",
-      "completed": "This order is complete."
+      "completed": "This order is complete.",
+      "scheduled": "Booked with {vendor}. We'll hand it to the kitchen in time for your slot."
     },
     "courierTitle": "Your courier",
     "vehicle": {
@@ -1167,7 +1206,18 @@
     "refundedToWallet": "{amount} has been returned to your FoodOra wallet.",
     "viewWallet": "View wallet",
     "completeTitle": "Got everything?",
-    "completeHint": "Complete the order to close it and release payment to the restaurant."
+    "completeHint": "Complete the order to close it and release payment to the restaurant.",
+    "scheduledSlot": "Your slot",
+    "kitchenStarts": "Kitchen starts",
+    "kitchenStartsIn": "in {minutes} min",
+    "kitchenStartsNow": "any moment now",
+    "rateTitle": "How was {vendor}?",
+    "rateHint": "Tap a star. You can add the details after.",
+    "ratedTitle": "Thanks for rating",
+    "ratedHint": "You gave this order {rating} out of {max}.",
+    "rateAria": "Rate your order from {vendor}",
+    "writeReview": "Write a review",
+    "ratingSaved": "Rating saved."
   },
   "dashboard": {
     "brand": "FoodOra Merchant",
@@ -1226,7 +1276,8 @@
       "preparing": "In the kitchen",
       "ready": "Out for delivery",
       "completed": "Completed",
-      "cancelled": "Problems"
+      "cancelled": "Problems",
+      "scheduled": "Scheduled"
     },
     "noOrdersInTab": "No orders here right now.",
     "payment": {
@@ -1363,7 +1414,9 @@
       "unknownBody": "The platform cannot confirm this restaurant is approved, so the dashboard stays closed. Support can sort it out."
     },
     "viewAnalytics": "Full report",
-    "handoverDone": "Handed to the courier."
+    "handoverDone": "Handed to the courier.",
+    "scheduledFor": "For {time}",
+    "releasesIn": "starts in {minutes} min"
   },
   "catering": {
     "metaTitle": "Event Catering",
@@ -2600,6 +2653,10 @@
       "supportUpdated": {
         "title": "Report updated",
         "body": "{ticket} has moved on."
+      },
+      "scheduled": {
+        "title": "Order scheduled",
+        "body": "{vendor} has {order} booked for later."
       }
     },
     "restaurant": {
@@ -2666,6 +2723,10 @@
       "payoutSent": {
         "title": "Payout sent",
         "body": "{currency} {amount} for {period} is on its way ({payout})."
+      },
+      "scheduledOrder": {
+        "title": "Scheduled order",
+        "body": "{order} from {customer} is booked for later."
       }
     },
     "rider": {
@@ -5412,6 +5473,70 @@
       "entityId": "Record id",
       "description": "Description",
       "metadata": "Details"
+    }
+  },
+  "reorder": {
+    "action": "Order again",
+    "title": "Order again from {vendor}",
+    "fromOrder": "From order {number}",
+    "close": "Close",
+    "checking": "Checking the menu…",
+    "loadFailed": "We couldn't load the menu. Try again.",
+    "nothingLeft": "Nothing from this order is on {vendor}'s menu any more.",
+    "subtotal": "Subtotal",
+    "previously": "You paid {amount} last time",
+    "changedNotice": "Some things have changed since you last ordered.",
+    "cartConflict": "Your basket has items from another restaurant. Continuing starts a new one.",
+    "cancel": "Cancel",
+    "browseMenu": "Browse the menu",
+    "addToBasket": "Add to basket",
+    "startNewBasket": "Start a new basket",
+    "added": "{count, plural, one {# item added to your basket} other {# items added to your basket}}",
+    "chooseAgain": "Choose again",
+    "issue": {
+      "unavailable": "No longer available",
+      "needs-choice": "Your options changed — pick them again",
+      "repriced": "Price changed",
+      "optionsChanged": "No longer available: {options}"
+    }
+  },
+  "location": {
+    "setLocation": "Set location",
+    "title": "Where are you?",
+    "subtitle": "So we only show what can actually reach you.",
+    "close": "Close",
+    "searchPlaceholder": "Search an area",
+    "savedAddresses": "Your addresses",
+    "servedAreas": "Areas we deliver to",
+    "delivers": "Delivers to {area} · {zone}",
+    "reason": {
+      "noLocation": "Set your location to see whether this restaurant delivers to you.",
+      "outsideNetwork": "We don't deliver to {area} yet.",
+      "tooFar": "{vendor} doesn't deliver as far as {area}."
+    }
+  },
+  "verification": {
+    "title": "Verify your phone number",
+    "hint": "We'll send a 6-digit code to {destination}.",
+    "hintNoPhone": "Add a phone number to your profile first.",
+    "addPhone": "Add a number",
+    "sendCode": "Send code",
+    "sendAgain": "Send again",
+    "resendIn": "Send again in {seconds}s",
+    "verify": "Verify",
+    "verified": "Verified",
+    "nowVerified": "Your number is verified.",
+    "codeSent": "Code sent to {destination}.",
+    "codeLabel": "Verification code",
+    "attemptsLeft": "{count, plural, one {# attempt left} other {# attempts left}}",
+    "demoHint": "Prototype: the code is {code}.",
+    "errors": {
+      "noChallenge": "Send yourself a code first.",
+      "codeExpired": "That code has expired — send a new one.",
+      "tooManyAttempts": "Too many wrong codes. Send a new one.",
+      "invalidCode": "That code isn't right.",
+      "destinationRequired": "Add a valid phone number first.",
+      "generic": "Something went wrong. Try again."
     }
   }
 }

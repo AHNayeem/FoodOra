@@ -213,6 +213,8 @@ function noteLabel(
       return t("note.refundRejected");
     case "refund-settled":
       return t("note.refundSettled");
+    case "scheduled-release":
+      return t("note.scheduledRelease");
     default:
       return step.note;
   }

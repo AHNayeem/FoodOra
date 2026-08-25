@@ -64,13 +64,24 @@ export const DELIVERY_FAIL_REASONS: readonly OrderCancelReason[] = [
  * (derived from the order id so the rider app can reach the same value without
  * a backend) but is not revealed to anyone until the rider arrives — see
  * `isOtpRevealed`.
+ *
+ * `status` is the state the order is *born* in, and there are exactly two: an
+ * ASAP order starts at `placed`, a scheduled one at `scheduled` (Phase 17, G34).
+ * It is a parameter rather than a second constructor because everything else
+ * about the record is identical — the code is issued at checkout either way, and
+ * a scheduled order that reached the door with no OTP would be the kind of
+ * divergence a second lifecycle produces.
  */
-export function createLifecycle(orderId: string, placedAt: string): OrderLifecycle {
+export function createLifecycle(
+  orderId: string,
+  placedAt: string,
+  status: OrderStatus = "placed",
+): OrderLifecycle {
   return {
     events: [
       {
-        id: `evt_${orderId}_placed`,
-        status: "placed",
+        id: `evt_${orderId}_${status}`,
+        status,
         at: placedAt,
         actor: "customer",
         note: null,
@@ -329,6 +340,7 @@ export function handoverCodeOf(order: Order): string | null {
 /** The actor a stage is normally performed by — used only when backfilling. */
 function actorForStage(status: OrderStatus): OrderLifecycle["events"][number]["actor"] {
   switch (status) {
+    case "scheduled":
     case "placed":
       return "customer";
     case "confirmed":

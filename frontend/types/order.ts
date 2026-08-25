@@ -24,6 +24,21 @@ import type { OrderFinancials } from "./finance";
  * order is either retried or returned.
  */
 export type OrderStatus =
+  /**
+   * QUEUED — placed for a future slot and not yet released to anybody.
+   *
+   * The entry state of a *scheduled* order and the only status that is not
+   * reachable by a transition: an order is born here or it is born `placed`. It
+   * sits outside the happy path (`DELIVERY_STAGES` / `PICKUP_STAGES` both start
+   * at `placed`) because it is not a step of the journey — it is the wait before
+   * the journey starts, and a timeline that drew it as a stage would tell an ASAP
+   * customer they had skipped one.
+   *
+   * Released to `placed` by `stores/orders.releaseScheduled` once the slot is
+   * close enough to cook for (`SCHEDULE_LEAD_MINUTES`), from which point it is an
+   * ordinary order and nothing downstream needs to know it was ever scheduled.
+   */
+  | "scheduled"
   /** PENDING_CONFIRMATION — with the restaurant, not yet answered. */
   | "placed"
   /** ORDER_ACCEPTED — accepted with a promised preparation time. */

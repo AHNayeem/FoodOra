@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   Banknote,
   Bike,
+  CalendarClock,
   ChevronDown,
   Clock,
   Inbox,
@@ -23,6 +24,7 @@ import { getFleet } from "@/services/delivery";
 import {
   restaurantActions,
   isTerminal,
+  releaseAt,
   type OrderAction,
 } from "@/lib/order-machine";
 import {
@@ -50,6 +52,17 @@ const TICK_MS = 1000;
  * board by being forgotten — anything not in a group lands in `all`.
  */
 const GROUPS: Record<string, OrderStatus[]> = {
+  /**
+   * Booked for later (Phase 17, G34), and a tab of its own rather than a row in
+   * "New".
+   *
+   * That split is the answer to the question a scheduled order poses: the kitchen
+   * has to be able to see tomorrow's covers to buy for them, and must not have
+   * them sitting in the queue it works down tonight. A scheduled order carries no
+   * actions — `restaurantActions` offers none until it is released — so the tab is
+   * a plan, not a worklist.
+   */
+  scheduled: ["scheduled"],
   new: ["placed"],
   preparing: ["confirmed", "preparing", "packing"],
   ready: ["ready", "rider-assigned", "picked-up", "on-the-way", "arrived"],
@@ -464,6 +477,30 @@ function OrderRow({
               <span aria-hidden>·</span>
               {t("itemCount", { count })}
             </p>
+            {/* A booked slot is the one thing this row exists to say (G34): when
+                the food is wanted, and when the kitchen will be handed it. */}
+            {order.scheduledFor && (
+              <p className="mt-1.5 inline-flex flex-wrap items-center gap-x-1.5 rounded-field bg-surface-muted px-2 py-1 text-xs font-semibold text-body">
+                <CalendarClock className="size-3.5" aria-hidden />
+                {t("scheduledFor", {
+                  time: format.dateTime(new Date(order.scheduledFor), {
+                    weekday: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                })}
+                {order.status === "scheduled" && releaseAt(order) != null && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span className="font-normal text-muted">
+                      {t("releasesIn", {
+                        minutes: toMinutes(Math.max(0, releaseAt(order)! - now)),
+                      })}
+                    </span>
+                  </>
+                )}
+              </p>
+            )}
           </div>
 
           <div className="text-end">

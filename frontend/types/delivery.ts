@@ -38,6 +38,16 @@ export interface DeliveryZone extends BaseEntity {
   /** Zone centre, used to place synthesised pickups/drops and score distance. */
   lat: number;
   lng: number;
+  /**
+   * How far from the zone centre a restaurant may be and still deliver into it
+   * (Phase 17, G37).
+   *
+   * Data, like the fares above, and for the same reason: a sprawling suburban
+   * zone can be served from further away than a dense one, and "does this
+   * restaurant deliver to me" must not be a branch in a component. A restaurant
+   * inside the zone always serves it — this is the *cross-zone* allowance.
+   */
+  deliveryRadiusKm: number;
   /** Flat amount a rider earns for accepting a trip. */
   baseFare: number;
   /** Earned per kilometre of the whole route. */

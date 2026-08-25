@@ -41,12 +41,25 @@ export function DemoEngine() {
 
   useEffect(() => {
     const id = setInterval(() => {
+      if (!useOrders.getState().hydrated) return;
+
+      /**
+       * Releasing a scheduled order is *not* autopilot (Phase 17, G34).
+       *
+       * It runs above the switch on purpose. The autopilot plays the people who
+       * are not in the room; a slot arriving is the clock, and it happens on a
+       * server whether or not anybody is demonstrating. Gating it here would mean
+       * turning the autopilot off — the setting that makes every surface manually
+       * drivable — also stopped scheduled orders from ever reaching a kitchen.
+       */
+      useOrders.getState().releaseScheduled();
+
       const { autopilot, speed } = useDemo.getState();
       if (!autopilot) return;
 
+      // Read *after* the sweep, so an order released on this tick is driven from
+      // this tick rather than waiting three seconds for the next one.
       const store = useOrders.getState();
-      if (!store.hydrated) return;
-
       const now = Date.now();
 
       for (const order of store.orders) {

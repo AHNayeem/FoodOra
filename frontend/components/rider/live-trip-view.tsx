@@ -10,7 +10,6 @@ import {
   Check,
   ChevronLeft,
   MapPin,
-  MessageSquare,
   Navigation,
   Package,
   Phone,
@@ -37,6 +36,7 @@ import { OrderTimeline } from "@/components/orders/order-timeline";
 import { HandoverDialog } from "@/components/orders/handover-dialog";
 import { OtpDialog } from "@/components/orders/otp-dialog";
 import { ReasonDialog } from "@/components/orders/reason-dialog";
+import { ContactButton } from "@/components/orders/contact-dialog";
 import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
 import { PayoutBreakdown } from "./payout-breakdown";
@@ -426,16 +426,25 @@ function StopCard({
         </p>
       )}
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2">
         <StopAction icon={Navigation} label={t("navigate")} toastKey="navigateStub" />
-        <StopAction icon={Phone} label={t("call")} toastKey="callStub" />
-        <StopAction icon={MessageSquare} label={t("message")} toastKey="messageStub" />
+        {/* The courier's end of the customer's thread (Phase 17, G27). The same
+            rows the tracker reads, so an answer typed here lands there — and the
+            call button logs the attempt rather than claiming a call happened. */}
+        <ContactButton
+          order={order}
+          party="rider"
+          viewer="rider"
+          viewerName={order.lifecycle.rider?.name ?? ""}
+          label={t("message")}
+          className="w-full"
+        />
       </div>
     </section>
   );
 }
 
-/** Navigate / call / message — honest stubs; there is no telephony provider. */
+/** Navigation is still an honest stub — there is no mapping provider. */
 function StopAction({
   icon: Icon,
   label,

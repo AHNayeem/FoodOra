@@ -14,6 +14,17 @@ export interface CartVendor {
   currency: string;
   /** Country of the vendor — drives the tax rate at checkout. */
   countryCode?: string;
+  /**
+   * Where the restaurant is (Phase 17, G37) — what a delivery-zone check needs.
+   *
+   * Optional because a basket or an order persisted before this phase does not
+   * carry it, and the honest answer for one of those is "cannot be checked"
+   * rather than a guess: `lib/serviceability` returns `unknown` and no surface
+   * blocks on it. `place` is the address label the zone match is made against,
+   * not a tidy area name — a zone knows "Gulshan 1" and an address says "Gulshan
+   * Ave, Gulshan 1", and matching the whole label is what makes both work.
+   */
+  location?: { lat: number; lng: number; place: string };
   deliveryFee: number;
   minOrder: number;
   freeDeliveryOver: number | null;

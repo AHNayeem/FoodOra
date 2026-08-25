@@ -6,11 +6,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Bike,
+  CalendarClock,
   ChefHat,
-  MessageSquare,
   PackageX,
   PartyPopper,
-  Phone,
   ReceiptText,
   ShieldCheck,
   ShoppingBag,
@@ -19,7 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import type { CurrencyCode } from "@/config/regions";
-import type { OrderCancelReason } from "@/types";
+import type { Order, OrderCancelReason } from "@/types";
 import { useOrders } from "@/stores/orders";
 import { liveTicketForOrder, useSupport } from "@/stores/support";
 import { cancelOrder } from "@/services/orders";
@@ -28,13 +27,18 @@ import {
   canCustomerCancel,
   isOtpRevealed,
   isTerminal,
+  releaseAt,
 } from "@/lib/order-machine";
 import { CUSTOMER_CANCEL_REASONS, toMinutes } from "@/lib/order-lifecycle";
+import { canContact } from "@/lib/order-chat";
 import { cartCount } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { OrderTimeline } from "@/components/orders/order-timeline";
 import { CompleteOrderButton } from "@/components/orders/complete-order-button";
+import { RateOrderControl } from "@/components/orders/rate-order-control";
+import { ReorderButton } from "@/components/orders/reorder-dialog";
+import { ContactButton } from "@/components/orders/contact-dialog";
 import { ReasonDialog } from "@/components/orders/reason-dialog";
 import { ReportProblemButton } from "@/components/support/report-problem-dialog";
 import { STATUS_ICON } from "@/components/orders/order-status-meta";
@@ -70,6 +74,7 @@ export function OrderTracking({ orderId }: { orderId: string }) {
   const to = useTranslations("order");
   const tc = useTranslations("checkout");
   const ts = useTranslations("support");
+  const tct = useTranslations("contact");
   const locale = useLocale();
 
   const hydrated = useOrders((s) => s.hydrated);
@@ -120,6 +125,13 @@ export function OrderTracking({ orderId }: { orderId: string }) {
 
   const fmtTime = (ms: number) =>
     new Date(ms).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  /** A booked slot needs the day as well as the hour — it may not be today. */
+  const fmtSlot = (iso: string) =>
+    new Date(iso).toLocaleString(locale, {
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   function handleCancel(reason: OrderCancelReason, note: string) {
     if (!order) return;
@@ -169,6 +181,7 @@ export function OrderTracking({ orderId }: { orderId: string }) {
         now={now}
         isDelivery={isDelivery}
         etaTime={fmtTime(progress.etaMs)}
+        scheduledTime={order.scheduledFor ? fmtSlot(order.scheduledFor) : ""}
       />
 
       {/* Live map — only once a courier is actually carrying the food. */}
@@ -189,6 +202,26 @@ export function OrderTracking({ orderId }: { orderId: string }) {
 
       {/* The rider, from the moment one is assigned — not from pickup. */}
       {rider && <RiderCard order={order} />}
+
+      {/* And the kitchen, for the half of the questions the courier cannot
+          answer — what is in the bag, and how much longer (G27). */}
+      {canContact(order, "restaurant") && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-panel border border-line bg-surface p-4">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-ink">{tct("restaurantTitle")}</p>
+            <p className="mt-0.5 text-sm text-body">
+              {tct("restaurantHint", { vendor: order.vendor.name })}
+            </p>
+          </div>
+          <ContactButton
+            order={order}
+            party="restaurant"
+            viewer="customer"
+            viewerName={order.contact.name}
+            label={tct("message")}
+          />
+        </div>
+      )}
 
       {/* Handoff code — revealed only at the door (spec §7). */}
       {showOtp && (
@@ -273,6 +306,10 @@ export function OrderTracking({ orderId }: { orderId: string }) {
         </div>
       )}
 
+      {/* Scoring the meal (Phase 17, G36) — the `rate` action the machine has
+          always emitted and no surface rendered. */}
+      <RateOrderControl order={order} />
+
       {/* Actions */}
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         {canCustomerCancel(order) && (
@@ -298,14 +335,7 @@ export function OrderTracking({ orderId }: { orderId: string }) {
             {t("requestRefund")}
           </Button>
         )}
-        <Button
-          href={`/restaurants/${order.vendor.slug}`}
-          variant="outline"
-          size="lg"
-          className="flex-1"
-        >
-          {to("orderAgain")}
-        </Button>
+        <ReorderButton order={order} size="lg" variant="outline" className="flex-1" />
         <Button href="/account/orders" variant="ghost" size="lg" className="flex-1">
           {t("allOrders")}
         </Button>
@@ -400,12 +430,15 @@ function StatusHero({
   now,
   isDelivery,
   etaTime,
+  scheduledTime,
 }: {
   order: Parameters<typeof trackingProgress>[0];
   progress: TrackingProgress;
   now: number;
   isDelivery: boolean;
   etaTime: string;
+  /** The booked slot, formatted; empty for an ASAP order. */
+  scheduledTime: string;
 }) {
   const t = useTranslations("tracking");
   const to = useTranslations("order");
@@ -448,6 +481,51 @@ function StatusHero({
           </h2>
           <p className="text-sm text-body">{t("deliveredSub", { time: etaTime })}</p>
         </div>
+      </div>
+    );
+  }
+
+  /**
+   * Booked for later (Phase 17, G34).
+   *
+   * Its own shape, because none of the other three fit: nothing is happening, no
+   * countdown is meaningful, and the sentence the customer opened the page for is
+   * "yes, it is booked, and here is when the kitchen starts". The release time is
+   * shown rather than hidden — an order that looks idle for six hours and then
+   * springs to life is the version of this that generates support tickets.
+   */
+  if (order.status === "scheduled") {
+    const releaseMs = releaseAt(order);
+    return (
+      <div className="rounded-panel border border-line bg-surface p-6">
+        <div className="flex items-center gap-4">
+          <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-pill bg-surface-muted text-body">
+            <CalendarClock className="size-7" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-h2 text-ink">{to("status.scheduled")}</h2>
+            <p className="text-sm text-body">
+              {t("hint.scheduled", { vendor: order.vendor.name })}
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 space-y-2 rounded-field bg-surface-muted px-4 py-3 text-sm">
+          <p className="flex items-center justify-between gap-3">
+            <span className="text-muted">{t("scheduledSlot")}</span>
+            <span className="font-bold text-ink">{scheduledTime}</span>
+          </p>
+          {releaseMs != null && (
+            <p className="flex items-center justify-between gap-3">
+              <span className="text-muted">{t("kitchenStarts")}</span>
+              <span className="font-semibold text-ink tabular-nums">
+                {releaseMs <= now
+                  ? t("kitchenStartsNow")
+                  : t("kitchenStartsIn", { minutes: toMinutes(releaseMs - now) })}
+              </span>
+            </p>
+          )}
+        </div>
+        <span className="sr-only">{new Date(now).toISOString()}</span>
       </div>
     );
   }
@@ -539,8 +617,8 @@ function StatusHero({
   );
 }
 
-/** Who is bringing it — name, vehicle, rating, and the two contact affordances. */
-function RiderCard({ order }: { order: Parameters<typeof trackingProgress>[0] }) {
+/** Who is bringing it — name, vehicle, rating, and the way to reach them. */
+function RiderCard({ order }: { order: Order }) {
   const t = useTranslations("tracking");
   const rider = order.lifecycle.rider!;
   const initials = rider.name
@@ -572,23 +650,16 @@ function RiderCard({ order }: { order: Parameters<typeof trackingProgress>[0] })
           )}
         </p>
       </div>
+      {/* A real conversation with the courier, on the order (Phase 17, G27) —
+          the call button records the attempt in the same thread rather than
+          claiming a call was placed. */}
       <div className="flex shrink-0 gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label={t("call")}
-          onClick={() => toast.info(t("callToast", { name: rider.name }))}
-        >
-          <Phone className="size-4" aria-hidden />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label={t("message")}
-          onClick={() => toast.info(t("messageToast", { name: rider.name }))}
-        >
-          <MessageSquare className="size-4" aria-hidden />
-        </Button>
+        <ContactButton
+          order={order}
+          party="rider"
+          viewer="customer"
+          viewerName={order.contact.name}
+        />
       </div>
     </div>
   );

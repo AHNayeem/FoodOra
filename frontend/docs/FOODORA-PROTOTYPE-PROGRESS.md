@@ -23,6 +23,7 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 14 — RBAC Done
 - Phase 15 — Platform Audit Log Done
 - Phase 16 — Admin Analytics Done
+- Phase 17 — Customer Improvements Done
 
 ---
 
@@ -70,23 +71,23 @@ none were found already fixed. Three corrections/additions are listed under
 | G24 | Staff / roles | MISSING | `User.permissions` never read |
 | G25 | Customer support/disputes | MISSING | `/help` = static FAQ + `mailto:support@foodora.example.com` |
 | G26 | Admin support/disputes | MISSING | no route, though `customer-support` is an admitted admin role |
-| G27 | Rider/restaurant contact | PARTIAL | `order-tracking.tsx` call/message buttons are `toast.info` stubs |
+| G27 | Rider/restaurant contact | PARTIAL → **CLOSED (Phase 17)** | Was: `order-tracking.tsx` call/message buttons are `toast.info` stubs. Now `types/conversation` + `lib/order-chat` + `stores/order-chat`, read and written by the tracker and the live trip screen |
 | G28 | Admin coupons/campaigns | MISSING | only `stores/merchant.addCoupon` (vendor-issued) |
 | G29 | Review moderation | MISSING | no route, though `moderator` is an admitted role |
 | G30 | Platform settings | MISSING | hard-coded in `config/regions.ts`, `lib/mock/delivery-zones.ts`. **Not assigned to any phase in the v2 spec** |
 | G31 | RBAC | PARTIAL | `ADMIN_ROLES` / `MANAGEMENT_ROLES` / `RIDER_ROLES` list membership only; no permission helper |
 | G32 | Audit log | PARTIAL | `services/cms.ts` audit trail exists; nothing platform-wide |
 | G33 | Admin analytics | MISSING | KPI strip only |
-| G34 | Scheduled orders | PARTIAL | `scheduledFor` written at checkout, read only by `order-confirmation.tsx:128`; no lifecycle gate |
-| G35 | Reorder | INCORRECT | `order-history.tsx` "reorder" is `href={/restaurants/${slug}}` |
-| G36 | Rating action | PARTIAL | `customerActions` emits `rate`; no surface renders it. Rating is reachable only via order history / reviews |
-| G37 | Location / serviceability | MISSING | `lib/mock/delivery-zones` is imported only by `delivery-jobs` and the mock barrel — never for customer serviceability |
+| G34 | Scheduled orders | PARTIAL → **CLOSED (Phase 17)** | Was: `scheduledFor` written at checkout, read only by `order-confirmation.tsx:128`; no lifecycle gate. Now the `scheduled` status and `stores/orders.releaseScheduled` |
+| G35 | Reorder | INCORRECT → **CLOSED (Phase 17)** | Was: `order-history.tsx` "reorder" is `href={/restaurants/${slug}}`. Now `lib/reorder.planReorder` + the reorder dialog + `stores/cart.replaceWith` |
+| G36 | Rating action | PARTIAL → **CLOSED (Phase 17)** | Was: `customerActions` emits `rate`; no surface renders it. Now `RateOrderControl` renders it and `stores/orders.rateOrder` is the one writer of `lifecycle.rating` |
+| G37 | Location / serviceability | MISSING → **CLOSED (Phase 17)** | Was: `lib/mock/delivery-zones` never read for customer serviceability. Now `lib/serviceability` + `stores/location`, checked on the restaurant page and again at checkout |
 | G38 | Live rider position | PARTIAL | `lib/tracking.ts` clock-smoothed fraction. **Not assigned to any phase in the v2 spec** |
 | G39 | Two delivery systems | INCORRECT | `DeliveryJob` (offers/trip/earnings/wallet/history) and `Order` (`LiveDeliveries`/`LiveTripView`) share no bridge |
 | G40 | Online/offline vs dispatch | INCORRECT | `lib/order-lifecycle.dispatchRider` filters on `deletedAt` + `rejectedRiderIds` only — shift state lives in `stores/rider` and is unreadable to it |
 | G41 | Dead read path | CONFIRMED | `services/vendor.getVendorOrders` — the only match in the repo is its own definition |
 | G42 | Single-device truth | PARTIAL | one `localStorage` key per store; inherent to the prototype |
-| G43 | Account verification | INCORRECT | `services/auth.register` returns `isVerified: true` unconditionally |
+| G43 | Account verification | INCORRECT → **CLOSED (Phase 17)** | Was: `services/auth.register` returns `isVerified: true` unconditionally. Now `false`, with `lib/verification` + `services/verification` + `stores/verification` behind the account panel |
 | G44 | Fraud / abuse | MISSING | no representation found |
 | G45 | Typed event payloads | INCORRECT | `note: \`delay:${minutes}\``, `\`otp-failed:${attempts}\``, `"refund-requested"` — encoded strings parsed by convention |
 
@@ -160,8 +161,14 @@ card/cash/wallet. **Absent:** any scheduled order, `delivery-failed`, `returned`
 vendor-status or rider-status variety exists because those fields do not exist
 yet. Demo data must be extended alongside Phases 2, 5, 6 and 7 rather than in one
 pass at the end. **Closed for vendor and rider status in Phases 6–7**
-(`lib/mock/vendor-applications.ts`, `lib/mock/rider-applications.ts`); scheduled
-orders remain absent (Phase 17).
+(`lib/mock/vendor-applications.ts`, `lib/mock/rider-applications.ts`). **Closed for
+scheduled orders in Phase 17**: the working set now seeds one still waiting for its
+slot and one already released and cooking, so both ends of `scheduled` are visible
+without a reviewer having to book one and wait. The same phase corrected a shortcut
+the seed had carried since Phase 1 — lines were built with no options at all, which
+put a dish with a *required* option group into a state checkout would have refused;
+`requiredOptions` now selects the first `min` of each required group,
+deterministically.
 
 **Phase 8 closed the rider half of the seeded books** rather than by adding a seed
 file: `stores/orders.withRiderEarning` fills a completed delivery's
@@ -174,7 +181,58 @@ payout numbers to keep in step with the fare rules.
 
 ## Current Phase
 
-None in progress. Phases 1–16 complete.
+None in progress. Phases 1–17 complete.
+
+### Phase 17 — Customer Improvements (2026-08-25)
+
+**Done.** G34, G35, G36, G37, G43 and G27 closed. Six gaps with one thing in
+common: each was a customer-facing affordance that *existed on screen* and did
+nothing behind it. A scheduling field nothing read, a reorder button that was a
+link, a rating action no surface rendered, a delivery network no storefront asked,
+a registration that verified itself, and two contact buttons that raised a toast.
+
+**Nothing here is a new lifecycle, a new source of a number, or a new copy of an
+existing rule.** That was the binding constraint and it decided most of the design:
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| How a scheduled order stops behaving like an ASAP one | **One new status at the *front* of the machine, not a second lifecycle.** `scheduled` is the only status nothing transitions *into* — checkout mints an order there — and its only forward edge is `→ placed`. It is deliberately **off** `DELIVERY_STAGES`/`PICKUP_STAGES`: a booked slot is the wait before the journey, not a step of it, and adding it to the stage arrays would have told every ASAP customer they had skipped one. Release is `advance(id, "placed", "system")` through the same guard everything else uses. | `lib/order-machine.ts`, `TRANSITIONS.scheduled` |
+| Whether a scheduled order occupies dispatch before its window | **No — and the kitchen cannot act on it either.** `restaurantActions` returns nothing for `scheduled`, `dispatchableOrders` only sees `ready`, and the autopilot's dwell table has no entry so `nextMove` returns null. The restaurant *sees* it: the board gained a Scheduled tab, separate from New, showing the slot and the countdown to release. That split is the answer to last session's open question — a kitchen has to buy for tomorrow without tomorrow appearing in tonight's queue. | `components/dashboard/orders-board.tsx`, `GROUPS.scheduled` |
+| What releases it, and whether the demo switch may gate that | **A sweep in the orders store, run above the autopilot gate.** Releasing is what a server's clock does whether or not anyone is presenting; gating it on the demo switch would have meant turning the autopilot off — the setting that makes every surface hand-drivable — also stopped scheduled orders ever reaching a kitchen. It also runs once on hydration, for a device that was closed across the slot. | `stores/orders.releaseScheduled`, `components/demo/demo-engine.tsx` |
+| Whether rating writes a review | **No. One store action writes `lifecycle.rating`, and the review form calls it.** The star on the tracker records a private score; a `Review` is a public opinion with a name on it. A five-star tap that silently published an empty review misrepresents the customer, and one that wrote nothing an aggregate reads is decoration. Both routes go through `useOrders.rateOrder`, which is idempotent — the first score stands, so a customer who tapped a star and then wrote a review does not get their number restated. | `lib/order-machine.rateOrder`, `stores/orders.rateOrder` |
+| What an unavailable line does to a reorder | **It is shown, and the customer decides.** `lib/reorder` returns a *plan*, never a basket: per line, `unavailable` / `needs-choice` / `options-changed` / `repriced`, priced against the menu as it is now. Dropping a sold-out side silently changes somebody's dinner; refusing the whole order over one missing drink is worse. `needs-choice` — a *required* group that lost its answer — is excluded and linked to the menu rather than guessed at, because substituting somebody's size or spice level for them is the one failure mode a reorder must not have. | `lib/reorder.ts`, `ReorderIssue` |
+| What "we deliver there" means | **Two rules, kept apart.** Is the area on the network (does it resolve to a delivery zone)? And does *this* restaurant reach it (same zone always; otherwise within that zone's `deliveryRadiusKm` of its centre)? The zones are the same rows dispatch picks couriers from and the rider payout prices against — a storefront that offered an area no rider works would be promising what the delivery network cannot keep. | `lib/serviceability.ts` |
+| Whether the checkout refuses on serviceability | **Only on what it can stand behind.** Outside every zone, or a restaurant too far from the drop's zone. A basket persisted before this phase carries no restaurant position, answers `unknown`, and is let through — refusing an order on missing data is worse than the gap it closes (§5.4). | `components/checkout/checkout-view.tsx`, `handlePlaceOrder` |
+| What verification is, given there is no SMS provider | **A challenge with rules, and a seam with two bodies.** `lib/verification` owns expiry, the attempt limit and the resend cooldown — the part a prototype normally skips and a real system cannot. `services/verification` owns "send" and "check", which is all a provider owns, and delegates to the API's OTP pair when `LIVE.auth` is on. `register` now returns `isVerified: false`, so `User.isVerified` finally has two possible values and the admin's verified chip means something. | `lib/verification.ts`, `services/verification.ts` |
+| Whether contact is a support ticket | **No.** A `SupportTicket` is a dispute record with a queue and a resolution behind it; "I'm at the blue gate" is not a dispute. `OrderThread` is a third, small shape: append-only, per order *and* per party, snapshotting the counterparty the way `Order` snapshots its vendor. | `types/conversation.ts` |
+| Whether the call button places a call | **No, and it does not pretend to.** There is no telephony provider. It writes a `call` entry into the same thread, which is the record a real call would have left behind and is something the other side can act on (§5.3). | `lib/order-chat.ts`, `ContactEntryKind` |
+
+**The contact thread has two ends, on purpose.** The customer's tracker and the
+courier's trip screen read and write the same rows, so a rider answering in the tab
+next door appears on the tracker — the trick the order lifecycle has used since
+Phase 1, and the difference between a feature and a message box that never receives
+anything. No notifications: a thread is a place both parties are already looking,
+and routing every "ok" into the inbox would make the notification centre useless for
+the things that need it (C25's whole point).
+
+**Two rules were de-duplicated rather than re-implemented.** `zoneIdForArea` was
+three hand-written regular expressions naming the seed's three zone ids; it now
+delegates to `lib/serviceability.zoneForArea`, which derives the same answers from
+each zone's own `areas` and therefore describes *any* zone. Every seeded label
+resolves identically before and after, and the loose forms a customer types
+("Uttara" → `dzn_uttara`, "Mirpur" → `dzn_uttara`) still work. And the restaurant
+page's hand-built `CartVendor` literal became `toCartVendor(vendor)` — the one
+narrowing — which is what let the snapshot start carrying the restaurant's position
+without a second construction site silently omitting it.
+
+**One seed shortcut was corrected because this phase exposed it.** Demo order lines
+were built with no options at all, so a dish whose size group is `required` was
+seeded in a state checkout would have refused — and the reorder planner, doing its
+job, reported that such a line could not be rebuilt without the customer choosing
+again. The fix belongs in the seed: `requiredOptions` selects the first `min` of
+each required group, deterministically. A seeded order has to be a *possible* order.
+Verified: a clean reorder of all 24 seeded orders now round-trips with zero issues
+and an identical subtotal.
 
 ### Phase 16 — Admin Analytics (2026-08-25)
 
@@ -565,6 +623,42 @@ plausible-looking implementation would miss:
 | Types | `bun run typecheck` | **PASS** (exit 0, no diagnostics) |
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
+
+Re-run on 2026-08-25 after Phase 17, all three still **PASS** — `tsc --noEmit`
+exit 0, `eslint .` no findings across the whole project, `next build` exit 0 with
+every route compiled. A dev-server smoke test (port 3105, mock path) returned
+**200** for every touched route: `/`, `/restaurants`,
+`/restaurants/bella-napoli`, `/restaurants/rehanas-kitchen`, `/checkout`,
+`/account`, `/account/orders`, `/orders/[id]`, `/dashboard/orders`, `/delivery`,
+`/admin/orders`, `/register` — with no runtime error and no missing-message warning
+in the log.
+
+The domain was driven directly as well, against the seeded working set:
+
+* **Scheduling.** `scheduled → confirmed` is refused (`errors.illegalTransition`);
+  `scheduled → placed` as `restaurant` is refused (`errors.notPermitted`); as
+  `system` it commits and the released order's last event carries
+  `scheduled-release`. `restaurantActions` is empty for a scheduled order,
+  `customerActions` offers only `cancelled`, `adminActions` offers `placed` and
+  `cancelled`. `isDueForRelease` is false now and true at the slot. The two seeded
+  scheduled orders produce timelines in strict chronological order, and the released
+  one's `placed` event lands exactly on `releaseAt` — the seed cannot describe a
+  release the release rule would not have made.
+* **Serviceability.** `zoneIdForArea` was checked over all nineteen seeded area
+  labels plus the loose forms and two off-network ones; every answer matches what
+  the removed regular expressions gave. From the seeded `Home` (Banani) address,
+  22 of 23 restaurants deliver and Rehana's Kitchen (Uttara Sector 7, 10.1 km from
+  the Gulshan zone centre against its 8 km allowance) does not; from `Work`
+  (Tejgaon) two do not. The refusals are distance-derived, not hand-picked.
+* **Reorder.** Planned over all 24 seeded orders against the unedited menu: zero
+  spurious issues and subtotal identical to the original in every case. With a draft
+  that deletes one dish and reprices the rest, the plan reports `unavailable` on the
+  deleted line, `repriced` on the others and a correct new subtotal; with every line
+  86'd it reports `empty`, which is what puts the "browse the menu" button on screen
+  instead of "add to basket".
+* **Rating.** `canRateOrder` is false for an already-rated order and true for a
+  fresh delivered one; `rateOrder(order, 0)` and `rateOrder(order, 6)` return the
+  order untouched; a valid score stamps `lifecycle.rating` and appends `rating:4`.
 
 Re-run on 2026-08-25 after Phase 16, all three still **PASS** — typecheck exit 0,
 lint no findings across the whole project, build compiled every route including the
@@ -1529,6 +1623,50 @@ No architectural violations were introduced in Phases 1–15.
 
 ---
 
+### Added in Phase 17
+
+```text
+types/order.ts          OrderStatus + "scheduled"      types/conversation.ts   OrderThread
+types/cart.ts           CartVendor.location            types/delivery.ts       DeliveryZone.deliveryRadiusKm
+        ↓                                                      ↓
+lib/order-machine       scheduled edge, releaseAt,     lib/order-chat          canContact, openThread,
+                        isDueForRelease, rateOrder,                            appendEntry, QUICK_*
+                        canRateOrder                   lib/serviceability      zoneForArea, checkArea,
+lib/reorder             planReorder, ReorderIssue                              checkVendorDelivery
+lib/verification        issueChallenge, challengeError
+        ↓                                                      ↓
+services/orders         placeOrder mints `scheduled`;  services/verification   requestVerification,
+                        getReorderSource                                       confirmVerification
+        ↓                                                      ↓
+stores/orders           releaseScheduled, rateOrder    stores/order-chat       send, logCall
+stores/cart             replaceWith                    stores/location         area + zones (unpersisted)
+                                                       stores/verification     request, confirm
+        ↓
+components/orders/{reorder-dialog, rate-order-control, contact-dialog}
+components/location/{location-picker, serviceability-notice}
+components/auth/verify-account-panel
+```
+
+**No new lifecycle and no new writer of an existing field.** `scheduled` is one
+node and one edge on the existing graph; `lifecycle.rating` gained its first writer
+and there is exactly one; the delivery zones gained a radius and no second matcher.
+The three genuinely new persisted stores are `order-chat` (a record that did not
+exist), `location` (a preference that had nowhere to live) and `verification` (one
+challenge at a time). `stores/location.zones` is deliberately **not** persisted —
+reference data, so a device cannot answer "do you deliver here" out of a stale copy
+of the network.
+
+**`lib/serviceability` is injected, never seeded.** Zones are a parameter, exactly
+as `lib/delivery-bridge` takes the zone it prices against, and `lib/mock/delivery-zones`
+binds `zoneForArea` to the seeded list. That binding is what guarantees dispatch and
+the storefront cannot disagree: the rule has one implementation.
+
+**`lib/reorder` is pure and store-free.** The caller supplies the current menu
+(`services/catalog`, via `services/orders.getReorderSource`), the restaurant's own
+edits (`stores/menu`) and its 86 list (`stores/merchant`); the fold is
+`lib/menu.buildMenuBoard` — the merchant's own — so an item the plan calls orderable
+is an item their board calls orderable.
+
 ### Added in Phase 16
 
 ```text
@@ -1568,50 +1706,85 @@ the money, which is the record `buildRiderSettlements` pays from),
 
 ## Next Phase
 
-**PHASE 17 — Customer Improvements (G34, G35, G36, G37, G43, G27).** Not started;
-needs an explicit instruction. Phases 1–16 are complete and verified, so this is the
-first open item in §6's order.
+**PHASE 18 — Consistency + Quality Gaps (G41, G42, G44, G45).** Not started; needs
+an explicit instruction. Phases 1–17 are complete and verified, so this is the last
+open item in §6's order.
 
 ### What the spec asks for
 
-Scheduled orders that do not behave like ASAP orders; reorder; rating;
-location/serviceability; verification; contact.
+G41: remove or fix dead vendor order read paths. G42: cross-surface consistency
+wherever reasonable. G44: basic fraud/abuse representations. G45: typed order event
+payloads instead of string-only details.
 
-### What Phases 1–16 leave ready for it
+### What Phases 1–17 leave ready for it
 
-1. **The order already carries the scheduling field and nothing reads it.**
-   `Order.scheduledFor` is on the type, is `null` for ASAP, and the seed sets it on
-   nothing. The lifecycle machine has no notion of an order that should not enter a
-   kitchen yet, so the whole of "must not behave like an ASAP order" is a question
-   about `lib/order-machine` rather than about a form field.
-2. **Rating has a stamp and no writer.** `Order.lifecycle.rating` is read in three
-   places — `lib/customers.customerStats`, the review surfaces, and now Phase 16's
-   restaurant league table, whose `Rating` column is empty for every seeded
-   restaurant because only the working set's seven rated orders carry one. Whatever
-   Phase 17 writes there will light up all three at once, which is the argument for
-   there being exactly one writer.
-3. **Reorder has both halves already.** `lib/cart` builds a cart from lines and
-   `services/orders` resolves an order; the missing piece is what to do when a line
-   no longer exists on the menu, which Phase 9's menu builder made a real
-   possibility rather than a hypothetical.
-4. **Serviceability has a resolver.** `lib/mock/delivery-zones` and
-   `zoneIdForArea` already decide which zone an address is in and are what dispatch
-   and the rider payout read; a storefront that asks the same function cannot
-   disagree with the courier's map.
+1. **G45's string notes are now enumerable, and this phase added to them.**
+   `OrderEvent.note` carries `delay:15`, `otp-failed:2`, `handover-failed:3`,
+   `refund-requested`, `refund-approved`, `refund-rejected`, `refund-settled`,
+   `reassigned`, and — new in Phase 17 — `scheduled-release` and `rating:4`. The
+   parser is one `switch` on `note.split(":")` in
+   `components/orders/order-timeline.noteLabel`, so there is exactly one reader to
+   migrate and one minter per note. `handover-failed` and `rating` already have no
+   case there and fall through to the raw string, which is the clearest argument
+   for the typed payload.
+2. **G41's dead read path is `lib/mock/vendor-orders`.** It is the synthesised week
+   the dashboard used before Phase 1 made `stores/orders` the source of truth. Note
+   before touching it: Phase 16's analytics deliberately reads it as the platform
+   book, so "dead" needs establishing per caller rather than assumed for the module.
+3. **G44 has three places a fraud signal could already attach** without inventing a
+   fourth: `Customer.moderation` (Phase 11 blocks), `lifecycle.otpAttempts` /
+   `handoverAttempts` (both already counted and both already lock), and the refund
+   lifecycle's `requested → rejected` path. A "risk" entity that duplicated any of
+   them would be the §5.2 mistake.
 
 ### Open questions to settle before starting
 
-* **Whether a scheduled order occupies dispatch before its window.** It has to be
-  visible to the restaurant early enough to buy for and invisible to the kitchen
-  until it matters, and those are different screens reading one status.
-* **Whether rating writes a review.** `Order.lifecycle.rating` and the `Review`
-  entity are two records; a five-star tap that silently creates a public review with
-  no text, or one that creates nothing an aggregate reads, are both wrong.
-* **What an unavailable line does to a reorder.** Dropping it silently changes the
-  order; refusing the whole reorder over one sold-out side is worse. The decision
-  belongs on screen either way.
+* **Whether a typed event payload is a discriminated union on `OrderEvent` or a
+  parallel field.** The events array is persisted, so either way it needs a store
+  migration and a backfill that can read the old strings — which is the actual work
+  in G45, not the type.
+* **Whether `lib/mock/vendor-orders` is removed or re-pointed.** Removing it makes
+  the platform analytics window collapse to the live store's two dozen orders;
+  re-pointing it means deciding what the synthesised week *is* now that every
+  surface reads real orders.
 
----
+## Deliberately deferred by Phase 17 (not omissions)
+
+* **Distance is still measured from a fixed origin on the vendor cards.** G37's
+  note names both halves — serviceability *and* `services/catalog.DEFAULT_ORIGIN`.
+  Serviceability is done; the distance figure is not, and the reason is structural
+  rather than an oversight: `getVendors` is called from Server Components (the
+  landing page, the directory) which cannot read a client store, so making
+  `distanceKm` follow the chosen location means either threading an origin through
+  every catalog read as a request parameter or moving those reads client-side. Both
+  are larger than this phase and neither is what the gap is *about* — a customer in
+  Uttara now learns that a Dhanmondi kitchen cannot reach them, which is the part
+  that was actually broken.
+
+* **The synthesised rider trip screen keeps its toast stubs.**
+  `components/rider/trip-view.tsx` runs a `DeliveryJob`, not an `Order`, and a
+  contact thread is keyed on an order. G27 says "connected to the relevant order
+  where appropriate"; there is no relevant order there, and inventing one to hang a
+  thread on would be worse than the stub. The *live* trip screen — the one that runs
+  a real customer's order — has the thread.
+
+* **Verification does not gate anything.** An unverified account can still order.
+  The spec asks that registration not mark itself verified and that the abstraction
+  exist; making checkout refuse an unverified customer is a *policy* decision with
+  no line in §6 asking for it, and one that would have stopped every reviewer at the
+  till the first time they registered.
+
+* **No notifications on a contact message.** Argued above rather than forgotten: a
+  thread is a place both parties are already looking, and C25's routing gate exists
+  so the inbox stays worth reading.
+
+* **A scheduled order cannot be rescheduled.** It can be cancelled, and the machine
+  has the edge for it. Moving a slot is an edit to an immutable record — the same
+  question as editing a basket after checkout — and nothing in §6 asks for it.
+
+* **`stores/location` is not reset by the demo bar.** A chosen delivery area is a
+  customer preference, like the theme and the locale, not demo state seeded from the
+  order book. Resetting it would put the next reviewer back at "set your location".
 
 ## Deliberately deferred by Phase 16 (not omissions)
 
@@ -1632,10 +1805,14 @@ location/serviceability; verification; contact.
   carries a commission record and no courier, because nobody rode it — the same fact
   `getPlatformPayouts` already states about rider settlements, restated on the panel
   instead of being papered over by assigning fictional riders to backfilled orders.
-* **The `Rating` column is empty for most restaurants.** Nothing writes
-  `Order.lifecycle.rating` outside the working set yet; that is Phase 17's `G36`.
-  The column shows an em dash and the rated-order count beside any rating it does
-  have, so a 5.0 from one order cannot be mistaken for a 5.0 from four hundred.
+* **The `Rating` column is empty for most restaurants.** Nothing wrote
+  `Order.lifecycle.rating` outside the working set. *Phase 17 gave the field its
+  writer* (`stores/orders.rateOrder`), so a rating left on the tracker or in the
+  review form now reaches this column, `lib/customers.customerStats` and the review
+  surfaces at once — but only for orders somebody actually rates on this device, so
+  the column stays sparse until they do. It shows an em dash and the rated-order
+  count beside any rating it does have, so a 5.0 from one order cannot be mistaken
+  for a 5.0 from four hundred.
 * **Restaurant and courier rows are not links.** See the decisions table above: the
   admin partner sections are onboarding *application* queues, and there is no
   partner detail route to link to. Inventing one is not this phase's scope.

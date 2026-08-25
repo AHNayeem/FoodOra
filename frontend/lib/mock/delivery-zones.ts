@@ -1,4 +1,5 @@
 import type { DeliveryZone } from "@/types";
+import { zoneForArea } from "../serviceability";
 import { SEED_NOW } from "./cuisines";
 
 const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };
@@ -41,6 +42,9 @@ export const deliveryZones: DeliveryZone[] = [
     peakHours: [12, 13, 19, 20, 21],
     batchBonus: 25,
     cashLimit: 3000,
+    // Dense and central: most of Dhaka's north sits inside this, which is why a
+    // Dhanmondi kitchen can deliver here and an Uttara one cannot.
+    deliveryRadiusKm: 8,
   },
   {
     ...base,
@@ -65,6 +69,7 @@ export const deliveryZones: DeliveryZone[] = [
     peakHours: [13, 14, 20, 21],
     batchBonus: 20,
     cashLimit: 2500,
+    deliveryRadiusKm: 8,
   },
   {
     ...base,
@@ -83,6 +88,9 @@ export const deliveryZones: DeliveryZone[] = [
     peakHours: [12, 13, 20],
     batchBonus: 30,
     cashLimit: 3500,
+    // Further out and further apart, so a shorter cross-zone reach: a ride from
+    // the middle of the city to Uttara is a different trip from one across it.
+    deliveryRadiusKm: 7,
   },
 ];
 
@@ -96,27 +104,14 @@ export const zoneById = new Map(deliveryZones.map((z) => [z.id, z]));
  * copies of "which zone is Banani" is exactly how the two delivery realities
  * drifted apart in the first place.
  *
- * Matched on the labels a `DeliveryAddress` actually carries: a zone's own
- * `areas` list first, then the looser neighbourhood spellings a customer types
- * ("Uttara" for "Uttara Sector 4", "Mirpur" for "Mirpur 10"). A backend resolves
- * this from coordinates; the labels are enough here because the seed's zones are
- * defined by exactly these names.
+ * The matching *rule* moved once more in Phase 17 (G37), to
+ * `lib/serviceability.zoneForArea`, because the storefront now asks the same
+ * question before a basket exists and a second implementation would be a fourth
+ * copy. This binds it to the seed's zones, so every existing caller is unchanged.
+ *
+ * A backend resolves this from coordinates; the labels are enough here because
+ * the seed's zones are defined by exactly these names.
  */
 export function zoneIdForArea(area: string | null | undefined): string | null {
-  const needle = area?.trim().toLowerCase();
-  if (!needle) return null;
-
-  const listed = deliveryZones.find((zone) =>
-    zone.areas.some((name) => name.toLowerCase() === needle),
-  );
-  if (listed) return listed.id;
-
-  if (/gulshan|banani|baridhara|bashundhara|niketan|mohakhali|badda/.test(needle)) {
-    return "dzn_gulshan";
-  }
-  if (/dhanmondi|kalabagan|mohammadpur|lalmatia|shantinagar|tejgaon/.test(needle)) {
-    return "dzn_dhanmondi";
-  }
-  if (/uttara|mirpur|pallabi|kalshi/.test(needle)) return "dzn_uttara";
-  return null;
+  return zoneForArea(deliveryZones, area)?.id ?? null;
 }

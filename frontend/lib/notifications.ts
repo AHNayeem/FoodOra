@@ -237,6 +237,18 @@ interface Fanout {
  * three for the rider, and this table is that list in code.
  */
 const FANOUT: Partial<Record<OrderStatus, Fanout[]>> = {
+  /**
+   * A booked slot (Phase 17, G34). The customer is told it is booked; the
+   * restaurant is told there is something coming, which is the half of the
+   * open question that mattered — a kitchen has to be able to buy for tomorrow
+   * without the order appearing in tonight's queue. The *release* fires the
+   * `placed` row below, so the kitchen's "new order" alert still lands at the
+   * moment there is something to cook.
+   */
+  scheduled: [
+    { audience: "customer", tone: "success" },
+    { audience: "restaurant", key: "scheduledOrder", tone: "info" },
+  ],
   placed: [
     { audience: "customer", tone: "success" },
     { audience: "restaurant", key: "newOrder", tone: "info" },

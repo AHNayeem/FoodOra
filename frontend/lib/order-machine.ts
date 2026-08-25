@@ -56,6 +56,10 @@ export const TERMINAL_STATUSES: readonly OrderStatus[] = [
  * lists both `rider-assigned` and `delivered`.
  */
 export const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
+  // A scheduled order is waiting for its slot, not for a person. Releasing it is
+  // the *only* forward move — the kitchen cannot accept what it has not been
+  // given — and the customer can still call it off while it waits (G34).
+  scheduled: ["placed", "cancelled"],
   placed: ["confirmed", "rejected", "cancelled"],
   confirmed: ["preparing", "cancelled"],
   preparing: ["packing", "cancelled"],
@@ -82,6 +86,10 @@ export const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
  * autopilot; `admin` may make any transition, so it is not listed per entry.
  */
 export const ACTORS: Record<OrderStatus, readonly OrderActor[]> = {
+  // Nothing transitions *into* `scheduled` — checkout mints an order there. The
+  // entry exists because the table is exhaustive, and `customer` is who put it
+  // there, so an admin's `adminActions` reads consistently.
+  scheduled: ["customer"],
   placed: ["customer", "system"],
   confirmed: ["restaurant"],
   preparing: ["restaurant"],
@@ -130,6 +138,51 @@ export function isWithRider(status: OrderStatus): boolean {
     status === "arrived" ||
     status === "delivery-failed"
   );
+}
+
+// ---------------------------------------------------------------------------
+// Scheduling (Phase 17, G34)
+// ---------------------------------------------------------------------------
+
+/**
+ * How long before the promised slot a scheduled order is handed to the kitchen,
+ * in minutes.
+ *
+ * Not an arbitrary buffer: it is the longest preparation time a restaurant may
+ * promise (`PREP_TIME_OPTIONS`'s 35) plus the ride allowance, rounded down to the
+ * point where the two together still land inside the slot. Releasing earlier
+ * would put food on the pass before anyone wants it — which is precisely the bug
+ * G34 describes, a scheduled order behaving like an ASAP one — and releasing
+ * later would guarantee it is late.
+ */
+export const SCHEDULE_LEAD_MINUTES = 45;
+
+/**
+ * When this order should be released to the restaurant (ms), or null if it is
+ * not scheduled.
+ *
+ * Derived from the slot rather than stored, for the same reason `stuckReason` is
+ * derived from the clock: a stored release time is a second fact that can
+ * disagree with the first, and nothing would be responsible for correcting it if
+ * the slot were ever changed.
+ */
+export function releaseAt(order: Order): number | null {
+  if (!order.scheduledFor) return null;
+  return Date.parse(order.scheduledFor) - SCHEDULE_LEAD_MINUTES * 60_000;
+}
+
+/**
+ * Should this order be released now?
+ *
+ * The whole of the release rule, in one place, so the store's sweep and any
+ * surface that wants to say "opens in 20 minutes" are answering the same
+ * question. An order whose slot has already passed is due immediately — a device
+ * that was closed over the slot must not silently drop the order.
+ */
+export function isDueForRelease(order: Order, now: number): boolean {
+  if (order.status !== "scheduled") return false;
+  const at = releaseAt(order);
+  return at !== null && at <= now;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,7 +275,13 @@ export const OTP_MAX_ATTEMPTS = 3;
  * matter. Matches the window every major delivery platform enforces.
  */
 export function canCustomerCancel(order: Order): boolean {
-  return order.status === "placed" || order.status === "confirmed";
+  // A scheduled order is the easiest cancellation there is — nothing has been
+  // bought for it and nobody has been told about it yet (G34).
+  return (
+    order.status === "scheduled" ||
+    order.status === "placed" ||
+    order.status === "confirmed"
+  );
 }
 
 /** The restaurant may bail out until the courier has the food. */
@@ -862,6 +921,70 @@ export function recordHandoverFailure(order: Order, now = Date.now()): Order {
 }
 
 // ---------------------------------------------------------------------------
+// Rating (Phase 17, G36)
+// ---------------------------------------------------------------------------
+
+/** The scale. Exported so the star control cannot invent a different one. */
+export const RATING_MIN = 1;
+export const RATING_MAX = 5;
+
+/**
+ * May the customer score this order?
+ *
+ * Only once the food has actually been handed over, and only once — a rating is
+ * a fact about a meal that happened, and a second one would silently restate the
+ * first in every aggregate that reads it. Editing is a different action and
+ * belongs to the review, which has its own window (`lib/reviews.canEditReview`).
+ */
+export function canRateOrder(order: Order): boolean {
+  return (
+    (order.status === "delivered" || order.status === "completed") &&
+    order.lifecycle.rating === null
+  );
+}
+
+/**
+ * Score an order, 1–5. Pure; returns the order with the rating stamped and the
+ * event logged, or the order untouched when the score is out of range.
+ *
+ * `lifecycle.rating` had a reader in three places and no writer anywhere (G36) —
+ * the customer's stats, the review surfaces and Phase 16's restaurant league
+ * table were all reading a field only the demo seed ever set. This is the writer,
+ * and it is deliberately the *only* one: `stores/orders.rateOrder` wraps it, the
+ * review form calls that store action after a review lands, and the star control
+ * calls the same one. A second writer is how a five-star review and a one-star
+ * stamp end up on the same order.
+ *
+ * Separate from the `completed` transition rather than folded into it, because
+ * rating and closing are different decisions made at different moments: a
+ * customer who taps a star has not necessarily finished checking their bag, and
+ * one who completes an order has not necessarily formed an opinion.
+ */
+export function rateOrder(order: Order, rating: number, now = Date.now()): Order {
+  const score = Math.round(rating);
+  if (score < RATING_MIN || score > RATING_MAX) return order;
+  const iso = new Date(now).toISOString();
+  return {
+    ...order,
+    updatedAt: iso,
+    lifecycle: {
+      ...order.lifecycle,
+      rating: score,
+      events: [
+        ...order.lifecycle.events,
+        {
+          id: `${eventId(order.id, order.status, now)}_rating`,
+          status: order.status,
+          at: iso,
+          actor: "customer",
+          note: `rating:${score}`,
+        },
+      ],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Actor-facing action lists — what a surface should offer, derived not hardcoded
 // ---------------------------------------------------------------------------
 
@@ -1008,7 +1131,14 @@ export function customerActions(order: Order): OrderAction[] {
   if (order.status === "delivered") {
     actions.push({ to: "completed", key: "completeOrder", tone: "primary" });
   }
-  if (order.status === "delivered" && order.lifecycle.rating == null) {
+  /**
+   * Scoring the meal (G36). Offered on `completed` as well as `delivered`, which
+   * is the fix rather than a widening: the condition used to be `delivered` only,
+   * and completion is where an order actually ends — so the one surface that
+   * could have rendered this action was offering it during a window most orders
+   * pass straight through.
+   */
+  if (canRateOrder(order)) {
     actions.push({ to: "rate", key: "rateOrder", tone: "neutral" });
   }
   return actions;

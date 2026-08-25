@@ -21,6 +21,7 @@ import {
 } from "@/services/reviews";
 import { useReviewContext, useReviews } from "@/stores/reviews";
 import { useAuth } from "@/stores/auth";
+import { useOrders } from "@/stores/orders";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -104,6 +105,7 @@ function ReviewForm({
   const user = useAuth((s) => s.user);
   const ctx = useReviewContext();
   const addReview = useReviews((s) => s.addReview);
+  const rateOrder = useOrders((s) => s.rateOrder);
   const replaceReview = useReviews((s) => s.replaceReview);
 
   // Editing starts from the review as it stands, so the form *is* the review
@@ -209,6 +211,16 @@ function ReviewForm({
       if (!res.data) return failed(res.error);
       const { review, riderReview } = res.data;
       addReview(...(riderReview ? [review, riderReview] : [review]));
+      /**
+       * The review's star is also the order's score (Phase 17, G36).
+       *
+       * Written through the orders store rather than here, because that action is
+       * the single writer of `lifecycle.rating` — the star control on the tracker
+       * calls the same one. It is a no-op when the order was already rated, so a
+       * customer who tapped a star and then wrote a review keeps the score they
+       * first gave rather than having it silently restated.
+       */
+      rateOrder(order.id, review.rating);
       done(t("submitted", { vendor: order.vendor.name }));
     });
   }

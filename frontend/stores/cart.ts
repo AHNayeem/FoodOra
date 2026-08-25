@@ -61,6 +61,17 @@ interface CartState {
   setQuantity: (lineId: string, quantity: number) => void;
   removeLine: (lineId: string) => void;
   clear: () => void;
+  /**
+   * Replace the whole basket with one rebuilt elsewhere — a reorder (Phase 17,
+   * G35).
+   *
+   * A reorder is many lines at once and the single-vendor rule is answered
+   * *before* it runs (the reorder dialog asks), so it cannot go through `add`:
+   * `add` stages one pending line and prompts, which would ask the same question
+   * again per dish. This is the one action that discards a basket without a
+   * prompt of its own, and the surface owes the customer that prompt.
+   */
+  replaceWith: (vendor: CartVendor, lines: CartLine[]) => void;
 
   open: () => void;
   close: () => void;
@@ -158,6 +169,32 @@ export const useCart = create<CartState>()(
       clear: () => {
         set({ lines: [], vendor: null });
         void server.clearCart();
+      },
+
+      replaceWith: (vendor, lines) => {
+        if (lines.length === 0) return;
+        set({ vendor, lines, pending: null, isOpen: true });
+        /**
+         * Mirrored as a clear followed by adds, **awaited in sequence**.
+         *
+         * The other actions here fire and forget because each is one independent
+         * write. These are not independent: an `addItem` that overtook the
+         * `clearCart` would be wiped by it, and the customer would arrive at a
+         * checkout priced from a basket missing its first dish. Still
+         * fire-and-forget as far as the caller is concerned — the local basket is
+         * authoritative until the next read, exactly as documented above.
+         */
+        void (async () => {
+          await server.clearCart();
+          for (const line of lines) {
+            await server.addItem({
+              foodId: line.foodId,
+              optionIds: optionIdsOf(line),
+              quantity: line.quantity,
+              replaceExisting: false,
+            });
+          }
+        })();
       },
 
       open: () => set({ isOpen: true }),

@@ -15,6 +15,8 @@ import { VenueBookingBand } from "@/components/reservations/venue-booking-band";
 import { VendorReviews } from "@/components/reviews/vendor-reviews";
 import { AiReviewSummary } from "@/components/ai/ai-review-summary";
 import type { CartVendor } from "@/types";
+import { toCartVendor } from "@/lib/cart";
+import { ServiceabilityNotice } from "@/components/location/serviceability-notice";
 
 type Params = Promise<{ slug: string }>;
 
@@ -53,20 +55,20 @@ export default async function VendorPage({ params }: { params: Params }) {
     getVendorCuisines(vendor),
     getTranslations("restaurant"),
   ]);
-  const cartVendor: CartVendor = {
-    id: vendor.id,
-    slug: vendor.slug,
-    name: vendor.name,
-    currency: vendor.currency,
-    countryCode: vendor.location.countryCode,
-    deliveryFee: vendor.deliveryFee,
-    minOrder: vendor.minOrder,
-    freeDeliveryOver: vendor.freeDeliveryOver,
-  };
+  // The one narrowing (`lib/cart`), not a second copy of it: the snapshot now
+  // carries the restaurant's location so the basket can be zone-checked (G37),
+  // and a hand-built literal here would silently omit it.
+  const cartVendor: CartVendor = toCartVendor(vendor);
 
   return (
     <div className="pb-16">
       <VendorHero vendor={vendor} cuisines={cuisines} />
+
+      {/* Whether this kitchen reaches the customer, before they build a basket
+          they cannot check out (Phase 17, G37). */}
+      <div className="container-site mt-6">
+        <ServiceabilityNotice vendor={cartVendor} />
+      </div>
 
       <div className="container-site mt-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">

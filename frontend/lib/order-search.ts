@@ -53,6 +53,9 @@ export const ORDER_STATUS_GROUPS: readonly OrderStatusGroup[] = [
 
 /** Every status, in lifecycle order — the exact-status filter's options. */
 export const ALL_ORDER_STATUSES: readonly OrderStatus[] = [
+  // Booked for later and not yet released (Phase 17, G34). First, because that is
+  // where it sits in the lifecycle — before an order is `placed` with anybody.
+  "scheduled",
   "placed",
   "confirmed",
   "preparing",

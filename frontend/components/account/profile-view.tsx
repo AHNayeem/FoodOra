@@ -10,6 +10,7 @@ import { updateProfile, type ProfilePatch } from "@/services/account";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { VerifyAccountPanel } from "@/components/auth/verify-account-panel";
 
 const selectClass =
   "h-11 w-full rounded-field border border-line bg-surface px-3.5 text-sm text-ink outline-none transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30";
@@ -90,7 +91,12 @@ export function ProfileView() {
   }
 
   return (
-    <section className="rounded-panel border border-line bg-surface p-6">
+    <div className="space-y-5">
+      {/* An account nobody has proved belongs to them (Phase 17, G43). Renders
+          the verified chip once they have, so the state is legible either way. */}
+      <VerifyAccountPanel />
+
+      <section className="rounded-panel border border-line bg-surface p-6">
       {/* Identity header */}
       <div className="flex items-center gap-4 border-b border-line pb-5">
         <span className="inline-flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-pill bg-primary text-lg font-bold text-white">
@@ -187,6 +193,7 @@ export function ProfileView() {
           </Button>
         </div>
       </form>
-    </section>
+      </section>
+    </div>
   );
 }

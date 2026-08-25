@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   Ban,
   Bike,
+  CalendarClock,
   CheckCheck,
   CookingPot,
   DoorOpen,
@@ -31,6 +32,7 @@ import type { OrderActor, OrderStatus } from "@/types";
 export type StatusTone = "neutral" | "primary" | "accent" | "fresh" | "danger";
 
 export const STATUS_ICON: Record<OrderStatus, typeof Bike> = {
+  scheduled: CalendarClock,
   placed: ReceiptText,
   confirmed: BadgeCheck,
   preparing: CookingPot,
@@ -50,6 +52,9 @@ export const STATUS_ICON: Record<OrderStatus, typeof Bike> = {
 };
 
 export const STATUS_TONE: Record<OrderStatus, StatusTone> = {
+  // Neutral, and that is the point: a booked slot is not something anybody has
+  // to act on yet, so it must not read like the amber of an unanswered order.
+  scheduled: "neutral",
   placed: "accent",
   confirmed: "primary",
   preparing: "accent",

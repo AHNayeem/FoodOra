@@ -20,7 +20,10 @@ import {
   canDecideRefund,
   canSettleRefund,
   canTransition,
+  canRateOrder,
+  isDueForRelease,
   isTerminal,
+  rateOrder,
   recordHandoverFailure,
   recordOtpFailure,
   refundIsInstant,
@@ -160,6 +163,25 @@ interface OrdersState {
   settleRefund: (id: string) => { order: Order | null; error: string | null };
   /** Raise the "your rider is nearly there" nudge, once per order. */
   notifyNearby: (id: string) => void;
+  /**
+   * Score a delivered order, 1–5 (Phase 17, G36).
+   *
+   * The single writer of `lifecycle.rating`. Both surfaces that can produce a
+   * score — the star control on the tracker and order history, and the review
+   * form when it submits — come through here, so a review's rating and the
+   * order's stamp can never be two different numbers.
+   */
+  rateOrder: (id: string, rating: number) => { order: Order | null; error: string | null };
+  /**
+   * Hand every scheduled order whose slot is close enough to the restaurant
+   * (Phase 17, G34). Returns how many were released.
+   *
+   * A sweep rather than a timer per order: a device can be closed across a slot,
+   * and an order that should have been released an hour ago has to be released
+   * on the next look rather than waiting for a tick that already fired. Idempotent
+   * — an order that is no longer `scheduled` is not due.
+   */
+  releaseScheduled: (now?: number) => number;
 
   // -- lifecycle ---------------------------------------------------------
   /** Lay down the demo working set (idempotent). */
@@ -604,6 +626,45 @@ export const useOrders = create<OrdersState>()(
         emitNotifications([nearYouNotification(order, new Date().toISOString())]);
       },
 
+      rateOrder: (id, rating) => {
+        const current = get().orders.find((o) => o.id === id);
+        if (!current) return { order: null, error: "errors.notFound" };
+        /**
+         * Already scored is success, not failure.
+         *
+         * Two surfaces call this and one of them calls it unconditionally: the
+         * review form stamps the order whenever a review lands, including for a
+         * customer who tapped a star first. Returning an error there would put a
+         * red toast on a review that was accepted — so the first score stands and
+         * the second call is absorbed. An out-of-range one is a different matter:
+         * nothing was recorded, and the caller has to know.
+         */
+        if (!canRateOrder(current)) return { order: current, error: null };
+        const rated = rateOrder(current, rating);
+        if (rated === current) return { order: null, error: "errors.ratingRequired" };
+        set((s) => ({ orders: s.orders.map((o) => (o.id === id ? rated : o)) }));
+        return { order: rated, error: null };
+      },
+
+      /**
+       * The slot sweep.
+       *
+       * Deliberately *not* part of the demo autopilot even though the autopilot is
+       * what calls it most often: releasing a scheduled order is something a
+       * server's clock does whether or not anybody is watching, and gating it on
+       * the demo switch would mean a reviewer who turned the autopilot off had
+       * scheduled orders that never arrived. `DemoEngine` runs it outside its own
+       * gate, and the store runs it once on hydration for a device that was closed
+       * over the slot.
+       */
+      releaseScheduled: (now = Date.now()) => {
+        const due = get().orders.filter((o) => isDueForRelease(o, now));
+        for (const order of due) {
+          get().advance(order.id, "placed", "system", { note: "scheduled-release" });
+        }
+        return due.length;
+      },
+
       seed: (now = Date.now()) => {
         if (get().seeded) return;
         const demo = buildDemoOrders(now).map(withRiderEarning);
@@ -673,6 +734,10 @@ export const useOrders = create<OrdersState>()(
         state?.setHydrated();
         // Lay the working set down the first time this device hydrates.
         state?.seed();
+        // A device closed over a scheduled order's slot has to catch up before
+        // any surface reads the board, or the order sits in `scheduled` looking
+        // like it was forgotten (Phase 17, G34).
+        state?.releaseScheduled();
       },
     },
   ),

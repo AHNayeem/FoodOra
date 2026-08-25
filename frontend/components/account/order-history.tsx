@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
 import { CompleteOrderButton } from "@/components/orders/complete-order-button";
 import { WriteReviewDialog } from "@/components/reviews/write-review-dialog";
+import { Stars } from "@/components/reviews/stars";
+import { ReorderButton } from "@/components/orders/reorder-dialog";
 import { ReportProblemButton } from "@/components/support/report-problem-dialog";
 
 /**
@@ -155,6 +157,16 @@ function OrderCard({
         {order.lines.map((l) => `${l.quantity}× ${l.name}`).join(", ")}
       </p>
 
+      {/* The score this customer gave (G36). Shown rather than only counted:
+          `lifecycle.rating` now has a writer, and the first place a customer
+          looks for what they said about a meal is the meal. */}
+      {order.lifecycle.rating != null && (
+        <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted">
+          <Stars value={order.lifecycle.rating} size="sm" />
+          {t("yourRating")}
+        </p>
+      )}
+
       {/* Actions */}
       <div className="mt-4 flex flex-wrap gap-2">
         {isActive(order) && (
@@ -169,9 +181,9 @@ function OrderCard({
         <Button href={`/checkout/success?order=${order.id}`} size="sm" variant="outline">
           {isTerminal(order.status) ? t("viewInvoice") : t("viewReceipt")}
         </Button>
-        <Button href={`/restaurants/${order.vendor.slug}`} size="sm" variant="ghost">
-          {t("reorder")}
-        </Button>
+        {/* A real reorder: the order's lines re-resolved against the menu as it
+            is now, not a link to the restaurant's page (Phase 17, G35). */}
+        <ReorderButton order={order} />
         {/* Rating is only offered where it is actually allowed — the same window
             check the seam re-runs on submit (Phase C22). */}
         {reviewable && (

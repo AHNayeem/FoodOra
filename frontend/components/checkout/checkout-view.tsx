@@ -17,8 +17,10 @@ import { useCoupons } from "@/stores/coupons";
 import { useCampaigns, useCampaignDesk } from "@/stores/campaigns";
 import { useWallet } from "@/stores/wallet";
 import { isPhoneBlocked, useCustomers } from "@/stores/customers";
+import { useLocation } from "@/stores/location";
 import { authorisePayment, placeOrder } from "@/services/orders";
 import { getAddressBook } from "@/services/account";
+import { getDeliveryZones } from "@/services/delivery";
 import { authoriseWalletPayment, getWallet } from "@/services/wallet";
 import {
   applyCoupon,
@@ -29,6 +31,8 @@ import {
   type BasketInput,
 } from "@/services/coupons";
 import { amountToMinOrder, cartSubtotal } from "@/lib/cart";
+import { SCHEDULE_LEAD_MINUTES } from "@/lib/order-machine";
+import { checkAddressDelivery } from "@/lib/serviceability";
 import { computeTotals } from "@/lib/checkout";
 import { coversAmount } from "@/lib/wallet";
 import { formatPrice } from "@/lib/format";
@@ -119,8 +123,16 @@ export function CheckoutView() {
   // blocking somebody in `/admin/customers` actually stops them ordering — a
   // block that only paints a chip on an admin table is not a block.
   const managedAccounts = useCustomers((s) => s.accounts);
+  const zones = useLocation((s) => s.zones);
+  const seedZones = useLocation((s) => s.seedZones);
 
   // Rehydrate the persisted stores on the client (they skip auto-hydration).
+  // The delivery network, for the serviceability check below. Reference data, so
+  // it is fetched rather than persisted (see `stores/location`).
+  useEffect(() => {
+    if (zones.length === 0) getDeliveryZones().then(seedZones);
+  }, [zones.length, seedZones]);
+
   useEffect(() => {
     useCart.persist.rehydrate();
     useOrders.persist.rehydrate();
@@ -174,9 +186,18 @@ export function CheckoutView() {
   // Fall back to the manual form when there's nothing to pick from.
   const showSavedList = addressMode === "saved" && savedAddrs.length > 0;
 
-  // Generate scheduling slots (client-only) starting ~45 min out, on the half hour.
+  /**
+   * Scheduling slots (client-only), on the half hour.
+   *
+   * The first one is deliberately past `SCHEDULE_LEAD_MINUTES` rather than at it
+   * (Phase 17, G34). A slot inside the lead would be released to the kitchen the
+   * instant it was booked, which is an ASAP order wearing a timestamp — exactly
+   * the behaviour this phase exists to remove. Fifteen minutes of clearance is
+   * enough that "scheduled" always means something waited.
+   */
   const [slots] = useState(() => {
-    const start = Math.ceil((Date.now() + 45 * 60_000) / HALF_HOUR) * HALF_HOUR;
+    const earliest = Date.now() + (SCHEDULE_LEAD_MINUTES + 15) * 60_000;
+    const start = Math.ceil(earliest / HALF_HOUR) * HALF_HOUR;
     return Array.from({ length: 10 }, (_, i) => new Date(start + i * HALF_HOUR).toISOString());
   });
 
@@ -358,9 +379,35 @@ export function CheckoutView() {
 
     if (timeMode === "schedule" && !scheduledSlot) next.time = "errors.selectTime";
 
+    /**
+     * Can this actually be delivered? (Phase 17, G37.)
+     *
+     * The same check the restaurant page runs, against the same zones dispatch
+     * picks couriers from — asked here as well because the address can be typed
+     * at this step and never seen by the storefront. It refuses only what it can
+     * stand behind: an address outside every zone, or a restaurant too far from
+     * the one it is in. A basket too old to carry the restaurant's position
+     * answers `unknown` and is let through, because refusing an order on missing
+     * data would be worse than the gap it closes.
+     */
+    let unserviceable: string | null = null;
+    if (address && zones.length > 0) {
+      const check = checkAddressDelivery(zones, vendor, address);
+      if (!check.serviceable && check.reason !== "unknown") {
+        unserviceable = `errors.${check.reason}`;
+        // On the field the customer can actually act on: the picker when they are
+        // choosing a saved address, the area input when they are typing one.
+        if (showSavedList) next.address = unserviceable;
+        else next.area = unserviceable;
+      }
+    }
+
     setErrors(next);
     if (Object.keys(next).length > 0) {
-      toast.error(t("errors.generic"));
+      // A refusal with a reason says the reason. "Something went wrong" is the
+      // right message for a form with four empty fields and the wrong one for an
+      // address nobody can deliver to.
+      toast.error(t(unserviceable ?? "errors.generic"));
       return;
     }
 

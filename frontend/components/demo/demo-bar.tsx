@@ -27,6 +27,7 @@ import { useCustomers } from "@/stores/customers";
 import { useCampaigns } from "@/stores/campaigns";
 import { useReviewModeration } from "@/stores/review-moderation";
 import { useAudit } from "@/stores/audit";
+import { useOrderChat } from "@/stores/order-chat";
 import { useVendorSettings } from "@/stores/vendor-settings";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,7 @@ export function DemoBar() {
   const resetCampaigns = useCampaigns((s) => s.resetDemo);
   const resetModeration = useReviewModeration((s) => s.resetDemo);
   const resetAudit = useAudit((s) => s.resetDemo);
+  const resetThreads = useOrderChat((s) => s.resetDemo);
 
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
@@ -244,6 +246,11 @@ export function DemoBar() {
                 // Re-seeded rather than emptied — the log describes a fortnight of
                 // desk work that happened before this demonstration began.
                 resetAudit();
+                // Phase 17's contact threads, for the plainest of the reasons:
+                // they are conversations *about* the orders the reset has just
+                // rebuilt, so a surviving one would be a message to a courier on a
+                // delivery that no longer exists.
+                resetThreads();
                 toast.success(t("resetToast"));
               }}
               className="ms-auto inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5"

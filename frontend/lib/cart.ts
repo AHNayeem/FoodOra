@@ -20,7 +20,7 @@ export function toCartVendor(vendor: {
   slug: string;
   name: string;
   currency: string;
-  location: { countryCode: string };
+  location: { countryCode: string; lat: number; lng: number; address: string };
   deliveryFee: number;
   minOrder: number;
   freeDeliveryOver: number | null;
@@ -31,6 +31,14 @@ export function toCartVendor(vendor: {
     name: vendor.name,
     currency: vendor.currency,
     countryCode: vendor.location.countryCode,
+    // Carried so a basket can be asked whether the restaurant reaches the
+    // customer's area (Phase 17, G37) — the snapshot has to answer that on its
+    // own, because checkout holds it and not the full `Vendor`.
+    location: {
+      lat: vendor.location.lat,
+      lng: vendor.location.lng,
+      place: vendor.location.address,
+    },
     deliveryFee: vendor.deliveryFee,
     minOrder: vendor.minOrder,
     freeDeliveryOver: vendor.freeDeliveryOver,

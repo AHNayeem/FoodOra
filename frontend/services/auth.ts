@@ -124,7 +124,16 @@ export async function register(input: RegisterInput): Promise<Result<User>> {
       countryCode: "BD",
       currency: "BDT",
       locale: "en",
-      isVerified: true,
+      /**
+       * A new account is **not** verified (Phase 17, G43).
+       *
+       * This used to be `true` unconditionally, which made `User.isVerified` a
+       * field that could only ever hold one value — while the OTP pair below sat
+       * unused and the admin's customer table drew a "verified" chip nothing could
+       * ever have earned. Verification is now a step the customer takes
+       * (`services/verification`), and until they take it the account says so.
+       */
+      isVerified: false,
       createdAt: SEED_NOW,
       updatedAt: SEED_NOW,
       deletedAt: null,

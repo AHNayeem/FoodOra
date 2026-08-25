@@ -11,6 +11,7 @@ import { AccountMenu } from "@/components/layout/account-menu";
 import { PrimaryNav } from "@/components/layout/primary-nav";
 import { MobileNavDrawer } from "@/components/layout/mobile-nav-drawer";
 import { CartButton } from "@/components/cart/cart-button";
+import { LocationPicker } from "@/components/location/location-picker";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import type { CmsMenuItem } from "@/types";
 import { useAuth } from "@/stores/auth";
@@ -76,6 +77,11 @@ export function SiteHeader({ menu }: { menu: CmsMenuItem[] }) {
             </span>
             <span className="text-lg tracking-tight">{t("common.appName")}</span>
           </Link>
+
+          {/* Where the customer is (Phase 17, G37). Next to the brand rather than
+              in the actions cluster, because it qualifies everything the page
+              below it shows — which restaurants reach them, and whether any do. */}
+          <LocationPicker className="hidden md:inline-flex" />
 
           <PrimaryNav menu={menu} className="hidden flex-1 lg:flex" />
 
