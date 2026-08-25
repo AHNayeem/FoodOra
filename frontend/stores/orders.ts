@@ -8,7 +8,7 @@ import type {
   OrderStatus,
   Rider,
 } from "@/types";
-import { buildDemoOrders, riders, vendorById, zoneIdForArea } from "@/lib/mock";
+import { buildDemoOrders, riders, vendorById, zoneById, zoneIdForArea } from "@/lib/mock";
 import {
   notificationsFor,
   nearYouNotification,
@@ -37,6 +37,7 @@ import {
 } from "@/lib/order-machine";
 import {
   dispatchRider,
+  ensureEventDetails,
   ensureFinancials,
   ensureHandoverRecord,
   ensureLifecycle,
@@ -44,6 +45,7 @@ import {
   riderSnapshot,
 } from "@/lib/order-lifecycle";
 import { commissionRateFor, DEFAULT_COMMISSION_RATE } from "@/lib/settlement";
+import { overCashLimit } from "@/lib/risk";
 import { riderEarningForOrder } from "@/services/delivery";
 import { offShiftRiderIds, useFleet } from "./fleet";
 import { undispatchableRiderIds, useOnboarding } from "./onboarding";
@@ -51,6 +53,7 @@ import { emitNotifications, useNotifications } from "./notifications";
 import { useWallet } from "./wallet";
 import { sessionCan } from "./auth";
 import { recordAudit } from "./audit";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * orders store — the single source of truth for every live order, on every
@@ -64,7 +67,11 @@ import { recordAudit } from "./audit";
  * There is still no backend, so "one source of truth" means one persisted store
  * that all four surfaces read and write. That is enough to make the demo real:
  * accepting an order in the dashboard tab changes the customer's tracker in the
- * tab beside it, because both are reading the same key in localStorage.
+ * tab beside it, because both are reading the same key in localStorage — and,
+ * since Phase 18 (G42), because the tab that is not writing is listening for the
+ * key to change (`lib/store-sync`). Sharing the key was never enough on its own:
+ * a persisted store reads it on hydration and, without that listener, never
+ * again.
  *
  * Three rules hold this together:
  *
@@ -86,7 +93,7 @@ import { recordAudit } from "./audit";
  */
 
 /** Bump when the persisted shape changes; `migrate` backfills the difference. */
-const STORE_VERSION = 6;
+const STORE_VERSION = 7;
 
 interface OrdersState {
   orders: Order[];
@@ -316,12 +323,13 @@ export const useOrders = create<OrdersState>()(
               from: current.status,
               orderNumber: result.order.orderNumber,
               name: result.order.vendor.name,
-              // A note where a surface wrote one, otherwise the cancellation
-              // reason code — the two are the only free explanation a transition
-              // carries, and an intervention with neither is a bare status move.
+              // The line the desk typed where a surface collected one, otherwise
+              // the cancellation reason code — the two are the only explanation a
+              // transition carries, and an intervention with neither is a bare
+              // status move.
               reason:
-                typeof patch.note === "string"
-                  ? patch.note
+                patch.detail?.kind === "note"
+                  ? patch.detail.body
                   : typeof patch.reason === "string"
                     ? patch.reason
                     : null,
@@ -366,6 +374,26 @@ export const useOrders = create<OrdersState>()(
         const holding = activeOrderForRider(get().orders, rider.id);
         if (holding && holding.id !== id) {
           return { order: null, error: "errors.riderBusy" };
+        }
+        /**
+         * And a rider carries only so much of the platform's money (Phase 18,
+         * G44). The zone's `cashLimit` has been drawn on the rider's wallet screen
+         * since Phase 3 and consulted by nothing: a courier could be given cash
+         * order after cash order with the red bar full behind them.
+         *
+         * Enforced in the same place as the one-order rule and for the same
+         * reason — all three surfaces that can assign have to mean the same thing
+         * by it. Prepaid orders pass whatever the courier is holding, because
+         * there is nothing to collect.
+         */
+        const order = get().orders.find((o) => o.id === id);
+        const zone = order ? zoneById.get(rider.zoneId) : null;
+        if (
+          order &&
+          zone &&
+          overCashLimit(get().orders, rider.id, order, zone.cashLimit, Date.now())
+        ) {
+          return { order: null, error: "errors.riderCashLimit" };
         }
         const result = get().advance(id, "rider-assigned", "system", {
           rider: riderSnapshot(rider),
@@ -421,7 +449,9 @@ export const useOrders = create<OrdersState>()(
         if (holding && holding.id !== id) {
           return { order: null, error: "errors.riderBusy" };
         }
-        const released = get().advance(id, "ready", "admin", { note: "reassigned" });
+        const released = get().advance(id, "ready", "admin", {
+          detail: { kind: "reassigned", fromRider: current.lifecycle.rider?.name ?? null },
+        });
         if (released.error) return { order: null, error: released.error };
         const result = get().assignRider(id, rider, "manual");
         // The two transitions already produced an intervention entry and an
@@ -660,7 +690,9 @@ export const useOrders = create<OrdersState>()(
       releaseScheduled: (now = Date.now()) => {
         const due = get().orders.filter((o) => isDueForRelease(o, now));
         for (const order of due) {
-          get().advance(order.id, "placed", "system", { note: "scheduled-release" });
+          get().advance(order.id, "placed", "system", {
+            detail: { kind: "scheduled-release" },
+          });
         }
         return due.length;
       },
@@ -727,6 +759,11 @@ export const useOrders = create<OrdersState>()(
         // crash. The backfill records that an already-collected order *was* handed
         // over, and leaves its checklist empty rather than inventing one.
         if (version < 6) orders = orders.map(ensureHandoverRecord);
+        // v6 events carry the encoded `note` this phase retired (G45): every
+        // annotation on them — a delay, a wrong code, a refund decision — is a
+        // string the readers no longer parse. `ensureEventDetails` converts them
+        // through the one module that still knows the encoding.
+        if (version < 7) orders = orders.map(ensureEventDetails);
         return { orders, seeded: state.seeded ?? false };
       },
       skipHydration: true,
@@ -742,6 +779,13 @@ export const useOrders = create<OrdersState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-orders", () => void useOrders.persist.rehydrate());
 
 /**
  * Which delivery zone an order belongs to — matched on the drop area. Dispatch

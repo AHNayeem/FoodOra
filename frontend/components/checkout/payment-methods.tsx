@@ -36,6 +36,7 @@ export function PaymentMethods({
   currency,
   walletBalance,
   total,
+  cardLocked = false,
 }: {
   value: PaymentMethod;
   onChange: (method: PaymentMethod) => void;
@@ -44,6 +45,13 @@ export function PaymentMethods({
   walletBalance: number;
   /** What the wallet would have to cover right now. */
   total: number;
+  /**
+   * The card has been refused too often on this checkout (Phase 18, G44) — shown
+   * closed, with the reason, rather than left live to be retried. Disabled the
+   * same way an unaffordable wallet is, because it is the same fact: a tender
+   * that cannot complete this order.
+   */
+  cardLocked?: boolean;
 }) {
   const t = useTranslations("checkout");
   const walletCovers = coversAmount(walletBalance, total);
@@ -57,7 +65,13 @@ export function PaymentMethods({
     disabled?: boolean;
   }> = [
     { method: "cash", icon: Banknote, title: t("payCash"), desc: t("payCashDesc") },
-    { method: "card", icon: CreditCard, title: t("payCard"), desc: t("payCardDesc", { last4: DEMO_CARD_LAST4 }) },
+    {
+      method: "card",
+      icon: CreditCard,
+      title: t("payCard"),
+      desc: cardLocked ? t("payCardLocked") : t("payCardDesc", { last4: DEMO_CARD_LAST4 }),
+      disabled: cardLocked,
+    },
     {
       method: "wallet",
       icon: Wallet,

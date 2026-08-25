@@ -145,6 +145,60 @@ export interface Courier extends BaseEntity {
 // ---------------------------------------------------------------------------
 
 /**
+ * What an event *says*, beyond the status it moved into (Phase 18, G45).
+ *
+ * This used to be a `note: string`, and it was a string only in the sense that
+ * `"delay:15"` is a string: every value in it was a machine-readable code with a
+ * payload glued on after a colon, minted in one module and pulled apart with
+ * `split(":")` in another. Nothing typed the vocabulary, so a note the renderer
+ * had no case for fell through to the raw code and the customer read
+ * `handover-failed:3` on their timeline — which is exactly what had happened to
+ * two of the ten notes by the time this phase started.
+ *
+ * A discriminated union puts the vocabulary in the type system. A new kind of
+ * event cannot be minted without the compiler asking the timeline what it says,
+ * and its payload arrives as `minutes: number` rather than as the second half of
+ * a string.
+ *
+ * Each member carries only what is *not* already on the order. There is no
+ * `method` on the refund members (`lifecycle.refundMethod` holds it), no
+ * `scheduledFor` on the release (`order.scheduledFor` holds it) and no reason on
+ * a cancellation (`lifecycle.cancelReason` holds it) — an event that restated
+ * them could disagree with them, which is the §5.2 mistake in miniature.
+ */
+export type OrderEventDetail =
+  /** The restaurant asked for more time. */
+  | { kind: "delay"; minutes: number }
+  /** A wrong doorstep code, and which attempt it was. */
+  | { kind: "otp-failed"; attempts: number }
+  /** A wrong courier code at the counter, and which attempt it was. */
+  | { kind: "handover-failed"; attempts: number }
+  /**
+   * A refund opened, decided or paid. `amount` is null on an event recovered by
+   * the migration, where the order records the sum but the event never did — a
+   * missing figure rather than a zero one.
+   */
+  | { kind: "refund-requested"; amount: number | null }
+  | { kind: "refund-approved"; amount: number | null }
+  | { kind: "refund-rejected" }
+  | { kind: "refund-settled"; amount: number | null }
+  /** The desk moved the job to another courier. `fromRider` is who lost it. */
+  | { kind: "reassigned"; fromRider: string | null }
+  /** A scheduled order reached its slot and went to the restaurant. */
+  | { kind: "scheduled-release" }
+  /** The customer scored the order. */
+  | { kind: "rating"; score: number }
+  /**
+   * Free prose somebody typed — the operator's line on a cancellation, the
+   * courier's on a failed doorstep. The one member whose payload is genuinely
+   * text, and it is a *field* rather than an encoding: nothing parses it.
+   */
+  | { kind: "note"; body: string };
+
+/** The tags of {@link OrderEventDetail}. Exported so a renderer can exhaust them. */
+export type OrderEventKind = OrderEventDetail["kind"];
+
+/**
  * One thing that happened to an order. The event log is append-only and is the
  * *only* honest source for the timeline: a status alone cannot say who set it,
  * when, or why. Phase E stores these rows verbatim.
@@ -156,10 +210,10 @@ export interface OrderEvent {
   at: ISODate;
   actor: OrderActor;
   /**
-   * Free-text detail shown under the timeline entry — a rejection reason, a
-   * delay note, the OTP attempt that failed. Null for a plain transition.
+   * What this event says beyond the status — a delay, a failed code, a refund
+   * decision, a typed line from the desk. Null for a plain transition.
    */
-  note: string | null;
+  detail: OrderEventDetail | null;
 }
 
 /** The rider snapshot the customer sees once one is assigned. */

@@ -7,6 +7,7 @@ import type {
   Rider,
 } from "@/types";
 import { handoverCodeFor, otpFor } from "./delivery";
+import { eventWithDetail } from "./order-events";
 import { isFailure, isTerminal, stagesFor, stageIndex } from "./order-machine";
 import { settleOrder } from "./settlement";
 
@@ -84,7 +85,7 @@ export function createLifecycle(
         status,
         at: placedAt,
         actor: "customer",
-        note: null,
+        detail: null,
       },
     ],
     prepMinutes: null,
@@ -147,7 +148,7 @@ export function synthesiseLifecycle(order: Order): OrderLifecycle {
         status: stages[i],
         at,
         actor: actorForStage(stages[i]),
-        note: null,
+        detail: null,
       });
     }
     life.prepMinutes = 25;
@@ -168,7 +169,7 @@ export function synthesiseLifecycle(order: Order): OrderLifecycle {
       status: order.status,
       at: order.updatedAt,
       actor: byRestaurant ? "restaurant" : "customer",
-      note: null,
+      detail: null,
     });
     life.cancelledBy = byRestaurant ? "restaurant" : "customer";
     if (byRestaurant) life.rejectionReason = "too-busy";
@@ -324,6 +325,28 @@ export function ensureHandoverRecord(order: Order): Order {
       handoverChecks: life.handoverChecks ?? [],
     },
   };
+}
+
+/**
+ * Backfill the typed event details on an order persisted before them (Phase 18,
+ * G45).
+ *
+ * Every event in an old store carries `note: "delay:15"` and no `detail`, and
+ * every reader now switches on `detail.kind` — so without this an order placed
+ * yesterday renders a timeline with every annotation missing. The encoding is
+ * read by `lib/order-events`, which is the only module that still knows it.
+ *
+ * Idempotent, and it rewrites the array only when something actually changed, so
+ * a store that has already migrated keeps its object identity and the selectors
+ * over it do not re-run.
+ */
+export function ensureEventDetails(order: Order): Order {
+  const events = order.lifecycle?.events;
+  if (!events?.length) return order;
+  const converted = events.map((event) => eventWithDetail(order, event));
+  const changed = converted.some((event, i) => event !== events[i]);
+  if (!changed) return order;
+  return { ...order, lifecycle: { ...order.lifecycle, events: converted } };
 }
 
 /**

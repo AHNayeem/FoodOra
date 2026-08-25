@@ -22,6 +22,7 @@ import { authorisePayment, placeOrder } from "@/services/orders";
 import { getAddressBook } from "@/services/account";
 import { getDeliveryZones } from "@/services/delivery";
 import { authoriseWalletPayment, getWallet } from "@/services/wallet";
+import { couponHeld, customerRisk, paymentLocked } from "@/lib/risk";
 import {
   applyCoupon,
   applyCouponCode,
@@ -157,6 +158,13 @@ export function CheckoutView() {
   const [timeMode, setTimeMode] = useState<TimeMode>("asap");
   const [scheduledSlot, setScheduledSlot] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("cash");
+  /**
+   * Card refusals on this checkout (Phase 18, G44). Counted so there is a limit:
+   * the decline used to be a toast and nothing else, which left the reserved test
+   * card submittable for as long as anybody cared to click — the shape of card
+   * testing, and the one abuse a checkout is actually asked to stop.
+   */
+  const [cardDeclines, setCardDeclines] = useState(0);
   const [notes, setNotes] = useState("");
   const [tipPercent, setTipPercent] = useState(0);
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
@@ -211,13 +219,31 @@ export function CheckoutView() {
     [vendor, lines, tipPercent, coupon, fulfillment],
   );
 
+  /**
+   * Is this account under a coupon hold (Phase 18, G44)?
+   *
+   * Read over the same order book `isFirstOrder` is read over, and over the same
+   * clock the slots are built from — captured once at mount rather than during
+   * render, and a thirty-day window does not care about the seconds since.
+   *
+   * Derived here and handed to the seam, so the coupon engine refuses the ticket
+   * with a reason beside it (`coupons.reason.riskHold`) instead of this component
+   * hiding a button. The customer can still order and still pay: it is the
+   * discount that is held.
+   */
+  const [openedAt] = useState(() => Date.now());
+  const riskHold = useMemo(
+    () => couponHeld(customerRisk(pastOrders, null, openedAt)),
+    [pastOrders, openedAt],
+  );
+
   /** The basket the coupon seam prices against — cart, not hand-assembled totals. */
   const basket: BasketInput | null = useMemo(
     () =>
       vendor
-        ? { vendor, lines, fulfillment, isFirstOrder: pastOrders.length === 0 }
+        ? { vendor, lines, fulfillment, isFirstOrder: pastOrders.length === 0, riskHold }
         : null,
-    [vendor, lines, fulfillment, pastOrders.length],
+    [vendor, lines, fulfillment, pastOrders.length, riskHold],
   );
 
   /**
@@ -257,8 +283,13 @@ export function CheckoutView() {
    * Deriving it means there is no window in which the selection is stale.
    */
   const walletTotal = pricing?.total ?? 0;
+  const cardLocked = paymentLocked(cardDeclines);
   const tender: PaymentMethod =
-    payment === "wallet" && !coversAmount(walletBalance, walletTotal) ? "cash" : payment;
+    payment === "wallet" && !coversAmount(walletBalance, walletTotal)
+      ? "cash"
+      : payment === "card" && cardLocked
+        ? "cash"
+        : payment;
 
   // ---- Loading / empty states (all hooks above run unconditionally) ----
   if (!hydrated) {
@@ -436,6 +467,16 @@ export function CheckoutView() {
     authorise.then((auth) => {
       if (auth.error) {
         setSubmitting(false);
+        // A refused card counts against the attempt limit; a wallet that cannot
+        // cover the order does not. The wallet is this app's own ledger and its
+        // refusal is arithmetic the customer can see — there is nothing to
+        // retry blindly and nothing to probe.
+        if (tender === "card") {
+          const declines = cardDeclines + 1;
+          setCardDeclines(declines);
+          toast.error(paymentLocked(declines) ? t("errors.cardLocked") : t(auth.error));
+          return;
+        }
         toast.error(t(auth.error));
         return;
       }
@@ -718,6 +759,7 @@ export function CheckoutView() {
               currency={currency}
               walletBalance={walletBalance}
               total={pricing.total}
+              cardLocked={cardLocked}
             />
           </Section>
 

@@ -7,6 +7,7 @@ import { wallet as seedWallet } from "@/lib/mock";
 import { coversAmount, isSettled } from "@/lib/wallet";
 import { walletNotification } from "@/lib/notifications";
 import { emitNotifications } from "./notifications";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * wallet store — the customer's wallet balance + ledger (Phase C3, made
@@ -174,3 +175,10 @@ export const useWallet = create<WalletState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-wallet", () => void useWallet.persist.rehydrate());

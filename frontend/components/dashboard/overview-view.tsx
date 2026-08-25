@@ -211,16 +211,16 @@ export function OverviewView() {
     );
   }
 
-  // The headline numbers are recomputed over the synthesised week *plus*
-  // everything live, so today's card counts real orders. The charts below read
-  // the same merged book through `getVendorAnalytics` — Phase 10 removed the
-  // second, synthesiser-only path they used to be on.
-  const merged = [...live, ...data.recentOrders.filter((o) => !live.some((l) => l.id === o.id))];
-  const stats = vendorStats(
-    [...data.allOrders.filter((o) => !live.some((l) => l.id === o.id)), ...live],
-    vendor,
-    now,
-  );
+  // One merge, and everything on the page reads it: the headline numbers, the
+  // recent list below and — through `getVendorAnalytics` — the charts. The
+  // synthesised week plus everything live, so today's card counts real orders.
+  //
+  // Phase 18 (G41) collapsed two merges into this one. The KPI cards were built
+  // over the whole synthesised week and the recent list over a pre-cut six of it,
+  // which meant the two panels were describing different sets of orders on one
+  // screen for no reason anybody had chosen.
+  const merged = [...live, ...data.orders.filter((o) => !live.some((l) => l.id === o.id))];
+  const stats = vendorStats(merged, vendor, now);
   const currency = stats.currency as CurrencyCode;
 
   /**

@@ -29,6 +29,7 @@ import {
   isTerminal,
   releaseAt,
 } from "@/lib/order-machine";
+import { noteDetail } from "@/lib/order-events";
 import { CUSTOMER_CANCEL_REASONS, toMinutes } from "@/lib/order-lifecycle";
 import { canContact } from "@/lib/order-chat";
 import { cartCount } from "@/lib/cart";
@@ -145,7 +146,7 @@ export function OrderTracking({ orderId }: { orderId: string }) {
       }
       const result = advance(order.id, "cancelled", "customer", {
         reason,
-        note: note || null,
+        detail: noteDetail(note),
       });
       if (result.error) {
         toast.error(t("cancelError"));

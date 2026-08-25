@@ -24,6 +24,7 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 15 — Platform Audit Log Done
 - Phase 16 — Admin Analytics Done
 - Phase 17 — Customer Improvements Done
+- Phase 18 — Consistency + Quality Gaps Done
 
 ---
 
@@ -181,7 +182,44 @@ payout numbers to keep in step with the fare rules.
 
 ## Current Phase
 
-None in progress. Phases 1–17 complete.
+None in progress. Phases 1–18 complete — every phase in §6's implementation order
+is closed.
+
+### Phase 18 — Consistency + Quality Gaps (2026-08-25)
+
+**Done.** G41, G42, G44 and G45 closed. Four gaps with nothing in common except
+that each was a place where the prototype's *shape* was wrong rather than its
+behaviour: a read path nobody used, a claim about consistency that was half true, a
+control that existed as a picture, and a typed domain with a stringly-typed hole in
+the middle of it.
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| Whether the typed event payload is a union on `OrderEvent` or a field beside the note | **A discriminated union replacing it.** `OrderEvent.note: string` is gone; `OrderEvent.detail: OrderEventDetail \| null` is what an event says beyond its status. Keeping both would have left two places to write the same fact and a rule about which one wins. The union is exhaustive at the renderer, so a new kind of event cannot be minted without the compiler asking the timeline what it says — which is the actual bug that was shipping: `handover-failed:3` and `rating:4` had no case in the old `switch` and were being shown to customers verbatim. | `types/order.ts`, `OrderEventDetail` |
+| What each member of the union carries | **Only what is not already on the order.** No `method` on the refund members (`lifecycle.refundMethod` holds it), no `scheduledFor` on the release (`order.scheduledFor` holds it), no reason on a cancellation (`lifecycle.cancelReason` holds it). An event that restated them could disagree with them. | `types/order.ts` |
+| How a device that has been running since Phase 1 reads its own history | **Store version 7 and one backfill.** `ensureEventDetails` converts a persisted log through `lib/order-events.eventDetailFromNote`, which is the only module that still knows the retired encoding and is meant to be deleted with it. Refund events borrow their figure from `lifecycle.refundAmount`, because the order records the sum and the event never did. Identity-stable: an already-typed store keeps the array it had. | `stores/orders.ts` `migrate`, `lib/order-lifecycle.ensureEventDetails` |
+| What happens to free prose somebody typed | **It survives as prose, in the one member whose payload is genuinely text.** `{ kind: "note", body }`, minted by `noteDetail` for the three reason dialogs, and nothing parses it. Free text as a *field* was never the problem; free text as an *encoding* was. | `lib/order-events.noteDetail` |
+| What the GraphQL seam does, given the schema still publishes `note` | **Translates, and says so.** `backend/schema.gql` is the committed contract and this is a frontend-only phase (§2), so the document still selects `note` and `OrderEventWire` says `note`. `services/orders.toOrder` maps it through the same parser — the seam that already fills in `commissionRate`, the rider and the handover fields. `bun run verify:graphql` still validates all 24 operations. | `lib/graphql/order.operations.OrderEventWire` |
+| Which vendor order read path was actually dead | **`services/vendor.getVendorOrders`, and two fields on `VendorDashboard`.** Not `lib/mock/vendor-orders` — last session flagged that `services/finance` reads it as the platform book, and it does, so the module stays. `getVendorOrders` was exported and called by nothing. `VendorDashboard.stats` was `vendorStats` over the synthesised week alone, which the overview *discarded* and recomputed over the week plus the live store: the service's only product was the set of numbers not to show. `recentOrders` was `allOrders.slice(0, 6)` — the same array, pre-cut, so two callers could take a different six and disagree. | `services/vendor.ts` |
+| What the overview reads now | **One merge, and everything on the page reads it** — the KPI cards, the recent list and (through `getVendorAnalytics`) the charts. The recent list is now genuinely the six most recent rather than the most recent of a pre-cut six. | `components/dashboard/overview-view.tsx` |
+| What "one source of truth" was missing | **A listener.** All four surfaces shared one `localStorage` key, and a persisted zustand store reads its key on hydration and never again — so the two windows shared a key and diverged the moment either wrote. The store's own doc claimed accepting in the dashboard tab changed the customer's tracker in the tab beside it; it did not. `lib/store-sync.syncAcrossWindows` rehydrates on the `storage` event, which fires in *other* same-origin windows and was the signal nobody was listening to. Eleven shared-domain stores are wired; the echo guard stops the two windows handing the same payload back and forth. | `lib/store-sync.ts` |
+| Whether risk is a stored score or a read | **A read, every time.** `lib/risk` derives every flag from the customer's own orders at render time, so a signal cannot outlive the pattern behind it. A `Customer.riskScore` kept in step by whatever remembered to would be the §5.2 mistake with an especially bad failure mode — wrong exactly when the desk was reading it. | `lib/risk.ts` |
+| Which of the four fraud rules refuse and which only flag | **Two and two, on whether a machine can be right.** Refused: a card past three declines (checkout), and a cash order to a courier already loaded past their zone ceiling (`assignRider`) — both are facts with an obvious remedy the person can act on. Flagged: repeat refunds and coupons spent on refunded orders — both are *patterns*, and a customer with three bad deliveries is indistinguishable from one claiming three. That difference is a judgement the desk makes with the orders in front of it, so the flag sits immediately above the refund buttons and the decision stays with the agent. | `lib/risk.ts` module doc |
+| Why an empty-handed courier is never refused a cash order | **Because a float cap stops a courier being loaded up; it is not a price limit on one order.** Without that clause, the seeded 3,944 cash order (every zone caps at 2,500–3,500) could be assigned to nobody: the guard would refuse every courier in the zone with an "already carrying too much" message while all of them held nothing, and the order would sit at `ready` for ever with no action anyone could take. Refusing something for a reason that is false about the person refused is worse than not refusing it. | `lib/risk.overCashLimit` |
+| Where the coupon hold is enforced | **In the coupon engine, as a refusal with a reason.** `CouponContext.riskHold` travels in with the basket the way `isFirstOrder` does — the engine's rules are about the coupon and the basket and it has no business reading an order history. A coupon that silently stopped applying would be read as a bug and reported as one. | `lib/coupons.evaluateCoupon`, `coupons.reason.riskHold` |
+
+**The cash ceiling had been drawn and never consulted.** `DeliveryZone.cashLimit`
+has been on the rider's wallet screen as a red progress bar since Phase 3, computed
+by `lib/delivery.cashPosition` over the *synthesised* trips. No real order ever
+asked it anything. `lib/risk.riderCashInHand` answers the same question over the
+order book — today's window, because a remittance is recorded per device and a day
+boundary is the same answer for every courier — and `stores/orders.assignRider` is
+where it is enforced, beside the one-order-at-a-time rule and for the same reason:
+three surfaces can assign, and the ceiling has to mean the same thing to all three.
+
+**Nothing here invented an entity.** No risk table, no event-detail table, no second
+order feed, no sync store. The phase's whole output is one union, one parser, one
+listener, one pure module, one component, and four deletions.
 
 ### Phase 17 — Customer Improvements (2026-08-25)
 
@@ -623,6 +661,55 @@ plausible-looking implementation would miss:
 | Types | `bun run typecheck` | **PASS** (exit 0, no diagnostics) |
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
+
+Re-run on 2026-08-25 after Phase 18, all three still **PASS** — `tsc --noEmit`
+exit 0, `eslint` no findings, `next build` exit 0 with every route compiled. Two
+extra gates matter this phase: `bun run verify:graphql` still validates **24
+operations, 0 failed** (the event log's wire shape changed, so this is the check
+that the seam still matches `backend/schema.gql`), and `bun run
+scripts/notifications-flow.ts` still reports **116 assertions passed** over 170
+message paths (the C25 fan-out reads events, and every event's shape changed).
+
+A dev-server smoke test (port 3118, mock path) returned **200** for every touched
+route — `/`, `/restaurants`, `/checkout`, `/account/orders`, `/orders/[id]`,
+`/dashboard`, `/dashboard/orders`, `/delivery`, `/admin/orders`,
+`/admin/orders/[id]`, `/admin/customers`, `/admin/customers/[id]` — with **no
+runtime error and no `MISSING_MESSAGE` warning** in the log, which is the gate that
+matters for a phase adding fourteen message keys across three locales. Every new key
+was also asserted present in `en`, `bn` and `ar` directly.
+
+The new logic was driven directly, 43 assertions over the seeded working set, all
+passing:
+
+* **G45 — the parser.** All ten retired notes (`delay:15`, `otp-failed:2`,
+  `handover-failed:3`, `refund-requested`, `refund-approved`, `refund-rejected`,
+  `refund-settled`, `reassigned`, `scheduled-release`, `rating:4`) round-trip to the
+  right union member; free prose survives as `{ kind: "note" }`; `null` stays null.
+* **G45 — the migration.** A hand-built v6 order (encoded notes, no `detail`)
+  converts: the delay event becomes `{ kind: "delay", minutes: 15 }`, the refund
+  event borrows the order's `refundAmount` (1,200), a plain transition stays null,
+  and **no `note` key survives** on any event. Idempotent *by identity* — a second
+  pass returns the same object, and an already-typed store is returned untouched, so
+  hydration does not invalidate the selectors over it.
+* **G45 — the minters.** `addDelay`, `recordOtpFailure`, `requestRefund`,
+  `approveRefund` (carrying the *decided* 500, not the order total), `settleRefund`
+  and `rateOrder` each append the right member, and the three refund events on one
+  order in the same millisecond still have distinct ids.
+* **G44 — risk.** Two refunds in the window → `watch`; three → `elevated`, which
+  holds coupons; two → does not. Coupon-refunds and handoff-failures each raise
+  their own signal. Orders 60 days old raise nothing (the window works). A blocked
+  account outranks every derived signal.
+* **G44 — the cash ceiling.** Today's cash drops for one courier sum correctly
+  (1,500 + 1,000 = 2,500); a loaded courier is refused a further 200 against a 3,000
+  ceiling; an empty-handed courier is never refused, even a 9,000 order; a prepaid
+  order is always allowed; yesterday's cash is not held today.
+* **G44 — card attempts.** Open at two declines, closed at three.
+* **G44 — the seed is unaffected.** Checked across all six seeded couriers against
+  all three zone ceilings: the guard refuses **0 of 1** dispatchable cash orders, so
+  ordinary dispatch is untouched. And the seed does produce one flagged customer
+  (`+8801611224488`, `watch`, 2 of 3 orders refunded), so the risk panel is
+  demonstrable out of the box without any account reaching the `elevated` level that
+  would hold coupons and interfere with the coupon demo.
 
 Re-run on 2026-08-25 after Phase 17, all three still **PASS** — `tsc --noEmit`
 exit 0, `eslint .` no findings across the whole project, `next build` exit 0 with
@@ -1623,6 +1710,60 @@ No architectural violations were introduced in Phases 1–15.
 
 ---
 
+### Added in Phase 18
+
+```text
+types/order.ts                     (OrderEventDetail — the union; OrderEvent.detail)
+        ↓
+lib/order-events.ts                (pure: noteDetail, eventDetailFromNote, eventWithDetail)
+        ↓                                        ↓
+lib/order-machine.ts               lib/order-lifecycle.ensureEventDetails
+(mints details on every event)              (backfills a v6 store)
+        ↓                                        ↓
+lib/tracking.TrackStep.detail        stores/orders.ts  migrate v7
+        ↓
+components/orders/order-timeline.detailLabel   (exhaustive switch — no fallthrough)
+```
+
+**One reader, one parser, and the parser is disposable.** The encoding lives in
+exactly one function (`eventDetailFromNote`) whose only callers are the store
+migration and the GraphQL mapper. When no device carries a v6 store and the schema
+publishes `detail`, that function and the `note` field on `OrderEventWire` are
+deleted together and nothing else moves. That is the whole reason it is a module of
+its own rather than a `switch` inside the machine.
+
+```text
+lib/risk.ts                        (pure: customerRisk, couponHeld, riderCashInHand,
+        ↓                                 overCashLimit, paymentLocked)
+        ├──→ stores/orders.assignRider          (refuses: courier over the ceiling)
+        ├──→ components/checkout/checkout-view  (refuses: card past three declines,
+        │                                        and resolves the coupon hold)
+        │         ↓
+        │    services/coupons.BasketInput.riskHold → lib/coupons.evaluateCoupon
+        └──→ components/admin/risk-flags.tsx    (flags: customer record + refund panel)
+```
+
+**No new store and no new record.** Every flag is a read over `stores/orders`, which
+is also why the same component can render on a customer's record and beside a refund
+decision without the two disagreeing. The two refusals are enforced at the choke
+point each already had — `assignRider` (which three surfaces call) and the checkout's
+authorise step — rather than in the dialogs that offer them.
+
+```text
+lib/store-sync.syncAcrossWindows(key, rehydrate)
+        ↓  (window "storage" event — fires only in *other* same-origin windows)
+stores/{orders, fleet, onboarding, payouts, wallet, notifications,
+        customers, support, order-chat, menu, merchant}
+```
+
+**Eleven stores, one line each, and the choice of eleven is the §5.2 chain.** These
+are the stores more than one surface reads: the order spine, rider availability and
+approvals, the money, the inbox, moderation, disputes, the contact threads, and the
+menu/86 list a customer's storefront reads from the restaurant's edits. The stores
+left out are the ones a single surface owns (`stores/rider` is this device's
+courier, `stores/cart` is this device's basket) and syncing them would be wrong, not
+merely unnecessary.
+
 ### Added in Phase 17
 
 ```text
@@ -1706,47 +1847,78 @@ the money, which is the record `buildRiderSettlements` pays from),
 
 ## Next Phase
 
-**PHASE 18 — Consistency + Quality Gaps (G41, G42, G44, G45).** Not started; needs
-an explicit instruction. Phases 1–17 are complete and verified, so this is the last
-open item in §6's order.
+**None in §6.** Phases 1–18 are complete, so the implementation order is finished.
+What is left in the spec is verification and delivery, not construction:
 
-### What the spec asks for
+* **§10 End-to-End Verification** — Scenarios A–G driven in a browser, in one
+  sitting, on a clean device. Worth doing after `/clear` as §12 says, because it is
+  the one session that must not be shaped by knowing how the code works.
+* **§11 Final Consistency Audit** — the five forbidden patterns, re-checked against
+  the finished tree: direct status mutation, disconnected rider delivery, vendor
+  fallback, fake financial values, duplicate domain models.
+* **§14 Final Deliverable** — the summary the spec asks for once everything is done.
 
-G41: remove or fix dead vendor order read paths. G42: cross-surface consistency
-wherever reasonable. G44: basic fraud/abuse representations. G45: typed order event
-payloads instead of string-only details.
+### What Phase 18 leaves ready for that
 
-### What Phases 1–17 leave ready for it
+1. **The four §11 patterns Phase 18 could have reintroduced, it did not.** No
+   transition was added and no status is assigned anywhere outside
+   `lib/order-machine` (the cash guard *refuses* an assignment, it does not perform
+   one). The risk module reads the same order book every financial view reads and
+   mints no number of its own. `syncAcrossWindows` adds no state — it rehydrates
+   stores that already existed.
+2. **G45 gives the timeline a compiler-checked vocabulary**, so §10's scenarios can
+   be read off the timeline rather than inferred: every annotation a scenario
+   produces now renders as a sentence, including the two (`handover-failed`,
+   `rating`) that used to print their raw code.
+3. **G42 changes how the verification session should be run.** Two windows side by
+   side is now a *supported* configuration rather than a misleading one, which is
+   the honest way to drive Scenario A (customer places → restaurant accepts → rider
+   delivers) and the fastest.
 
-1. **G45's string notes are now enumerable, and this phase added to them.**
-   `OrderEvent.note` carries `delay:15`, `otp-failed:2`, `handover-failed:3`,
-   `refund-requested`, `refund-approved`, `refund-rejected`, `refund-settled`,
-   `reassigned`, and — new in Phase 17 — `scheduled-release` and `rating:4`. The
-   parser is one `switch` on `note.split(":")` in
-   `components/orders/order-timeline.noteLabel`, so there is exactly one reader to
-   migrate and one minter per note. `handover-failed` and `rating` already have no
-   case there and fall through to the raw string, which is the clearest argument
-   for the typed payload.
-2. **G41's dead read path is `lib/mock/vendor-orders`.** It is the synthesised week
-   the dashboard used before Phase 1 made `stores/orders` the source of truth. Note
-   before touching it: Phase 16's analytics deliberately reads it as the platform
-   book, so "dead" needs establishing per caller rather than assumed for the module.
-3. **G44 has three places a fraud signal could already attach** without inventing a
-   fourth: `Customer.moderation` (Phase 11 blocks), `lifecycle.otpAttempts` /
-   `handoverAttempts` (both already counted and both already lock), and the refund
-   lifecycle's `requested → rejected` path. A "risk" entity that duplicated any of
-   them would be the §5.2 mistake.
+### Open questions to settle before that session
 
-### Open questions to settle before starting
+* **Whether the seeded 3,944 cash order should exist at all.** Phase 18 made the
+  courier ceiling real and deliberately let that order through by not capping the
+  *value* of a single cash order (see the decisions table). The real control for it
+  is at checkout, where the customer can still choose another tender — that is a
+  change to the checkout's tender list, not to dispatch, and it was out of this
+  phase's four gaps.
+* **Whether `lib/mock/vendor-orders` should still be the platform book.** G41
+  established per caller that it is not dead: `services/finance` reads it as the
+  window the platform reports over. That is a defensible prototype decision and it
+  is now the only reason the module exists. It is a question for the cutover, not a
+  gap.
 
-* **Whether a typed event payload is a discriminated union on `OrderEvent` or a
-  parallel field.** The events array is persisted, so either way it needs a store
-  migration and a backfill that can read the old strings — which is the actual work
-  in G45, not the type.
-* **Whether `lib/mock/vendor-orders` is removed or re-pointed.** Removing it makes
-  the platform analytics window collapse to the live store's two dozen orders;
-  re-pointing it means deciding what the synthesised week *is* now that every
-  surface reads real orders.
+## Deliberately deferred by Phase 18 (not omissions)
+
+* **Two machines, or two browser profiles, still see two worlds.** This is the
+  half of G42 that cannot be closed inside the spec's scope. Separate profiles have
+  separate storage, and reconciling them needs the transport §2 forbids — a server,
+  or at minimum a signalling service. `lib/store-sync` closes the half that was
+  closable and its module doc says which half it is. It is also the one piece of
+  Phase 18 that Phase E *deletes* rather than replaces: a server-backed store gets
+  its updates from the server.
+* **The value of a single cash order is not capped.** Deliberate, and the reasoning
+  is in the decisions table: capping it belongs at checkout, where the customer can
+  still choose another tender, and not at dispatch, where the food is already
+  cooked. Enforcing it at assignment would have stranded the seeded 3,944 order with
+  no action available to anyone.
+* **A refund is never refused automatically, however strong the pattern.** The
+  repeat-refund signal flags and does not block, and that is the design rather than
+  a missing half. A customer with three bad deliveries in a month looks exactly like
+  one claiming three, and a platform that auto-refused the fourth would be wrong
+  about the first customer in the way that loses them. Blocking the account remains
+  a moderator's action with a reason and a log (Phase 11).
+* **`backend/schema.gql` still publishes `OrderEvent.note`.** Not touched, because
+  this is a frontend-only prototype (§2) and the SDL is the backend's committed
+  contract. The difference is handled where every other wire/domain difference is —
+  `services/orders.toOrder` — and named in `OrderEventWire`'s doc so the cutover
+  knows it is there.
+* **No fraud signal is written to the audit log.** Considered and dropped: an audit
+  entry is a record of something a *person* did, and the audit trail's value is that
+  everything in it has an actor. A derived flag has none, and it is re-derivable
+  from the orders at any time, so logging it would add rows nobody could act on to
+  the one surface that must stay readable.
 
 ## Deliberately deferred by Phase 17 (not omissions)
 

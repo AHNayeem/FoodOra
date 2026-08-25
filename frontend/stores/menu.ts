@@ -22,6 +22,7 @@ import {
   type MenuError,
   type MenuItemDraft,
 } from "@/lib/menu";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * menu store — what each restaurant has changed about its menu (Phase 9, G19–G21).
@@ -226,6 +227,13 @@ export const useMenu = create<MenuState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-menu", () => void useMenu.persist.rehydrate());
 
 /** One write path, so no action forgets to key the draft by its vendor. */
 function commit(

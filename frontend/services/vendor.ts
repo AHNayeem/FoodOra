@@ -1,16 +1,18 @@
-import type { Order, Vendor, VendorStats } from "@/types";
+import type { Order, Vendor } from "@/types";
 import { buildVendorOrders, vendorById, vendors } from "@/lib/mock";
-import { vendorStats } from "@/lib/analytics";
 import { mockDelay } from "./http";
 
 /**
  * vendor.ts — read API for the vendor dashboard (Phase C10).
  *
  * The prototype has no backend, so the "orders for my restaurant" data set is
- * synthesised at call time (`buildVendorOrders(now)`) and aggregated by the
- * pure helpers in `lib/analytics`. Every function is async with a
- * backend-ready signature; Phase E swaps the mock build for real queries here
- * and the dashboard components stay unchanged.
+ * synthesised at call time (`buildVendorOrders(now)`). Every function is async
+ * with a backend-ready signature; Phase E swaps the mock build for real queries
+ * here and the dashboard components stay unchanged.
+ *
+ * This module does not aggregate. It used to, and the numbers it produced were
+ * the ones no surface could use — see {@link VendorDashboard} and G41. The money
+ * and the charts come from `services/finance`, over the merged order book.
  */
 
 /**
@@ -57,27 +59,34 @@ export async function getVendorListing(
 }
 
 /**
- * Everything the overview page renders, derived from one order snapshot.
+ * The restaurant's history, as this seam can answer it.
  *
- * **The three chart series are no longer here (Phase 10).** They were computed on
- * the synthesised week alone, so the trend, the peak-hours bars and the best-seller
- * list all ignored the orders the restaurant had actually taken on this device — the
- * charts and the KPI cards above them were describing different sets of orders. The
- * overview now reads them from `services/finance.getVendorAnalytics`, which is the
- * same shared order book `/dashboard/analytics` and `/dashboard/earnings` read, so
- * there is one analytics path rather than two. Leaving the fields here as well
- * would have been the dead read path G41 already flags once.
+ * **One field, and it is the orders (Phase 18, G41).** There were three, and two
+ * of them were read paths nobody used or nobody should have:
+ *
+ *  - `stats` was `vendorStats` over the synthesised week *only*. The overview
+ *    discarded it and recomputed the same function over the synthesised week
+ *    plus the live store, because a KPI card that ignores the orders this device
+ *    actually took is wrong. So the service was computing a set of numbers whose
+ *    only property was that they were the ones not to show.
+ *  - `recentOrders` was `allOrders.slice(0, 6)` — the same array, pre-cut, so a
+ *    caller could take a different six from the same source and disagree with
+ *    itself. The cut belongs to whoever is rendering the list.
+ *
+ * The chart series went the same way in Phase 10, for the same reason: they were
+ * derived here from the synthesised week and read by a page that had a live book.
+ * What is left is the one thing this seam knows and the caller cannot get
+ * elsewhere — the generated history, which exists so a fresh device has a week of
+ * trading behind it instead of an empty dashboard.
  */
 export interface VendorDashboard {
   vendor: Vendor;
-  stats: VendorStats;
-  recentOrders: Order[];
   /**
-   * The whole synthesised window. The overview re-runs `vendorStats` over this
-   * *plus* the live order store, so today's KPIs count orders that were actually
-   * placed on this device rather than only the generated ones.
+   * The synthesised window, newest first. The overview merges it with the live
+   * order store and derives everything — the KPI cards, the recent list — from
+   * the merge, so both describe the same set of orders.
    */
-  allOrders: Order[];
+  orders: Order[];
 }
 
 export async function getVendorDashboard(
@@ -86,21 +95,5 @@ export async function getVendorDashboard(
   const vendor = vendorById.get(vendorId);
   if (!vendor) return mockDelay(null, 200);
 
-  const now = Date.now();
-  const orders = buildVendorOrders(vendorId, now);
-
-  return mockDelay(
-    {
-      vendor,
-      stats: vendorStats(orders, vendor, now),
-      recentOrders: orders.slice(0, 6),
-      allOrders: orders,
-    },
-    400,
-  );
-}
-
-/** The vendor's full order feed for the order-management board. */
-export async function getVendorOrders(vendorId: string): Promise<Order[]> {
-  return mockDelay(buildVendorOrders(vendorId, Date.now()), 400);
+  return mockDelay({ vendor, orders: buildVendorOrders(vendorId, Date.now()) }, 400);
 }

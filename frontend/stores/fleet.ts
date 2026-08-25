@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * fleet store — who is actually available to deliver (G40).
@@ -78,6 +79,13 @@ export const useFleet = create<FleetState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-fleet", () => void useFleet.persist.rehydrate());
 
 /** What the board knows about one rider, or null if they have never signed on. */
 export function shiftFor(

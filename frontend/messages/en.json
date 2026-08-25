@@ -299,7 +299,8 @@
       "deliveryOnly": "Delivery orders only.",
       "needsTwoItems": "Add a second item to use this.",
       "noSaving": "This would not take anything off this order.",
-      "paused": "This campaign is paused at the moment."
+      "paused": "This campaign is paused at the moment.",
+      "riskHold": "On hold while we review recent refunds on this account"
     },
     "merchantTitle": "Coupons",
     "merchantSubtitle": "Codes you hand out, and what they have brought in.",
@@ -978,6 +979,7 @@
     "payCashDesc": "Pay with cash when your order arrives",
     "payCard": "Credit / debit card",
     "payCardDesc": "Visa ending {last4}",
+    "payCardLocked": "Refused too many times — pay another way",
     "payWallet": "FoodOra wallet",
     "payWalletDesc": "Balance {balance}",
     "payWalletShort": "Short by {missing}",
@@ -1018,6 +1020,7 @@
       "emptyCart": "Your cart is empty.",
       "generic": "Something went wrong. Please try again.",
       "paymentDeclined": "Your payment was declined. Try a different method.",
+      "cardLocked": "That card has been refused three times. Please pay another way, or try again later.",
       "insufficientFunds": "Your wallet doesn't cover this order. Top up or pick another method.",
       "signInRequired": "Please sign in to place your order.",
       "vendorClosed": "This restaurant is closed right now. Schedule your order for later, or try another.",
@@ -1102,12 +1105,15 @@
     "note": {
       "delay": "Restaurant asked for {minutes} more minutes",
       "otpFailed": "{count, plural, one {# wrong code entered} other {# wrong codes entered}}",
+      "handoverFailed": "{count, plural, one {# wrong courier code at the counter} other {# wrong courier codes at the counter}}",
       "refundRequested": "Refund requested",
       "reassigned": "Reassigned by support",
       "refundApproved": "Refund approved by support",
       "refundRejected": "Refund refused by support",
       "refundSettled": "Refund returned to the customer",
-      "scheduledRelease": "Released to the restaurant for its scheduled slot"
+      "scheduledRelease": "Released to the restaurant for its scheduled slot",
+      "reassignedFrom": "Reassigned by support, from {name}",
+      "rating": "Customer rated this order {score} out of 5"
     },
     "now": "Now",
     "back": "Back",
@@ -1378,6 +1384,7 @@
       "notFound": "We couldn't find that order.",
       "noRiderAvailable": "No rider is available right now.",
       "riderBusy": "That rider is already carrying an order.",
+      "riderCashLimit": "That rider is already carrying their zone's cash limit. They need to hand cash in before taking another cash order.",
       "generic": "Something went wrong. Try again.",
       "handoverChecklistIncomplete": "Work through the handover checklist first.",
       "handoverCodeInvalid": "That is not this courier's code.",
@@ -2381,6 +2388,7 @@
       "offline": "Go on shift before taking a trip.",
       "alreadyOnTrip": "Finish your current trip first.",
       "riderBusy": "That rider is already carrying an order.",
+      "riderCashLimit": "That rider is already carrying their zone's cash limit. They need to hand cash in before taking another cash order.",
       "offerTaken": "Another rider took that one.",
       "offerExpired": "That offer has expired.",
       "tripCancelled": "This trip was cancelled.",
@@ -3023,6 +3031,7 @@
       "notFound": "We couldn't find that order.",
       "noRiderAvailable": "No rider is available right now.",
       "riderBusy": "That rider is already carrying an order.",
+      "riderCashLimit": "That rider is already carrying their zone's cash limit. They need to hand cash in before taking another cash order.",
       "riderUnchanged": "That courier already has this order.",
       "refundNotOpen": "There's no refund to decide on this order.",
       "refundNotApproved": "No approved refund is waiting to be returned.",
@@ -3191,7 +3200,23 @@
     "noSectionTitle": "Not your section",
     "noSectionBody": "This account doesn't hold {permission}, which is what this section needs.",
     "noSectionGo": "Go to what you can open",
-    "readOnly": "You can read this, but not change it — the action needs {permission}."
+    "readOnly": "You can read this, but not change it — the action needs {permission}.",
+    "risk": {
+      "title": "Risk signals",
+      "window": "{count, plural, =0 {no orders in the last 30 days} one {# order in the last 30 days} other {# orders in the last 30 days}}",
+      "level": {
+        "clear": "Nothing flagged",
+        "watch": "Worth a look",
+        "elevated": "Needs a decision",
+        "blocked": "Account blocked"
+      },
+      "signal": {
+        "refunds": "{count} of {of} orders involved a refund",
+        "couponRefunds": "{count} of {of} discounted orders ended in a refund",
+        "handoffFailures": "{count} wrong handover codes across {of} orders"
+      },
+      "couponHold": "Coupons are held on this account while these signals stand."
+    }
   },
   "cms": {
     "title": "Content",

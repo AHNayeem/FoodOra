@@ -9,6 +9,7 @@ import {
   threadIdFor,
   withRider,
 } from "@/lib/order-chat";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * order-chat store — the contact threads, on both surfaces (Phase 17, G27).
@@ -94,6 +95,13 @@ export const useOrderChat = create<OrderChatState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-order-chat", () => void useOrderChat.persist.rehydrate());
 
 /**
  * The one write path.

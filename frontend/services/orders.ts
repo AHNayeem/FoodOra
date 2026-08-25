@@ -18,6 +18,7 @@ import { createLifecycle } from "@/lib/order-lifecycle";
 import { commissionRateFor, DEFAULT_COMMISSION_RATE } from "@/lib/settlement";
 import { execute } from "@/lib/graphql/execute";
 import { PLACE_ORDER, type OrderWire } from "@/lib/graphql/order.operations";
+import { eventDetailFromNote } from "@/lib/order-events";
 import { getVendorBySlug, getVendorMenu } from "./catalog";
 import { mockDelay, ok, type Result } from "./http";
 
@@ -268,6 +269,10 @@ function toCheckoutError(key: string | undefined): string {
  * `types/order.ts`. The two fields that are not on the wire — `lifecycle.rider` and
  * `lifecycle.assignment` — are filled with `null`, which is what `createLifecycle` set them
  * to: no rider is assigned at placement, and the delivery unit owns both.
+ *
+ * The one field that is genuinely *translated* rather than copied is the event
+ * log: the schema publishes the encoded `note` the domain replaced with a typed
+ * `detail` in Phase 18 (G45), and this is the seam that reads it.
  */
 function toOrder(wire: OrderWire): Order {
   return {
@@ -292,7 +297,16 @@ function toOrder(wire: OrderWire): Order {
     updatedAt: wire.updatedAt,
     deletedAt: wire.deletedAt,
     lifecycle: {
-      events: wire.lifecycle.events,
+      // The schema still publishes the encoded `note` this phase retired on the
+      // domain side (G45), so the translation happens here — the same seam that
+      // already fills in the fields the wire does not carry.
+      events: wire.lifecycle.events.map((event) => ({
+        id: event.id,
+        status: event.status,
+        at: event.at,
+        actor: event.actor,
+        detail: eventDetailFromNote(event.note),
+      })),
       prepMinutes: wire.lifecycle.prepMinutes,
       promisedReadyAt: wire.lifecycle.promisedReadyAt,
       delayMinutes: wire.lifecycle.delayMinutes,

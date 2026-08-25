@@ -71,7 +71,7 @@ function orderWith(status: OrderStatus): Order {
 }
 
 function eventFor(status: OrderStatus): OrderEvent {
-  return { id: `evt_test_${status}`, status, at: NOW, actor: "system", note: null };
+  return { id: `evt_test_${status}`, status, at: NOW, actor: "system", detail: null };
 }
 
 function settings(patch: Partial<CustomerSettings["notifications"]> = {}): CustomerSettings {

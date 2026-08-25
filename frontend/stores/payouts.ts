@@ -20,6 +20,7 @@ import {
 import { emitNotifications } from "./notifications";
 import { sessionCan } from "./auth";
 import { recordAudit } from "./audit";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * payouts store — the money the platform has actually sent, and the corrections
@@ -316,6 +317,13 @@ export const usePayouts = create<PayoutsState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-payouts", () => void usePayouts.persist.rehydrate());
 
 // ---------------------------------------------------------------------------
 // Duplicate guards — the period is the key, not the settlement row

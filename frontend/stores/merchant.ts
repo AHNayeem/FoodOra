@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Coupon, ReviewReply } from "@/types";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * merchant store — the vendor desk's local, simulated control state (Phase C10).
@@ -84,3 +85,10 @@ export const useMerchant = create<MerchantState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-merchant", () => void useMerchant.persist.rehydrate());

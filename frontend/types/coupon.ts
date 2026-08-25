@@ -179,6 +179,16 @@ export interface CouponContext {
   lines: CouponBasketLine[];
   /** True when the customer has never placed an order.  */
   isFirstOrder: boolean;
+  /**
+   * The account is under a coupon hold (Phase 18, G44).
+   *
+   * Passed in rather than derived, because this file's rules are about the coupon
+   * and the basket and it has no business reading an order history. The caller
+   * resolves it through `lib/risk.couponHeld` over the customer's own orders;
+   * `false` — the default everywhere it is not supplied — is the honest answer for
+   * a surface that is showing a coupon rather than spending one.
+   */
+  riskHold?: boolean;
 }
 
 /** The verdict on one coupon against one basket. */

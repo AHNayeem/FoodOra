@@ -44,6 +44,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
 import { TicketStatusChip } from "@/components/account/support-view";
 import { ReadOnlyNotice } from "./read-only-notice";
+import { RiskFlags } from "./risk-flags";
 import { cn } from "@/lib/utils";
 
 /** Which dialog is open. `null` is the resting state. */
@@ -351,6 +352,11 @@ export function AdminCustomerDetail({ customerId }: { customerId: string }) {
         </div>
 
         <div className="space-y-4">
+          {/* What the platform has noticed, above the profile rather than below
+              the spending table: it is the first thing a moderator opening this
+              record needs and the last thing they would scroll for (G44). */}
+          <RiskFlags orders={ownOrders} customer={customer} now={now} />
+
           <Panel title={t("panelAccount")} hint={customer.id} monoHint>
             <Facts
               rows={[

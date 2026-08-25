@@ -16,6 +16,7 @@ import { useOrders } from "./orders";
 import { useSupport } from "./support";
 import { sessionCan } from "./auth";
 import { recordAudit } from "./audit";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * customers store — the platform's customer directory (Phase 11, G15).
@@ -177,6 +178,13 @@ export const useCustomers = create<CustomersState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-customers", () => void useCustomers.persist.rehydrate());
 
 /**
  * Refuse the write unless the session holds `customers.manage` (Phase 14, G31).

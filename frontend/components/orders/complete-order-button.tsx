@@ -51,9 +51,7 @@ export function CompleteOrderButton({
 
   function confirm() {
     setSubmitting(true);
-    const result = advance(order.id, "completed", actor, {
-      note: null,
-    });
+    const result = advance(order.id, "completed", actor);
     setSubmitting(false);
     setOpen(false);
     if (result.error) {

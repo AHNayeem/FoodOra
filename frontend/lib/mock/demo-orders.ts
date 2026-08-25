@@ -377,7 +377,7 @@ function backdatedEvents(
   // started, and the only event it has.
   if (target === "scheduled") {
     return [
-      { id: `evt_${orderId}_scheduled`, status: "scheduled", at: new Date(placedMs).toISOString(), actor: "customer", note: null },
+      { id: `evt_${orderId}_scheduled`, status: "scheduled", at: new Date(placedMs).toISOString(), actor: "customer", detail: null },
     ];
   }
 
@@ -385,7 +385,7 @@ function backdatedEvents(
   const idx = stages.indexOf(target);
   if (idx <= 0) {
     return [
-      { id: `evt_${orderId}_placed`, status: "placed", at: new Date(placedMs).toISOString(), actor: "customer", note: null },
+      { id: `evt_${orderId}_placed`, status: "placed", at: new Date(placedMs).toISOString(), actor: "customer", detail: null },
     ];
   }
 
@@ -406,7 +406,7 @@ function backdatedEvents(
   const span = Math.max(nowMs - placedMs, MIN);
 
   const events: OrderEvent[] = [
-    { id: `evt_${orderId}_placed`, status: "placed", at: new Date(placedMs).toISOString(), actor: "customer", note: null },
+    { id: `evt_${orderId}_placed`, status: "placed", at: new Date(placedMs).toISOString(), actor: "customer", detail: null },
   ];
 
   let cursor = placedMs;
@@ -417,7 +417,7 @@ function backdatedEvents(
       status,
       at: new Date(Math.min(cursor, nowMs)).toISOString(),
       actor: ACTOR[status] ?? "system",
-      note: null,
+      detail: null,
     });
   }
 
@@ -531,13 +531,18 @@ export function buildDemoOrders(now: number): Order[] {
             status: "scheduled",
             at: new Date(placedMs).toISOString(),
             actor: "customer",
-            note: null,
+            detail: null,
           },
-          // The release is a `system` move carrying the note the store writes, so
-          // a seeded scheduled order's timeline reads exactly like a real one's.
+          // The release is a `system` move carrying the detail the store writes,
+          // so a seeded scheduled order's timeline reads exactly like a real
+          // one's.
           ...events.map((event) =>
             event.status === "placed"
-              ? { ...event, actor: "system" as const, note: "scheduled-release" }
+              ? {
+                  ...event,
+                  actor: "system" as const,
+                  detail: { kind: "scheduled-release" as const },
+                }
               : event,
           ),
         ]
@@ -560,7 +565,7 @@ export function buildDemoOrders(now: number): Order[] {
             status: spec.status,
             at: new Date(Date.parse(acceptedAt) + 4 * MIN).toISOString(),
             actor: "restaurant",
-            note: `delay:${spec.delayMinutes}`,
+            detail: { kind: "delay", minutes: spec.delayMinutes },
           },
         ];
       }
@@ -627,7 +632,7 @@ export function buildDemoOrders(now: number): Order[] {
           status: ending,
           at: new Date(endCursor).toISOString(),
           actor: ENDING_ACTOR[ending] ?? "system",
-          note: null,
+          detail: null,
         },
       ];
       if (ending === "rejected") {

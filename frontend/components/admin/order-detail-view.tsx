@@ -40,6 +40,7 @@ import {
   REJECT_REASONS,
   stuckReason,
 } from "@/lib/order-lifecycle";
+import { noteDetail } from "@/lib/order-events";
 import { cartCount } from "@/lib/cart";
 import { formatDistance, formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,8 @@ import { PayoutBreakdown } from "@/components/rider/payout-breakdown";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { cn } from "@/lib/utils";
 import { ReadOnlyNotice } from "./read-only-notice";
+import { RiskFlags } from "./risk-flags";
+import { ordersForCustomer } from "@/lib/customers";
 
 const TICK_MS = 5000;
 
@@ -398,6 +401,18 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
           )}
         </Panel>
 
+        {/* What the platform has noticed about this customer, immediately above the
+            refund buttons (Phase 18, G44). Placed here because this is where the
+            fact is *used*: an agent deciding a fourth refund in a month needs to
+            know it is the fourth before they click, and hidden when there is
+            nothing to say, so it never becomes furniture. It does not gate the
+            decision — the agent does. */}
+        <RiskFlags
+          orders={ordersForCustomer(allOrders, order.contact.phone)}
+          now={now}
+          hideWhenClear
+        />
+
         {/* The refund, with its decisions — the same component the support desk
             uses, writing to the same store, so a refund granted from a ticket and
             one granted here are one record (Phase 5, G07). */}
@@ -682,7 +697,7 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
           submitting={submitting}
           onClose={() => setDialog(null)}
           onConfirm={(reason: OrderCancelReason, note) =>
-            run("rejected", { reason, note: note || null })
+            run("rejected", { reason, detail: noteDetail(note) })
           }
         />
       )}
@@ -697,7 +712,7 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
           submitting={submitting}
           onClose={() => setDialog(null)}
           onConfirm={(reason: OrderCancelReason, note) =>
-            run("cancelled", { reason, note: note || null })
+            run("cancelled", { reason, detail: noteDetail(note) })
           }
         />
       )}
@@ -712,7 +727,7 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
           submitting={submitting}
           onClose={() => setDialog(null)}
           onConfirm={(reason: OrderCancelReason, note) =>
-            run("delivery-failed", { reason, note: note || null })
+            run("delivery-failed", { reason, detail: noteDetail(note) })
           }
         />
       )}

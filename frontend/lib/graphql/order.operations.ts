@@ -5,7 +5,7 @@ import type {
   CartVendor,
   DeliveryAddress,
   FulfillmentType,
-  OrderEvent,
+  OrderActor,
   OrderPricing,
   OrderStatus,
   PaymentMethod,
@@ -147,6 +147,27 @@ const ORDER_FIELDS = gql`
  * in them until the delivery unit exists; `services/orders.ts` fills both with `null`, which
  * is exactly what `createLifecycle` did.
  */
+/**
+ * One lifecycle event as the **schema** returns it.
+ *
+ * `note: String` — the encoded string the domain retired in Phase 18 (G45). It is
+ * still what `backend/schema.gql` publishes, so it is still what the selection set
+ * asks for and what this type has to say; translating it into
+ * `OrderEventDetail` is the mapper's job (`services/orders.toOrder`), which is
+ * where every other wire/domain difference is already handled.
+ *
+ * Spelling it out here rather than reusing the domain `OrderEvent` is the point:
+ * the two shapes really are different now, and a wire type that borrowed the
+ * domain's would have claimed a field the query does not fetch.
+ */
+export interface OrderEventWire {
+  id: string;
+  status: OrderStatus;
+  at: string;
+  actor: OrderActor;
+  note: string | null;
+}
+
 export interface OrderWire {
   id: string;
   orderNumber: string;
@@ -163,7 +184,7 @@ export interface OrderWire {
   placedAt: string;
   estimatedDeliveryAt: string;
   lifecycle: {
-    events: OrderEvent[];
+    events: OrderEventWire[];
     prepMinutes: number | null;
     promisedReadyAt: string | null;
     delayMinutes: number;

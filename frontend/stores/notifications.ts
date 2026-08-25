@@ -12,6 +12,7 @@ import { channelsFor, dispatchesFor } from "@/lib/notifications";
 import { REQUIRED_NOTIFICATIONS } from "@/services/settings";
 import { useAuth } from "./auth";
 import { useSettings } from "./settings";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * notifications store — the four in-app inboxes and the outbox (Phase C25).
@@ -212,6 +213,13 @@ export const useNotifications = create<NotificationState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-notifications", () => void useNotifications.persist.rehydrate());
 
 /**
  * Push a batch from a domain store. Domain stores import *this*, not the store

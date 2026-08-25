@@ -29,6 +29,7 @@ import {
   type OrderAction,
 } from "@/lib/order-machine";
 import { DELIVERY_FAIL_REASONS } from "@/lib/order-lifecycle";
+import { noteDetail } from "@/lib/order-events";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
@@ -339,7 +340,7 @@ export function LiveTripView({ orderId }: { orderId: string }) {
         submitting={submitting}
         onClose={() => setFailOpen(false)}
         onConfirm={(reason: OrderCancelReason, note) => {
-          run("delivery-failed", { reason, note: note || null });
+          run("delivery-failed", { reason, detail: noteDetail(note) });
           setFailOpen(false);
         }}
       />

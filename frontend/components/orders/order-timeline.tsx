@@ -65,7 +65,7 @@ export function OrderTimeline({
             compact={compact}
             label={t(`status.${step.status}`)}
             actorLabel={step.actor ? t(`actor.${ACTOR_KEY[step.actor]}`) : null}
-            noteLabel={noteLabel(step, t)}
+            noteLabel={detailLabel(step, t)}
             timeLabel={step.at ? time(step.at) : null}
             nowLabel={t("now")}
           />
@@ -188,35 +188,49 @@ function TimelineRow({
 }
 
 /**
- * Events carry machine-readable notes (`delay:10`, `otp-failed:2`) rather than
- * prose, so they can be localised at render time. This is where they become
- * sentences.
+ * Events carry typed payloads rather than prose, so they can be localised at
+ * render time. This is where they become sentences.
+ *
+ * It used to switch on `note.split(":")` and fall through to the raw code for
+ * anything it had no case for — which is how `handover-failed:3` and `rating:4`
+ * came to be shown to customers verbatim. The switch is now over
+ * `OrderEventDetail["kind"]`, so the compiler names the missing case instead of
+ * the timeline printing it (Phase 18, G45).
+ *
+ * The one member that renders as itself is `note`, which *is* prose: somebody
+ * typed it, and there is nothing to translate.
  */
-function noteLabel(
+function detailLabel(
   step: TrackStep,
   t: ReturnType<typeof useTranslations>,
 ): string | null {
-  if (!step.note) return null;
-  const [kind, value] = step.note.split(":");
-  switch (kind) {
+  const detail = step.detail;
+  if (!detail) return null;
+  switch (detail.kind) {
     case "delay":
-      return t("note.delay", { minutes: Number(value) });
+      return t("note.delay", { minutes: detail.minutes });
     case "otp-failed":
-      return t("note.otpFailed", { count: Number(value) });
+      return t("note.otpFailed", { count: detail.attempts });
+    case "handover-failed":
+      return t("note.handoverFailed", { count: detail.attempts });
     case "refund-requested":
       return t("note.refundRequested");
-    case "reassigned":
-      return t("note.reassigned");
     case "refund-approved":
       return t("note.refundApproved");
     case "refund-rejected":
       return t("note.refundRejected");
     case "refund-settled":
       return t("note.refundSettled");
+    case "reassigned":
+      return detail.fromRider
+        ? t("note.reassignedFrom", { name: detail.fromRider })
+        : t("note.reassigned");
     case "scheduled-release":
       return t("note.scheduledRelease");
-    default:
-      return step.note;
+    case "rating":
+      return t("note.rating", { score: detail.score });
+    case "note":
+      return detail.body;
   }
 }
 

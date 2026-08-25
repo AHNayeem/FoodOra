@@ -45,6 +45,7 @@ import {
 import { emitNotifications } from "./notifications";
 import { sessionCan } from "./auth";
 import { recordAudit } from "./audit";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * onboarding store — every restaurant and rider application, on both sides
@@ -448,6 +449,13 @@ export const useOnboarding = create<OnboardingState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-onboarding", () => void useOnboarding.persist.rehydrate());
 
 // ---------------------------------------------------------------------------
 // Commit helpers — one write path each, so no action forgets `updatedAt`

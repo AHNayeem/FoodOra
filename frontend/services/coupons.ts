@@ -80,6 +80,13 @@ export interface BasketInput {
   fulfillment: FulfillmentType;
   /** The customer has never placed an order (drives first-order-only codes). */
   isFirstOrder: boolean;
+  /**
+   * The account is under a coupon hold (Phase 18, G44). Travels in with the
+   * basket for the same reason `isFirstOrder` does: it is a fact about the
+   * customer that this seam cannot look up and the engine must not go looking
+   * for. Optional, and absent means no hold.
+   */
+  riskHold?: boolean;
 }
 
 /** A coupon on offer to a customer who does not hold it yet. */
@@ -223,6 +230,7 @@ function toContext(basket: BasketInput, nowMs: number): CouponContext {
       quantity: l.quantity,
     })),
     isFirstOrder: basket.isFirstOrder,
+    riskHold: basket.riskHold ?? false,
   };
 }
 

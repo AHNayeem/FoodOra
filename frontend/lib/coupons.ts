@@ -221,6 +221,16 @@ export function evaluateCoupon(
 
   if (coupon.currency !== ctx.currency) return refuse("currency");
 
+  /**
+   * A coupon hold outranks everything about the basket (Phase 18, G44): the
+   * account has had two discounted orders taken back, or three refunds inside the
+   * month, and the pattern being guarded is the *discount*, so it is refused here
+   * and the customer can still order and pay. Refused with a reason like every
+   * other refusal, because a coupon that silently stopped applying would be read
+   * as a bug and reported as one.
+   */
+  if (ctx.riskHold) return refuse("riskHold");
+
   if (coupon.vendorIds.length > 0 && !coupon.vendorIds.includes(ctx.vendorId)) {
     return refuse("vendorOnly");
   }

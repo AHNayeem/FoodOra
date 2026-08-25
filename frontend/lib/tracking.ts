@@ -1,4 +1,4 @@
-import type { Order, OrderEvent, OrderStatus } from "@/types";
+import type { Order, OrderEvent, OrderEventDetail, OrderStatus } from "@/types";
 import {
   isFailure,
   isTerminal,
@@ -37,8 +37,8 @@ export interface TrackStep {
   active: boolean;
   /** Who performed it, for the timeline's attribution line. */
   actor: OrderEvent["actor"] | null;
-  /** Free-text detail recorded with the event (a delay, a reason). */
-  note: string | null;
+  /** What the event said beyond its status (a delay, a failed code), typed. */
+  detail: OrderEventDetail | null;
 }
 
 export interface TrackingProgress {
@@ -98,7 +98,7 @@ export function trackingProgress(order: Order, now: number): TrackingProgress {
       done: !!event,
       active: !failed && i === currentIndex && !complete,
       actor: event?.actor ?? null,
-      note: event?.note ?? null,
+      detail: event?.detail ?? null,
     };
   });
 

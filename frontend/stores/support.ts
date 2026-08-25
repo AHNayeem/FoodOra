@@ -23,6 +23,7 @@ import {
 } from "@/lib/support";
 import { emitNotifications } from "./notifications";
 import { useOrders } from "./orders";
+import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
  * support store — every dispute, on both surfaces (Phase 5, G25/G26).
@@ -236,6 +237,13 @@ export const useSupport = create<SupportState>()(
     },
   ),
 );
+
+/**
+ * Rehydrate this store when another window writes to it (Phase 18, G42) — one
+ * surface accepting, blocking or paying changes what the surface in the next tab
+ * is looking at, without a reload.
+ */
+syncAcrossWindows("foodora-support", () => void useSupport.persist.rehydrate());
 
 // ---------------------------------------------------------------------------
 // Selectors — shared by the customer's list and the desk's queue

@@ -4,6 +4,7 @@ import type {
   Order,
   OrderActor,
   OrderEvent,
+  OrderEventDetail,
   OrderLifecycle,
   OrderRiderEarning,
   OrderStatus,
@@ -387,8 +388,12 @@ export function cashDueOn(order: Order): number {
 
 /** Fields a transition may set alongside the status change. */
 export interface TransitionPatch {
-  /** Free-text note for the event log (already localised by the caller). */
-  note?: string | null;
+  /**
+   * What the event should say beyond its status (Phase 18, G45) — the desk's
+   * typed line on a cancellation, a reassignment, a scheduled release. Typed
+   * rather than free text: see {@link OrderEventDetail}.
+   */
+  detail?: OrderEventDetail | null;
   /** Accept: promised preparation time in minutes. */
   prepMinutes?: number;
   /** Delay: extra minutes requested, added to the promise. */
@@ -525,7 +530,7 @@ export function transition(
     status: to,
     at: iso,
     actor,
-    note: patch.note ?? null,
+    detail: patch.detail ?? null,
   };
   life.events = [...life.events, event];
 
@@ -676,7 +681,7 @@ export function addDelay(order: Order, minutes: number, now = Date.now()): Order
           status: order.status,
           at: iso,
           actor: "restaurant",
-          note: `delay:${minutes}`,
+          detail: { kind: "delay", minutes },
         },
       ],
     },
@@ -700,7 +705,7 @@ export function recordOtpFailure(order: Order, now = Date.now()): Order {
           status: order.status,
           at: iso,
           actor: "rider",
-          note: `otp-failed:${attempts}`,
+          detail: { kind: "otp-failed", attempts },
         },
       ],
     },
@@ -790,12 +795,18 @@ function stampRefundSettled(
   life.refundSettledAt = iso;
 }
 
-/** Append an event that records something about the refund, status unchanged. */
+/**
+ * Append an event that records something about the refund, status unchanged.
+ *
+ * The event id is keyed on the detail's *kind*, which is what the note used to
+ * supply — so an order that was requested, approved and settled in the same
+ * millisecond still has three distinguishable rows.
+ */
 function withRefundEvent(
   order: Order,
   life: OrderLifecycle,
   actor: OrderActor,
-  note: string,
+  detail: RefundEventDetail,
   now: number,
 ): Order {
   const iso = new Date(now).toISOString();
@@ -807,16 +818,22 @@ function withRefundEvent(
       events: [
         ...life.events,
         {
-          id: `${eventId(order.id, order.status, now)}_${note}`,
+          id: `${eventId(order.id, order.status, now)}_${detail.kind}`,
           status: order.status,
           at: iso,
           actor,
-          note,
+          detail,
         },
       ],
     },
   };
 }
+
+/** The members of {@link OrderEventDetail} `withRefundEvent` can carry. */
+type RefundEventDetail = Extract<
+  OrderEventDetail,
+  { kind: `refund-${string}` }
+>;
 
 /** Log a customer refund request without changing the order's status. */
 export function requestRefund(order: Order, now = Date.now()): Order {
@@ -826,7 +843,13 @@ export function requestRefund(order: Order, now = Date.now()): Order {
     refundAmount: order.pricing.total,
     refundMethod: refundMethodFor(order),
   };
-  return withRefundEvent(order, life, "customer", "refund-requested", now);
+  return withRefundEvent(
+    order,
+    life,
+    "customer",
+    { kind: "refund-requested", amount: life.refundAmount },
+    now,
+  );
 }
 
 /**
@@ -857,7 +880,7 @@ export function approveRefund(
     refundMethod: input.method ?? order.lifecycle.refundMethod ?? refundMethodFor(order),
     refundDecidedAt: iso,
   };
-  return withRefundEvent(order, life, "admin", "refund-approved", now);
+  return withRefundEvent(order, life, "admin", { kind: "refund-approved", amount }, now);
 }
 
 /** Refuse a refund. The amount is cleared — nothing is owed. */
@@ -869,7 +892,7 @@ export function rejectRefund(order: Order, now = Date.now()): Order {
     refundAmount: 0,
     refundDecidedAt: iso,
   };
-  return withRefundEvent(order, life, "admin", "refund-rejected", now);
+  return withRefundEvent(order, life, "admin", { kind: "refund-rejected" }, now);
 }
 
 /**
@@ -885,7 +908,13 @@ export function settleRefund(order: Order, now = Date.now()): Order {
   const iso = new Date(now).toISOString();
   const life: OrderLifecycle = { ...order.lifecycle };
   stampRefundSettled(order, life, refundAmountOn(order), iso);
-  const settled = withRefundEvent(order, life, "system", "refund-settled", now);
+  const settled = withRefundEvent(
+    order,
+    life,
+    "system",
+    { kind: "refund-settled", amount: life.refundAmount },
+    now,
+  );
   return { ...settled, payment: { ...order.payment, status: "refunded" } };
 }
 
@@ -913,7 +942,7 @@ export function recordHandoverFailure(order: Order, now = Date.now()): Order {
           status: order.status,
           at: iso,
           actor: "restaurant",
-          note: `handover-failed:${attempts}`,
+          detail: { kind: "handover-failed", attempts },
         },
       ],
     },
@@ -977,7 +1006,7 @@ export function rateOrder(order: Order, rating: number, now = Date.now()): Order
           status: order.status,
           at: iso,
           actor: "customer",
-          note: `rating:${score}`,
+          detail: { kind: "rating", score },
         },
       ],
     },
