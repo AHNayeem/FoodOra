@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Check, Loader2, Ticket } from "lucide-react";
 import { claimCoupon, getGrantedClaims } from "@/services/coupons";
 import { useCoupons } from "@/stores/coupons";
+import { useCampaigns, useCampaignDesk } from "@/stores/campaigns";
 
 /**
  * ClaimCoupon — the "save this code to my coupons" button beside a coupon code
@@ -24,10 +25,14 @@ export function ClaimCoupon({ code, couponId }: { code: string; couponId: string
   const seeded = useCoupons((s) => s.seeded);
   const seed = useCoupons((s) => s.seed);
   const addClaim = useCoupons((s) => s.addClaim);
+  // Phase 12: an advertised code the platform desk has deactivated is refused by
+  // the seam, so the deals page cannot hand out a campaign that is off.
+  const desk = useCampaignDesk();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     useCoupons.persist.rehydrate();
+    void useCampaigns.persist.rehydrate();
   }, []);
   useEffect(() => {
     if (hydrated && !seeded) getGrantedClaims().then(seed);
@@ -60,7 +65,7 @@ export function ClaimCoupon({ code, couponId }: { code: string; couponId: string
 
   function claim() {
     setBusy(true);
-    claimCoupon(code, claims).then((res) => {
+    claimCoupon(code, claims, desk).then((res) => {
       setBusy(false);
       if (res.error || !res.data) {
         toast.error(t(res.error ?? "errors.unknownCode"));

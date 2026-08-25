@@ -7,6 +7,13 @@ import type {
   ReviewDraft,
   ReviewFilter,
   ReviewMedia,
+  ReviewModerationRecord,
+  ReviewModerationStatus,
+  ReviewQueueAuthor,
+  ReviewQueueOrder,
+  ReviewQueueRow,
+  ReviewQueueSegment,
+  ReviewQueueVendor,
   ReviewReply,
   ReviewSort,
   ReviewSummary,
@@ -18,6 +25,14 @@ import {
   foodById,
   vendorById,
 } from "@/lib/mock";
+import { customerIdFor, normalisePhone } from "@/lib/customers";
+import {
+  EMPTY_QUEUE_QUERY,
+  countBySegment,
+  filterQueue,
+  isReviewVisible,
+  type ReviewQueueQuery,
+} from "@/lib/review-moderation";
 import {
   MAX_COMMENT_LENGTH,
   MAX_REPLY_LENGTH,
@@ -78,10 +93,25 @@ export interface ReviewContext {
   replies: Record<string, ReviewReply>;
   /** Review ids this device voted helpful — worth one point on top of the count. */
   helpful: string[];
+  /**
+   * Platform moderation decisions, keyed by review id (Phase 13, G29).
+   *
+   * Joined in once by `stores/reviews.useReviewContext`, which is what makes a
+   * hidden review disappear from *every* corpus this file assembles — the
+   * storefront, the merchant board, the rider profile and the AI summary — rather
+   * than from whichever surface remembered to filter. A review with no record
+   * here has simply never been reported.
+   */
+  moderation: Record<string, ReviewModerationRecord>;
 }
 
 export function emptyContext(): ReviewContext {
-  return { own: [], replies: {}, helpful: [] };
+  return { own: [], replies: {}, helpful: [], moderation: {} };
+}
+
+/** Is this review readable by the public right now? (Phase 13.) */
+function visible(review: Review, ctx: ReviewContext): boolean {
+  return isReviewVisible(ctx.moderation[review.id]);
 }
 
 /** One page of reviews about one subject, with the aggregate behind it. */
@@ -146,13 +176,20 @@ function vendorCorpus(
   nowMs: number,
 ): { all: Review[]; own: Review[]; catalogue: Review[] } {
   const own = ctx.own.filter(
-    (r) => r.subject === "vendor" && r.subjectId === vendorId && !r.deletedAt,
+    (r) =>
+      r.subject === "vendor" &&
+      r.subjectId === vendorId &&
+      !r.deletedAt &&
+      // Phase 13: a review the platform hid or removed leaves the public corpus,
+      // and therefore leaves the aggregate above it as well — a rating that still
+      // counted a removed review would be the "second opinion" §5.4 forbids.
+      visible(r, ctx),
   );
   const catalogue = buildVendorReviews(vendorId, nowMs).filter(
     // A review written on this device replaces any synthesised row with the same
     // id — that only happens if a seed id is reused, but the guard keeps the
     // merge total rather than "usually fine".
-    (r) => !own.some((o) => o.id === r.id),
+    (r) => !own.some((o) => o.id === r.id) && visible(r, ctx),
   );
   const withCtx = (list: Review[]) => list.map((r) => withContext(r, ctx));
   const [ownResolved, catalogueResolved] = [withCtx(own), withCtx(catalogue)];
@@ -232,9 +269,9 @@ export async function getRiderReviews(
   const own = ctx.own.filter(
     (r) => r.subject === "rider" && r.subjectId === riderId && !r.deletedAt,
   );
-  const corpus = [...own, ...buildRiderReviews(riderId, nowMs)].map((r) =>
-    withContext(r, ctx),
-  );
+  const corpus = [...own, ...buildRiderReviews(riderId, nowMs)]
+    .filter((r) => visible(r, ctx))
+    .map((r) => withContext(r, ctx));
   const sorted = sortReviews(corpus, "recent");
 
   return mockDelay(
@@ -268,16 +305,33 @@ export async function getPendingReviews(
   return mockDelay({ nowMs, pending }, 150);
 }
 
-/** Everything this device has written, newest first. */
+/**
+ * Everything this device has written, newest first.
+ *
+ * Unlike every other read in this file, this one does **not** drop moderated
+ * reviews: they are the author's own words and hiding them from the person who
+ * wrote them would leave a review that is invisible everywhere and explained
+ * nowhere. The status travels beside the list instead, so the account page can
+ * say what happened (Phase 13).
+ */
 export async function getMyReviews(
   ctx: ReviewContext,
-): Promise<{ nowMs: number; reviews: Review[] }> {
+): Promise<{
+  nowMs: number;
+  reviews: Review[];
+  moderation: Record<string, ReviewModerationStatus>;
+}> {
   const nowMs = Date.now();
   const reviews = sortReviews(
     ctx.own.filter((r) => !r.deletedAt).map((r) => withContext(r, ctx)),
     "recent",
   );
-  return mockDelay({ nowMs, reviews }, 150);
+  const moderation: Record<string, ReviewModerationStatus> = {};
+  for (const review of reviews) {
+    const record = ctx.moderation[review.id];
+    if (record) moderation[review.id] = record.status;
+  }
+  return mockDelay({ nowMs, reviews, moderation }, 150);
 }
 
 /**
@@ -479,13 +533,28 @@ export async function markHelpful(
   return ok({ reviewId });
 }
 
-/** Flag a review for moderation. Simulated — the report goes nowhere in a prototype. */
+/**
+ * Check that a review may be reported before the store writes the report
+ * (Phase 13).
+ *
+ * The report itself is a *moderation* write and goes through
+ * `stores/review-moderation`, which runs `lib/review-moderation.reportReviewRecord`
+ * — the same function the seeded queue is built with. What is left here is the
+ * part that belongs to the seam: the device-local "you already flagged this"
+ * guard, and the rule that a review already taken down cannot be reported again
+ * because there is nothing further to decide.
+ */
 export async function reportReview(
   reviewId: string,
   reported: string[],
+  ctx: ReviewContext = emptyContext(),
 ): Promise<Result<{ reviewId: string }>> {
   await mockDelay(null, 350);
   if (reported.includes(reviewId)) return { data: null, error: "errors.alreadyReported" };
+  const record = ctx.moderation[reviewId];
+  if (record && !isReviewVisible(record)) {
+    return { data: null, error: "errors.alreadyModerated" };
+  }
   return ok({ reviewId });
 }
 
@@ -580,4 +649,196 @@ export async function replyToReview(
       repliedAt: new Date(nowMs).toISOString(),
     },
   });
+}
+
+// ---- Moderation queue (Phase 13, G29) --------------------------------------
+
+/** The moderation queue at one instant. */
+export interface ModerationQueue {
+  /** The instant every corpus, status and date was read at. */
+  nowMs: number;
+  rows: ReviewQueueRow[];
+  /** Rows per segment before the segment filter — the counts on the chips. */
+  counts: Record<ReviewQueueSegment, number>;
+  totals: {
+    /** Reviews with a record, whatever their state. */
+    reported: number;
+    pending: number;
+    hidden: number;
+    removed: number;
+    /** Reports raised across all of them. */
+    reports: number;
+    /** Restaurants with at least one reported review. */
+    vendors: number;
+  };
+  /**
+   * Records whose review can no longer be resolved to a corpus row. Counted
+   * rather than rendered as holes (the C23 favorites convention) — it happens if
+   * a device-written review is withdrawn after being reported.
+   */
+  unresolved: number;
+}
+
+/** The restaurant behind a reported review, resolved for display. */
+function queueVendor(vendorId: string): ReviewQueueVendor | null {
+  const vendor = vendorById.get(vendorId);
+  if (!vendor || vendor.deletedAt) return null;
+  return {
+    id: vendor.id,
+    slug: vendor.slug,
+    name: vendor.name,
+    rating: vendor.rating,
+    reviewCount: vendor.reviewCount,
+  };
+}
+
+/**
+ * The order behind a reported review — the moderator's only hard evidence that
+ * the reviewer ever bought anything.
+ *
+ * `orders` is passed in from the shared store rather than looked up here, exactly
+ * as the Phase 11 customer directory takes it: the seam has no session and no
+ * database, and a component that already holds the orders must not be made to
+ * hand over a copy of the whole store twice.
+ */
+function queueOrder(review: Review, orders: Order[]): { order: ReviewQueueOrder | null; phone: string | null } {
+  const match = review.orderId
+    ? orders.find((o) => o.id === review.orderId && !o.deletedAt)
+    : undefined;
+  if (!match) return { order: null, phone: null };
+  return {
+    order: {
+      id: match.id,
+      orderNumber: match.orderNumber,
+      status: match.status,
+      placedAt: match.placedAt,
+      total: match.pricing.total,
+      currency: match.pricing.currency,
+    },
+    phone: match.contact.phone,
+  };
+}
+
+/**
+ * Resolve every moderation record into a queue row.
+ *
+ * The joins are the point of this function, and they are done once per subject
+ * rather than once per record: a restaurant's corpus is synthesised, so
+ * `buildVendorReviews` is memoised per vendor for the length of the call. A
+ * record whose review cannot be found is dropped and counted, never rendered as
+ * an empty card.
+ */
+function resolveQueue(
+  ctx: ReviewContext,
+  orders: Order[],
+  nowMs: number,
+): { rows: ReviewQueueRow[]; unresolved: number } {
+  const records = Object.values(ctx.moderation);
+  const corpora = new Map<string, Review[]>();
+
+  const corpusFor = (record: ReviewModerationRecord): Review[] => {
+    const key = `${record.subject}:${record.subjectId}`;
+    const cached = corpora.get(key);
+    if (cached) return cached;
+    const built =
+      record.subject === "vendor"
+        ? buildVendorReviews(record.subjectId, nowMs)
+        : buildRiderReviews(record.subjectId, nowMs);
+    corpora.set(key, built);
+    return built;
+  };
+
+  // Pass one: find the review each record is about.
+  const found: { record: ReviewModerationRecord; review: Review }[] = [];
+  let unresolved = 0;
+  for (const record of records) {
+    const own = ctx.own.find((r) => r.id === record.reviewId && !r.deletedAt);
+    const review = own ?? corpusFor(record).find((r) => r.id === record.reviewId);
+    if (!review) {
+      unresolved++;
+      continue;
+    }
+    found.push({ record, review: withContext(review, ctx) });
+  }
+
+  // Pass two: the author's history *across the queue*, which needs every record
+  // resolved first — "this is their third reported review" is exactly the fact a
+  // moderator decides on, and it cannot be counted one row at a time.
+  const byAuthor = new Map<string, { reported: number; actioned: number }>();
+  for (const { record, review } of found) {
+    const tally = byAuthor.get(review.authorId) ?? { reported: 0, actioned: 0 };
+    tally.reported++;
+    if (record.status === "hidden" || record.status === "removed") tally.actioned++;
+    byAuthor.set(review.authorId, tally);
+  }
+
+  const rows = found.map(({ record, review }) => {
+    const { order, phone } = queueOrder(review, orders);
+    const tally = byAuthor.get(review.authorId) ?? { reported: 0, actioned: 0 };
+    const normalised = phone ? normalisePhone(phone) : "";
+    const author: ReviewQueueAuthor = {
+      id: review.authorId,
+      name: review.authorName,
+      avatar: review.authorAvatar,
+      verified: review.verified,
+      reviewsHere: corpusFor(record).filter((r) => r.authorId === review.authorId).length,
+      reported: tally.reported,
+      actioned: tally.actioned,
+      // Only when the order behind the review is one the prototype still holds:
+      // the join is the normalised phone, the Phase 11 identity, and inventing a
+      // customer id from an author name would be a link that goes nowhere.
+      customerId: normalised ? customerIdFor(normalised) : null,
+      phone: phone ?? null,
+    };
+    return { review, record, vendor: queueVendor(record.vendorId), order, author };
+  });
+
+  return { rows, unresolved };
+}
+
+/**
+ * The moderation queue: every reported review, with the decision on it and the
+ * context to make one (G29).
+ *
+ * Defaults to `pending`, sorted by how many people objected — the two things that
+ * decide what a moderator looks at first. Everything else on the screen is a
+ * filter over the same resolved rows, so a count and a list can never disagree.
+ */
+export async function getModerationQueue(
+  ctx: ReviewContext,
+  orders: Order[],
+  query: Partial<ReviewQueueQuery> = {},
+): Promise<ModerationQueue> {
+  const nowMs = Date.now();
+  const full: ReviewQueueQuery = { ...EMPTY_QUEUE_QUERY, ...query };
+  const { rows, unresolved } = resolveQueue(ctx, orders, nowMs);
+
+  return mockDelay(
+    {
+      nowMs,
+      rows: filterQueue(rows, full),
+      counts: countBySegment(rows, full),
+      totals: {
+        reported: rows.length,
+        pending: rows.filter((r) => r.record.status === "pending").length,
+        hidden: rows.filter((r) => r.record.status === "hidden").length,
+        removed: rows.filter((r) => r.record.status === "removed").length,
+        reports: rows.reduce((n, r) => n + r.record.reports.length, 0),
+        vendors: new Set(rows.map((r) => r.record.vendorId).filter(Boolean)).size,
+      },
+      unresolved,
+    },
+    200,
+  );
+}
+
+/** One reported review, with the same joins the queue resolved — the detail page. */
+export async function getModerationRow(
+  reviewId: string,
+  ctx: ReviewContext,
+  orders: Order[],
+): Promise<{ nowMs: number; row: ReviewQueueRow | null }> {
+  const nowMs = Date.now();
+  const { rows } = resolveQueue(ctx, orders, nowMs);
+  return mockDelay({ nowMs, row: rows.find((r) => r.review.id === reviewId) ?? null }, 200);
 }

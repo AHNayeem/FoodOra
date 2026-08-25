@@ -14,6 +14,7 @@ import { useAuth } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { useAddresses } from "@/stores/addresses";
 import { useCoupons } from "@/stores/coupons";
+import { useCampaigns, useCampaignDesk } from "@/stores/campaigns";
 import { useWallet } from "@/stores/wallet";
 import { isPhoneBlocked, useCustomers } from "@/stores/customers";
 import { authorisePayment, placeOrder } from "@/services/orders";
@@ -100,6 +101,10 @@ export function CheckoutView() {
   const seedCoupons = useCoupons((s) => s.seed);
   const addClaim = useCoupons((s) => s.addClaim);
   const recordRedemption = useCoupons((s) => s.recordRedemption);
+  // Phase 12: the platform desk's campaign decisions. A deactivated campaign is
+  // refused by the seam at *apply* and again at *redeem*, which is what makes
+  // "deactivate" mean something on the till rather than only in an admin table.
+  const desk = useCampaignDesk();
   // The wallet is both a tender and a payee here: it can pay for the order
   // (C19) and it receives cashback afterwards (C21), so it has to be loaded
   // before either happens.
@@ -124,6 +129,7 @@ export function CheckoutView() {
     useCoupons.persist.rehydrate();
     useWallet.persist.rehydrate();
     useCustomers.persist.rehydrate();
+    void useCampaigns.persist.rehydrate();
   }, []);
 
   const [fulfillment, setFulfillment] = useState<Fulfillment>("delivery");
@@ -203,7 +209,7 @@ export function CheckoutView() {
   useEffect(() => {
     if (!basket || !couponsHydrated || !couponsSeeded) return;
     let live = true;
-    getBasketCoupons(claims, basket).then((picker) => {
+    getBasketCoupons(claims, basket, desk).then((picker) => {
       if (!live) return;
       setCouponOptions(picker.options);
       if (!appliedId) return;
@@ -220,7 +226,7 @@ export function CheckoutView() {
     return () => {
       live = false;
     };
-  }, [claims, basket, couponsHydrated, couponsSeeded, appliedId, tc]);
+  }, [claims, basket, couponsHydrated, couponsSeeded, appliedId, desk, tc]);
 
   /**
    * The wallet can stop being affordable after it was chosen — adding a tip or
@@ -266,7 +272,7 @@ export function CheckoutView() {
   function handleApplyCoupon(couponId: string) {
     if (!basket) return;
     setCouponBusy(true);
-    applyCoupon(couponId, claims, basket).then((res) => {
+    applyCoupon(couponId, claims, basket, desk).then((res) => {
       setCouponBusy(false);
       if (res.error || !res.data) {
         toast.error(tc(res.error ?? "errors.unknownCode"));
@@ -285,7 +291,7 @@ export function CheckoutView() {
   function handleApplyCode(code: string) {
     if (!basket) return;
     setCouponBusy(true);
-    applyCouponCode(code, claims, basket).then((res) => {
+    applyCouponCode(code, claims, basket, desk).then((res) => {
       setCouponBusy(false);
       if (res.error || !res.data) {
         toast.error(tc(res.error));
@@ -303,7 +309,7 @@ export function CheckoutView() {
    */
   function settleCoupon(order: (typeof pastOrders)[number]) {
     if (!coupon) return;
-    redeemCoupon(coupon.coupon.id, claims, order, coupon.evaluation).then((res) => {
+    redeemCoupon(coupon.coupon.id, claims, order, coupon.evaluation, desk).then((res) => {
       if (res.error || !res.data) return;
       recordRedemption(coupon.coupon.id, res.data);
       if (res.data.cashback > 0) {

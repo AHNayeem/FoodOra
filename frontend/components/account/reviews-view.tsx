@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Loader2, PenLine, Star, Trash2 } from "lucide-react";
-import type { Order, Review } from "@/types";
+import { EyeOff, Loader2, PenLine, Star, Trash2 } from "lucide-react";
+import type { Order, Review, ReviewModerationStatus } from "@/types";
 import type { PendingReview } from "@/services/reviews";
 import { deleteReview, getMyReviews, getPendingReviews } from "@/services/reviews";
 import { useOrders } from "@/stores/orders";
 import { useReviewContext, useReviews } from "@/stores/reviews";
+import { useReviewModeration } from "@/stores/review-moderation";
 import { canEditReview } from "@/lib/reviews";
 import { Button } from "@/components/ui/button";
 import { ReviewCard, EditReviewButton } from "@/components/reviews/review-card";
@@ -38,6 +39,13 @@ export function ReviewsView() {
 
   const [pending, setPending] = useState<PendingReview[]>([]);
   const [mine, setMine] = useState<Review[]>([]);
+  /**
+   * Phase 13: what the platform decided about the author's own reviews. They stay
+   * in this list even when hidden — they are this person's words — but a review
+   * that is invisible everywhere else has to say so here, or its author is left
+   * wondering why nobody ever replied.
+   */
+  const [moderation, setModeration] = useState<Record<string, ReviewModerationStatus>>({});
   const [nowMs, setNowMs] = useState(0);
   const [loading, setLoading] = useState(true);
   const [writing, setWriting] = useState<{ order: Order; existing: Review | null } | null>(null);
@@ -46,6 +54,7 @@ export function ReviewsView() {
   useEffect(() => {
     useOrders.persist.rehydrate();
     useReviews.persist.rehydrate();
+    void useReviewModeration.persist.rehydrate();
   }, []);
 
   useEffect(() => {
@@ -56,6 +65,7 @@ export function ReviewsView() {
         if (!live) return;
         setPending(pendingRes.pending);
         setMine(mineRes.reviews);
+        setModeration(mineRes.moderation);
         setNowMs(pendingRes.nowMs);
         setLoading(false);
       },
@@ -194,6 +204,13 @@ export function ReviewsView() {
                       </>
                     )}
                   </p>
+                  {(moderation[review.id] === "hidden" ||
+                    moderation[review.id] === "removed") && (
+                    <p className="mt-1 flex items-center gap-1.5 px-5 text-xs font-semibold text-danger">
+                      <EyeOff className="size-3.5" aria-hidden />
+                      {t(`moderated.${moderation[review.id]}`)}
+                    </p>
+                  )}
                 </li>
               );
             })}

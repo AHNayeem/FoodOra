@@ -6,6 +6,7 @@ import { persist } from "zustand/middleware";
 import type { Review } from "@/types";
 import type { ReviewContext } from "@/services/reviews";
 import { useMerchant } from "./merchant";
+import { useReviewModeration } from "./review-moderation";
 
 /**
  * reviews store — what this browser has said about its orders (Phase C22).
@@ -106,14 +107,26 @@ export const useReviews = create<ReviewsState>()(
  * is what keeps both surfaces reading the same review; the alternative is every
  * component remembering to merge two stores, and one of them forgetting.
  *
- * Returned memoised so it can be an effect dependency: a new reply or a new vote
- * changes the identity and the surface refetches, nothing else does.
+ * Phase 13 joins a third: the platform's **moderation decisions**. It belongs
+ * here for exactly the same reason — a review the desk hid has to be gone from
+ * the storefront, the merchant board, the rider profile and the AI summary, and
+ * the only way to guarantee that is to hand every seam call the decisions rather
+ * than to filter in six components.
  *
- * With a backend the reply is a column on the row and this joins nothing.
+ * Returned memoised so it can be an effect dependency: a new reply, a new vote or
+ * a new moderation decision changes the identity and the surface refetches,
+ * nothing else does.
+ *
+ * With a backend the reply and the decision are columns on the row (or a joined
+ * table) and this joins nothing.
  */
 export function useReviewContext(): ReviewContext {
   const own = useReviews((s) => s.reviews);
   const helpful = useReviews((s) => s.helpful);
   const replies = useMerchant((s) => s.reviewReplies);
-  return useMemo(() => ({ own, replies, helpful }), [own, replies, helpful]);
+  const moderation = useReviewModeration((s) => s.records);
+  return useMemo(
+    () => ({ own, replies, helpful, moderation }),
+    [own, replies, helpful, moderation],
+  );
 }

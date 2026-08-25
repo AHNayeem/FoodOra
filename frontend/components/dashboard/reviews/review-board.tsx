@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
+  Flag,
   Loader2,
   MessageSquare,
   MessageSquareReply,
@@ -18,10 +19,12 @@ import { MAX_REPLY_LENGTH } from "@/lib/reviews";
 import { formatRating } from "@/lib/format";
 import { useMerchant } from "@/stores/merchant";
 import { useReviewContext, useReviews } from "@/stores/reviews";
+import { useReviewModeration } from "@/stores/review-moderation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RatingSummary } from "@/components/reviews/rating-summary";
 import { ReviewCard } from "@/components/reviews/review-card";
+import { ReportReviewDialog } from "@/components/reviews/report-review-dialog";
 import { Stars } from "@/components/reviews/stars";
 import { useDashboard } from "../dashboard-context";
 import { StatCard } from "../stat-card";
@@ -47,9 +50,20 @@ const PAGE_SIZE = 8;
  */
 export function ReviewBoard() {
   const t = useTranslations("reviews");
+  /** Moderation refusals come back as `moderation.errors.*` keys. */
+  const tm = useTranslations("moderation");
   const { vendor } = useDashboard();
   const ctx = useReviewContext();
   const addReviewReply = useMerchant((s) => s.addReviewReply);
+  /**
+   * Phase 13: a restaurant is the party most likely to be libelled by a review,
+   * and until now it had no way to say so — the flag existed only on the customer
+   * side. Reporting from here puts the row in the platform's queue with
+   * `byRole: "vendor"`, which is how a moderator knows who is objecting.
+   */
+  const reportToModeration = useReviewModeration((s) => s.report);
+  const reportedIds = useReviews((s) => s.reported);
+  const markReported = useReviews((s) => s.markReported);
 
   const [board, setBoard] = useState<VendorReviewBoard | null>(null);
   const [tab, setTab] = useState<Tab>("unanswered");
@@ -57,10 +71,14 @@ export function ReviewBoard() {
   const [star, setStar] = useState<StarValue | null>(null);
   const [pageNo, setPageNo] = useState(1);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [reporting, setReporting] = useState<Review | null>(null);
 
   useEffect(() => {
     useReviews.persist.rehydrate();
     useMerchant.persist.rehydrate();
+    // Without this the board's first render would count a review the platform
+    // has already taken down (Phase 13).
+    void useReviewModeration.persist.rehydrate();
   }, []);
 
   useEffect(() => {
@@ -219,12 +237,23 @@ export function ReviewBoard() {
                 review={review}
                 nowMs={board.nowMs}
                 actions={
-                  !review.reply && replyingTo !== review.id ? (
-                    <Button size="sm" variant="outline" onClick={() => setReplyingTo(review.id)}>
-                      <MessageSquareReply className="size-4" aria-hidden />
-                      {t("reply")}
-                    </Button>
-                  ) : undefined
+                  <>
+                    {!review.reply && replyingTo !== review.id && (
+                      <Button size="sm" variant="outline" onClick={() => setReplyingTo(review.id)}>
+                        <MessageSquareReply className="size-4" aria-hidden />
+                        {t("reply")}
+                      </Button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setReporting(review)}
+                      disabled={reportedIds.includes(review.id)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-pill px-3 text-xs font-semibold text-muted transition-colors hover:bg-surface-muted hover:text-danger disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Flag className="size-3.5" aria-hidden />
+                      {reportedIds.includes(review.id) ? t("reported") : t("report")}
+                    </button>
+                  </>
                 }
               />
               {replyingTo === review.id && (
@@ -258,6 +287,30 @@ export function ReviewBoard() {
           </Button>
         </div>
       )}
+
+      <ReportReviewDialog
+        open={reporting !== null}
+        onClose={() => setReporting(null)}
+        onConfirm={(reason, note) => {
+          if (!reporting) return;
+          const written = reportToModeration(reporting, {
+            reason,
+            note,
+            // The restaurant's name, not the staff member's — the same signature a
+            // public reply carries, and the dedupe key that stops one vendor
+            // objecting twice to the same review.
+            by: vendor.name,
+            byRole: "vendor",
+          });
+          if (written.error) {
+            toast.error(tm(written.error));
+            return;
+          }
+          markReported(reporting.id);
+          setReporting(null);
+          toast.success(t("reportThanks"));
+        }}
+      />
     </div>
   );
 }

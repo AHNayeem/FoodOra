@@ -60,6 +60,10 @@ const SOURCE_ICON: Record<CouponSource, typeof Ticket> = {
 const STATUS_TONE: Record<CouponStatus, string> = {
   active: "bg-fresh-50 text-fresh-600",
   scheduled: "bg-accent-50 text-accent-600",
+  // Phase 12: a campaign the platform desk deactivated. Muted like the two
+  // terminal states — it cannot be spent today — but at full text strength,
+  // because unlike `used` and `expired` it can come back.
+  paused: "bg-surface-muted text-ink",
   used: "bg-surface-muted text-muted",
   expired: "bg-surface-muted text-muted",
 };

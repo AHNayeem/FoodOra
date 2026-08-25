@@ -24,6 +24,8 @@ import { usePayouts } from "@/stores/payouts";
 import { useMenu } from "@/stores/menu";
 import { useStaff } from "@/stores/staff";
 import { useCustomers } from "@/stores/customers";
+import { useCampaigns } from "@/stores/campaigns";
+import { useReviewModeration } from "@/stores/review-moderation";
 import { useVendorSettings } from "@/stores/vendor-settings";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +61,8 @@ export function DemoBar() {
   const resetSettings = useVendorSettings((s) => s.resetDemo);
   const resetStaff = useStaff((s) => s.resetDemo);
   const resetCustomers = useCustomers((s) => s.resetDemo);
+  const resetCampaigns = useCampaigns((s) => s.resetDemo);
+  const resetModeration = useReviewModeration((s) => s.resetDemo);
 
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
@@ -222,6 +226,16 @@ export function DemoBar() {
                 // demonstration would silently refuse the next reviewer's checkout
                 // with no order history left on screen to explain why.
                 resetCustomers();
+                // And Phase 12's campaign desk: a campaign created for the last
+                // demonstration would still be claimable, and a code deactivated
+                // during it would refuse the next reviewer's checkout with nothing
+                // on screen to explain it.
+                resetCampaigns();
+                // And Phase 13's moderation queue, which is rebuilt from the
+                // review corpus for the same reason the support queue is rebuilt
+                // from the orders: a decision left behind would hide a review the
+                // reset has just put back.
+                resetModeration();
                 toast.success(t("resetToast"));
               }}
               className="ms-auto inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5"

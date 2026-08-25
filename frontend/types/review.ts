@@ -199,3 +199,175 @@ export interface LovedDish {
   mentions: number;
   average: number;
 }
+
+// ---------------------------------------------------------------------------
+// Moderation (Phase 13, G29)
+// ---------------------------------------------------------------------------
+
+/**
+ * Why a review was reported — and, when the desk acts, the grounds it cites.
+ *
+ * One closed vocabulary for both halves on purpose: the whole value of a
+ * moderation queue is being able to ask "how often is a report of this kind
+ * upheld", and that question cannot be asked if the reporter picks from one list
+ * and the moderator from another. The prose beside it (`ReviewReport.body`,
+ * `ReviewModerationEvent.body`) is where the specifics go.
+ */
+export type ReviewReportReason =
+  /** Abuse, slurs, threats. */
+  | "offensive"
+  /** Advertising, a link, a repeated paste. */
+  | "spam"
+  /** Not about the food or the order — a complaint about the app, say. */
+  | "off-topic"
+  /** Names a rider, a phone number, an address. */
+  | "personal-info"
+  /** No order behind it, or a competitor talking down a rival. */
+  | "fake"
+  /** Blames this restaurant for another one's order. */
+  | "wrong-order"
+  | "other";
+
+/** Who raised a report. A restaurant flagging abuse is the commonest source. */
+export type ReviewReporterRole = "customer" | "vendor" | "platform";
+
+/**
+ * One report against one review. Append-only: a review with four reports has
+ * four rows, because "how many people objected" is exactly what decides whether
+ * a moderator looks at it today.
+ */
+export interface ReviewReport {
+  id: string;
+  reason: ReviewReportReason;
+  /** What the reporter wrote. Prose a human typed, so it is never translated. */
+  body: string | null;
+  /** A display label — a restaurant's name, a customer's name, "Trust & Safety". */
+  by: string;
+  byRole: ReviewReporterRole;
+  at: ISODate;
+}
+
+/**
+ * Where a reported review stands.
+ *
+ * `hidden` and `removed` are both invisible to readers and are **not** the same
+ * decision: hiding is reversible and is what a borderline review gets while it
+ * is argued about; removal is the end of the argument. `lib/review-moderation`
+ * refuses to restore a removed review for that reason, and the surface confirms
+ * before removing.
+ */
+export type ReviewModerationStatus = "pending" | "approved" | "hidden" | "removed";
+
+/** What happened to a review. `report` is included so the log reads in order. */
+export type ReviewModerationAction =
+  | "report"
+  | "approve"
+  | "hide"
+  | "remove"
+  | "restore"
+  | "note";
+
+/**
+ * One thing that happened to a review. Append-only, oldest first — the same
+ * contract as an order's event log (Phase 1) and a customer's (Phase 11), and
+ * for the same reason: a status can say a review is hidden but never who hid it,
+ * when, or on what grounds, which is precisely what is asked for when the author
+ * or the restaurant disputes it.
+ */
+export interface ReviewModerationEvent {
+  id: string;
+  action: ReviewModerationAction;
+  /** The grounds cited (`hide`/`remove`) or claimed (`report`); null otherwise. */
+  reason: ReviewReportReason | null;
+  /** What the moderator or reporter wrote. Never translated. */
+  body: string | null;
+  by: string;
+  at: ISODate;
+}
+
+/**
+ * The moderation record for one review — created by the first report, never
+ * before.
+ *
+ * It is deliberately a **row beside the review, not a field on it**. The corpus a
+ * vendor page renders is synthesised from the catalogue (`lib/mock/reviews`) and
+ * a customer's own reviews live in their browser; neither can carry a platform
+ * decision. Keying the decision on `reviewId` means the desk can act on a review
+ * it does not own, which is the whole job, and means a review with no record has
+ * simply never been reported — no backfill, no default column, nothing to
+ * migrate.
+ */
+export interface ReviewModerationRecord {
+  reviewId: string;
+  /** Denormalised from the review so the queue can resolve without a scan. */
+  subject: ReviewSubject;
+  subjectId: string;
+  vendorId: string;
+  status: ReviewModerationStatus;
+  reports: ReviewReport[];
+  /** Grounds behind the standing decision; null while pending or approved. */
+  reason: ReviewReportReason | null;
+  decidedBy: string | null;
+  decidedAt: ISODate | null;
+  moderation: ReviewModerationEvent[];
+  createdAt: ISODate;
+  updatedAt: ISODate;
+}
+
+/** The restaurant a reported review is about, resolved for the queue. */
+export interface ReviewQueueVendor {
+  id: string;
+  slug: string;
+  name: string;
+  rating: number;
+  reviewCount: number;
+}
+
+/** The order behind a reported review, when the shared order store still has it. */
+export interface ReviewQueueOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  placedAt: ISODate;
+  total: number;
+  currency: string;
+}
+
+/**
+ * Who wrote the reported review, and what else is known about them.
+ *
+ * `customerId` is present only when the order behind the review is one this
+ * prototype still holds — the join is the normalised phone, exactly as Phase 11
+ * defined it — so the queue can link to `/admin/customers/…` when it honestly
+ * can and say nothing when it cannot.
+ */
+export interface ReviewQueueAuthor {
+  id: string;
+  name: string;
+  avatar: string | null;
+  /** Backed by an order the platform can see. */
+  verified: boolean;
+  /** Reviews this author has left for this restaurant. */
+  reviewsHere: number;
+  /** Their reviews that have ever been reported. */
+  reported: number;
+  /** Their reviews that were hidden or removed. */
+  actioned: number;
+  customerId: string | null;
+  phone: string | null;
+}
+
+/** One row of the moderation queue: the review, the decision, and the context. */
+export interface ReviewQueueRow {
+  review: Review;
+  record: ReviewModerationRecord;
+  vendor: ReviewQueueVendor | null;
+  order: ReviewQueueOrder | null;
+  author: ReviewQueueAuthor;
+}
+
+/** How the queue is narrowed. `all` is every review with a record. */
+export type ReviewQueueSegment = "pending" | "approved" | "hidden" | "removed" | "all";
+
+/** How the queue is ordered. */
+export type ReviewQueueSort = "reports" | "recent" | "lowest";

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { AiReviewSummary as Summary } from "@/types";
 import { getReviewSummary } from "@/services/ai";
 import { useReviewContext, useReviews } from "@/stores/reviews";
+import { useReviewModeration } from "@/stores/review-moderation";
 import { ReviewSummaryBody } from "./assistant-blocks";
 import { AskAssistantButton } from "./assistant-mount";
 
@@ -34,6 +35,8 @@ export function AiReviewSummary({
 
   useEffect(() => {
     useReviews.persist.rehydrate();
+    // Phase 13: so a review the platform took down is not counted here.
+    void useReviewModeration.persist.rehydrate();
   }, []);
 
   useEffect(() => {

@@ -23,8 +23,9 @@ import { roundMoney } from "./checkout";
  * seam will accept.
  *
  * Status is **derived, never stored** (the C15 / C16 convention): a coupon reads
- * expired because the window closed, and spent because the redemptions reached
- * the limit. Nothing sweeps a table to make that true.
+ * expired because the window closed, spent because the redemptions reached the
+ * limit, and paused because the platform desk set `pausedAt` (Phase 12).
+ * Nothing sweeps a table to make any of that true.
  */
 
 /** Canonical form of a code: trimmed, upper-cased, inner whitespace removed. */
@@ -51,11 +52,20 @@ export function isExpiringSoon(coupon: Coupon, nowMs: number, days = 3): boolean
 
 /**
  * Where a coupon stands right now. `claim` is optional: without one (the
- * merchant's view of a coupon they issued) only the window matters, since usage
- * is counted per customer.
+ * merchant's view of a coupon they issued, or the platform desk's view of a
+ * campaign) only the window matters, since usage is counted per customer.
  *
- * Spent-out is checked before the window, because "you have used this" explains
- * a greyed-out ticket better than "it also expired last night".
+ * The order of the tests is the order a person would explain them in, and it is
+ * not arbitrary:
+ *
+ *  - **Spent-out first**, because "you have used this" explains a greyed-out
+ *    ticket better than "it also expired last night".
+ *  - **Then the closed window**, because an expired campaign is over whatever
+ *    the desk did to it afterwards — a paused-then-expired code is expired, and
+ *    resuming it would hand back nothing.
+ *  - **Then the desk's pause** (Phase 12), which outranks `scheduled`: a
+ *    campaign deactivated before it opened is not going to open on Monday, and
+ *    saying "not started" would promise exactly that.
  */
 export function couponStatus(
   coupon: Coupon,
@@ -63,9 +73,33 @@ export function couponStatus(
   nowMs: number,
 ): CouponStatus {
   if (claim && remainingUses(coupon, claim) === 0) return "used";
-  if (nowMs < Date.parse(coupon.startsAt)) return "scheduled";
   if (nowMs >= Date.parse(coupon.endsAt)) return "expired";
+  if (coupon.pausedAt !== null) return "paused";
+  if (nowMs < Date.parse(coupon.startsAt)) return "scheduled";
   return "active";
+}
+
+/**
+ * A code the platform itself hands out — the population of the admin campaign
+ * board (Phase 12, G28).
+ *
+ * The test is on `source`, not on `scope`: a platform campaign can be limited to
+ * one restaurant (a funded launch promotion) and still be the platform's to
+ * start, pause and pay for, while a `source: "vendor"` code belongs to the
+ * merchant's own coupon book however widely it applies. That is the separation
+ * the spec asks for, expressed once, here.
+ *
+ * Granted tickets (`claimable: false` — the welcome gift, an apology credit) are
+ * issued to one account rather than advertised, so they are not campaigns and
+ * are not managed from the board.
+ */
+export function isPlatformCampaign(coupon: Coupon): boolean {
+  return coupon.claimable && coupon.source !== "vendor";
+}
+
+/** A ticket issued to an account rather than advertised (welcome, apology, …). */
+export function isGrantedCoupon(coupon: Coupon): boolean {
+  return !coupon.claimable;
 }
 
 /**
@@ -179,6 +213,11 @@ export function evaluateCoupon(
   if (status === "used") return refuse("used");
   if (status === "scheduled") return refuse("notStarted");
   if (status === "expired") return refuse("expired");
+  // Phase 12: a campaign the platform desk deactivated is refused here, which is
+  // what makes "deactivate" mean something at checkout rather than only in an
+  // admin table. It is a separate refusal from `expired` because it is
+  // reversible and the customer is owed the difference.
+  if (status === "paused") return refuse("paused");
 
   if (coupon.currency !== ctx.currency) return refuse("currency");
 
@@ -236,8 +275,23 @@ export function evaluateWallet(
     });
 }
 
+/**
+ * Wallet ordering rank: what can be spent now, then what might be spendable
+ * later (it starts on Monday, or the desk turned it back on), then what is gone.
+ */
 function statusRank(status: CouponStatus): number {
-  return status === "active" ? 0 : status === "scheduled" ? 1 : status === "used" ? 2 : 3;
+  switch (status) {
+    case "active":
+      return 0;
+    case "scheduled":
+      return 1;
+    case "paused":
+      return 2;
+    case "used":
+      return 3;
+    case "expired":
+      return 4;
+  }
 }
 
 /** The coupon worth the most on this basket, or null when none applies. */

@@ -69,6 +69,20 @@ export interface Coupon extends BaseEntity {
   categorySlugs: string[];
   startsAt: ISODate;
   endsAt: ISODate;
+  /**
+   * When the platform desk deactivated the campaign, or null while it is on
+   * (Phase 12).
+   *
+   * A separate column from the window on purpose. `endsAt` is what the campaign
+   * was *promised* to run until; a deactivation is a decision somebody took on a
+   * date. Collapsing the two would lose which of them stopped the code, and
+   * would make resuming a campaign indistinguishable from extending it.
+   *
+   * It is enforced in `lib/coupons.evaluateCoupon` rather than by hiding the
+   * ticket: a customer holding a deactivated code is told it is paused, not left
+   * to find it silently ignored at checkout.
+   */
+  pausedAt: ISODate | null;
   /** How many times **one** customer may redeem it. */
   usageLimit: number;
   /** Restricted to a customer who has never ordered before. */
@@ -113,8 +127,15 @@ export interface CouponClaim {
   redemptions: CouponRedemption[];
 }
 
-/** Derived from the window, the usage limit and the redemptions — never stored. */
-export type CouponStatus = "active" | "scheduled" | "used" | "expired";
+/**
+ * Derived from the window, the usage limit, the redemptions and the desk's
+ * `pausedAt` — never stored.
+ *
+ * `paused` is the one member that is not a fact about time: it is a decision,
+ * and it is reversible, which is exactly why it cannot be expressed by moving
+ * `endsAt` (Phase 12).
+ */
+export type CouponStatus = "active" | "scheduled" | "paused" | "used" | "expired";
 
 /** A vendor a coupon is limited to, resolved for display (FK → name + link). */
 export interface CouponVendorRef {
@@ -195,3 +216,38 @@ export interface VendorCouponRow {
   /** Basket value those redemptions brought in. */
   revenue: number;
 }
+
+/**
+ * A platform campaign as the admin desk reads it (Phase 12, G28).
+ *
+ * The same `Coupon` a customer holds, plus the two things the desk decides on:
+ * where it stands right now, and what it has actually cost and brought in.
+ * Nothing here is stored — `services/coupons.getPlatformCampaigns` derives every
+ * field on read, so a campaign's performance can never disagree with the
+ * redemptions behind it.
+ *
+ * Restaurant codes are deliberately *not* in this shape's population: a vendor's
+ * coupon book is the merchant's surface (`VendorCouponRow`), and the spec keeps
+ * the two separate because a platform campaign is funded by the platform and a
+ * counter-card code is not.
+ */
+export interface CampaignRow {
+  coupon: Coupon;
+  status: CouponStatus;
+  /** Whole days before the window shuts; 0 once it has. */
+  daysLeft: number;
+  /** Vendors the campaign is limited to, resolved for display (empty = anywhere). */
+  vendors: CouponVendorRef[];
+  /** Redemptions across all customers. */
+  redemptions: number;
+  /** Money discounted across those redemptions. */
+  discountGiven: number;
+  /** Basket value those redemptions brought in. */
+  revenue: number;
+}
+
+/** How the campaign board is narrowed. Counts are shown against each. */
+export type CampaignSegment = "all" | "live" | "scheduled" | "paused" | "ended";
+
+/** How the campaign board is ordered. */
+export type CampaignSort = "newest" | "endingSoon" | "redemptions" | "spend";

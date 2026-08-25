@@ -3,7 +3,7 @@ import { SEED_NOW } from "./cuisines";
 import { buildOffers } from "./offers";
 import { hashSeed, mulberry32 } from "./rng";
 
-const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };
+const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null, pausedAt: null };
 
 const DAY = 86_400_000;
 
@@ -75,6 +75,10 @@ function couponFromOffer(offer: Offer): Coupon {
     firstOrderOnly: offer.firstOrderOnly,
     source: "campaign",
     claimable: true,
+    // A campaign is live or it is not; a *pause* is a decision the platform desk
+    // takes afterwards and it lives in `stores/campaigns` (Phase 12), never in
+    // the catalogue the coupon was minted from.
+    pausedAt: null,
     terms: offer.terms,
     offerId: offer.id,
     createdAt: offer.createdAt,
@@ -217,6 +221,120 @@ const GRANTED_SEEDS: CouponSeed[] = [
 ];
 
 /**
+ * Platform campaigns that are **not** advertised on `/offers` (Phase 12, G28).
+ *
+ * The offer catalogue mints the codes the deals page shows; these are the ones
+ * the platform hands out another way — a launch code printed on a flyer in a new
+ * city, a seasonal free-delivery window announced by SMS, a category push that
+ * has already finished. They exist for the same reason the vendor seeds do: the
+ * admin campaign board has to open on real rows in every state it can render,
+ * and a board whose "scheduled" and "ended" tabs are empty on a first visit
+ * teaches a reviewer nothing.
+ *
+ * `source: "campaign"` and `claimable: true` put them on the platform board and
+ * in the customer's claimable rail — they are the platform's to fund, start and
+ * stop, which is exactly what `lib/coupons.isPlatformCampaign` tests for.
+ */
+const PLATFORM_SEEDS: CouponSeed[] = [
+  {
+    id: "cpn_plat_new_city",
+    code: "CTG25",
+    title: "Chattogram launch week",
+    description: "We've just opened in Chattogram — 25% off your first order there.",
+    kind: "percentage",
+    value: 25,
+    maxDiscount: 300,
+    minOrder: 300,
+    currency: "BDT",
+    scope: "platform",
+    vendorIds: [],
+    categorySlugs: [],
+    startsInDays: -5,
+    endsInDays: 9,
+    usageLimit: 1,
+    firstOrderOnly: true,
+    source: "campaign",
+    claimable: true,
+    terms: ["First order only.", "Maximum ৳300 off."],
+    offerId: null,
+    ...base,
+  },
+  {
+    id: "cpn_plat_iftar_delivery",
+    code: "IFTAR0",
+    title: "Iftar delivery on us",
+    description: "No delivery fee on iftar orders over ৳500, every evening of the campaign.",
+    kind: "free-delivery",
+    value: 0,
+    maxDiscount: null,
+    minOrder: 500,
+    currency: "BDT",
+    scope: "platform",
+    vendorIds: [],
+    categorySlugs: [],
+    // Scheduled: the board needs a campaign that has been approved and has not
+    // opened yet, because that is the one a desk most often has to pull.
+    startsInDays: 4,
+    endsInDays: 18,
+    usageLimit: 5,
+    firstOrderOnly: false,
+    source: "campaign",
+    claimable: true,
+    terms: ["Delivery orders over ৳500.", "Five uses per customer."],
+    offerId: null,
+    ...base,
+  },
+  {
+    id: "cpn_plat_weekend_treat",
+    code: "WEEKEND10",
+    title: "Weekend cashback",
+    description: "10% of every weekend order back into your wallet, up to ৳200.",
+    kind: "cashback",
+    value: 10,
+    maxDiscount: 200,
+    minOrder: 600,
+    currency: "BDT",
+    scope: "platform",
+    vendorIds: [],
+    categorySlugs: [],
+    startsInDays: -9,
+    endsInDays: 21,
+    usageLimit: 4,
+    firstOrderOnly: false,
+    source: "campaign",
+    claimable: true,
+    terms: ["Cashback lands in your wallet when the order is delivered."],
+    offerId: null,
+    ...base,
+  },
+  {
+    id: "cpn_plat_biryani_hundred",
+    code: "BIRYANI100",
+    title: "৳100 off biryani",
+    description: "A hundred taka off any biryani order over ৳800.",
+    kind: "fixed",
+    value: 100,
+    maxDiscount: null,
+    minOrder: 800,
+    currency: "BDT",
+    scope: "category",
+    vendorIds: [],
+    categorySlugs: ["biryani"],
+    // Finished a week ago: the board's "ended" tab, and the proof that a closed
+    // campaign keeps its performance rather than disappearing.
+    startsInDays: -40,
+    endsInDays: -6,
+    usageLimit: 2,
+    firstOrderOnly: false,
+    source: "campaign",
+    claimable: true,
+    terms: ["Biryani orders over ৳800."],
+    offerId: null,
+    ...base,
+  },
+];
+
+/**
  * Coupons a vendor issued from their own dashboard. These belong to the
  * merchant surface (`/dashboard/coupons`) rather than the deals page: a
  * restaurant hands the code out on a flyer or a receipt, so it is claimable but
@@ -312,8 +430,10 @@ export function buildCoupons(now: number): Coupon[] {
   const fromOffers = buildOffers(now)
     .filter((offer) => offer.code !== null && !offer.deletedAt)
     .map(couponFromOffer);
-  const granted = [...GRANTED_SEEDS, ...VENDOR_SEEDS].map((seed) => stamp(seed, now));
-  return [...fromOffers, ...granted];
+  const seeded = [...GRANTED_SEEDS, ...PLATFORM_SEEDS, ...VENDOR_SEEDS].map((seed) =>
+    stamp(seed, now),
+  );
+  return [...fromOffers, ...seeded];
 }
 
 /**
@@ -370,6 +490,22 @@ export function buildCouponClaims(now: number): CouponClaim[] {
       ],
     },
   ];
+}
+
+/**
+ * What the platform desk has already decided about the campaign catalogue
+ * (Phase 12) — one deactivated campaign, so `/admin/coupons` opens with a
+ * *reversible* decision on screen rather than only a create button.
+ *
+ * It is a **desk decision, not catalogue data**, which is why it is a separate
+ * builder that `stores/campaigns` seeds itself from: the same shape any pause
+ * made on this device takes, so the seeded row and a row a reviewer pauses
+ * themselves are indistinguishable to every reader.
+ */
+export function buildCampaignDeskSeed(now: number): { paused: Record<string, string> } {
+  return {
+    paused: { cpn_plat_weekend_treat: new Date(now - 2 * DAY).toISOString() },
+  };
 }
 
 /** How a coupon has performed across all customers (merchant dashboard). */

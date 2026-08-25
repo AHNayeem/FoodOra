@@ -18,6 +18,8 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 9 — Restaurant Menu Builder Done
 - Phase 10 — Restaurant Settings + Staff + Handover + Analytics Done
 - Phase 11 — Admin Customer Management Done
+- Phase 12 — Admin Coupons / Campaigns Done
+- Phase 13 — Review Moderation Done
 
 ---
 
@@ -169,7 +171,90 @@ payout numbers to keep in step with the fare rules.
 
 ## Current Phase
 
-None in progress. Phases 1–11 complete.
+None in progress. Phases 1–13 complete.
+
+### Phase 13 — Review Moderation (2026-08-25)
+
+**Done.** G29 closed: `/admin/reviews` and `/admin/reviews/[id]`, with the reported
+queue, the review itself, customer/vendor/order context, approve-or-leave,
+hide/remove, the moderation reason and the moderation history the spec lists.
+
+**The gap was not "reviews cannot be reported" — it was that a report went
+nowhere.** `services/reviews.reportReview` said so in its own comment ("the report
+goes nowhere in a prototype"): the flag on every review card thanked the reader and
+dropped the objection on the floor. A restaurant being libelled had no recourse and
+no moderator had a queue. Three decisions carry the phase:
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| Where a decision lives | **A row beside the review, keyed on `reviewId`** — never a field on it. The corpus is synthesised (`lib/mock/reviews`) and a customer's own reviews live in their browser; neither can carry a platform decision. A review with no record has simply never been reported, so there is nothing to backfill and the store stays the size of the work the desk has done rather than growing a row per review. | `types/review.ts` (`ReviewModerationRecord`), `stores/review-moderation.ts` header |
+| How a hidden review disappears **everywhere** | `ReviewContext` gained one field and `useReviewContext` joins it once. Every corpus the seam assembles — storefront, merchant board, rider profile, AI summary — filters on it, so no surface can forget. | `services/reviews.ts` (`ReviewContext.moderation`, `visible`), `stores/reviews.useReviewContext` |
+| Hide vs remove | **Two decisions, not one with a severity flag.** Hiding is reversible and is what a borderline review gets while it is argued about; removal is the end of the argument, and `restoreReview` refuses it (`errors.removedIsFinal`) — which is what makes the confirmation on removal mean something. | `types/review.ts` (`ReviewModerationStatus`), `lib/review-moderation.ts` header |
+
+**The queue is fed by real objections, from both sides.** The customer's flag now
+opens a reason dialog (`components/reviews/report-review-dialog.tsx`) drawn from the
+*same* closed vocabulary the desk cites when it acts — which is what makes "how
+often is a report of this kind upheld" answerable — and the **merchant's** review
+board gained a report control, because a restaurant is the party most likely to be
+libelled and had no way to say so. One dialog, two `byRole` values.
+
+**Grounds and prose are both required to take a review down**, exactly as blocking
+an account is (Phase 11): the category is what gets counted, the sentence is what
+the author and the restaurant are owed if either disputes it. Approving and
+restoring ask for neither — a review that broke no rule needs no argument, and
+demanding one teaches moderators to type a full stop.
+
+**The author keeps their own words.** `getMyReviews` is the one read that does *not*
+drop a moderated review: it returns the status beside the list and
+`/account/reviews` says "hidden by moderation", because a review invisible
+everywhere and explained nowhere is worse than either outcome.
+
+**The seed runs the real domain.** `lib/mock/review-reports.ts` picks reviews by
+*rule* ("their worst review", "a five-star with a photo") rather than by index, then
+builds each record by calling `reportReviewRecord` and the decision function — so a
+seeded record cannot be in a state the domain would refuse, and its log is
+indistinguishable from one produced on this device.
+
+### Phase 12 — Admin Coupons / Campaigns (2026-08-25)
+
+**Done.** G28 closed: `/admin/coupons` creates a platform campaign and sets its
+eligibility, validity, usage limit, discount and minimum order; deactivates and
+reactivates it; ends it; and shows each one's redemptions, discount given and basket
+value. **The coupon engine was reused, not rewritten** — `lib/coupons.evaluateCoupon`
+is still the only evaluator, and the three open questions the previous session
+recorded were settled before any code was written:
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| What separates a platform campaign from a restaurant coupon *in the type* | **One `Coupon`, one engine, separated by `source`.** `lib/coupons.isPlatformCampaign` is the single test, and it reads `source`, not `scope`: a platform campaign can be limited to one restaurant (a funded launch promotion) and still be the platform's to start, pause and pay for, while a `source: "vendor"` code belongs to the merchant's book however widely it applies. Two types would have meant checkout validating against two engines. | `lib/coupons.isPlatformCampaign`, `campaigns-view.tsx` header, and `campaigns.separationNote` on screen |
+| Whether deactivating a live campaign invalidates carts that already hold it | **Yes — at apply *and* at redeem.** `pausedAt` is a real column on `Coupon` and `evaluateCoupon` refuses it with `reason.paused`; checkout re-prices the wallet on every basket change, drops the applied coupon and shows the reason. A held ticket reads *paused* in the wallet rather than vanishing, because a deactivation is reversible. | `types/coupon.ts` (`pausedAt`), `lib/coupons.couponStatus` / `evaluateCoupon`, `coupons-view.tsx` (paused sits with what you hold) |
+| Who bears the discount | **Not changed, and not silently:** Phase 2 already decided it in `lib/settlement.commissionFor` — a discount reduces the commissionable base, "both sides give something up". A platform-funded line that leaves the vendor whole is a change to `OrderFinancials`, the GraphQL wire format and every settled period, and it belongs to a financial phase rather than to the campaign editor. Recorded under *Deliberately deferred* rather than half-built. | `lib/settlement.ts:100-110` (unchanged), and the deferral below |
+
+**`pausedAt` is the one field the shared engine gained**, and it is a column rather
+than a moved date on purpose: `endsAt` is what a campaign was *promised* to run
+until, and collapsing the two would lose which of them stopped the code and make
+resuming indistinguishable from extending. `CouponStatus` gained `paused` and its
+tests are ordered the way a person would explain them — spent-out, then the closed
+window (an expired campaign is over whatever the desk did to it), then the desk's
+pause, which outranks `scheduled` because a campaign deactivated before it opens is
+not going to open on Monday.
+
+**Deactivating and ending are different controls because they are different
+decisions.** A pause is one tap either way; ending closes the window for good and
+asks first. Ending reuses the merchant board's existing `applyEnded`, so a finished
+campaign stays readable and its performance keeps counting — the same UPDATE a
+backend would run.
+
+**An admin-created campaign is a real campaign.** `PlatformCampaignContext` is
+threaded into the *customer* reads as well as the board (the C16/C18/C21 context
+pattern), so a code created here is claimable in the wallet, applies at checkout and
+is refused there once deactivated. An admin surface whose writes no customer surface
+can see would have been exactly the disconnected copy §5.2 forbids.
+
+**Performance is derived, never stored.** `buildCouponPerformance` counts a
+campaign's live days deterministically from its id, so the board's redemptions,
+discount and basket value cannot drift from each other and a reload never reshuffles
+them (§5.4).
 
 ### Phase 11 — Admin Customer Management (2026-08-25)
 
@@ -299,11 +384,17 @@ plausible-looking implementation would miss:
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
 
-Re-run on 2026-08-25 after Phase 11, all three still **PASS**. The build's route
-table lists `/dashboard/earnings`, `/dashboard/menu`, `/admin/payouts`,
-`/admin/payouts/[id]`, `/dashboard/analytics`, `/dashboard/settings` and now
-`/admin/customers` and `/admin/customers/[id]`, which is the compiled evidence
-that Phases 8–11 are wired and not merely present as files.
+Re-run on 2026-08-25 after Phases 12–13, all three still **PASS** (lint reports no
+findings; three unused-import warnings raised by the new components were fixed
+rather than left). The build's route table lists `/dashboard/earnings`,
+`/dashboard/menu`, `/admin/payouts`, `/admin/payouts/[id]`, `/dashboard/analytics`,
+`/dashboard/settings`, `/admin/customers`, `/admin/customers/[id]` and now
+`/admin/coupons`, `/admin/reviews` and `/admin/reviews/[id]`, which is the compiled
+evidence that Phases 8–13 are wired and not merely present as files. A dev-server
+smoke test returned **200** for all eleven touched routes (`/admin`,
+`/admin/coupons`, `/admin/reviews`, `/admin/reviews/[id]`, `/admin/customers`,
+`/dashboard/reviews`, `/dashboard/coupons`, `/account/coupons`, `/account/reviews`,
+`/offers`, `/restaurants/bella-napoli`) with no runtime error in the log.
 
 One transient build failure is worth naming so it is not mistaken for a
 regression: `bun run build` occasionally aborts with `Failed to fetch
@@ -327,6 +418,25 @@ handover checks and their hints, the five range presets, the five settings tabs,
 the five staff roles and their hints, the three staff statuses, all eleven
 permissions, the four permission origins, and every `SettingsError` / `StaffError`
 / `OnboardingError` member the surfaces can render).
+
+Phases 12–13 added two namespaces — `campaigns` (96 keys) and `moderation` (118) —
+plus 17 keys under `reviews` (the report dialog and its seven grounds, the two
+`moderated.*` lines and `errors.alreadyModerated`), `coupons.status.paused`,
+`coupons.reason.paused`, `coupons.errors.pausedCode`, and `admin.navCampaigns` /
+`admin.navReviews`. All three locales are **key-for-key identical** (4405 keys each,
+up from 4169, zero symmetric difference), and every dynamic key union was enumerated
+member by member — the four campaign kinds, five segments, four sorts and seventeen
+`CampaignError` members; the five queue segments, three queue sorts, four moderation
+statuses, six log actions, three reporter roles, five toasts and nine
+`ModerationError` members; the seven report grounds; and all five `CouponStatus`
+members now that `paused` exists. **250 keys × 3 locales checked, none missing.**
+
+The catalogues were parsed the harder way as well, because key symmetry does not
+catch a malformed plural: every message in `campaigns`, `moderation`, `reviews`,
+`coupons` and `admin` was parsed and formatted with `intl-messageformat` —
+next-intl's own ICU engine — at counts 0, 1, 2, 3 and 11, so the `=0` / `one` /
+`other` branches of the Bengali and Arabic plurals were each rendered rather than
+merely present. **11,190 formats parsed and rendered, none failed.**
 
 Phase 11 added one namespace — `customers` (126 keys) — plus `admin.navCustomers`
 and `checkout.errors.accountBlocked`. All three locales are **key-for-key
@@ -363,12 +473,30 @@ Verified by driving the real modules and the real persisted store (throwaway
 harnesses, not committed — 156 domain checks and 58 store checks for Phases 6–7,
 57 domain/seam checks and 37 store checks for Phase 3, **269 checks for Phase 10**
 across four harnesses (57 on the handover, 126 on settings and staff, 80 on
-analytics and the CSV export, 6 on order-book uniqueness), and **141 checks for
-Phase 11** across two harnesses: 115 on the customer domain and 26 on the store
-and the checkout gate), plus a dev-server smoke test of every touched route:
+analytics and the CSV export, 6 on order-book uniqueness), **141 checks for
+Phase 11** across two harnesses (115 on the customer domain, 26 on the store and the
+checkout gate), and **230 checks for Phases 12–13** across three harnesses: 94 on the
+campaign engine, its seam and the customer surfaces, 99 on the moderation domain, its
+seed and the queue, and 37 on the two new stores), plus a dev-server smoke test of
+every touched route:
 
 | Flow | Result |
 |---|---|
+| **Phase 12 — status** a live campaign reads active; `pausedAt` makes it paused; an expired-and-paused campaign reads *expired* (the window wins); a campaign deactivated before it opens reads *paused* rather than "not started"; a spent-out ticket reads used whatever the desk did | PASS |
+| **Phase 12 — the pause bites** `evaluateCoupon` refuses a paused campaign with `reason.paused` and prices it at zero; claiming it is refused with `errors.pausedCode`; applying it at checkout is refused; an ended one is refused as `reason.expired`. This is the seam `checkout-view.tsx` calls at apply *and* at redeem, so a deactivation stops a discount rather than colouring a row | PASS |
+| **Phase 12 — separation** no vendor-sourced code and no granted ticket is ever a platform campaign; every offer-minted code is one; the board's rows are all platform campaigns, and vendor codes and grants are counted but not listed; the merchant board is unchanged and no platform-only campaign leaks into it | PASS |
+| **Phase 12 — the seed** every coupon carries `pausedAt: null`, codes are unique across the whole catalogue, the four platform seeds exist, and the desk seed deactivates exactly one *live* platform campaign and is deterministic | PASS |
+| **Phase 12 — the board** segment counts sum to the total and do not collapse when a segment is picked; every status has a row on a first visit; search matches code/title/description and narrows the counts too; the redemptions sort is descending; ending-soon ranks live campaigns by end date and puts them first; performance is byte-identical across two reads | PASS |
+| **Phase 12 — creation** sixteen refusals fire exactly once each (bad code; a code taken by an offer *or* by a restaurant; empty title; 0% and 101%; cashback over 100; zero fixed amount; a zero cap; negative minimum; zero usage limit; 0- and 400-day durations; a start in the past and 91 days out; unknown category). A valid one normalises its code, derives `category` scope from the eligibility set, de-duplicates slugs, zeroes a free-delivery value, and lands the window on the offsets asked for | PASS |
+| **Phase 12 — deactivate / reactivate / end** pausing a live campaign works and is refused twice; resuming clears the stamp and is refused when it is already running; both are refused on a restaurant code (`errors.notPlatform`), a grant, an unknown id and an ended campaign; ending closes the window (the row reads expired and keeps its performance) and is refused twice | PASS |
+| **Phase 12 — end to end** a campaign created on `/admin/coupons` appears in the customer's claimable rail, is claimable and applies at checkout — and after one tap of *Deactivate* it leaves the rail, refuses the claim, reads *paused* on the ticket already in the wallet, and is refused at the till | PASS |
+| **Phase 13 — reporting** the first report mints a pending record and logs itself with grounds and prose; the same reporter is refused a second time and the record stays byte-identical; a second reporter is appended; a report on a hidden or removed review is refused; a report on an *approved* review re-opens it and clears the old decision | PASS |
+| **Phase 13 — decisions** hiding refuses missing grounds and a note under eight characters, then stamps status, grounds, who and when and appends one event; hiding twice is refused; restoring a hidden review returns it to *approved* and clears the grounds; restoring, approving or hiding a **removed** review is refused (`errors.removedIsFinal`); a note changes nothing but the log; the log is append-only, time-ordered, and its event ids are unique | PASS |
+| **Phase 13 — the seed** is deterministic, covers all four statuses across six restaurants, resolves every record to a real review in the corpus it names, never puts two records on one review, carries grounds *and* prose of at least eight characters on every taken-down record, leaves no stale reason on a pending or approved one, includes a review with two reports, and still resolves when built for yesterday | PASS |
+| **Phase 13 — the queue** resolves every record with its review, restaurant, order and author, and counts (rather than renders) a record whose review no longer exists; totals agree with the rows; segment counts sum to the total and do not collapse when a segment is picked; the default is what is waiting; the critical filter keeps only 2★ and below; the reports sort is descending and the lowest sort ascending, both stable across calls and independent of input order; multi-word search is an intersection over the comment, author, reference, restaurant and the report prose | PASS |
+| **Phase 13 — the decision bites** a hidden review and a removed one both leave the restaurant's page *and* its filtered total, and are present again when the same corpus is read without the decisions; a merely reported review stays up. This is the seam the storefront, the merchant board, the rider profile and the AI summary all read, so one decision removes it from four surfaces | PASS |
+| **Phase 13 — the author** keeps their own hidden review in `/account/reviews` and is told it is hidden, while the same review is off the restaurant's page | PASS |
+| **Phase 13 — the store** a report mints one row; the same reporter is refused twice; deciding on a review nobody reported is refused and mints nothing; hide → restore leaves `report,report,hide,restore` in the log; a reset rebuilds the seeded queue and drops this device's own decision | PASS |
 | `arrived → delivered → completed` as customer, through `stores/orders.advance` | PASS |
 | Completion offered to customer and admin; refused for restaurant and rider | PASS |
 | Second completion refused (`errors.illegalTransition`), order byte-identical after | PASS |
@@ -1049,60 +1177,194 @@ they have finished saying who they are.
   mutation calls; `buildDirectory` becomes the server's query. No action signature
   changes.
 
-No architectural violations were introduced in Phases 1–11.
+### Added in Phases 12–13
+
+```text
+types/coupon.ts            (Coupon.pausedAt · CouponStatus "paused" · CampaignRow ·
+                            CampaignSegment · CampaignSort)
+   ↓
+lib/coupons.ts             (pure, unchanged evaluator: couponStatus now derives "paused";
+                            evaluateCoupon refuses it; isPlatformCampaign / isGrantedCoupon)
+lib/mock/coupons.ts        (PLATFORM_SEEDS · buildCampaignDeskSeed(now) — the desk's decisions,
+                            never the catalogue's)
+   ↓
+services/coupons.ts        (PlatformCampaignContext · getPlatformCampaigns ·
+                            createPlatformCampaign · setCampaignPaused · endCampaign;
+                            the same context threaded into every customer read)
+   ↓
+stores/campaigns.ts        (created · paused · endedAt — decisions only, no performance;
+                            useCampaignDesk() is the one place they are assembled)
+   ↓                                    ↘
+components/admin/campaigns-view.tsx      account/coupons-view · offers/claim-coupon ·
+/admin/coupons                           checkout/checkout-view  (all read the desk)
+
+
+types/review.ts            (ReviewReport · ReviewModerationRecord/Event/Status ·
+                            ReviewReportReason · ReviewQueueRow + its context shapes)
+   ↓
+lib/review-moderation.ts   (pure: report/approve/hide/remove/restore/note guards ·
+                            isReviewVisible · filterQueue · countBySegment · sortQueue)
+lib/mock/review-reports.ts (buildReviewModeration(now) — reviews picked by rule, records
+                            built by running the domain)
+   ↓
+services/reviews.ts        (ReviewContext.moderation · every corpus filtered through it ·
+                            getModerationQueue · getModerationRow — the joins)
+   ↓
+stores/review-moderation.ts (one row per reported review; every write via the domain)
+   ↓  (joined once by stores/reviews.useReviewContext)
+components/admin/review-queue-view.tsx · review-moderation-detail.tsx
+components/reviews/report-review-dialog.tsx  (customer *and* merchant report from it)
+   ↓
+/admin/reviews   ·   /admin/reviews/[id]
+```
+
+**One engine, one evaluator, one new column.** Phase 12 added `pausedAt` to `Coupon`
+and `paused` to `CouponStatus` and changed nothing else about pricing. Every surface
+that reads a coupon — the wallet, the deals page, the checkout picker, the merchant
+book and the new campaign board — still asks `lib/coupons.evaluateCoupon`, so a
+campaign the desk deactivates is refused everywhere at once and the refusal carries
+its own reason (`reason.paused`) rather than being indistinguishable from an expiry.
+
+**The desk's decisions are context, not a second catalogue.** `PlatformCampaignContext`
+carries three fields (created, paused, ended-early) into the seam on every call — the
+C16 `BookContext` / C18 `RiderContext` / C21 `VendorCouponContext` pattern for a
+fourth time — and `stores/campaigns` holds *only* those decisions, keyed by coupon
+id. A seeded campaign is never copied into the store, so a pause survives a change to
+the campaign's terms and the terms still come from one place. Threading the same
+context through the **customer** reads is what makes an admin-created campaign a real
+campaign rather than a row in an admin table.
+
+**A moderation decision is a row beside the review.** Phase 13 put nothing on
+`Review` and touched no persisted review shape. `ReviewModerationRecord` is keyed on
+`reviewId`, which is what lets the platform act on a review the catalogue synthesised
+and a customer's browser holds — and what keeps the store the size of the work the
+desk has done rather than one row per review. `ReviewContext` gained one field, joined
+once in `useReviewContext`, and that single join is why hiding a review removes it
+from the storefront, the merchant board, the rider profile and the AI summary
+together, aggregate included.
+
+**Both moderation surfaces follow Phase 11's asymmetry.** Taking something down
+demands grounds *and* a note of at least eight characters (`MIN_MODERATION_NOTE`, the
+same constant `lib/customers` uses); putting it back asks only for confirmation. A
+reinstatement that is hard to perform is a reinstatement that quietly does not
+happen. Removal is the one irreversible action in either phase, and it is the one the
+domain refuses to undo rather than the one a dialog merely warns about.
+
+* **Nothing was rewritten.** No change to `Order`, `OrderFinancials`, the order
+  machine, `lib/settlement`, the GraphQL wire format, or any existing store's
+  persisted shape. `stores/campaigns` and `stores/review-moderation` are both new at
+  version 1, so there is no migration to get wrong. `services/reviews.reportReview`
+  changed from a stub that discarded the report to a guard beside the real write; its
+  one caller was updated in the same change.
+* **The demo reset was extended again.** `resetCampaigns` and `resetModeration` join
+  the other eight in `components/demo/demo-bar.tsx`, for the same reason the support
+  queue is rebuilt with the orders: a campaign created for the last demonstration
+  would still be claimable, and a decision left behind would hide a review the reset
+  has just put back.
+* **Phase E exit, stated in both store headers.** `stores/campaigns` becomes three
+  columns on a server-owned `coupons` table and its three actions become mutations;
+  `stores/review-moderation` becomes a `review_moderation` table with `review_id` as
+  its key, and `ReviewContext.moderation` becomes a join. No action signature changes.
+
+No architectural violations were introduced in Phases 1–13.
 
 ---
 
 ## Next Phase
 
-**PHASE 12 — Admin Coupons / Campaigns (G28).** Not started; needs an explicit
-instruction. Phases 1–11 are complete and verified, so this is the first open item
-in §6's order.
+**PHASE 14 — RBAC (G31).** Not started; needs an explicit instruction. Phases 1–13
+are complete and verified, so this is the first open item in §6's order.
 
 ### What the spec asks for
 
-Admin must be able to create a platform coupon, activate and deactivate it, and
-define eligibility, validity, usage limits, discount and minimum order — plus
-inspect usage and performance. Two binding constraints: **"Keep restaurant coupons
-separate from platform campaigns"** and **"Preserve the existing coupon engine."**
+Reusable authorisation — `hasPermission(user, permission)` and
+`can(user, resource, action)` — built on the existing `User.permissions`, with no
+component deciding a permission rule of its own, applied to routes, navigation,
+buttons, destructive actions and admin operations. The listed vocabulary runs from
+`orders.view` to `audit.view` and includes `coupons.manage` and `reviews.moderate`.
 
-### What Phases 1–11 leave ready for it
+### What Phases 1–13 leave ready for it
 
-1. **The coupon engine already exists and must not be rewritten.** `lib/coupons.ts`,
-   `types/coupon.ts`, `lib/mock/coupons.ts`, `services/coupons.ts` and
-   `stores/coupons.ts` are the engine checkout validates against, and
-   `components/dashboard/coupons/*` is the *restaurant's* editor. Phase 12's first
-   job is to read those five files and establish what a "platform campaign" is in
-   the type that already exists, rather than adding a parallel one.
-2. **The admin list/filter pattern is settled four times over.** `lib/order-search`,
-   `lib/onboarding-search`, `lib/payout-search` and now `lib/customer-search` are the
-   same shape: one pure query object, one predicate, counts that move with the search
-   but not with the selection being counted. A fifth writes itself.
-3. **The moderation-with-a-log pattern is settled twice.** Phases 6–7 put a status
-   graph plus an append-only event log on one record; Phase 11 did the same for
-   accounts. Activating and deactivating a campaign is the same shape, and a campaign
-   whose activation history is unreadable is the same defect a status-only customer
-   record would have been.
-4. **"Usage and performance" has a source.** Orders snapshot
-   `pricing.couponCode` and `pricing.discount`, so a campaign's redemptions and the
-   discount it cost are a projection of the shared order set — the same rule Phase 8
-   obeyed for money, Phase 10 for counts and Phase 11 for spend. Nothing needs to be
-   tallied into a counter as coupons are redeemed.
+1. **Two of the listed permissions now have surfaces to gate.** `coupons.manage` is
+   `/admin/coupons` (create, deactivate, end) and `reviews.moderate` is
+   `/admin/reviews` (approve, hide, remove). Both already funnel every write through
+   one function per action, so a check has exactly one place to go in each.
+2. **The permission table already exists and is already folded.** Phase 10 built
+   `types/staff.ts` + `lib/staff.staffCan` for the *restaurant* side and said on
+   screen that enforcement is not platform-wide (`staff.notEnforced`). Phase 14 is
+   where that sentence comes down, and the shape to generalise is written.
+3. **The admin gate is one component.** `components/admin/admin-shell.tsx` holds the
+   only role check on the platform side (`ADMIN_ROLES`) plus the nav array every new
+   phase has appended to — so route-and-navigation gating is a change to one file
+   rather than eleven.
+4. **Every destructive action already names itself.** Blocking a customer, ending a
+   campaign, removing a review and rejecting an application each go through a single
+   store action with a typed input, so "destructive actions require a permission" is
+   a guard at those call sites and not an audit of the components around them.
 
 ### Open questions to settle before starting
 
-* **What separates a platform campaign from a restaurant coupon in the type.** A
-  new `scope` member on the existing `Coupon`, or a distinct entity? The spec says
-  keep them separate; it does not say keep them in separate types, and two types
-  would mean checkout validating against two engines.
-* **Who bears the discount.** A restaurant's coupon reduces its own take; a platform
-  campaign is marketing spend. `OrderFinancials` currently has no line for it, and
-  Phase 2's rule — commission is computed on `subtotal − discount` — means the
-  answer changes what a vendor is paid. Settle this before the editor is built, or
-  the settlement will quietly be wrong.
-* **Whether deactivating a live campaign invalidates carts that already hold it.**
-  `stores/coupons` holds claimed codes and checkout re-validates at submit; say
-  which behaviour is intended rather than discovering it.
+* **Whether a refused action disappears or explains itself.** The prototype's
+  convention so far is that the *domain* refuses with an i18n key and the UI shows
+  it; hiding a control is the exception (the merchant coupon board hides "end now" on
+  an expired campaign). Say which applies to permissions before the first `can()`
+  call site, or the two will be mixed.
+* **Where the check lives for a store action.** `stores/customers.block`,
+  `stores/campaigns.setPaused` and `stores/review-moderation.hide` are called
+  directly by components and take a `by` label rather than a user. Passing the whole
+  user, or checking in the component, changes every call site — decide once.
+* **Whether `customer-support` may moderate reviews.** `ADMIN_ROLES` already admits
+  `moderator`, `customer-support`, `finance-manager` and `super-admin` to every admin
+  screen. Phase 14 is where that stops being true, and the mapping from role to
+  permission set is the thing to write down first.
+
+---
+
+## Deliberately deferred by Phases 12–13 (not omissions)
+
+* **Who bears a platform campaign's discount is unchanged.** `lib/settlement.commissionFor`
+  still charges commission on `subtotal − discount` for every coupon, whoever issued
+  it — Phase 2's stated reading of a funded promotion, "both sides give something up".
+  A platform-funded line that leaves the vendor whole means a new field on
+  `OrderFinancials`, a GraphQL wire-format change and a different answer for every
+  settled period; that belongs to a financial phase, not to the campaign editor.
+  Stated here rather than half-built.
+* **Per-customer credits are still not issued from the admin desk.** Phase 5 left
+  "wallet credit as an outcome is recorded, not paid" and named this phase as the
+  machinery for it. `Coupon` already models a granted ticket (`claimable: false`,
+  `source: "apology"`), and the board counts the grants that exist — but issuing one
+  means putting a ticket in *one* customer's wallet, and in this prototype a wallet
+  is a browser. A campaign is the honest platform-wide equivalent and is what was
+  built; a support-issued credit needs the account model a real backend provides.
+* **A campaign's terms cannot be edited after it is created.** Create, deactivate,
+  reactivate and end are the spec's list. Editing a live campaign's value or window
+  is a different question — it changes what a customer who already holds the code was
+  promised — and inventing an answer to that was not in scope.
+* **The campaign board does not manage restaurant codes.** By instruction: "keep
+  restaurant coupons separate from platform campaigns". They are counted in the
+  footer so the desk knows they exist, and `setCampaignPaused` / `endCampaign` refuse
+  them with `errors.notPlatform` rather than silently doing nothing.
+* **A reported review does not notify anybody.** The nav badge counts what is
+  waiting, and that is all. `lib/notifications` fans out to customers, restaurants
+  and riders; "the platform desk" is not an audience it has, and inventing one to
+  carry a report would be a second, unread inbox.
+* **A moderation decision does not notify the author or the restaurant either.** The
+  author is told on `/account/reviews` when they next look, which is honest; a mail
+  the prototype cannot send is not.
+* **The author of a removed review is not penalised.** The queue shows how many of
+  their reviews have been reported and how many were taken down — the fact a
+  moderator decides on — but nothing suspends an account for it. Blocking a customer
+  is Phase 11's action and remains a separate, deliberate decision with its own
+  grounds.
+* **Rider reviews can be moderated but are not surfaced by rider.** `subject` is
+  carried on every record and the queue resolves a rider review's corpus correctly;
+  what it cannot show is a *restaurant* context for one (`vendorId` is empty on the
+  synthesised rider corpus, and the screen says so). A rider-side moderation view was
+  not asked for.
+* **Reports are not deduplicated across devices.** The domain refuses a second report
+  from the same `by` label, which is the honest guard available without accounts; two
+  browsers claiming the same name would count twice. `stores/reviews.reported` still
+  holds the device-local list, so the button says "Reported" where it should.
 
 ---
 

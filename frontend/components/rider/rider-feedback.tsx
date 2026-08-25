@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ReviewPage } from "@/services/reviews";
 import { getRiderReviews } from "@/services/reviews";
 import { useReviewContext, useReviews } from "@/stores/reviews";
+import { useReviewModeration } from "@/stores/review-moderation";
 import { formatRating } from "@/lib/format";
 import { Stars } from "@/components/reviews/stars";
 import { ReviewCard } from "@/components/reviews/review-card";
@@ -25,6 +26,8 @@ export function RiderFeedback({ riderId }: { riderId: string }) {
 
   useEffect(() => {
     useReviews.persist.rehydrate();
+    // Phase 13: so a review the platform took down is not counted here.
+    void useReviewModeration.persist.rehydrate();
   }, []);
 
   useEffect(() => {

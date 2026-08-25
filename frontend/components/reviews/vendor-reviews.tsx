@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Camera, MessageSquare, PenLine, Star } from "lucide-react";
-import type { Order, Review, ReviewSort, StarValue } from "@/types";
+import type { Order, Review, ReviewReportReason, ReviewSort, StarValue } from "@/types";
 import type { ReviewPage } from "@/services/reviews";
 import {
   getPendingReviews,
@@ -14,10 +14,13 @@ import {
   reportReview,
 } from "@/services/reviews";
 import { useReviewContext, useReviews } from "@/stores/reviews";
+import { useReviewModeration } from "@/stores/review-moderation";
+import { useAuth } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { formatRating } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ReportReviewDialog } from "./report-review-dialog";
 import { RatingSummary } from "./rating-summary";
 import { ReviewCard } from "./review-card";
 import { WriteReviewDialog } from "./write-review-dialog";
@@ -46,6 +49,8 @@ export function VendorReviews({
   vendorName: string;
 }) {
   const t = useTranslations("reviews");
+  /** Moderation refusals come back as `moderation.errors.*` keys. */
+  const tm = useTranslations("moderation");
   const ctx = useReviewContext();
   const orders = useOrders((s) => s.orders);
   const ordersHydrated = useOrders((s) => s.hydrated);
@@ -54,6 +59,9 @@ export function VendorReviews({
   const reported = useReviews((s) => s.reported);
   const toggleHelpful = useReviews((s) => s.toggleHelpful);
   const markReported = useReviews((s) => s.markReported);
+  // Phase 13: a report is now a real moderation row rather than a thank-you.
+  const reportToModeration = useReviewModeration((s) => s.report);
+  const reader = useAuth((s) => s.user);
 
   const [page, setPage] = useState<ReviewPage | null>(null);
   const [pageNo, setPageNo] = useState(1);
@@ -62,10 +70,16 @@ export function VendorReviews({
   const [withMedia, setWithMedia] = useState(false);
   const [pending, setPending] = useState<Order | null>(null);
   const [writing, setWriting] = useState(false);
+  const [reporting, setReporting] = useState<Review | null>(null);
+  const [reportBusy, setReportBusy] = useState(false);
 
   useEffect(() => {
     useReviews.persist.rehydrate();
     useOrders.persist.rehydrate();
+    useAuth.persist.rehydrate();
+    // Phase 13: without this the first render would use an empty moderation map
+    // and briefly show a review the platform has taken down.
+    void useReviewModeration.persist.rehydrate();
   }, []);
 
   useEffect(() => {
@@ -112,13 +126,36 @@ export function VendorReviews({
     });
   }
 
-  function flag(review: Review) {
-    reportReview(review.id, reported).then((res) => {
+  /**
+   * Report a review, with grounds.
+   *
+   * Two guards, and they are different questions: the **seam** answers "may this
+   * device report this review at all" (already flagged here, already taken down),
+   * and the **domain** answers "is this a new objection" (the same reporter
+   * cannot object twice). Both refusals are shown as they come back rather than
+   * hidden behind a disabled button.
+   */
+  function submitReport(review: Review, reason: ReviewReportReason, note: string) {
+    setReportBusy(true);
+    reportReview(review.id, reported, ctx).then((res) => {
       if (res.error) {
+        setReportBusy(false);
         toast.error(t(res.error));
         return;
       }
+      const written = reportToModeration(review, {
+        reason,
+        note,
+        by: reader?.name ?? "A customer",
+        byRole: "customer",
+      });
+      setReportBusy(false);
+      if (written.error) {
+        toast.error(tm(written.error));
+        return;
+      }
       markReported(review.id);
+      setReporting(null);
       toast.success(t("reportThanks"));
     });
   }
@@ -247,7 +284,7 @@ export function VendorReviews({
                     nowMs={page.nowMs}
                     voted={helpful.includes(review.id)}
                     onHelpful={() => vote(review)}
-                    onReport={() => flag(review)}
+                    onReport={() => setReporting(review)}
                     reported={reported.includes(review.id)}
                   />
                 </li>
@@ -272,6 +309,13 @@ export function VendorReviews({
           onClose={() => setWriting(false)}
         />
       )}
+
+      <ReportReviewDialog
+        open={reporting !== null}
+        submitting={reportBusy}
+        onClose={() => setReporting(null)}
+        onConfirm={(reason, note) => reporting && submitReport(reporting, reason, note)}
+      />
     </section>
   );
 }

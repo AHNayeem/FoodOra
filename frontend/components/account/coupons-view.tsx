@@ -9,6 +9,7 @@ import type { Coupon, HeldCoupon } from "@/types";
 import type { ClaimableCoupon, CouponBook } from "@/services/coupons";
 import { claimById, claimCoupon, getClaimableCoupons, getCouponBook, getGrantedClaims } from "@/services/coupons";
 import { useCoupons } from "@/stores/coupons";
+import { useCampaigns, useCampaignDesk } from "@/stores/campaigns";
 import { CouponTicket } from "@/components/coupons/coupon-ticket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,11 @@ export function CouponsView() {
   const seeded = useCoupons((s) => s.seeded);
   const seed = useCoupons((s) => s.seed);
   const addClaim = useCoupons((s) => s.addClaim);
+  // Phase 12: campaigns the platform desk created, paused or ended. Threaded into
+  // every read below so a code issued from `/admin/coupons` is claimable here and
+  // a deactivated one reads as paused rather than silently disappearing.
+  const desk = useCampaignDesk();
+  const campaignsHydrated = useCampaigns((s) => s.hydrated);
 
   const [book, setBook] = useState<CouponBook | null>(null);
   const [claimable, setClaimable] = useState<ClaimableCoupon[]>([]);
@@ -45,6 +51,7 @@ export function CouponsView() {
 
   useEffect(() => {
     useCoupons.persist.rehydrate();
+    void useCampaigns.persist.rehydrate();
   }, []);
 
   // The account is issued its granted coupons once; after that the store owns them.
@@ -53,18 +60,18 @@ export function CouponsView() {
   }, [hydrated, seeded, seed]);
 
   useEffect(() => {
-    if (!hydrated || !seeded) return;
+    if (!hydrated || !seeded || !campaignsHydrated) return;
     let live = true;
-    getCouponBook(claims).then((next) => {
+    getCouponBook(claims, desk).then((next) => {
       if (live) setBook(next);
     });
-    getClaimableCoupons(claims).then((next) => {
+    getClaimableCoupons(claims, 6, desk).then((next) => {
       if (live) setClaimable(next.coupons);
     });
     return () => {
       live = false;
     };
-  }, [hydrated, seeded, claims]);
+  }, [hydrated, seeded, campaignsHydrated, claims, desk]);
 
   if (!hydrated || !book) {
     return (
@@ -75,7 +82,11 @@ export function CouponsView() {
   }
 
   const groups: Record<Tab, HeldCoupon[]> = {
-    available: book.held.filter((h) => h.status === "active" || h.status === "scheduled"),
+    // Paused sits with what you hold rather than with what is gone: a campaign
+    // the platform deactivated may come back, and the ticket says so (Phase 12).
+    available: book.held.filter(
+      (h) => h.status === "active" || h.status === "scheduled" || h.status === "paused",
+    ),
     used: book.held.filter((h) => h.status === "used"),
     expired: book.held.filter((h) => h.status === "expired"),
   };
@@ -89,7 +100,7 @@ export function CouponsView() {
 
   function submitCode(value: string) {
     setBusy(true);
-    claimCoupon(value, claims).then((res) => {
+    claimCoupon(value, claims, desk).then((res) => {
       setBusy(false);
       if (res.error || !res.data) {
         toast.error(t(res.error ?? "errors.unknownCode"));
@@ -103,7 +114,7 @@ export function CouponsView() {
 
   function claimSuggested(coupon: Coupon) {
     setBusy(true);
-    claimById(coupon.id, claims).then((res) => {
+    claimById(coupon.id, claims, desk).then((res) => {
       setBusy(false);
       if (res.error || !res.data) {
         toast.error(t(res.error ?? "errors.unknownCode"));

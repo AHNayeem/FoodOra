@@ -20,12 +20,16 @@ import {
   Bike,
   Banknote,
   Users,
+  Ticket,
+  MessageSquareWarning,
 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { useAuth } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { useCms } from "@/stores/cms";
 import { useCustomers } from "@/stores/customers";
+import { useCampaigns } from "@/stores/campaigns";
+import { pendingModerationCount, useReviewModeration } from "@/stores/review-moderation";
 import { liveTicketCount, useSupport } from "@/stores/support";
 import {
   pendingRiderCount,
@@ -70,6 +74,12 @@ const NAV = [
   // Phase 8: `finance-manager` has been an admin role with no surface behind it
   // since the auth seed, and the money owed had nowhere to be paid from.
   { href: "/admin/payouts", key: "navPayouts", icon: Banknote },
+  // Phase 12: the coupon engine existed and nobody could run a campaign with it.
+  // Restaurant codes stay on the merchant's own dashboard — this is the
+  // platform's book.
+  { href: "/admin/coupons", key: "navCampaigns", icon: Ticket },
+  // Phase 13: reports had nowhere to go. This is where they go.
+  { href: "/admin/reviews", key: "navReviews", icon: MessageSquareWarning },
   { href: "/admin/cms", key: "navContent", icon: FileText },
   { href: "/admin/notifications", key: "navNotifications", icon: Bell },
 ] as const;
@@ -115,10 +125,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const onboardingHydrated = useOnboarding((s) => s.hydrated);
   const vendorApplications = useOnboarding((s) => s.vendorApplications);
   const riderApplications = useOnboarding((s) => s.riderApplications);
+  // Phase 13: a reported review nobody has looked at is the third thing on this
+  // shell that is waiting on a person, so it is badged for the same reason.
+  const moderationHydrated = useReviewModeration((s) => s.hydrated);
+  const moderationRecords = useReviewModeration((s) => s.records);
   const badges: Record<string, number> = {
     navSupport: waiting,
     navRestaurants: onboardingHydrated ? pendingVendorCount(vendorApplications) : 0,
     navRiders: onboardingHydrated ? pendingRiderCount(riderApplications) : 0,
+    navReviews: moderationHydrated ? pendingModerationCount(moderationRecords) : 0,
   };
 
   useEffect(() => {
@@ -132,6 +147,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     // Phase 11: hydrated here as well as on the directory itself, so the
     // seeded accounts exist before any surface asks whether somebody is blocked.
     useCustomers.persist.rehydrate();
+    // Phase 12–13: the campaign desk and the moderation queue. Both are hydrated
+    // here as well as on their own screens, because the nav badge and the
+    // customer-facing coupon surfaces read them before either screen is opened.
+    void useCampaigns.persist.rehydrate();
+    void useReviewModeration.persist.rehydrate();
   }, []);
 
   if (!hydrated) {
