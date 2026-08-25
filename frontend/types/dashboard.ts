@@ -1,4 +1,5 @@
 import type { ISODate } from "./common";
+import type { PlatformFinancials } from "./finance";
 
 /**
  * dashboard.ts — read models for the vendor dashboard (Phase C10).
@@ -129,4 +130,165 @@ export interface VendorAnalytics {
   series: RevenuePoint[];
   peak: HourlyPoint[];
   topProducts: BestSeller[];
+}
+
+// ---------------------------------------------------------------------------
+// Platform analytics (Phase 16, G33)
+// ---------------------------------------------------------------------------
+
+/**
+ * One restaurant's line in the platform league table.
+ *
+ * Trade and money are carried side by side and counted over different sets on
+ * purpose. `orders`/`revenue` cover everything placed in the window that did not
+ * end badly; `commission`/`net` cover only the ones that reached `completed` and
+ * therefore carry a stamped record. Reporting a commission against the first
+ * figure would claim the platform had taken a cut of orders still in a kitchen.
+ */
+export interface VendorPerformance {
+  vendorId: string;
+  name: string;
+  /** Orders placed in the window that count as takings. */
+  orders: number;
+  revenue: number;
+  avgOrderValue: number;
+  completed: number;
+  /** Every bad ending — cancelled, rejected, returned, failed handoff. */
+  cancelled: number;
+  /** `cancelled` over every order placed, 0–1. */
+  cancelRate: number;
+  /** Orders carrying a commission record — the subset behind the money below. */
+  settled: number;
+  settledGross: number;
+  commission: number;
+  /** What the restaurant keeps on the settled orders. */
+  net: number;
+  /** Mean rating over orders the customer actually rated; null when none did. */
+  rating: number | null;
+  ratedOrders: number;
+}
+
+/**
+ * One courier's line.
+ *
+ * `deliveries` counts jobs this courier finished; `settled`/`earned` count the
+ * ones whose completion stamped an earning. The two differ by whatever is sitting
+ * at `delivered` waiting to close, which is a real operational fact rather than a
+ * rounding difference, so both are shown.
+ */
+export interface RiderPerformance {
+  riderId: string;
+  name: string;
+  /** Orders assigned to this courier in the window. */
+  assigned: number;
+  /** …that reached `delivered` or `completed`. */
+  deliveries: number;
+  /** …that carry a stamped earning record. */
+  settled: number;
+  earned: number;
+  tips: number;
+  cashCollected: number;
+  /** Deliveries with an observed timeline — the denominator for the minutes. */
+  measured: number;
+  /** Mean minutes from placement to handover over `measured`; null when none. */
+  avgMinutes: number | null;
+  /** Handed over no later than the estimate, over `measured`. */
+  onTime: number;
+  onTimeRate: number | null;
+}
+
+/** A customer's spending in the window, for the activity table. */
+export interface CustomerSpend {
+  /** `lib/customers.customerIdFor(phone)` — the id `/admin/customers/[id]` uses. */
+  id: string;
+  name: string;
+  phone: string;
+  orders: number;
+  spend: number;
+}
+
+/**
+ * Who ordered in the window, and whether the platform had met them before.
+ *
+ * Derived by phone number from **the same order store `/admin/customers` builds
+ * its directory from**, not from the platform-wide book the rest of this report
+ * reads. That narrower scope is the point rather than an oversight: the
+ * synthesised trailing week gives each of its orders a contact name drawn from a
+ * fixed pool of eight demo customers, so counting it would report those eight as
+ * the platform's customer base with hundreds of orders each — and every row here
+ * links to a customer page that would then show a different number for the same
+ * person. `orders` is carried so the screen can say which orders the figures
+ * cover.
+ */
+export interface CustomerActivity {
+  /** Orders the figures below are counted over — fewer than the report's total. */
+  orders: number;
+  /** Distinct customers who placed an order inside the window. */
+  active: number;
+  /** …whose first order on the platform is inside it. */
+  newCustomers: number;
+  returning: number;
+  /** …who placed more than one order inside it. */
+  repeat: number;
+  ordersPerCustomer: number;
+  /** Biggest spenders in the window, longest first. */
+  top: CustomerSpend[];
+}
+
+/**
+ * How the delivery operation performed.
+ *
+ * The counts are over every delivery order in the window. The **minutes and the
+ * on-time rate are not**: they are measured only over orders whose event log was
+ * recorded rather than reconstructed (`lib/order-lifecycle.hasObservedTimeline`),
+ * and `measured` is carried so the screen can say what the average covers. The
+ * synthesised trailing week divides placement-to-ETA evenly across the stages, so
+ * including it would report every order as delivered exactly on estimate.
+ */
+export interface DeliveryPerformance {
+  /** Delivery orders placed in the window (pickup excluded). */
+  deliveryOrders: number;
+  delivered: number;
+  /** Failed handoffs and returns. */
+  failed: number;
+  /** Delivery orders that had a courier assigned. */
+  assigned: number;
+  /** Delivery orders with an observed timeline — the denominator for everything below. */
+  measured: number;
+  /** Placement → handover. */
+  avgMinutes: number | null;
+  /** Placement → on the pass. */
+  avgPrepMinutes: number | null;
+  /** Courier at the counter → handover. */
+  avgCourierMinutes: number | null;
+  /** On the pass → courier assigned: how long an order waits for dispatch. */
+  avgDispatchMinutes: number | null;
+  onTime: number;
+  onTimeRate: number | null;
+}
+
+/**
+ * Everything `/admin/analytics` renders, over one window (Phase 16, G33).
+ *
+ * Composed rather than recomputed. `trade` is `lib/analytics.analyticsFor` — the
+ * exact projection the restaurant's own analytics screen reads — run over every
+ * restaurant's book instead of one; `money` is `lib/settlement.platformFinancials`
+ * over the same set, which is what `/admin/payouts` reads. So the platform's
+ * headline revenue is the sum of the numbers the restaurants can each see, and the
+ * commission beneath it is the money the payout run will actually pay against
+ * (§5.4). Nothing in this shape is derived from a rate or a percentage.
+ */
+export interface PlatformAnalytics {
+  currency: string;
+  range: AnalyticsRange;
+  /** Order-side totals, series, peak hours and top products across the platform. */
+  trade: VendorAnalytics;
+  /** Money-side totals from the stamped per-order records. */
+  money: PlatformFinancials;
+  /** Restaurants that traded in the window, best revenue first. */
+  vendors: VendorPerformance[];
+  /** Couriers who carried something in the window, most deliveries first. */
+  riders: RiderPerformance[];
+  customers: CustomerActivity;
+  delivery: DeliveryPerformance;
 }

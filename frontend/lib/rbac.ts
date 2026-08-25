@@ -323,6 +323,9 @@ export const ADMIN_ROUTE_PERMISSIONS: readonly {
   { prefix: "/admin/coupons", permission: "coupons.manage" },
   { prefix: "/admin/reviews", permission: "reviews.moderate" },
   { prefix: "/admin/audit", permission: "audit.view" },
+  // Phase 16: finance, marketing and partner operations already held
+  // `analytics.view` with nothing behind it.
+  { prefix: "/admin/analytics", permission: "analytics.view" },
   { prefix: "/admin/cms", permission: "content.manage" },
   { prefix: "/admin/notifications", permission: "notifications.send" },
   // The live board, last: it is the shortest prefix and would otherwise match

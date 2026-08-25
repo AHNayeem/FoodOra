@@ -1,6 +1,7 @@
 import type {
   AnalyticsRange,
   Order,
+  PlatformAnalytics,
   PlatformFinancials,
   RiderPayout,
   RiderSettlement,
@@ -12,6 +13,7 @@ import type {
 } from "@/types";
 import { buildVendorOrders, vendorById, vendors } from "@/lib/mock";
 import { analyticsFor } from "@/lib/analytics";
+import { platformAnalyticsFor } from "@/lib/platform-analytics";
 import {
   buildRiderSettlements,
   buildVendorSettlements,
@@ -225,6 +227,48 @@ export async function getVendorAnalytics({
   // restaurant's own takings in a currency it does not trade in.
   const currency = vendor?.currency ?? book[0]?.pricing.currency ?? "BDT";
   return mockDelay(analyticsFor(book, { range, currency }), 350);
+}
+
+// ---------------------------------------------------------------------------
+// The platform's own reporting (G33)
+// ---------------------------------------------------------------------------
+
+/**
+ * Everything `/admin/analytics` renders, over one window (Phase 16, G33).
+ *
+ * The admin counterpart of `getVendorAnalytics`, and deliberately the same shape
+ * of function: resolve the book here, project it with a pure module, `mockDelay`
+ * it like every other read. It resolves the *same* book `getPlatformPayouts`
+ * does — `platformOrderBook` — which is what makes the report and the payout run
+ * two readings of one set rather than two queries that ran at different instants.
+ *
+ * `live` carries the whole order store rather than a filtered slice, so an order
+ * placed against a listing this device minted (Phase 6) is counted even though the
+ * synthesiser has never heard of that restaurant.
+ *
+ * The cost is one synthesis pass over the catalog per load, which is why this is
+ * async and why the pass happens here rather than in a component's render. It is
+ * not memoised on a store: the window is a parameter and the live set changes
+ * under it, so a cache would need invalidating on both and would be a second place
+ * for the platform's revenue to be wrong. Phase E replaces the body with one query
+ * and the signature does not move.
+ */
+export async function getPlatformAnalytics({
+  live,
+  range,
+  now = Date.now(),
+}: {
+  live: Order[];
+  range: AnalyticsRange;
+  now?: number;
+}): Promise<PlatformAnalytics> {
+  const book = platformOrderBook(live, now);
+  const currency = book[0]?.pricing.currency ?? "BDT";
+  // `customerBook: live` — customer activity is counted over the order store,
+  // which is the set `/admin/customers` derives its directory from, so a person
+  // on this report and their own admin page cannot show different totals. See
+  // `platformAnalyticsFor` for why the synthesised week is not a customer base.
+  return mockDelay(platformAnalyticsFor(book, { range, currency, customerBook: live }), 450);
 }
 
 // ---------------------------------------------------------------------------

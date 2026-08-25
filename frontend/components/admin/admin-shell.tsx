@@ -23,6 +23,7 @@ import {
   Ticket,
   MessageSquareWarning,
   ScrollText,
+  ChartColumn,
 } from "lucide-react";
 import type { PlatformPermission } from "@/types";
 import {
@@ -87,6 +88,9 @@ const NAV = [
   { href: "/admin/coupons", key: "navCampaigns", icon: Ticket },
   // Phase 13: reports had nowhere to go. This is where they go.
   { href: "/admin/reviews", key: "navReviews", icon: MessageSquareWarning },
+  // Phase 16: the platform's own reporting. Sits after the operational queues
+  // because it is the question asked *about* a week, not during one.
+  { href: "/admin/analytics", key: "navAnalytics", icon: ChartColumn },
   // Phase 15: every important mutation on the platform, and who made it.
   { href: "/admin/audit", key: "navAudit", icon: ScrollText },
   { href: "/admin/cms", key: "navContent", icon: FileText },

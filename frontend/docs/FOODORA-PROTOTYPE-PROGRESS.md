@@ -22,6 +22,7 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 13 — Review Moderation Done
 - Phase 14 — RBAC Done
 - Phase 15 — Platform Audit Log Done
+- Phase 16 — Admin Analytics Done
 
 ---
 
@@ -173,7 +174,59 @@ payout numbers to keep in step with the fare rules.
 
 ## Current Phase
 
-None in progress. Phases 1–15 complete.
+None in progress. Phases 1–16 complete.
+
+### Phase 16 — Admin Analytics (2026-08-25)
+
+**Done.** G33 closed. The only reporting the platform had about itself was the live
+board's KPI strip, which answers "what is happening right now" and structurally
+cannot answer "how was last month". `/admin/analytics` is the spec's list over one
+window: GMV, orders, completed, cancelled, refunded, commission, restaurant and
+courier league tables, customer activity, top products, delivery performance, a
+date range and a CSV export.
+
+**The phase is mostly composition, and that is the point.** The restaurant's
+version of this screen already existed (Phase 10) and every money figure already
+had exactly one derivation (Phase 2). `lib/platform-analytics` therefore contains
+no arithmetic that `lib/analytics` or `lib/settlement` already does: it calls
+`analyticsFor` — the projection a restaurant reads on its own dashboard — over
+every restaurant's book, and `platformFinancials` — what the payout run reads —
+over the same set, then adds only the four things with no per-restaurant meaning.
+The spec's binding constraint ("do not fabricate numbers where shared domain data
+already exists") is held the way Phase 8 held it for money: by there being nowhere
+else to get a number from. A plausible implementation would have written
+`revenue × 0.15` for the commission row; it would have looked right and disagreed
+with every vendor on a negotiated rate.
+
+Four decisions carry the phase.
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| Whether the platform's window is the vendor's window | **Yes, and derived per request rather than memoised.** `getPlatformAnalytics` is `getVendorAnalytics`'s shape with a wider book, one synthesis pass per load. Not cached on a store: the window is a parameter *and* the live set moves under it, so a cache needs invalidating on both and would become a second place for the platform's revenue to be wrong. | `services/finance.ts`, `getPlatformAnalytics` |
+| Whether delivery performance is measured or stamped | **Measured — but only over orders whose event log was recorded rather than reconstructed.** `synthesiseLifecycle` divides placement-to-ETA evenly across the stages because it has nothing else to divide it by, so every backfilled delivery arrives exactly on estimate. Averaging that set publishes a 100% on-time rate that means nothing. `hasObservedTimeline` is the predicate, the suffix it reads is minted in the same module, and the panel carries a "N of M timed" chip so the denominator is on screen. Counts still use every order: an order was cancelled whether or not anyone timed it. | `lib/order-lifecycle.ts`, `BACKFILL_EVENT_SUFFIX` / `hasObservedTimeline` |
+| What "customer activity" means when the population is synthetic | **It is counted over the order store `/admin/customers` builds its directory from, not the platform book the rest of the page reads.** The previous session's note said to reuse `notifySegmentHint`'s wording; the decisive argument turned out to be sharper than a disclaimer. The synthesised week names each of its ~1,900 orders from a fixed pool of eight demo contacts, so the platform-wide read said "Rafiq Uddin, 271 orders, ৳382,546" while his own customer page — derived from the live store — said three. Two answers to one question, with a link between them. The panel carries an "over N orders" chip and says which set it covers. | `lib/platform-analytics.ts`, `customerBook` |
+| Whether a league-table row links to the partner | **No.** `/admin/restaurants/[id]` and `/admin/riders/[id]` resolve an onboarding **application**, and a seeded restaurant never had one. The rows are plain text with the reason in a comment; a link that lands on "application not found" is worse than no link. The customer rows *do* link, because `/admin/customers/[id]` takes `customerIdFor(phone)` and resolves. | `components/admin/analytics-view.tsx`, both name columns |
+
+**Three things are kept visibly apart on the screen** because merging them is the
+plausible mistake, and each is labelled where it appears: revenue against settled
+gross (commission exists only on a completed order, so the money panel carries its
+own `1,862 of 1,887 settled` count); refunds against takings (shown beside, never
+netted off — "we took ৳100,000 and gave ৳4,000 back" and "we took ৳96,000" are
+different facts); counts against durations (see the delivery decision above).
+
+**Gating cost one line.** `analytics.view` has been in `PLATFORM_PERMISSIONS` since
+Phase 14 and held by finance, marketing and partner operations with nothing behind
+it. One `ADMIN_ROUTE_PERMISSIONS` entry and one `NAV` entry were the whole of it.
+
+**Reconciliation was checked, not assumed.** Over a window wide enough to cover the
+whole book, all ten fields of the report's money panel match
+`getPlatformPayouts().platform` exactly (Δ = 0 on `orderCount`, `gmv`,
+`commissionAmount`, `vendorNetAmount`, `deliveryFees`, `tips`, `tax`,
+`platformAmount`, `refundedCount`, `refundedAmount`); the restaurant league table's
+commission column sums to the vendor settlement run to the currency unit, and the
+courier table's earnings sum to the rider settlement run. The league tables also sum
+to the page's own headline revenue and order count with Δ = 0.
+
 
 ### Phases 14–15 — RBAC + Platform Audit Log (2026-08-25)
 
@@ -512,6 +565,19 @@ plausible-looking implementation would miss:
 | Types | `bun run typecheck` | **PASS** (exit 0, no diagnostics) |
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
+
+Re-run on 2026-08-25 after Phase 16, all three still **PASS** — typecheck exit 0,
+lint no findings across the whole project, build compiled every route including the
+new `/admin/analytics`. Verified in a browser against the mock path
+(`NEXT_PUBLIC_BACKEND_AUTH=0`; the checked-in `.env.local` points auth at a NestJS
+API that is not running, which is a pre-existing local condition and not a Phase 16
+regression): signed in as `admin@foodora.dev`, the page renders every panel the spec
+lists, the range control moves the figures, and **Export CSV** downloads
+`foodora-platform-analytics-<from>-<to>.csv` with seven sections and no console
+error. RBAC was driven the same way — `marketing@` and `finance@` reach the page and
+see the nav entry; `support@` and `moderator@` get "Not your section" and no nav
+entry. The top customer row was followed through to `/admin/customers/[id]` and both
+screens report the same three orders for the same person.
 
 Re-run on 2026-08-25 after Phases 14–15, all three still **PASS** (typecheck exit 0,
 lint no findings, build compiled every route including the new `/admin/audit`).
@@ -1463,54 +1529,124 @@ No architectural violations were introduced in Phases 1–15.
 
 ---
 
+### Added in Phase 16
+
+```text
+lib/analytics.ts                (unchanged — analyticsFor, resolveRange, buckets)
+lib/settlement.ts               (unchanged — platformFinancials)
+        ↓                                    ↓
+lib/platform-analytics.ts       (pure: composes both, adds the four platform-only reads)
+        ↓
+services/finance.getPlatformAnalytics   (resolves platformOrderBook — the same book
+        ↓                                getPlatformPayouts settles from)
+components/admin/analytics-view         (renders; computes nothing)
+        ↓
+app/(admin)/admin/analytics/page.tsx    (gated by the shell on `analytics.view`)
+```
+
+**No new store, and no new source of a number.** The report is a *read*: it holds a
+range key and a clock in local state and everything else comes from
+`services/finance`. The only shared-state change in the phase is one entry in
+`lib/rbac.ADMIN_ROUTE_PERMISSIONS` and one in the shell's `NAV`.
+
+**One addition to `lib/order-lifecycle`**, and it is a predicate rather than a
+behaviour: `BACKFILL_EVENT_SUFFIX` now names the `_bf` marker that
+`synthesiseLifecycle` was already minting inline, and `hasObservedTimeline` reads
+it. Nothing else changed there — the two event ids it produces are byte-identical
+to what they were. It exists so that "this timeline was reconstructed, not
+observed" is a question with one answer, asked by the only code that measures
+durations.
+
+**The four platform-only reads**, all pure and all in `lib/platform-analytics`:
+`vendorPerformance` (grouped off `order.vendor.id`, so a device-minted listing
+appears the moment it sells something), `riderPerformance` (keyed off
+`lifecycle.rider` for the operational counts and off `financials.riderEarning` for
+the money, which is the record `buildRiderSettlements` pays from),
+`customerActivity` (over the order store, see the decisions table) and
+`deliveryPerformance` (counts over everything, durations over observed timelines).
+
+
 ## Next Phase
 
-**PHASE 16 — Admin Analytics (G33).** Not started; needs an explicit instruction.
-Phases 1–15 are complete and verified, so this is the first open item in §6's order.
+**PHASE 17 — Customer Improvements (G34, G35, G36, G37, G43, G27).** Not started;
+needs an explicit instruction. Phases 1–16 are complete and verified, so this is the
+first open item in §6's order.
 
 ### What the spec asks for
 
-GMV/revenue, orders, completed, cancelled, refunded, commission, vendor
-performance, rider performance, customer activity, top restaurants, top products,
-delivery performance, a date range and an export — from shared prototype data, with
-nothing fabricated where the domain already has an answer.
+Scheduled orders that do not behave like ASAP orders; reorder; rating;
+location/serviceability; verification; contact.
 
-### What Phases 1–15 leave ready for it
+### What Phases 1–16 leave ready for it
 
-1. **Every number it asks for already has one derivation.** `lib/settlement` owns
-   commission and settlement, `services/delivery.riderEarningForOrder` owns rider
-   pay, and both hang off `Order.lifecycle.financials` — stamped once at
-   `completed`. §5.4 is satisfied by reading them rather than by re-deriving.
-2. **The vendor-side version of this screen exists.** Phase 10 built
-   `lib/analytics` (`resolveRange`, the bucketing, `RANGE_KEYS`) and
-   `components/dashboard/analytics-view.tsx` with its CSV export. Phase 16 is the
-   platform-wide read of the same shapes, and the date-range control and the export
-   helpers are reusable as they are.
-3. **The permission is already enforced.** `analytics.view` is in
-   `lib/rbac.PLATFORM_PERMISSIONS` and held by finance, marketing and partner
-   operations; adding `{ prefix: "/admin/analytics", permission: "analytics.view" }`
-   to `ADMIN_ROUTE_PERMISSIONS` and one `NAV` entry is the whole of the gating work.
-4. **The audit trail will answer the "who changed this" column for free.**
-   `services/audit.getEntityAudit` already joins both sources per entity and has no
-   reader yet.
+1. **The order already carries the scheduling field and nothing reads it.**
+   `Order.scheduledFor` is on the type, is `null` for ASAP, and the seed sets it on
+   nothing. The lifecycle machine has no notion of an order that should not enter a
+   kitchen yet, so the whole of "must not behave like an ASAP order" is a question
+   about `lib/order-machine` rather than about a form field.
+2. **Rating has a stamp and no writer.** `Order.lifecycle.rating` is read in three
+   places — `lib/customers.customerStats`, the review surfaces, and now Phase 16's
+   restaurant league table, whose `Rating` column is empty for every seeded
+   restaurant because only the working set's seven rated orders carry one. Whatever
+   Phase 17 writes there will light up all three at once, which is the argument for
+   there being exactly one writer.
+3. **Reorder has both halves already.** `lib/cart` builds a cart from lines and
+   `services/orders` resolves an order; the missing piece is what to do when a line
+   no longer exists on the menu, which Phase 9's menu builder made a real
+   possibility rather than a hypothetical.
+4. **Serviceability has a resolver.** `lib/mock/delivery-zones` and
+   `zoneIdForArea` already decide which zone an address is in and are what dispatch
+   and the rider payout read; a storefront that asks the same function cannot
+   disagree with the courier's map.
 
 ### Open questions to settle before starting
 
-* **Whether the platform's window is the vendor's window.** `lib/analytics` buckets
-  a range for one restaurant's order book. Across 24 restaurants and a demo
-  population the bucket count and the "compare to previous period" arithmetic are
-  the same, but the *cost* is not — decide whether the platform read is derived per
-  request or memoised on the store.
-* **What "customer activity" means when the population is synthetic.**
-  `admin.notifySegmentHint` already admits on screen that customer segment sizes are
-  a generated demo population while restaurants and riders are counted for real.
-  Phase 16 has to say the same thing about any customer-side chart, in the same
-  words, or it will read as a real number.
-* **Whether delivery performance is measured or stamped.** `Order.lifecycle.events`
-  has the timestamps for on-time rates and average delivery duration; nothing
-  currently aggregates them, and a seeded order's events are synthesised. Decide
-  whether the seed's timings are good enough to publish as a KPI or whether the
-  chart needs to say what it is looking at.
+* **Whether a scheduled order occupies dispatch before its window.** It has to be
+  visible to the restaurant early enough to buy for and invisible to the kitchen
+  until it matters, and those are different screens reading one status.
+* **Whether rating writes a review.** `Order.lifecycle.rating` and the `Review`
+  entity are two records; a five-star tap that silently creates a public review with
+  no text, or one that creates nothing an aggregate reads, are both wrong.
+* **What an unavailable line does to a reorder.** Dropping it silently changes the
+  order; refusing the whole reorder over one sold-out side is worse. The decision
+  belongs on screen either way.
+
+---
+
+## Deliberately deferred by Phase 16 (not omissions)
+
+* **No comparison against a previous period.** Carried forward from Phase 10's note
+  rather than quietly done: the spec's list for this phase does not ask for one, and
+  a "+12% vs last month" figure needs a second window resolved and reconciled
+  against the first. Worth doing once, for both screens, rather than twice
+  differently — which is exactly why Phase 10 declined to do it alone.
+* **The trend chart is sparse on wide windows, and honestly so.** A 90-day range
+  buckets weekly (`bucketDaysFor`) over a book that holds about a week of trade, so
+  most buckets are zero. That is the data, not the chart; inventing history to fill
+  it is the thing this prototype is meant not to do.
+* **Delivery timings are measured over very few orders.** Six of ~1,440 in a
+  typical 30-day window, because only the seeded working set and deliveries driven
+  in this browser have recorded timelines. The chip says the denominator rather than
+  the average being quietly widened to include reconstructions.
+* **The courier league table is short for the same reason.** A synthesised order
+  carries a commission record and no courier, because nobody rode it — the same fact
+  `getPlatformPayouts` already states about rider settlements, restated on the panel
+  instead of being papered over by assigning fictional riders to backfilled orders.
+* **The `Rating` column is empty for most restaurants.** Nothing writes
+  `Order.lifecycle.rating` outside the working set yet; that is Phase 17's `G36`.
+  The column shows an em dash and the rated-order count beside any rating it does
+  have, so a 5.0 from one order cannot be mistaken for a 5.0 from four hundred.
+* **Restaurant and courier rows are not links.** See the decisions table above: the
+  admin partner sections are onboarding *application* queues, and there is no
+  partner detail route to link to. Inventing one is not this phase's scope.
+* **The export is CSV only.** Same reasoning as Phase 10, and now the same helper —
+  `lib/export.toCsv` is unchanged and the platform report is seven sections through
+  it. A PDF needs a layout engine the prototype does not have.
+* **No audit-log column on the report.** The previous session's note suggested
+  `services/audit.getEntityAudit` could answer "who changed this" here. It is not in
+  §6's list for this phase, and a per-figure provenance column on an aggregate would
+  be answering a question about a *mutation* on a screen that shows no mutations —
+  `/admin/audit` is where that question already has a surface.
 
 ---
 

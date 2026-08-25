@@ -132,7 +132,7 @@ export function synthesiseLifecycle(order: Order): OrderLifecycle {
     for (let i = 1; i <= idx; i++) {
       const at = new Date(placedMs + (i / stages.length) * span).toISOString();
       life.events.push({
-        id: `evt_${order.id}_${stages[i]}_bf`,
+        id: `evt_${order.id}_${stages[i]}${BACKFILL_EVENT_SUFFIX}`,
         status: stages[i],
         at,
         actor: actorForStage(stages[i]),
@@ -153,7 +153,7 @@ export function synthesiseLifecycle(order: Order): OrderLifecycle {
   } else if (isFailure(order.status)) {
     const byRestaurant = order.status === "rejected";
     life.events.push({
-      id: `evt_${order.id}_${order.status}_bf`,
+      id: `evt_${order.id}_${order.status}${BACKFILL_EVENT_SUFFIX}`,
       status: order.status,
       at: order.updatedAt,
       actor: byRestaurant ? "restaurant" : "customer",
@@ -165,6 +165,42 @@ export function synthesiseLifecycle(order: Order): OrderLifecycle {
   }
 
   return life;
+}
+
+/**
+ * Marks an event this module *reconstructed* rather than one the machine
+ * recorded when it happened.
+ *
+ * `synthesiseLifecycle` divides the span from placement to the ETA evenly across
+ * the stages, because it has nothing else to divide it by — the order it is
+ * backfilling was generated with two timestamps and a status, and there is no
+ * record of when the kitchen actually finished. That produces a timeline that is
+ * fine for a progress bar and worthless as a measurement: every backfilled
+ * delivery took exactly as long as its estimate, so a report that averaged them
+ * would publish an on-time rate of 100% and mean nothing by it.
+ *
+ * The suffix is minted here and read by `hasObservedTimeline`, so the two cannot
+ * drift. `lib/mock/demo-orders` and `lib/order-machine` mint their own ids and
+ * carry no suffix, which is the distinction that matters: those timings were
+ * either authored as a working set or actually walked on this device.
+ */
+export const BACKFILL_EVENT_SUFFIX = "_bf";
+
+/**
+ * Did this order's timeline come from something that watched it happen?
+ *
+ * False for a reconstruction. The only callers are the ones that measure
+ * *durations* — Phase 16's delivery-performance panel — and they exclude the
+ * reconstructed orders and say on screen how many they measured over, rather
+ * than quoting an average that is really the seed's arithmetic (§5.4).
+ *
+ * Counts are a different question and use every order: an order was cancelled
+ * whether or not anyone timed it.
+ */
+export function hasObservedTimeline(order: Order): boolean {
+  const events = order.lifecycle?.events;
+  if (!events?.length) return false;
+  return !events.some((event) => event.id.endsWith(BACKFILL_EVENT_SUFFIX));
 }
 
 /**
