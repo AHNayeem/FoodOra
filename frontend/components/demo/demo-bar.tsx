@@ -26,6 +26,7 @@ import { useStaff } from "@/stores/staff";
 import { useCustomers } from "@/stores/customers";
 import { useCampaigns } from "@/stores/campaigns";
 import { useReviewModeration } from "@/stores/review-moderation";
+import { useAudit } from "@/stores/audit";
 import { useVendorSettings } from "@/stores/vendor-settings";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +64,7 @@ export function DemoBar() {
   const resetCustomers = useCustomers((s) => s.resetDemo);
   const resetCampaigns = useCampaigns((s) => s.resetDemo);
   const resetModeration = useReviewModeration((s) => s.resetDemo);
+  const resetAudit = useAudit((s) => s.resetDemo);
 
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
@@ -236,6 +238,12 @@ export function DemoBar() {
                 // from the orders: a decision left behind would hide a review the
                 // reset has just put back.
                 resetModeration();
+                // Phase 15's trail, last and deliberately: it names the orders,
+                // accounts and applications every reset above has just rebuilt, so
+                // a surviving entry would point at an entity that no longer exists.
+                // Re-seeded rather than emptied — the log describes a fortnight of
+                // desk work that happened before this demonstration began.
+                resetAudit();
                 toast.success(t("resetToast"));
               }}
               className="ms-auto inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5"

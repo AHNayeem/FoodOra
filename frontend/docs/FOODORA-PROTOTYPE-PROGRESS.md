@@ -20,6 +20,8 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 11 — Admin Customer Management Done
 - Phase 12 — Admin Coupons / Campaigns Done
 - Phase 13 — Review Moderation Done
+- Phase 14 — RBAC Done
+- Phase 15 — Platform Audit Log Done
 
 ---
 
@@ -171,7 +173,134 @@ payout numbers to keep in step with the fare rules.
 
 ## Current Phase
 
-None in progress. Phases 1–13 complete.
+None in progress. Phases 1–15 complete.
+
+### Phases 14–15 — RBAC + Platform Audit Log (2026-08-25)
+
+**Done.** G31 and G32 closed together, and deliberately so: they are two halves of
+one question. RBAC decides who may make a mutation; the audit trail records that
+they did. Built in one session because every mutation site the trail has to record
+is a mutation site the permission check has to guard, and visiting each of them
+twice would have been two chances to disagree about which ones matter.
+
+#### Phase 14 — RBAC (G31)
+
+**The gap was not "there is no role model" — it was that nothing read the one that
+existed.** `User.permissions` has been on the account type since the first commit
+and had never been read by anything. The visible consequence was in
+`components/admin/admin-shell`: an `ADMIN_ROLES` list admitted four roles to *all
+eleven* sections, so a moderator could run a payout batch and a finance manager
+could remove a review. Four decisions carry the phase:
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| Where the rule lives | **`lib/rbac.ROLE_PERMISSIONS` — one table, and an account carries only what it holds *beyond* its role.** The same argument `lib/staff.STAFF_PERMISSIONS` makes for restaurant roles: a stored copy per account is how a platform ends up with support agents hired in March who cannot do what those hired in April can. | `lib/rbac.ts` header |
+| Refuse or hide | **A section you cannot see is hidden from the nav and refused by the shell; an action you cannot take stays visible and disabled above one line naming the permission.** The open question the previous session flagged, settled once. Hiding the controls would leave an agent unable to tell whether a transfer button is missing because they may not press it or because the settlement is not payable. | `components/admin/read-only-notice.tsx` header |
+| Where the check for a store action lives | **`stores/auth.sessionCan`, read by the store itself.** Ten stores hold the important mutations and every one already takes a `by: string` display label; threading the whole `User` through forty call sites would have been forty chances to pass the wrong one. The store asks the session; the *rule* stays in `lib/rbac`. | `stores/audit.ts` header, each guarded action |
+| Legacy colon slugs | **Ignored, not normalised — and this is the one that would have been a real leak.** `orders:view` sits on `restaurant-owner`, where it plainly means "the orders at my restaurant". Reading it as `orders.view` handed every restaurant owner the platform order list and every rival's trade. §5.3 in another guise. | `lib/rbac.ts` header, `normalise` |
+
+**The vocabulary is §6's sixteen plus four.** `support.view`, `support.manage`,
+`content.manage` and `notifications.send` cover admin surfaces that already existed
+(Phase 5's dispute queue, C26's content desk, C25's broadcast composer) and would
+otherwise have been the only ungated pages in the section. `types/user.ts` lists
+them apart from the sixteen so "the spec asked for this" stays distinguishable from
+"this surface exists and needed a name".
+
+**Both entry points §6 names are real, and `can` is the type-safe one.**
+`PermissionAction<R>` is derived from the slug union, so `can(user, "orders",
+"approve")` is a compile error rather than a check that quietly returns false — the
+one failure mode an authorization layer must not have.
+
+**Two gates, not one.** `canOpenAdmin` asks whether an account belongs in platform
+operations; `permissionForAdminPath` asks whether it belongs on *this* page, from
+the same table the nav filter reads — so a hidden link cannot be reached by typing
+the URL. A refused page offers the first section the account *can* open, because a
+marketing manager landing on `/admin` (which needs `orders.view`) would otherwise
+see nothing but a wall.
+
+**Four accounts were added to make it visible.** `support@`, `moderator@`,
+`finance@` and `marketing@foodora.dev` (same demo password). Before RBAC they would
+have been indistinguishable from the super-admin, which is why they did not exist.
+All four carry `permissions: []` — the role table is the grant, and a seeded copy of
+it is the duplication `lib/rbac` refuses. What each one sees:
+
+```text
+super-admin        all eleven sections
+customer-support   live ops · orders · disputes · customers · restaurants · riders
+moderator          live ops · orders · disputes · customers · restaurants · reviews
+finance-manager    live ops · orders · restaurants · riders · payouts · audit
+marketing-manager  live ops · orders · customers · campaigns · content · broadcasts
+```
+
+**The merchant side is untouched, and that is a scope statement rather than an
+omission** — see *Deliberately deferred by Phases 14–15*.
+
+#### Phase 15 — Platform Audit Log (G32)
+
+**Done.** `/admin/audit`, gated on `audit.view`, with §6's seven-field record and
+all ten of its important mutations recorded at the store that commits them.
+
+**The gap was that the only trace of an admin decision was the decided entity.** An
+order that says `cancelled`, a restaurant that says `suspended`, a settlement that
+says `paid` — each answers *what* and none answers *who*. Four decisions:
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| Where the actor comes from | **The session, read at commit time by `stores/audit.record`.** The consequence is stated rather than discovered: a mutation with nobody signed in — the demo autopilot — is recorded as `System` rather than dropped, because a trail with holes exactly where nobody was watching is worse than one that admits a machine acted. | `stores/audit.ts` header |
+| Snapshot or join | **Snapshot.** `AuditActor` copies the name and role off the account. A live join would rewrite history on every promotion: the entry for a refund approved by a support agent would later read as approved by whatever that person became. | `types/audit.ts` (`AuditActor`) |
+| One language or translated | **The `description` is written once, in English, at record time.** The `action` slug beside it *is* translated, so the log stays navigable in Bengali and Arabic; the sentence is the evidence and stays as typed. The precedent is C25's broadcast copy — "written once, sent as written". | `lib/audit.ts` header, `describeAudit` |
+| CMS compatibility | **Adapted on read, never copied on write.** `lib/audit.fromCmsAudit` reads `CmsAuditEntry` into this shape inside `services/audit`; `stores/cms` is untouched and `/admin/cms` still shows its own richer nine-verb record. Copying content edits into a second store would have produced two records of one edit that drift the first time somebody reverts a document. | `lib/audit.ts` (`fromCmsAudit`), `services/audit.ts` header |
+
+**`timestamp` is called `at`.** §6 names the field `timestamp`; `CmsAuditEntry.at`
+has held that meaning since C26, `CmsRevision.at` beside it, and every other date
+in the codebase is an `at`/`placedAt`/`settledAt`. Honouring "keep existing CMS
+audit compatibility" is easier when the two records agree on the name of the same
+field than when an adapter has to rename it.
+
+**All ten of §6's mutations, at the store that commits them:**
+
+```text
+order intervention     stores/orders.advance         (actor === "admin" only)
+rider assignment       stores/orders.assignRider · reassignRider
+restaurant approval    stores/onboarding.decideVendor
+rider approval         stores/onboarding.decideRider
+refund decision        stores/orders.decideRefund · settleRefund
+payout action          stores/payouts.payVendor · payRider · run* · adjust
+coupon changes         stores/campaigns.addCampaign · setPaused · endCampaign
+customer blocking      stores/customers.block · unblock
+settings changes       stores/vendor-settings.save{Profile,Contact,Hours,Delivery}
+permission changes     stores/staff.setPermission · edit (on a role change)
+```
+
+**Recorded in the store, not the component**, so a second surface calling the same
+action cannot forget — the same reasoning `stores/orders` applies to notification
+fan-out. Two consequences worth stating:
+
+- **`order.intervened` is scoped to the `admin` actor**, and so is its permission
+  guard. `advance` is also how a customer cancels, a restaurant accepts and a rider
+  delivers; a blanket session check there would have broken every flow in the app,
+  and a trail of every transition would be a worse duplicate of `lifecycle.events`.
+- **`decideRefund` gained `by: "desk" | "system"`.** `advance` calls it itself to
+  settle a wallet order the customer just cancelled, where there is nothing to
+  decide. Guarding that path on `refunds.manage` would have made a customer's own
+  cancellation fail unless they held an admin right. The default is `desk`, so a new
+  caller is guarded unless it says otherwise.
+
+**Ids are deterministic and deduped on both sides**, so a replayed mutation — a
+second tab, a rehydrate, the autopilot — appends one entry rather than two.
+`recordAudit` also rehydrates the log before appending when a mutation happens on a
+surface that never opens the audit screen (a restaurant saving its delivery terms),
+because appending into an unhydrated store would work only until something
+rehydrated over it.
+
+**`stores/audit.seed` refuses to seed while the order book is empty.** The seed
+names a completed delivery, one that ended badly and a blocked account; seeding
+before those stores are up would produce the four entries that need nothing and mark
+the seed *done*, leaving the trail permanently missing every order-shaped line.
+
+**The permission reference at the bottom of the screen is Phase 14 made visible** —
+`lib/rbac.permissionsFor` of whoever is reading, so it cannot describe a set the
+gates do not enforce.
 
 ### Phase 13 — Review Moderation (2026-08-25)
 
@@ -383,6 +512,9 @@ plausible-looking implementation would miss:
 | Types | `bun run typecheck` | **PASS** (exit 0, no diagnostics) |
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
+
+Re-run on 2026-08-25 after Phases 14–15, all three still **PASS** (typecheck exit 0,
+lint no findings, build compiled every route including the new `/admin/audit`).
 
 Re-run on 2026-08-25 after Phases 12–13, all three still **PASS** (lint reports no
 findings; three unused-import warnings raised by the new components were fixed
@@ -652,6 +784,18 @@ every touched route:
 | **Phase 11 — the seed** is deterministic; ids match their phones and are unique; it contains a verified, an unverified, a blocked and a never-ordered account plus one linked to the `usr_customer` sign-in; every blocked seed carries grounds *and* prose; no active seed carries a stale block stamp | PASS |
 | **Phase 11 — the store** blocking a guest who has only ever been an order contact mints exactly one account row, keeps the name from their order, and is then refused a second time; blocking an unknown id is refused; unblocking reinstates without deleting the row and leaves both decisions in the log; seeding twice is idempotent | PASS |
 | **Phase 11 — the gate bites** `isPhoneBlocked` refuses the blocked number, refuses it written with spaces, and lets an unrelated number through; after an unblock the same number passes again. This is the seam `components/checkout/checkout-view.tsx` calls at submit, so a block stops an order rather than colouring a row | PASS |
+| **Phase 14 — effective permissions** resolved for all eight seeded accounts: customer, restaurant owner and rider hold **nothing**; the super-admin's `*` expands to all twenty; the four desk accounts hold exactly their role's set and no more | PASS |
+| **Phase 14 — the colon-slug leak** `orders:view` on `restaurant-owner` grants nothing. Verified by regression: the first implementation normalised `:`→`.` and admitted `owner@foodora.dev` to platform operations with `orders.view` — the whole platform order list. Caught before commit and the normalisation now refuses the legacy form | PASS |
+| **Phase 14 — nav and route agree** for all five desk roles the set of paths `permissionForAdminPath` + `hasPermission` allow is exactly the set the nav renders; a deep path (`/admin/orders/ord_1`, `/admin/cms/pages/x`) resolves to its section's permission and bare `/admin` does not swallow it; a path outside `/admin` resolves to `null` | PASS |
+| **Phase 14 — the guards bite in the domain, not just the button** signed in as `moderator@foodora.dev`, `decideVendor`, `customers.block`, `payVendor` and `advance(…, "admin")` each return `errors.notPermitted`; signed in as the super-admin the same four calls proceed (the payout returning its own `errors.settlementNotPayable`, which is the domain rule and not the permission) | PASS |
+| **Phase 14 — the customer flows are untouched** `advance` is guarded only on the `admin` actor, so a customer cancellation, a restaurant acceptance and a rider delivery are unaffected; `decideRefund`'s internal wallet settlement passes `by: "system"` and is not guarded. Confirmed by the autopilot's transition table containing no `admin` actor | PASS |
+| **Phase 15 — all ten mutation groups record** driving the real stores as the super-admin produced `order.intervened`, `order.rider-assigned`, `restaurant.decided`, `rider.decided`, `refund.decided`, `payout.paid`, `payout.run`, `coupon.created`, `coupon.paused`, `customer.blocked`, `settings.changed` and `permission.changed`, each with a readable sentence and the entity it names | PASS |
+| **Phase 15 — the seed names real entities** built from the live working set, it picks a completed delivery, one that ended badly and a blocked account by *rule*; every description resolves (no `undefined`, no doubled full stop) and the four desk accounts appear as actors | PASS |
+| **Phase 15 — replay appends once** recording the same mutation twice at the same instant yields one entry (deterministic id, deduped on write and on read); the seam's counts and actor list are computed over the unfiltered set so a filter cannot hide its own options | PASS |
+| **Phase 15 — the seam joins both sources** `getAuditLog` merges the platform log with `stores/cms.audit` through `fromCmsAudit`, sorted newest-first; `auditRows` yields the eight-column CSV `lib/export.toCsv` expects; the action filter narrows correctly | PASS |
+| **Phase 15 — recording survives an unhydrated store** `recordAudit` rehydrates before appending, and falls back to an in-memory append where persistence is unavailable. Verified by regression: the first implementation dropped the entry when `persist.rehydrate` was absent | PASS |
+| **Phases 14–15 — dev-server smoke test** `/admin`, `/admin/audit`, `/admin/orders`, `/admin/payouts`, `/admin/reviews`, `/admin/coupons`, `/admin/cms`, `/dashboard/settings`, `/account/orders` | 200, no runtime error in the log |
+| **Phases 14–15 — the message keys** caught by that smoke test: next-intl refuses a `.` **inside** a key, so the first `audit.action` block threw `INVALID_KEY` on every render. The nineteen action labels are now nested by resource (`action.order.intervened`), which is the slug's own dot read as the message path. Zero `INVALID_KEY` after the fix | PASS |
 | Directory derived over the *seeded* device: every seeded order's contact is present, total net spend is non-zero, and no row's net exceeds its gross | PASS |
 | Dev-server render of `/admin/customers`, `/admin/customers/[id]`, `/admin/orders` and `/checkout` under `en`, `bn` and `ar` | 200, no new errors |
 
@@ -1266,57 +1410,148 @@ domain refuses to undo rather than the one a dialog merely warns about.
   `stores/review-moderation` becomes a `review_moderation` table with `review_id` as
   its key, and `ReviewContext.moderation` becomes a join. No action signature changes.
 
-No architectural violations were introduced in Phases 1–13.
+### Added in Phases 14–15
+
+```text
+types/user.ts              (PlatformPermission — §6's 16 + 4 · PermissionResource ·
+                            PermissionAction<R>; User.permissions unchanged)
+types/audit.ts             (AuditAction · AuditEntityKind · AuditActor · AuditEntry ·
+                            AuditQuery; `at` is §6's `timestamp` — see the header)
+   ↓
+lib/rbac.ts                (pure: ROLE_PERMISSIONS · permissionsFor · hasPermission ·
+                            can · ADMIN_ROUTE_PERMISSIONS · permissionForAdminPath ·
+                            canOpenAdmin · firstAdminRouteFor)
+lib/audit.ts               (pure: actorFrom · buildAuditEntry · describeAudit ·
+                            fromCmsAudit · filterAudit · dedupe · isHighImpact)
+lib/mock/audit.ts          (buildDemoAudit(orders, customers, applications, now) —
+                            entities picked by rule from the live working set)
+   ↓
+services/audit.ts          (AuditContext · getAuditLog · getEntityAudit · auditRows;
+                            the ONE place the platform log and the CMS trail are joined)
+   ↓
+stores/auth.ts             (+ currentUser · sessionCan · useCan · useHasPermission ·
+                            useHasAnyPermission — thin; no rule decided here)
+stores/audit.ts            (entries capped at MAX_AUDIT_ENTRIES · record() resolves the
+                            actor from the session · recordAudit() for store guards)
+   ↓
+components/admin/admin-shell.tsx   (ADMIN_ROLES deleted; nav filtered and the route
+                                    gated from the same table)
+components/admin/read-only-notice.tsx  (the disabled-not-hidden convention, once)
+components/admin/audit-log-view.tsx    /admin/audit
+```
+
+Guards and recording were added **in the store that commits the mutation**, so the
+ten call sites listed in the phase write-up are the only places either concern
+appears. No component decides a permission rule; no component records an entry.
+
+* **`ADMIN_ROLES` is gone.** It was the only role check on the platform side and the
+  one thing eleven sections shared; nothing replaced it with a second list.
+* **The demo reset was extended again.** `resetAudit` joins the other nine in
+  `components/demo/demo-bar.tsx`, and is called *last* on purpose: the trail names
+  the orders, accounts and applications every reset above it has just rebuilt. It is
+  re-seeded rather than emptied, because the log describes a fortnight of desk work
+  that happened before the demonstration began.
+* **Phase E exit, stated in both store headers.** `lib/rbac`'s tables become a
+  `roles`/`permissions` join and `permissionsFor` becomes a claim on the access
+  token; `ADMIN_ROUTE_PERMISSIONS` becomes the middleware's table unchanged.
+  `stores/audit` becomes a paginated read of an `audit_log` table and `record`
+  becomes a mutation — or, more likely, disappears, because a real backend writes its
+  own trail server-side. `services/audit.getAuditLog`'s signature stays put either
+  way.
+
+No architectural violations were introduced in Phases 1–15.
 
 ---
 
 ## Next Phase
 
-**PHASE 14 — RBAC (G31).** Not started; needs an explicit instruction. Phases 1–13
-are complete and verified, so this is the first open item in §6's order.
+**PHASE 16 — Admin Analytics (G33).** Not started; needs an explicit instruction.
+Phases 1–15 are complete and verified, so this is the first open item in §6's order.
 
 ### What the spec asks for
 
-Reusable authorisation — `hasPermission(user, permission)` and
-`can(user, resource, action)` — built on the existing `User.permissions`, with no
-component deciding a permission rule of its own, applied to routes, navigation,
-buttons, destructive actions and admin operations. The listed vocabulary runs from
-`orders.view` to `audit.view` and includes `coupons.manage` and `reviews.moderate`.
+GMV/revenue, orders, completed, cancelled, refunded, commission, vendor
+performance, rider performance, customer activity, top restaurants, top products,
+delivery performance, a date range and an export — from shared prototype data, with
+nothing fabricated where the domain already has an answer.
 
-### What Phases 1–13 leave ready for it
+### What Phases 1–15 leave ready for it
 
-1. **Two of the listed permissions now have surfaces to gate.** `coupons.manage` is
-   `/admin/coupons` (create, deactivate, end) and `reviews.moderate` is
-   `/admin/reviews` (approve, hide, remove). Both already funnel every write through
-   one function per action, so a check has exactly one place to go in each.
-2. **The permission table already exists and is already folded.** Phase 10 built
-   `types/staff.ts` + `lib/staff.staffCan` for the *restaurant* side and said on
-   screen that enforcement is not platform-wide (`staff.notEnforced`). Phase 14 is
-   where that sentence comes down, and the shape to generalise is written.
-3. **The admin gate is one component.** `components/admin/admin-shell.tsx` holds the
-   only role check on the platform side (`ADMIN_ROLES`) plus the nav array every new
-   phase has appended to — so route-and-navigation gating is a change to one file
-   rather than eleven.
-4. **Every destructive action already names itself.** Blocking a customer, ending a
-   campaign, removing a review and rejecting an application each go through a single
-   store action with a typed input, so "destructive actions require a permission" is
-   a guard at those call sites and not an audit of the components around them.
+1. **Every number it asks for already has one derivation.** `lib/settlement` owns
+   commission and settlement, `services/delivery.riderEarningForOrder` owns rider
+   pay, and both hang off `Order.lifecycle.financials` — stamped once at
+   `completed`. §5.4 is satisfied by reading them rather than by re-deriving.
+2. **The vendor-side version of this screen exists.** Phase 10 built
+   `lib/analytics` (`resolveRange`, the bucketing, `RANGE_KEYS`) and
+   `components/dashboard/analytics-view.tsx` with its CSV export. Phase 16 is the
+   platform-wide read of the same shapes, and the date-range control and the export
+   helpers are reusable as they are.
+3. **The permission is already enforced.** `analytics.view` is in
+   `lib/rbac.PLATFORM_PERMISSIONS` and held by finance, marketing and partner
+   operations; adding `{ prefix: "/admin/analytics", permission: "analytics.view" }`
+   to `ADMIN_ROUTE_PERMISSIONS` and one `NAV` entry is the whole of the gating work.
+4. **The audit trail will answer the "who changed this" column for free.**
+   `services/audit.getEntityAudit` already joins both sources per entity and has no
+   reader yet.
 
 ### Open questions to settle before starting
 
-* **Whether a refused action disappears or explains itself.** The prototype's
-  convention so far is that the *domain* refuses with an i18n key and the UI shows
-  it; hiding a control is the exception (the merchant coupon board hides "end now" on
-  an expired campaign). Say which applies to permissions before the first `can()`
-  call site, or the two will be mixed.
-* **Where the check lives for a store action.** `stores/customers.block`,
-  `stores/campaigns.setPaused` and `stores/review-moderation.hide` are called
-  directly by components and take a `by` label rather than a user. Passing the whole
-  user, or checking in the component, changes every call site — decide once.
-* **Whether `customer-support` may moderate reviews.** `ADMIN_ROLES` already admits
-  `moderator`, `customer-support`, `finance-manager` and `super-admin` to every admin
-  screen. Phase 14 is where that stops being true, and the mapping from role to
-  permission set is the thing to write down first.
+* **Whether the platform's window is the vendor's window.** `lib/analytics` buckets
+  a range for one restaurant's order book. Across 24 restaurants and a demo
+  population the bucket count and the "compare to previous period" arithmetic are
+  the same, but the *cost* is not — decide whether the platform read is derived per
+  request or memoised on the store.
+* **What "customer activity" means when the population is synthetic.**
+  `admin.notifySegmentHint` already admits on screen that customer segment sizes are
+  a generated demo population while restaurants and riders are counted for real.
+  Phase 16 has to say the same thing about any customer-side chart, in the same
+  words, or it will read as a real number.
+* **Whether delivery performance is measured or stamped.** `Order.lifecycle.events`
+  has the timestamps for on-time rates and average delivery duration; nothing
+  currently aggregates them, and a seeded order's events are synthesised. Decide
+  whether the seed's timings are good enough to publish as a KPI or whether the
+  chart needs to say what it is looking at.
+
+---
+
+## Deliberately deferred by Phases 14–15 (not omissions)
+
+* **Restaurant staff enforcement is unchanged, and `staff.notEnforced` stays on
+  screen.** The previous session's note said Phase 14 was where that sentence came
+  down. It does not, and the reason is the sentence's own: there is no mail server,
+  nobody can sign in as an invited colleague, and `lib/staff.staffCan` therefore has
+  no session to be asked about. Phase 14's vocabulary is entirely
+  platform-scoped — every slug §6 lists is an admin surface — and
+  `types/staff.StaffPermission` stays a separate vocabulary on purpose: folding them
+  would give `settings.manage` two meanings, a vendor's opening hours and the
+  platform's configuration. What changed on the merchant side is that its settings
+  saves and permission edits now appear in the platform trail.
+* **No server-side gate, because there is no server session.** The shell's gate is
+  client-side, exactly as the vendor dashboard's has always been. Phase E's
+  middleware reads the same `ADMIN_ROUTE_PERMISSIONS` table; nothing about the table
+  changes when it does.
+* **Review moderation is not in the audit log.** §6's list of important mutations
+  does not include it, and `ReviewModerationRecord` already carries its own event
+  log which `/admin/reviews/[id]` renders in full. A second, thinner record of the
+  same decisions would be the duplication `fromCmsAudit` exists to avoid.
+* **Support ticket moves are not in the audit log either**, for the same reason: the
+  ticket carries its own thread and its own transitions, and §6's list names the
+  refund decision — which *is* recorded — rather than the conversation around it.
+* **No per-entity history panel yet.** `services/audit.getEntityAudit` exists and
+  has no reader. An order's or an account's own trail belongs beside that entity, and
+  adding four panels was outside a phase whose deliverable is the platform log.
+* **`metadata` is flat and JSON-primitive.** Nested objects would not survive the
+  `localStorage` round trip unchanged and would make the free-text filter unable to
+  see inside its own data. A diff of what changed field-by-field is what
+  `settings.changed` gives up for that: it records the *section*, not the fields, and
+  says so.
+* **The CMS trail's actor has no id and no role.** `CmsAuditEntry.by` was always a
+  display name, so `fromCmsAudit` derives an actor id from it and labels the role
+  `super-admin`. Two content editors sharing a display name would collapse into one
+  entry in the actor filter — a real limitation of the older record, and not
+  something an adapter can invent its way out of.
+* **The log is per browser.** Said on the screen (`audit.deviceNote`) rather than
+  implied, the same admission every persisted store in this prototype makes.
 
 ---
 

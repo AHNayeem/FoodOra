@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import type { CurrencyCode } from "@/config/regions";
-import { useAuth } from "@/stores/auth";
+import { useAuth, useCan } from "@/stores/auth";
 import { useOnboarding } from "@/stores/onboarding";
 import { completedOrdersForRider, useOrders } from "@/stores/orders";
 import { offShiftRiderIds, useFleet } from "@/stores/fleet";
@@ -33,6 +33,7 @@ import { Modal } from "@/components/ui/modal";
 import { ApplicationLog } from "@/components/onboarding/application-log";
 import { DocumentList } from "@/components/onboarding/document-list";
 import { OnboardingStatusChip } from "@/components/onboarding/status-chip";
+import { ReadOnlyNotice } from "./read-only-notice";
 
 /**
  * Which decision reaches each status.
@@ -79,6 +80,8 @@ export function AdminRiderDetail({ applicationId }: { applicationId: string }) {
   const shifts = useFleet((s) => s.shifts);
 
   const reviewer = useAuth((s) => s.user);
+  /** Phase 14: reading a courier's file and admitting them are separate rights. */
+  const mayApprove = useCan("riders", "approve");
   const reviewerName = reviewer?.name ?? t("reviewerFallback");
 
   const [now, setNow] = useState(() => Date.now());
@@ -237,7 +240,7 @@ export function AdminRiderDetail({ applicationId }: { applicationId: string }) {
                 variant={
                   actual === "approve" || actual === "activate" ? "primary" : "outline"
                 }
-                disabled={submitting}
+                disabled={submitting || !mayApprove}
                 onClick={() => start(actual)}
               >
                 <Icon className="size-4" aria-hidden />
@@ -247,6 +250,8 @@ export function AdminRiderDetail({ applicationId }: { applicationId: string }) {
           })}
         </div>
       </header>
+
+      {!mayApprove && <ReadOnlyNotice permission="riders.approve" />}
 
       {application.status === "pending" && blocking.length > 0 && (
         <p className="rounded-card border border-danger/30 bg-danger/5 p-3 text-sm font-semibold text-danger">
@@ -328,14 +333,20 @@ export function AdminRiderDetail({ applicationId }: { applicationId: string }) {
               documents={application.documents}
               required={requiredRiderDocuments(vehicleInfo.vehicle)}
               now={now}
-              onReview={(kind, status, note) => {
-                const result = reviewRiderDocument(application.id, kind, status, {
-                  authorName: reviewerName,
-                  note,
-                });
-                if (result.error) toast.error(t(result.error));
-                else toast.success(t(`documentSet.${status}`));
-              }}
+              /* Read-only for an account that may not rule on paperwork — the
+                 same second mode `DocumentList` already offers the applicant. */
+              onReview={
+                mayApprove
+                  ? (kind, status, note) => {
+                      const result = reviewRiderDocument(application.id, kind, status, {
+                        authorName: reviewerName,
+                        note,
+                      });
+                      if (result.error) toast.error(t(result.error));
+                      else toast.success(t(`documentSet.${status}`));
+                    }
+                  : undefined
+              }
             />
           </Panel>
         </div>

@@ -3124,7 +3124,12 @@
     "navPayouts": "পেআউট",
     "navCustomers": "গ্রাহক",
     "navCampaigns": "ক্যাম্পেইন",
-    "navReviews": "রিভিউ"
+    "navReviews": "রিভিউ",
+    "navAudit": "নিরীক্ষা লগ",
+    "noSectionTitle": "এই অংশ আপনার নয়",
+    "noSectionBody": "এই অ্যাকাউন্টে {permission} নেই, আর এই অংশের জন্য সেটিই দরকার।",
+    "noSectionGo": "যা খুলতে পারেন সেখানে যান",
+    "readOnly": "আপনি এটি দেখতে পারেন, বদলাতে পারেন না — কাজটির জন্য {permission} দরকার।"
   },
   "cms": {
     "title": "কনটেন্ট",
@@ -3907,7 +3912,8 @@
       "illegalTicketMove": "এই টিকিটের জন্য এটি বৈধ পরবর্তী ধাপ নয়।",
       "notFound": "সেই অর্ডার পাওয়া যায়নি।",
       "refundNotOpen": "এই অর্ডারে সিদ্ধান্ত নেওয়ার মতো কোনো ফেরত নেই।",
-      "refundNotApproved": "ফেরত দেওয়ার অপেক্ষায় কোনো অনুমোদিত ফেরত নেই।"
+      "refundNotApproved": "ফেরত দেওয়ার অপেক্ষায় কোনো অনুমোদিত ফেরত নেই।",
+      "notPermitted": "এটি আপনার করার নয় — আপনার অ্যাকাউন্টে এর অনুমতি নেই।"
     }
   },
   "customers": {
@@ -4047,7 +4053,8 @@
       "alreadyBlocked": "এই অ্যাকাউন্ট আগেই ব্লক করা আছে।",
       "notBlocked": "এই অ্যাকাউন্ট ব্লক করা নেই।",
       "blockReasonRequired": "আগে কারণ বেছে নিন।",
-      "moderationNoteRequired": "কী ঘটেছে লিখুন — কয়েকটি শব্দে আপিলের জবাব দেওয়া যায় না।"
+      "moderationNoteRequired": "কী ঘটেছে লিখুন — কয়েকটি শব্দে আপিলের জবাব দেওয়া যায় না।",
+      "notPermitted": "এটি আপনার করার নয় — আপনার অ্যাকাউন্টে এর অনুমতি নেই।"
     }
   },
   "onboarding": {
@@ -4411,7 +4418,8 @@
       "applicationNotFound": "এই ডিভাইসে ওই আবেদনটি নেই।",
       "illegalApplicationMove": "এখান থেকে এই আবেদনে ওটা করা যায় না।",
       "applicationIncomplete": "আবশ্যক কিছু এখনো বাকি আছে।",
-      "decisionReasonRequired": "আবেদনকারী যে কারণ পড়বেন সেটি লিখুন।"
+      "decisionReasonRequired": "আবেদনকারী যে কারণ পড়বেন সেটি লিখুন।",
+      "notPermitted": "এটি আপনার করার নয় — আপনার অ্যাকাউন্টে এর অনুমতি নেই।"
     }
   },
   "finance": {
@@ -4525,7 +4533,8 @@
       "settlementNotPayable": "পাঠানোর কিছু নেই: সময়কাল এখনও চলছে, ইতিমধ্যে পরিশোধিত, বা নিট শূন্য।",
       "settlementAlreadyPaid": "এই সময়কাল ইতিমধ্যে পরিশোধ করা হয়েছে।",
       "amountRequired": "একটি লেবেল এবং শূন্য নয় এমন পরিমাণ দিন।",
-      "periodAlreadyPaid": "এই সপ্তাহ ইতিমধ্যে পরিশোধিত — সমন্বয়টি পরের সময়কালে নথিভুক্ত করুন।"
+      "periodAlreadyPaid": "এই সপ্তাহ ইতিমধ্যে পরিশোধিত — সমন্বয়টি পরের সময়কালে নথিভুক্ত করুন।",
+      "notPermitted": "এটি আপনার করার নয় — আপনার অ্যাকাউন্টে এর অনুমতি নেই।"
     },
     "vendorRowMeta": "{count}টি অর্ডার · {commission} কমিশন",
     "riderRowMeta": "{count}টি ডেলিভারি · {cash} নগদ হাতে"
@@ -5049,7 +5058,8 @@
       "alreadyPaused": "ক্যাম্পেইনটি আগেই বন্ধ রাখা আছে।",
       "notPaused": "ক্যাম্পেইনটি এখনই চালু আছে।",
       "alreadyEnded": "ক্যাম্পেইনটি আগেই শেষ হয়েছে।",
-      "generic": "কিছু একটা সমস্যা হয়েছে।"
+      "generic": "কিছু একটা সমস্যা হয়েছে।",
+      "notPermitted": "এটি আপনার করার নয় — আপনার অ্যাকাউন্টে এর অনুমতি নেই।"
     }
   },
   "moderation": {
@@ -5183,7 +5193,116 @@
       "notHidden": "এই রিভিউ লুকানো নেই।",
       "removedIsFinal": "সরানো রিভিউ আর ফেরানো যায় না।",
       "reasonRequired": "আগে কারণ বেছে নিন।",
-      "noteRequired": "কী ঘটেছে লিখুন — কয়েকটি শব্দে আপিলের জবাব দেওয়া যায় না।"
+      "noteRequired": "কী ঘটেছে লিখুন — কয়েকটি শব্দে আপিলের জবাব দেওয়া যায় না।",
+      "notPermitted": "এটি আপনার করার নয় — আপনার অ্যাকাউন্টে এর অনুমতি নেই।"
+    }
+  },
+  "audit": {
+    "title": "নিরীক্ষা লগ",
+    "subtitle": "প্ল্যাটফর্মের প্রতিটি গুরুত্বপূর্ণ পরিবর্তন, আর কে করেছে।",
+    "export": "CSV নামান",
+    "statTotal": "এন্ট্রি",
+    "statTotalHint": "সব অ্যাডমিন স্ক্রিন মিলিয়ে",
+    "statHighImpact": "উচ্চ প্রভাব",
+    "statHighImpactHint": "টাকা, পার্টনার, অ্যাকাউন্ট ও অনুমতি",
+    "statActors": "অ্যাকাউন্ট",
+    "statActorsHint": "লগে যাদের নাম আছে",
+    "deviceNote": "এই ট্রেইল সত্যি, ফেরানো যায় এবং সম্পূর্ণ — এই ব্রাউজারের জন্য। প্রোটোটাইপে সার্ভার নেই, তাই এখানে যা আছে তা এই ডিভাইসের কাজ, সঙ্গে দুই সপ্তাহের বীজ-ডেটা।",
+    "searchPlaceholder": "বিবরণ, অ্যাকাউন্ট বা আইডি খুঁজুন…",
+    "searchLabel": "নিরীক্ষা লগে খুঁজুন",
+    "clear": "ফিল্টার মুছুন",
+    "filterAction": "কাজ",
+    "filterAnyAction": "যেকোনো কাজ",
+    "filterEntity": "রেকর্ড",
+    "filterAnyEntity": "যেকোনো রেকর্ড",
+    "filterActor": "অ্যাকাউন্ট",
+    "filterAnyActor": "যে কেউ",
+    "filterFrom": "থেকে",
+    "filterTo": "পর্যন্ত",
+    "showing": "{total}-এর মধ্যে {shown} দেখানো হচ্ছে",
+    "showMore": "আরও {count}টি দেখান",
+    "empty": "কিছু মেলেনি",
+    "emptyHint": "তারিখ বাড়ান বা ফিল্টার মুছুন।",
+    "permissionsTitle": "এই অ্যাকাউন্ট যা করতে পারে",
+    "permissionsHint": "{role} হিসেবে সাইন ইন করা। প্ল্যাটফর্মের প্রতিটি গেট এই তালিকা পড়ে।",
+    "action": {
+      "order": {
+        "intervened": "অর্ডারে হস্তক্ষেপ",
+        "rider-assigned": "রাইডার নিয়োগ",
+        "rider-reassigned": "রাইডার পরিবর্তন"
+      },
+      "refund": {
+        "decided": "রিফান্ড সিদ্ধান্ত",
+        "settled": "রিফান্ড পরিশোধ"
+      },
+      "restaurant": {
+        "decided": "রেস্টুরেন্ট সিদ্ধান্ত"
+      },
+      "rider": {
+        "decided": "রাইডার সিদ্ধান্ত"
+      },
+      "payout": {
+        "paid": "পেমেন্ট",
+        "run": "পেমেন্ট ব্যাচ",
+        "adjusted": "পেমেন্ট সংশোধন"
+      },
+      "coupon": {
+        "created": "ক্যাম্পেইন তৈরি",
+        "paused": "ক্যাম্পেইন স্থগিত",
+        "resumed": "ক্যাম্পেইন চালু",
+        "ended": "ক্যাম্পেইন শেষ"
+      },
+      "customer": {
+        "blocked": "কাস্টমার ব্লক",
+        "unblocked": "কাস্টমার আনব্লক"
+      },
+      "settings": {
+        "changed": "সেটিংস পরিবর্তন"
+      },
+      "permission": {
+        "changed": "অনুমতি পরিবর্তন"
+      },
+      "content": {
+        "changed": "কনটেন্ট পরিবর্তন"
+      }
+    },
+    "entity": {
+      "order": "অর্ডার",
+      "vendor-application": "রেস্টুরেন্ট আবেদন",
+      "rider-application": "রাইডার আবেদন",
+      "customer": "কাস্টমার",
+      "settlement": "সেটলমেন্ট",
+      "payout-run": "পেমেন্ট ব্যাচ",
+      "coupon": "ক্যাম্পেইন",
+      "vendor": "রেস্টুরেন্ট",
+      "staff": "অ্যাকাউন্ট",
+      "cms-document": "কনটেন্ট ডকুমেন্ট"
+    },
+    "role": {
+      "guest": "সিস্টেম",
+      "customer": "কাস্টমার",
+      "restaurant-owner": "রেস্টুরেন্ট মালিক",
+      "cafe-owner": "ক্যাফে মালিক",
+      "home-chef": "হোম শেফ",
+      "cloud-kitchen": "ক্লাউড কিচেন",
+      "catering-company": "ক্যাটারিং কোম্পানি",
+      "delivery-rider": "রাইডার",
+      "vendor-manager": "পার্টনার অপারেশনস",
+      "customer-support": "সাপোর্ট",
+      "moderator": "মডারেটর",
+      "finance-manager": "ফাইন্যান্স",
+      "marketing-manager": "মার্কেটিং",
+      "super-admin": "সুপার অ্যাডমিন"
+    },
+    "csv": {
+      "at": "সময়",
+      "actor": "অ্যাকাউন্ট",
+      "role": "ভূমিকা",
+      "action": "কাজ",
+      "entity": "রেকর্ড",
+      "entityId": "রেকর্ড আইডি",
+      "description": "বিবরণ",
+      "metadata": "বিস্তারিত"
     }
   }
 }

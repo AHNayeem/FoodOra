@@ -142,7 +142,9 @@ export function AdminCampaigns() {
         toast.error(t(res.error ?? "errors.generic"));
         return;
       }
-      setPausedLocally(res.data.couponId, res.data.pausedAt);
+      // The code travels with the id purely so the audit line names the campaign
+      // rather than its key (Phase 15).
+      setPausedLocally(res.data.couponId, res.data.pausedAt, row.coupon.code);
       toast.success(t(paused ? "paused" : "resumed", { code: row.coupon.code }));
     });
   }
@@ -155,7 +157,7 @@ export function AdminCampaigns() {
         toast.error(t(res.error ?? "errors.generic"));
         return;
       }
-      endLocally(res.data.couponId, res.data.endedAt);
+      endLocally(res.data.couponId, res.data.endedAt, row.coupon.code);
       setEnding(null);
       toast.success(t("ended", { code: row.coupon.code }));
     });

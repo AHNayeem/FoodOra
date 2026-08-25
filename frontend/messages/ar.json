@@ -3124,7 +3124,12 @@
     "navPayouts": "التحويلات",
     "navCustomers": "العملاء",
     "navCampaigns": "الحملات",
-    "navReviews": "التقييمات"
+    "navReviews": "التقييمات",
+    "navAudit": "سجل التدقيق",
+    "noSectionTitle": "هذا القسم ليس لك",
+    "noSectionBody": "هذا الحساب لا يملك {permission}، وهو ما يحتاجه هذا القسم.",
+    "noSectionGo": "اذهب إلى ما يمكنك فتحه",
+    "readOnly": "يمكنك القراءة فقط دون التغيير — يحتاج هذا الإجراء إلى {permission}."
   },
   "cms": {
     "title": "المحتوى",
@@ -3907,7 +3912,8 @@
       "illegalTicketMove": "هذه ليست خطوة تالية صحيحة لهذه التذكرة.",
       "notFound": "لم نجد هذا الطلب.",
       "refundNotOpen": "لا يوجد استرداد يمكن اتخاذ قرار بشأنه في هذا الطلب.",
-      "refundNotApproved": "لا يوجد استرداد موافَق عليه بانتظار الإعادة."
+      "refundNotApproved": "لا يوجد استرداد موافَق عليه بانتظار الإعادة.",
+      "notPermitted": "هذا ليس من صلاحياتك — لا يملك حسابك الإذن اللازم."
     }
   },
   "customers": {
@@ -4047,7 +4053,8 @@
       "alreadyBlocked": "هذا الحساب محظور بالفعل.",
       "notBlocked": "هذا الحساب غير محظور.",
       "blockReasonRequired": "اختر الأسباب أولًا.",
-      "moderationNoteRequired": "اكتب ما حدث — بضع كلمات لا تكفي للردّ على تظلّم."
+      "moderationNoteRequired": "اكتب ما حدث — بضع كلمات لا تكفي للردّ على تظلّم.",
+      "notPermitted": "هذا ليس من صلاحياتك — لا يملك حسابك الإذن اللازم."
     }
   },
   "onboarding": {
@@ -4411,7 +4418,8 @@
       "applicationNotFound": "هذا الطلب غير موجود على هذا الجهاز.",
       "illegalApplicationMove": "لا يمكن لهذا الطلب فعل ذلك من هنا.",
       "applicationIncomplete": "ما زال هناك شيء مطلوب ناقص.",
-      "decisionReasonRequired": "اكتب السبب الذي سيقرأه مقدّم الطلب."
+      "decisionReasonRequired": "اكتب السبب الذي سيقرأه مقدّم الطلب.",
+      "notPermitted": "هذا ليس من صلاحياتك — لا يملك حسابك الإذن اللازم."
     }
   },
   "finance": {
@@ -4525,7 +4533,8 @@
       "settlementNotPayable": "لا شيء للإرسال: الفترة ما زالت مفتوحة أو مدفوعة أو صافيها صفر.",
       "settlementAlreadyPaid": "هذه الفترة مدفوعة بالفعل.",
       "amountRequired": "أدخل وصفاً ومبلغاً غير صفري.",
-      "periodAlreadyPaid": "هذا الأسبوع مدفوع بالفعل — سجّل التسوية على الفترة التالية."
+      "periodAlreadyPaid": "هذا الأسبوع مدفوع بالفعل — سجّل التسوية على الفترة التالية.",
+      "notPermitted": "هذا ليس من صلاحياتك — لا يملك حسابك الإذن اللازم."
     },
     "vendorRowMeta": "{count} طلباً · {commission} عمولة",
     "riderRowMeta": "{count} توصيلة · {cash} نقد محتفظ به"
@@ -5049,7 +5058,8 @@
       "alreadyPaused": "هذه الحملة موقوفة بالفعل.",
       "notPaused": "هذه الحملة تعمل بالفعل.",
       "alreadyEnded": "هذه الحملة انتهت بالفعل.",
-      "generic": "حدث خطأ ما."
+      "generic": "حدث خطأ ما.",
+      "notPermitted": "هذا ليس من صلاحياتك — لا يملك حسابك الإذن اللازم."
     }
   },
   "moderation": {
@@ -5183,7 +5193,116 @@
       "notHidden": "هذا التقييم غير مخفي.",
       "removedIsFinal": "لا يمكن إرجاع تقييم محذوف.",
       "reasonRequired": "اختر الأسباب أولًا.",
-      "noteRequired": "اكتب ما حدث — بضع كلمات لا تكفي للردّ على تظلّم."
+      "noteRequired": "اكتب ما حدث — بضع كلمات لا تكفي للردّ على تظلّم.",
+      "notPermitted": "هذا ليس من صلاحياتك — لا يملك حسابك الإذن اللازم."
+    }
+  },
+  "audit": {
+    "title": "سجل التدقيق",
+    "subtitle": "كل تغيير مهم على المنصة، ومَن أجراه.",
+    "export": "تصدير CSV",
+    "statTotal": "المدخلات",
+    "statTotalHint": "عبر كل شاشات الإدارة",
+    "statHighImpact": "أثر عالٍ",
+    "statHighImpactHint": "المال والشركاء والحسابات والصلاحيات",
+    "statActors": "الحسابات",
+    "statActorsHint": "الأشخاص الذين يظهرون في السجل",
+    "deviceNote": "هذا السجل حقيقي وقابل للعكس وكامل — لهذا المتصفح. لا يوجد خادم في النموذج، لذا ما هنا هو ما فعله هذا الجهاز، إضافة إلى أسبوعين من العمل المُهيّأ.",
+    "searchPlaceholder": "ابحث في الوصف أو الحساب أو المعرّف…",
+    "searchLabel": "ابحث في سجل التدقيق",
+    "clear": "مسح المرشّحات",
+    "filterAction": "الإجراء",
+    "filterAnyAction": "أي إجراء",
+    "filterEntity": "السجل",
+    "filterAnyEntity": "أي سجل",
+    "filterActor": "الحساب",
+    "filterAnyActor": "أي شخص",
+    "filterFrom": "من",
+    "filterTo": "إلى",
+    "showing": "عرض {shown} من {total}",
+    "showMore": "عرض {count} أخرى",
+    "empty": "لا شيء يطابق ذلك",
+    "emptyHint": "وسّع التواريخ أو امسح المرشّحات.",
+    "permissionsTitle": "ما يمكن لهذا الحساب فعله",
+    "permissionsHint": "مسجَّل الدخول كـ {role}. كل بوابة في المنصة تقرأ هذه القائمة.",
+    "action": {
+      "order": {
+        "intervened": "تدخّل في طلب",
+        "rider-assigned": "تعيين مندوب",
+        "rider-reassigned": "إعادة تعيين مندوب"
+      },
+      "refund": {
+        "decided": "قرار استرداد",
+        "settled": "تم دفع الاسترداد"
+      },
+      "restaurant": {
+        "decided": "قرار مطعم"
+      },
+      "rider": {
+        "decided": "قرار مندوب"
+      },
+      "payout": {
+        "paid": "تحويل",
+        "run": "دفعة تحويلات",
+        "adjusted": "تعديل تحويل"
+      },
+      "coupon": {
+        "created": "إنشاء حملة",
+        "paused": "إيقاف حملة",
+        "resumed": "استئناف حملة",
+        "ended": "إنهاء حملة"
+      },
+      "customer": {
+        "blocked": "حظر عميل",
+        "unblocked": "رفع حظر عميل"
+      },
+      "settings": {
+        "changed": "تغيير الإعدادات"
+      },
+      "permission": {
+        "changed": "تغيير الصلاحيات"
+      },
+      "content": {
+        "changed": "تغيير المحتوى"
+      }
+    },
+    "entity": {
+      "order": "طلب",
+      "vendor-application": "طلب مطعم",
+      "rider-application": "طلب مندوب",
+      "customer": "عميل",
+      "settlement": "تسوية",
+      "payout-run": "دفعة تحويلات",
+      "coupon": "حملة",
+      "vendor": "مطعم",
+      "staff": "حساب",
+      "cms-document": "مستند محتوى"
+    },
+    "role": {
+      "guest": "النظام",
+      "customer": "عميل",
+      "restaurant-owner": "صاحب مطعم",
+      "cafe-owner": "صاحب مقهى",
+      "home-chef": "طاهٍ منزلي",
+      "cloud-kitchen": "مطبخ سحابي",
+      "catering-company": "شركة تجهيز",
+      "delivery-rider": "مندوب",
+      "vendor-manager": "عمليات الشركاء",
+      "customer-support": "الدعم",
+      "moderator": "مشرف",
+      "finance-manager": "المالية",
+      "marketing-manager": "التسويق",
+      "super-admin": "مدير عام"
+    },
+    "csv": {
+      "at": "الوقت",
+      "actor": "الحساب",
+      "role": "الدور",
+      "action": "الإجراء",
+      "entity": "السجل",
+      "entityId": "معرّف السجل",
+      "description": "الوصف",
+      "metadata": "التفاصيل"
     }
   }
 }

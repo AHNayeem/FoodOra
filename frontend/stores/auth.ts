@@ -2,8 +2,19 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User } from "@/types";
+import type {
+  PermissionAction,
+  PermissionResource,
+  PlatformPermission,
+  User,
+} from "@/types";
 import { signOutEverywhere } from "@/services/auth";
+import {
+  can as canDo,
+  hasAnyPermission,
+  hasPermission,
+  permissionsFor,
+} from "@/lib/rbac";
 
 /**
  * auth store — who is signed in, for the UI's benefit.
@@ -60,3 +71,57 @@ export const useAuth = create<AuthState>()(
     },
   ),
 );
+
+// ---------------------------------------------------------------------------
+// Authorization (Phase 14, G31)
+// ---------------------------------------------------------------------------
+
+/**
+ * The signed-in account, outside React.
+ *
+ * For the store guards: an admin-desk mutation asks *who is doing this* without a
+ * component having to thread the user through a signature that a dozen call sites
+ * already fill with a display label. The rule itself still lives in `lib/rbac` —
+ * nothing below decides a permission, it only asks.
+ */
+export function currentUser(): User | null {
+  return useAuth.getState().user;
+}
+
+/**
+ * May the current session do this? The guard every admin-only store action opens
+ * with, and the reason a hidden button is a courtesy rather than the rule.
+ */
+export function sessionCan(permission: PlatformPermission): boolean {
+  return hasPermission(currentUser(), permission);
+}
+
+/** `hasPermission`, as a hook. Re-renders only when the answer changes. */
+export function useHasPermission(permission: PlatformPermission): boolean {
+  return useAuth((s) => hasPermission(s.user, permission));
+}
+
+/** `can`, as a hook — `useCan("payouts", "manage")`. */
+export function useCan<R extends PermissionResource>(
+  resource: R,
+  action: PermissionAction<R>,
+): boolean {
+  return useAuth((s) => canDo(s.user, resource, action));
+}
+
+/** Any one of them — for a control reachable by more than one desk. */
+export function useHasAnyPermission(
+  permissions: readonly PlatformPermission[],
+): boolean {
+  return useAuth((s) => hasAnyPermission(s.user, permissions));
+}
+
+/**
+ * Everything the session holds — the permission reference on the audit screen.
+ *
+ * Returns a fresh array each call, so it is read through `useMemo` at the one
+ * place that needs the list rather than subscribed to directly.
+ */
+export function permissionsOfSession(): PlatformPermission[] {
+  return permissionsFor(currentUser());
+}

@@ -74,6 +74,83 @@ export const users: User[] = [
     isVerified: true,
     ...base,
   },
+  /**
+   * The four other admin desks (Phase 14, G31).
+   *
+   * Before RBAC these accounts would have been indistinguishable from the
+   * super-admin — `ADMIN_ROLES` admitted every one of them to all eleven
+   * sections — so there was no reason for them to exist and they did not. They
+   * exist now because they are the only way to *see* the thing Phase 14 built:
+   * sign in as `moderator@foodora.dev` and platform operations has three
+   * sections, not eleven, and the review queue's decision buttons are the only
+   * ones that work.
+   *
+   * `permissions` is empty on all four on purpose. `lib/rbac.ROLE_PERMISSIONS`
+   * is the grant table, and an account carries only what it holds *beyond* its
+   * role; a seeded copy of the role's own set is the duplication that file
+   * refuses. The super-admin's `*` above stays because it was already there and
+   * `lib/rbac` reads it as what it plainly means.
+   */
+  {
+    id: "usr_support",
+    name: "Farhana Akter",
+    email: "support@foodora.dev",
+    phone: "+8801711000005",
+    avatar:
+      "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=160&q=80",
+    role: "customer-support",
+    permissions: [],
+    countryCode: "BD",
+    currency: "BDT",
+    locale: "en",
+    isVerified: true,
+    ...base,
+  },
+  {
+    id: "usr_moderator",
+    name: "Imran Chowdhury",
+    email: "moderator@foodora.dev",
+    phone: "+8801711000006",
+    avatar:
+      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=160&q=80",
+    role: "moderator",
+    permissions: [],
+    countryCode: "BD",
+    currency: "BDT",
+    locale: "en",
+    isVerified: true,
+    ...base,
+  },
+  {
+    id: "usr_finance",
+    name: "Shirin Sultana",
+    email: "finance@foodora.dev",
+    phone: "+8801711000007",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80",
+    role: "finance-manager",
+    permissions: [],
+    countryCode: "BD",
+    currency: "BDT",
+    locale: "en",
+    isVerified: true,
+    ...base,
+  },
+  {
+    id: "usr_marketing",
+    name: "Nayeem Hasan",
+    email: "marketing@foodora.dev",
+    phone: "+8801711000008",
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=80",
+    role: "marketing-manager",
+    permissions: [],
+    countryCode: "BD",
+    currency: "BDT",
+    locale: "en",
+    isVerified: true,
+    ...base,
+  },
 ];
 
 /** Shared demo password for every seeded account (shown on the sign-in screen). */

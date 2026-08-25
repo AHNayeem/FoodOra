@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import type { OrderCancelReason, OrderStatus, Rider } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
+import { useCan } from "@/stores/auth";
 import { useOrders, busyRiderIds } from "@/stores/orders";
 import { offShiftRiderIds, useFleet } from "@/stores/fleet";
 import { undispatchableRiderIds, useOnboarding } from "@/stores/onboarding";
@@ -52,6 +53,7 @@ import { HandoverDialog } from "@/components/orders/handover-dialog";
 import { PayoutBreakdown } from "@/components/rider/payout-breakdown";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { cn } from "@/lib/utils";
+import { ReadOnlyNotice } from "./read-only-notice";
 
 const TICK_MS = 5000;
 
@@ -112,6 +114,8 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
    */
   const [handoverError, setHandoverError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /** Phase 14: reading an order and intervening in one are separate rights. */
+  const mayManage = useCan("orders", "manage");
 
   useEffect(() => {
     useOrders.persist.rehydrate();
@@ -264,6 +268,10 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
           <h2 className="text-h3 text-ink">{t("interveneTitle")}</h2>
           <p className="text-xs text-muted">{t("interveneHint")}</p>
         </div>
+        {/* Phase 14: `orders.view` opened this page. Moving an order is
+            `orders.manage` — a finance manager can read the intervention graph
+            and cannot press it. */}
+        {!mayManage && <ReadOnlyNotice permission="orders.manage" className="mt-3" />}
         {actions.length === 0 ? (
           <p className="mt-3 rounded-field bg-surface p-3 text-sm text-muted">
             {isTerminal(order.status) ? t("interveneTerminal") : t("interveneNone")}
@@ -274,7 +282,7 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
               <button
                 key={action.to}
                 type="button"
-                disabled={submitting}
+                disabled={submitting || !mayManage}
                 onClick={() => onAction(action)}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-pill px-4 py-2 text-sm font-semibold transition-colors active:scale-[0.98] disabled:opacity-50",
@@ -298,7 +306,7 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={submitting}
+              disabled={submitting || !mayManage}
               onClick={() => setDialog({ kind: "rider", reassign: true })}
             >
               <Bike className="size-4" aria-hidden />

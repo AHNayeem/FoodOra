@@ -43,6 +43,8 @@ import {
   type RiderDecisionInput,
 } from "@/lib/rider-onboarding";
 import { emitNotifications } from "./notifications";
+import { sessionCan } from "./auth";
+import { recordAudit } from "./audit";
 
 /**
  * onboarding store — every restaurant and rider application, on both sides
@@ -236,6 +238,13 @@ export const useOnboarding = create<OnboardingState>()(
       decideVendor: (id, input) => {
         const current = get().vendorApplication(id);
         if (!current) return { application: null, error: "errors.applicationNotFound" };
+        // Phase 14: admitting, refusing or suspending a partner is
+        // `restaurants.approve`. Only the admin queue calls this, so unlike
+        // `stores/orders.advance` there is no actor to distinguish — every caller
+        // is the platform ruling on somebody else's application.
+        if (!sessionCan("restaurants.approve")) {
+          return { application: null, error: "errors.notPermitted" };
+        }
 
         const result = decideVendorApplication(current, input);
         if (result.error) return { application: null, error: result.error };
@@ -252,6 +261,23 @@ export const useOnboarding = create<OnboardingState>()(
           admittedVendors: minted ? [...s.admittedVendors, minted] : s.admittedVendors,
         }));
         emitApplicationEvent(decided);
+        // Phase 15: §6's "restaurant approval". The minted listing is named in the
+        // metadata rather than used as the entity id — the entity is the
+        // application, because a rejection mints nothing and still has to be
+        // findable in the trail.
+        recordAudit({
+          action: "restaurant.decided",
+          entity: "vendor-application",
+          entityId: id,
+          metadata: {
+            decision: input.decision,
+            name: decided.restaurant.name,
+            applicationNumber: decided.applicationNumber,
+            vendorId: decided.vendorId,
+            minted: minted !== null,
+            reason: input.note?.trim() || null,
+          },
+        });
         return { application: decided, error: null };
       },
 
@@ -314,6 +340,10 @@ export const useOnboarding = create<OnboardingState>()(
       decideRider: (id, input) => {
         const current = get().riderApplication(id);
         if (!current) return { application: null, error: "errors.applicationNotFound" };
+        // Phase 14: the courier half of the same right — `riders.approve`.
+        if (!sessionCan("riders.approve")) {
+          return { application: null, error: "errors.notPermitted" };
+        }
 
         const result = decideRiderApplication(current, input);
         if (result.error) return { application: null, error: result.error };
@@ -330,6 +360,20 @@ export const useOnboarding = create<OnboardingState>()(
           admittedRiders: minted ? [...s.admittedRiders, minted] : s.admittedRiders,
         }));
         emitRiderEvent(decided);
+        // Phase 15: §6's "rider approval".
+        recordAudit({
+          action: "rider.decided",
+          entity: "rider-application",
+          entityId: id,
+          metadata: {
+            decision: input.decision,
+            name: decided.personal.name,
+            applicationNumber: decided.applicationNumber,
+            riderId: decided.riderId,
+            minted: minted !== null,
+            reason: input.note?.trim() || null,
+          },
+        });
         return { application: decided, error: null };
       },
 

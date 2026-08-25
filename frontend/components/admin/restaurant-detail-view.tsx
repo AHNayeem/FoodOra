@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import type { Vendor, VendorApplication, Weekday } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { useAuth } from "@/stores/auth";
+import { useAuth, useCan } from "@/stores/auth";
 import { useOnboarding } from "@/stores/onboarding";
 import {
   REQUIRED_VENDOR_DOCUMENTS,
@@ -33,6 +33,7 @@ import { Modal } from "@/components/ui/modal";
 import { ApplicationLog } from "@/components/onboarding/application-log";
 import { DocumentList } from "@/components/onboarding/document-list";
 import { OnboardingStatusChip } from "@/components/onboarding/status-chip";
+import { ReadOnlyNotice } from "./read-only-notice";
 
 const WEEK: readonly Weekday[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
@@ -73,6 +74,12 @@ export function AdminRestaurantDetail({ applicationId }: { applicationId: string
   const editVendor = useOnboarding((s) => s.editVendor);
 
   const reviewer = useAuth((s) => s.user);
+  /**
+   * Phase 14: `restaurants.view` opened this page; ruling on the application is
+   * `restaurants.approve`. Support and finance both read partner records — a
+   * refund call needs the restaurant's terms — and neither admits a partner.
+   */
+  const mayApprove = useCan("restaurants", "approve");
   const reviewerName = reviewer?.name ?? t("reviewerFallback");
 
   const [now, setNow] = useState(() => Date.now());
@@ -218,7 +225,7 @@ export function AdminRestaurantDetail({ applicationId }: { applicationId: string
                 key={target}
                 size="sm"
                 variant={decision === "approve" ? "primary" : "outline"}
-                disabled={submitting}
+                disabled={submitting || !mayApprove}
                 onClick={() => start(isReactivate ? "reactivate" : decision)}
               >
                 <Icon className="size-4" aria-hidden />
@@ -226,12 +233,19 @@ export function AdminRestaurantDetail({ applicationId }: { applicationId: string
               </Button>
             );
           })}
-          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!mayApprove}
+            onClick={() => setEditing(true)}
+          >
             <Pencil className="size-4" aria-hidden />
             {t("action.edit")}
           </Button>
         </div>
       </header>
+
+      {!mayApprove && <ReadOnlyNotice permission="restaurants.approve" />}
 
       {/* Why an approval is currently impossible, said before the reviewer presses
           the button and is refused by the domain. */}
@@ -383,14 +397,23 @@ export function AdminRestaurantDetail({ applicationId }: { applicationId: string
               documents={application.documents}
               required={REQUIRED_VENDOR_DOCUMENTS}
               now={now}
-              onReview={(kind, status, note) => {
-                const result = reviewVendorDocument(application.id, kind, status, {
-                  authorName: reviewerName,
-                  note,
-                });
-                if (result.error) toast.error(t(result.error));
-                else toast.success(t(`documentSet.${status}`));
-              }}
+              /* The one place Phase 14 *hides* rather than disables, because
+                 `DocumentList` was already built with a read-only mode for the
+                 applicant's own view of the same paperwork — an account that may
+                 not rule on a document gets that view, which is a better answer
+                 than a row of dead verify buttons. */
+              onReview={
+                mayApprove
+                  ? (kind, status, note) => {
+                      const result = reviewVendorDocument(application.id, kind, status, {
+                        authorName: reviewerName,
+                        note,
+                      });
+                      if (result.error) toast.error(t(result.error));
+                      else toast.success(t(`documentSet.${status}`));
+                    }
+                  : undefined
+              }
             />
           </Panel>
         </div>

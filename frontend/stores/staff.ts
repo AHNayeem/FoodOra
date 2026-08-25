@@ -13,6 +13,7 @@ import {
   type StaffError,
   type StaffInput,
 } from "@/lib/staff";
+import { recordAudit } from "./audit";
 
 /**
  * staff store — the people who work at each restaurant (Phase 10, G24).
@@ -117,6 +118,21 @@ export const useStaff = create<StaffState>()(
         const result = editStaff(scoped, id, input, Date.now());
         if (Object.keys(result.errors).length) return { errors: result.errors };
         replace(set, result.members);
+        // Phase 15: a role *is* a permission set (`lib/staff.STAFF_PERMISSIONS`),
+        // so changing somebody's role is one of §6's "permission changes" and the
+        // trail says so. A name or phone correction is not, hence the condition.
+        if (input.role !== current.role) {
+          recordAudit({
+            action: "permission.changed",
+            entity: "staff",
+            entityId: id,
+            metadata: {
+              name: current.name,
+              vendorId: current.vendorId,
+              change: `role ${current.role} → ${input.role}`,
+            },
+          });
+        }
         return { errors: {} };
       },
 
@@ -131,9 +147,21 @@ export const useStaff = create<StaffState>()(
       },
 
       setPermission: (id, permission, enabled) => {
+        const current = get().members.find((m) => m.id === id);
         const result = setStaffPermission(get().members, id, permission, enabled, Date.now());
         if (result.error) return { error: result.error };
         set({ members: result.members });
+        // §6's "permission changes", literally.
+        recordAudit({
+          action: "permission.changed",
+          entity: "staff",
+          entityId: id,
+          metadata: {
+            name: current?.name ?? id,
+            vendorId: current?.vendorId ?? null,
+            change: `${enabled ? "granted" : "revoked"} ${permission}`,
+          },
+        });
         return { error: null };
       },
 

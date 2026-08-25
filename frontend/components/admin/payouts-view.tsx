@@ -18,7 +18,7 @@ import type { RiderSettlement, VendorSettlement } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import type { PlatformPayouts } from "@/services/finance";
 import { getPlatformPayouts } from "@/services/finance";
-import { useAuth } from "@/stores/auth";
+import { useAuth, useCan } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { usePayouts } from "@/stores/payouts";
 import { isPayable, settlementTotals } from "@/lib/settlement";
@@ -39,6 +39,7 @@ import { PayoutFilters } from "@/components/finance/payout-filters";
 import { SettlementStatusChip } from "@/components/finance/settlement-status-chip";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { cn } from "@/lib/utils";
+import { ReadOnlyNotice } from "./read-only-notice";
 
 /** Which ledger is on screen. */
 type Payee = "vendor" | "rider";
@@ -85,6 +86,13 @@ export function AdminPayouts() {
   const [now, setNow] = useState(() => Date.now());
 
   const admin = useAuth((s) => s.user);
+  /**
+   * Phase 14: `payouts.view` opens the book; `payouts.manage` moves the money.
+   * The split is the whole point of the permission existing — the desk that reads
+   * a settlement to answer a restaurant's question is not the desk that signs the
+   * transfer off.
+   */
+  const mayPay = useCan("payouts", "manage");
   const adminName = admin?.name ?? t("deskFallback");
 
   const orders = useOrders((s) => s.orders);
@@ -276,13 +284,15 @@ export function AdminPayouts() {
         searchLabel={t("searchLabel")}
       />
 
+      {!mayPay && <ReadOnlyNotice permission="payouts.manage" />}
+
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface p-3.5">
         <p className="text-sm text-body">
           {t("runSummary", { count: runnable.length, amount: money(totals.available) })}
         </p>
         <Button
           size="sm"
-          disabled={runnable.length === 0}
+          disabled={runnable.length === 0 || !mayPay}
           onClick={() => setConfirmRun(true)}
         >
           <Send className="size-4" aria-hidden />
@@ -447,6 +457,10 @@ function Row({
   format: ReturnType<typeof useFormatter>;
 }) {
   const t = useTranslations("finance");
+  /* Asked here rather than threaded down as a prop: the answer is the same for
+     every row on the screen, and a `mayPay` prop on forty rows is forty chances
+     for one of them to be passed the wrong value. */
+  const mayPay = useCan("payouts", "manage");
 
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3.5">
@@ -480,7 +494,13 @@ function Row({
       </span>
 
       {payable ? (
-        <Button size="sm" variant="secondary" onClick={onPay} className="shrink-0">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!mayPay}
+          onClick={onPay}
+          className="shrink-0"
+        >
           {t("pay")}
         </Button>
       ) : (

@@ -3124,7 +3124,12 @@
     "navPayouts": "Payouts",
     "navCustomers": "Customers",
     "navCampaigns": "Campaigns",
-    "navReviews": "Reviews"
+    "navReviews": "Reviews",
+    "navAudit": "Audit log",
+    "noSectionTitle": "Not your section",
+    "noSectionBody": "This account doesn't hold {permission}, which is what this section needs.",
+    "noSectionGo": "Go to what you can open",
+    "readOnly": "You can read this, but not change it — the action needs {permission}."
   },
   "cms": {
     "title": "Content",
@@ -3907,7 +3912,8 @@
       "illegalTicketMove": "That's not a valid next step for this ticket.",
       "notFound": "We couldn't find that order.",
       "refundNotOpen": "There's no refund to decide on this order.",
-      "refundNotApproved": "No approved refund is waiting to be returned."
+      "refundNotApproved": "No approved refund is waiting to be returned.",
+      "notPermitted": "That isn't yours to do — your account doesn't have the permission for it."
     }
   },
   "customers": {
@@ -4047,7 +4053,8 @@
       "alreadyBlocked": "That account is already blocked.",
       "notBlocked": "That account isn't blocked.",
       "blockReasonRequired": "Choose the grounds first.",
-      "moderationNoteRequired": "Write what happened — a few words is not enough to answer an appeal with."
+      "moderationNoteRequired": "Write what happened — a few words is not enough to answer an appeal with.",
+      "notPermitted": "That isn't yours to do — your account doesn't have the permission for it."
     }
   },
   "onboarding": {
@@ -4411,7 +4418,8 @@
       "applicationNotFound": "That application is not on this device.",
       "illegalApplicationMove": "That is not something this application can do from here.",
       "applicationIncomplete": "Something required is still missing.",
-      "decisionReasonRequired": "Write the reason the applicant will read."
+      "decisionReasonRequired": "Write the reason the applicant will read.",
+      "notPermitted": "That isn't yours to do — your account doesn't have the permission for it."
     }
   },
   "finance": {
@@ -4525,7 +4533,8 @@
       "settlementNotPayable": "Nothing to send: the period is still open, already paid, or nets to zero.",
       "settlementAlreadyPaid": "This period has already been paid.",
       "amountRequired": "Enter a label and a non-zero amount.",
-      "periodAlreadyPaid": "That week has already been paid — record the correction on the next period."
+      "periodAlreadyPaid": "That week has already been paid — record the correction on the next period.",
+      "notPermitted": "That isn't yours to do — your account doesn't have the permission for it."
     },
     "vendorRowMeta": "{count} orders · {commission} commission",
     "riderRowMeta": "{count} deliveries · {cash} cash held"
@@ -5049,7 +5058,8 @@
       "alreadyPaused": "That campaign is already deactivated.",
       "notPaused": "That campaign is already running.",
       "alreadyEnded": "That campaign has already ended.",
-      "generic": "Something went wrong."
+      "generic": "Something went wrong.",
+      "notPermitted": "That isn't yours to do — your account doesn't have the permission for it."
     }
   },
   "moderation": {
@@ -5183,7 +5193,116 @@
       "notHidden": "That review is not hidden.",
       "removedIsFinal": "A removed review cannot be brought back.",
       "reasonRequired": "Pick the grounds first.",
-      "noteRequired": "Write what happened — a few words cannot answer an appeal."
+      "noteRequired": "Write what happened — a few words cannot answer an appeal.",
+      "notPermitted": "That isn't yours to do — your account doesn't have the permission for it."
+    }
+  },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Every important change on the platform, and the account that made it.",
+    "export": "Export CSV",
+    "statTotal": "Entries",
+    "statTotalHint": "Across every admin surface",
+    "statHighImpact": "High impact",
+    "statHighImpactHint": "Money, partners, accounts and rights",
+    "statActors": "Accounts",
+    "statActorsHint": "People who appear in the log",
+    "deviceNote": "The trail is real, reversible and complete — for this browser. The prototype has no server, so what is recorded here is what this device did, plus a seeded fortnight of desk work.",
+    "searchPlaceholder": "Search description, account or id…",
+    "searchLabel": "Search the audit log",
+    "clear": "Clear filters",
+    "filterAction": "Action",
+    "filterAnyAction": "Any action",
+    "filterEntity": "Record",
+    "filterAnyEntity": "Any record",
+    "filterActor": "Account",
+    "filterAnyActor": "Anybody",
+    "filterFrom": "From",
+    "filterTo": "To",
+    "showing": "Showing {shown} of {total}",
+    "showMore": "Show {count} more",
+    "empty": "Nothing matches that",
+    "emptyHint": "Widen the dates or clear the filters.",
+    "permissionsTitle": "What this account may do",
+    "permissionsHint": "Signed in as {role}. Every gate on the platform reads this list.",
+    "action": {
+      "order": {
+        "intervened": "Order intervention",
+        "rider-assigned": "Rider assigned",
+        "rider-reassigned": "Rider reassigned"
+      },
+      "refund": {
+        "decided": "Refund decision",
+        "settled": "Refund paid"
+      },
+      "restaurant": {
+        "decided": "Restaurant decision"
+      },
+      "rider": {
+        "decided": "Rider decision"
+      },
+      "payout": {
+        "paid": "Payout",
+        "run": "Payout run",
+        "adjusted": "Payout adjustment"
+      },
+      "coupon": {
+        "created": "Campaign created",
+        "paused": "Campaign paused",
+        "resumed": "Campaign resumed",
+        "ended": "Campaign ended"
+      },
+      "customer": {
+        "blocked": "Customer blocked",
+        "unblocked": "Customer unblocked"
+      },
+      "settings": {
+        "changed": "Settings changed"
+      },
+      "permission": {
+        "changed": "Permissions changed"
+      },
+      "content": {
+        "changed": "Content changed"
+      }
+    },
+    "entity": {
+      "order": "Order",
+      "vendor-application": "Restaurant application",
+      "rider-application": "Rider application",
+      "customer": "Customer",
+      "settlement": "Settlement",
+      "payout-run": "Payout run",
+      "coupon": "Campaign",
+      "vendor": "Restaurant",
+      "staff": "Account",
+      "cms-document": "Content document"
+    },
+    "role": {
+      "guest": "System",
+      "customer": "Customer",
+      "restaurant-owner": "Restaurant owner",
+      "cafe-owner": "Cafe owner",
+      "home-chef": "Home chef",
+      "cloud-kitchen": "Cloud kitchen",
+      "catering-company": "Catering company",
+      "delivery-rider": "Rider",
+      "vendor-manager": "Partner operations",
+      "customer-support": "Support",
+      "moderator": "Moderator",
+      "finance-manager": "Finance",
+      "marketing-manager": "Marketing",
+      "super-admin": "Super admin"
+    },
+    "csv": {
+      "at": "Time",
+      "actor": "Account",
+      "role": "Role",
+      "action": "Action",
+      "entity": "Record",
+      "entityId": "Record id",
+      "description": "Description",
+      "metadata": "Details"
     }
   }
 }

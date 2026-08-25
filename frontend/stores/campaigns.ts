@@ -6,6 +6,7 @@ import { persist } from "zustand/middleware";
 import type { Coupon } from "@/types";
 import type { PlatformCampaignContext } from "@/services/coupons";
 import { buildCampaignDeskSeed } from "@/lib/mock/coupons";
+import { recordAudit } from "./audit";
 
 /**
  * campaigns store — what the platform desk has done to the coupon catalogue
@@ -46,10 +47,17 @@ interface CampaignsState {
 
   /** Commit a campaign the seam has already validated. */
   addCampaign: (coupon: Coupon) => void;
-  /** Deactivate (`pausedAt` set) or reactivate (`null`) a campaign. */
-  setPaused: (couponId: string, pausedAt: string | null) => void;
+  /**
+   * Deactivate (`pausedAt` set) or reactivate (`null`) a campaign.
+   *
+   * `code` is carried for the audit trail only (Phase 15). The store keys on the
+   * id and always will; a log line reading "Paused cpn_platform_weekend" is a
+   * line nobody can act on, and the desk is the only caller and always has the
+   * code in hand.
+   */
+  setPaused: (couponId: string, pausedAt: string | null, code?: string) => void;
   /** Close a campaign's window now. Not reversible — the row stays readable. */
-  endCampaign: (couponId: string, endedAt: string) => void;
+  endCampaign: (couponId: string, endedAt: string, code?: string) => void;
 
   seed: (now?: number) => void;
   resetDemo: (now?: number) => void;
@@ -65,14 +73,36 @@ export const useCampaigns = create<CampaignsState>()(
       hydrated: false,
       seeded: false,
 
-      addCampaign: (coupon) =>
-        set((s) =>
-          s.created.some((c) => c.id === coupon.id)
-            ? {}
-            : { created: [coupon, ...s.created] },
-        ),
+      /**
+       * Phase 14 note: these three are **not** permission-guarded here, and that
+       * is deliberate rather than an omission.
+       *
+       * `coupons.manage` is the permission that opens `/admin/coupons`
+       * (`lib/rbac.ADMIN_ROUTE_PERMISSIONS`), which is the only surface that calls
+       * any of them — so a session without the right cannot reach a caller. The
+       * guards elsewhere exist where view and manage are *different* rights on one
+       * screen; adding one here would have to be a silent no-op, because all three
+       * return `void`, and a write that quietly does nothing is worse than no
+       * guard at all.
+       */
+      addCampaign: (coupon) => {
+        if (get().created.some((c) => c.id === coupon.id)) return;
+        set((s) => ({ created: [coupon, ...s.created] }));
+        // Phase 15: §6's "coupon changes".
+        recordAudit({
+          action: "coupon.created",
+          entity: "coupon",
+          entityId: coupon.id,
+          metadata: {
+            code: coupon.code,
+            title: coupon.title,
+            kind: coupon.kind,
+            value: coupon.value,
+          },
+        });
+      },
 
-      setPaused: (couponId, pausedAt) =>
+      setPaused: (couponId, pausedAt, code) => {
         set((s) => {
           const paused = { ...s.paused };
           // Reactivating *removes* the row rather than writing a null: the
@@ -81,10 +111,24 @@ export const useCampaigns = create<CampaignsState>()(
           if (pausedAt === null) delete paused[couponId];
           else paused[couponId] = pausedAt;
           return { paused };
-        }),
+        });
+        recordAudit({
+          action: pausedAt === null ? "coupon.resumed" : "coupon.paused",
+          entity: "coupon",
+          entityId: couponId,
+          metadata: { code: code ?? null },
+        });
+      },
 
-      endCampaign: (couponId, endedAt) =>
-        set((s) => ({ endedAt: { ...s.endedAt, [couponId]: endedAt } })),
+      endCampaign: (couponId, endedAt, code) => {
+        set((s) => ({ endedAt: { ...s.endedAt, [couponId]: endedAt } }));
+        recordAudit({
+          action: "coupon.ended",
+          entity: "coupon",
+          entityId: couponId,
+          metadata: { code: code ?? null, endedAt },
+        });
+      },
 
       seed: (now = Date.now()) => {
         if (get().seeded) return;

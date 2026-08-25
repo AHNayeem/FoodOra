@@ -114,7 +114,9 @@ export type CustomerError =
   | "errors.alreadyBlocked"
   | "errors.notBlocked"
   | "errors.blockReasonRequired"
-  | "errors.moderationNoteRequired";
+  | "errors.moderationNoteRequired"
+  /** The signed-in account does not hold `customers.manage` (Phase 14, G31). */
+  | "errors.notPermitted";
 
 /** Deterministic event id — stable across a re-render, unique per record+time. */
 function moderationEventId(

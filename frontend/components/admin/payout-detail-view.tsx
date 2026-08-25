@@ -9,7 +9,7 @@ import type { Order, RiderSettlement, VendorSettlement } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import type { PayoutStatement } from "@/services/finance";
 import { getPayoutStatement } from "@/services/finance";
-import { useAuth } from "@/stores/auth";
+import { useAuth, useCan } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { usePayouts } from "@/stores/payouts";
 import { isPayable } from "@/lib/settlement";
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { CommissionStatement } from "@/components/finance/commission-statement";
 import { SettlementStatusChip } from "@/components/finance/settlement-status-chip";
+import { ReadOnlyNotice } from "./read-only-notice";
 
 /**
  * AdminPayoutDetail — one settlement, and everything needed to pay it (Phase 8,
@@ -52,6 +53,8 @@ export function AdminPayoutDetail({ settlementId }: { settlementId: string }) {
   const [now, setNow] = useState(() => Date.now());
 
   const admin = useAuth((s) => s.user);
+  /** Phase 14: reading one settlement is `payouts.view`; paying it is not. */
+  const mayPay = useCan("payouts", "manage");
   const adminName = admin?.name ?? t("deskFallback");
 
   const orders = useOrders((s) => s.orders);
@@ -204,9 +207,11 @@ export function AdminPayoutDetail({ settlementId }: { settlementId: string }) {
           </div>
         </div>
 
+        {!mayPay && <ReadOnlyNotice permission="payouts.manage" className="mt-4" />}
+
         <div className="mt-4 flex flex-wrap gap-2">
           {payable ? (
-            <Button size="sm" onClick={handlePay}>
+            <Button size="sm" disabled={!mayPay} onClick={handlePay}>
               <Send className="size-4" aria-hidden />
               {t("paySettlement")}
             </Button>
@@ -219,7 +224,12 @@ export function AdminPayoutDetail({ settlementId }: { settlementId: string }) {
               adjustment concept, and offering one here would imply a record
               `RiderSettlement` does not carry. */}
           {data.kind === "vendor" && settlement.status !== "paid" && (
-            <Button size="sm" variant="outline" onClick={() => setAdjusting(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!mayPay}
+              onClick={() => setAdjusting(true)}
+            >
               <Plus className="size-4" aria-hidden />
               {t("addAdjustment")}
             </Button>

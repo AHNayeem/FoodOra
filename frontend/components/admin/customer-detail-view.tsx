@@ -24,7 +24,7 @@ import type {
   SupportTicket,
 } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { useAuth } from "@/stores/auth";
+import { useAuth, useCan } from "@/stores/auth";
 import { useCustomers } from "@/stores/customers";
 import { useOrders } from "@/stores/orders";
 import { useSupport } from "@/stores/support";
@@ -43,6 +43,7 @@ import { Modal } from "@/components/ui/modal";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
 import { TicketStatusChip } from "@/components/account/support-view";
+import { ReadOnlyNotice } from "./read-only-notice";
 import { cn } from "@/lib/utils";
 
 /** Which dialog is open. `null` is the resting state. */
@@ -80,6 +81,8 @@ export function AdminCustomerDetail({ customerId }: { customerId: string }) {
   const addNote = useCustomers((s) => s.addNote);
 
   const moderator = useAuth((s) => s.user);
+  /** Phase 14: reading the directory and acting on an account are separate rights. */
+  const mayManage = useCan("customers", "manage");
   const moderatorName = moderator?.name ?? "Platform desk";
 
   const [now, setNow] = useState(() => Date.now());
@@ -217,23 +220,37 @@ export function AdminCustomerDetail({ customerId }: { customerId: string }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPending("note")}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!mayManage}
+            onClick={() => setPending("note")}
+          >
             <StickyNote className="size-4" aria-hidden />
             {t("action.note")}
           </Button>
           {blocked ? (
-            <Button size="sm" onClick={() => setPending("unblock")}>
+            <Button size="sm" disabled={!mayManage} onClick={() => setPending("unblock")}>
               <UserCheck className="size-4" aria-hidden />
               {t("action.unblock")}
             </Button>
           ) : (
-            <Button variant="danger" size="sm" onClick={() => setPending("block")}>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={!mayManage}
+              onClick={() => setPending("block")}
+            >
               <Ban className="size-4" aria-hidden />
               {t("action.block")}
             </Button>
           )}
         </div>
       </header>
+
+      {/* Phase 14: `customers.view` opened this page; blocking somebody is
+          `customers.manage`, which a moderator does not hold. */}
+      {!mayManage && <ReadOnlyNotice permission="customers.manage" />}
 
       {blocked && customer.blockedAt && (
         <div className="rounded-card border border-danger/30 bg-danger/5 p-4">

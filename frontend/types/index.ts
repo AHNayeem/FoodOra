@@ -5,6 +5,7 @@ export * from "./menu";
 export * from "./vendor-settings";
 export * from "./staff";
 export * from "./user";
+export * from "./audit";
 export * from "./customer";
 export * from "./settings";
 export * from "./cart";

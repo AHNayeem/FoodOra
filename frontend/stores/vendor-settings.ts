@@ -17,6 +17,7 @@ import {
   saveProfile,
   type SettingsError,
 } from "@/lib/vendor-settings";
+import { recordAudit } from "./audit";
 
 /**
  * vendor-settings store — what each restaurant has changed about itself
@@ -83,6 +84,42 @@ interface VendorSettingsState {
   setHydrated: () => void;
 }
 
+/**
+ * Record one settings change (Phase 15) — §6's "settings changes".
+ *
+ * Which *section* changed rather than which fields, and that is a deliberate
+ * limit: the draft is a diff and a field-level trail would mean diffing the diff
+ * on every save, storing the old value beside the new one, and answering what a
+ * localised opening-hours grid looks like as a metadata string. The section is
+ * what somebody auditing asks for — "who changed this restaurant's delivery
+ * terms, and when" — and the draft's own `updatedAt` already has the rest.
+ *
+ * No permission guard: the caller is the restaurant's own dashboard, gated on the
+ * owner's account resolving to the vendor (§5.3), and the platform permission
+ * vocabulary is deliberately not the restaurant one — see the header of
+ * `lib/rbac`.
+ */
+function auditSave(vendorId: string, section: string, name: string | null): void {
+  recordAudit({
+    action: "settings.changed",
+    entity: "vendor",
+    entityId: vendorId,
+    metadata: { section, name: name ?? vendorId },
+  });
+}
+
+/**
+ * The restaurant's name for a log line, if this device has one.
+ *
+ * The draft only holds a name once somebody has edited the profile, and the
+ * catalog is not imported here on purpose — a store that holds a diff should not
+ * acquire a dependency on the thing it is a diff *of* for the sake of a label.
+ * So the id stands in, which is what `describeAudit` degrades to anyway.
+ */
+function draftName(draft: VendorSettingsDraft): string | null {
+  return draft.profile.name ?? null;
+}
+
 export const useVendorSettings = create<VendorSettingsState>()(
   persist(
     (set, get) => ({
@@ -95,6 +132,7 @@ export const useVendorSettings = create<VendorSettingsState>()(
         const result = saveProfile(get().draftFor(vendorId), input, Date.now());
         if (Object.keys(result.errors).length) return { errors: result.errors };
         commit(set, result.draft);
+        auditSave(vendorId, "profile", input.name ?? null);
         return { errors: {} };
       },
 
@@ -102,6 +140,7 @@ export const useVendorSettings = create<VendorSettingsState>()(
         const result = saveContact(get().draftFor(vendorId), input, Date.now());
         if (Object.keys(result.errors).length) return { errors: result.errors };
         commit(set, result.draft);
+        auditSave(vendorId, "contact", draftName(result.draft));
         return { errors: {} };
       },
 
@@ -109,6 +148,7 @@ export const useVendorSettings = create<VendorSettingsState>()(
         const result = saveHours(get().draftFor(vendorId), hours, Date.now());
         if (Object.keys(result.errors).length) return { errors: result.errors };
         commit(set, result.draft);
+        auditSave(vendorId, "hours", draftName(result.draft));
         return { errors: {} };
       },
 
@@ -116,6 +156,7 @@ export const useVendorSettings = create<VendorSettingsState>()(
         const result = saveDelivery(get().draftFor(vendorId), delivery, Date.now());
         if (Object.keys(result.errors).length) return { errors: result.errors };
         commit(set, result.draft);
+        auditSave(vendorId, "delivery", draftName(result.draft));
         return { errors: {} };
       },
 

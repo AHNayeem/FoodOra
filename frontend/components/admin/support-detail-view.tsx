@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import type { SupportOutcome, SupportTicket, SupportTicketStatus } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
-import { useAuth } from "@/stores/auth";
+import { useAuth, useCan } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { useSupport } from "@/stores/support";
 import { TICKET_TRANSITIONS, isTicketLive, suggestedRefundAmount } from "@/lib/support";
@@ -31,6 +31,7 @@ import { TicketStatusChip } from "@/components/account/support-view";
 import { TicketThread } from "@/components/support/ticket-thread";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { cn } from "@/lib/utils";
+import { ReadOnlyNotice } from "./read-only-notice";
 
 /** Outcomes the desk can pick, with `refused` last because it is the exception. */
 const OUTCOMES: readonly SupportOutcome[] = [
@@ -75,6 +76,13 @@ export function AdminSupportDetail({ ticketId }: { ticketId: string }) {
     ticket ? s.orders.find((o) => o.id === ticket.orderId) : undefined,
   );
   const agent = useAuth((s) => s.user);
+  /**
+   * Phase 14: `support.view` reads the dispute; `support.manage` answers it.
+   * A moderator holds the first and not the second — they need the thread as
+   * context for a review, and have no business replying to the customer as the
+   * platform.
+   */
+  const mayHandle = useCan("support", "manage");
   const agentName = agent?.name ?? t("deskFallbackName");
 
   const [message, setMessage] = useState("");
@@ -191,7 +199,11 @@ export function AdminSupportDetail({ ticketId }: { ticketId: string }) {
         </div>
         <div className="flex flex-wrap gap-2">
           {live && (
-            <Button size="sm" disabled={submitting} onClick={() => setDecide(true)}>
+            <Button
+              size="sm"
+              disabled={submitting || !mayHandle}
+              onClick={() => setDecide(true)}
+            >
               <Check className="size-4" aria-hidden />
               {t("decideTicket")}
             </Button>
@@ -201,7 +213,7 @@ export function AdminSupportDetail({ ticketId }: { ticketId: string }) {
               key={target}
               size="sm"
               variant="outline"
-              disabled={submitting}
+              disabled={submitting || !mayHandle}
               onClick={() => runMove(target)}
             >
               {target === "in-review" && !live && (
@@ -212,6 +224,8 @@ export function AdminSupportDetail({ ticketId }: { ticketId: string }) {
           ))}
         </div>
       </header>
+
+      {!mayHandle && <ReadOnlyNotice permission="support.manage" />}
 
       {ticket.resolution && (
         <section
@@ -269,7 +283,7 @@ export function AdminSupportDetail({ ticketId }: { ticketId: string }) {
             <Button
               size="sm"
               className="mt-2"
-              disabled={message.trim().length < 2 || submitting}
+              disabled={message.trim().length < 2 || submitting || !mayHandle}
               onClick={() => send("customer")}
             >
               {submitting && <Loader2 className="size-4 animate-spin" aria-hidden />}
@@ -294,7 +308,7 @@ export function AdminSupportDetail({ ticketId }: { ticketId: string }) {
               size="sm"
               variant="outline"
               className="mt-2"
-              disabled={note.trim().length < 2 || submitting}
+              disabled={note.trim().length < 2 || submitting || !mayHandle}
               onClick={() => send("internal")}
             >
               {t("noteAdd")}

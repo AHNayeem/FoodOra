@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Banknote, Check, Loader2, X } from "lucide-react";
 import type { Order } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
+import { useCan } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import {
   canDecideRefund,
@@ -17,6 +18,7 @@ import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { ReadOnlyNotice } from "./read-only-notice";
 
 /**
  * RefundControls — the refund lifecycle, as buttons (Phase 5, G07).
@@ -45,6 +47,15 @@ export function RefundControls({
 
   const decideRefund = useOrders((s) => s.decideRefund);
   const settleRefund = useOrders((s) => s.settleRefund);
+  /**
+   * Phase 14: a refund is its own right.
+   *
+   * `refunds.manage`, not `orders.manage` — deliberately separate, because giving
+   * money back is the one admin action with a balance-sheet consequence and the
+   * desks that may do it (support, finance) are not the desk that may move an
+   * order along. The domain refuses it too; this only stops the click.
+   */
+  const mayRefund = useCan("refunds", "manage");
 
   const currency = order.pricing.currency as CurrencyCode;
   const [amount, setAmount] = useState<string>(() => String(order.pricing.total));
@@ -140,8 +151,13 @@ export function RefundControls({
           <p className="mt-1.5 text-xs text-muted">
             {t(refundIsInstant(method) ? "refundInstantHint" : "refundProviderHint")}
           </p>
+          {!mayRefund && <ReadOnlyNotice permission="refunds.manage" className="mt-3" />}
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" disabled={submitting} onClick={() => decide("approve")}>
+            <Button
+              size="sm"
+              disabled={submitting || !mayRefund}
+              onClick={() => decide("approve")}
+            >
               {submitting ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               ) : (
@@ -152,7 +168,7 @@ export function RefundControls({
             <Button
               size="sm"
               variant="outline"
-              disabled={submitting}
+              disabled={submitting || !mayRefund}
               onClick={() => decide("reject")}
             >
               <X className="size-4" aria-hidden />
@@ -165,7 +181,12 @@ export function RefundControls({
       {canSettle && (
         <div className="mt-4 border-t border-line pt-3">
           <p className="text-xs text-muted">{t("refundAwaitingSettlement")}</p>
-          <Button size="sm" className="mt-2" disabled={submitting} onClick={settle}>
+          <Button
+            size="sm"
+            className="mt-2"
+            disabled={submitting || !mayRefund}
+            onClick={settle}
+          >
             {submitting && <Loader2 className="size-4 animate-spin" aria-hidden />}
             {t("refundMarkSettled")}
           </Button>

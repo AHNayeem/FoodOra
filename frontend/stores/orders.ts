@@ -46,6 +46,8 @@ import { offShiftRiderIds, useFleet } from "./fleet";
 import { undispatchableRiderIds, useOnboarding } from "./onboarding";
 import { emitNotifications, useNotifications } from "./notifications";
 import { useWallet } from "./wallet";
+import { sessionCan } from "./auth";
+import { recordAudit } from "./audit";
 
 /**
  * orders store — the single source of truth for every live order, on every
@@ -143,7 +145,16 @@ interface OrdersState {
   decideRefund: (
     id: string,
     decision: "approve" | "reject",
-    input?: { amount?: number },
+    input?: {
+      amount?: number;
+      /**
+       * Who is deciding. `desk` — the default — is a person at the admin desk and
+       * needs `refunds.manage`; `system` is this store settling a wallet order the
+       * customer just cancelled, which is not a permission question. See the
+       * implementation.
+       */
+      by?: "desk" | "system";
+    },
   ) => { order: Order | null; error: string | null };
   /** Record that an approved refund has actually reached the customer. */
   settleRefund: (id: string) => { order: Order | null; error: string | null };
@@ -235,6 +246,20 @@ export const useOrders = create<OrdersState>()(
         if (!current) return { order: null, error: "errors.notFound" as const };
 
         /**
+         * Phase 14: an admin intervention needs `orders.manage`.
+         *
+         * Guarded on the **actor**, not on the session, and that is the whole
+         * subtlety. `advance` is how a customer cancels, a restaurant accepts and
+         * a rider delivers; only the `admin` actor is the platform reaching into
+         * somebody else's order, and only that case is a permission question. A
+         * blanket session check here would have broken every flow in the app,
+         * which is exactly the kind of over-application §5.5 forbids.
+         */
+        if (actor === "admin" && !sessionCan("orders.manage")) {
+          return { order: null, error: "errors.notPermitted" as const };
+        }
+
+        /**
          * Completing is when the rider's side of the order is written down (G04).
          * The payout needs the zone's fare rules and the trip's geometry, neither
          * of which the pure machine can see, so it is resolved here — once, for
@@ -254,6 +279,34 @@ export const useOrders = create<OrdersState>()(
         }));
         emitNotifications(notificationsFor(result.order, result.event));
 
+        // Phase 15: §6's "order intervention". Only the `admin` actor, for the
+        // same reason the guard above is on the actor — a customer cancelling
+        // their own dinner is not a platform mutation, and a trail that recorded
+        // every transition would be a duplicate of `lifecycle.events` with none
+        // of its detail.
+        if (actor === "admin") {
+          recordAudit({
+            action: "order.intervened",
+            entity: "order",
+            entityId: id,
+            metadata: {
+              to,
+              from: current.status,
+              orderNumber: result.order.orderNumber,
+              name: result.order.vendor.name,
+              // A note where a surface wrote one, otherwise the cancellation
+              // reason code — the two are the only free explanation a transition
+              // carries, and an intervention with neither is a bare status move.
+              reason:
+                typeof patch.note === "string"
+                  ? patch.note
+                  : typeof patch.reason === "string"
+                    ? patch.reason
+                    : null,
+            },
+          });
+        }
+
         // Settling the wallet is part of committing the transition, not a thing
         // a surface remembers to do: an order can be cancelled from four of
         // them, and the money has to come back from all four.
@@ -268,7 +321,7 @@ export const useOrders = create<OrdersState>()(
         // be reported as its failure — the settlement is reported only by what
         // it commits.
         if (owesWalletRefund(result.order)) {
-          const settled = get().decideRefund(id, "approve");
+          const settled = get().decideRefund(id, "approve", { by: "system" });
           if (settled.order) return { order: settled.order, error: null };
         }
 
@@ -292,10 +345,28 @@ export const useOrders = create<OrdersState>()(
         if (holding && holding.id !== id) {
           return { order: null, error: "errors.riderBusy" };
         }
-        return get().advance(id, "rider-assigned", "system", {
+        const result = get().advance(id, "rider-assigned", "system", {
           rider: riderSnapshot(rider),
           assignment,
         });
+        // Phase 15: §6's "rider assignment". Recorded here rather than in
+        // `advance` because the assignment is what matters, and the transition it
+        // rides on is `system` — so the actor-scoped rule above would have missed
+        // every one of them.
+        if (result.order) {
+          recordAudit({
+            action: "order.rider-assigned",
+            entity: "order",
+            entityId: id,
+            metadata: {
+              name: rider.name,
+              riderId: rider.id,
+              mode: assignment,
+              orderNumber: result.order.orderNumber,
+            },
+          });
+        }
+        return result;
       },
 
       /**
@@ -330,7 +401,25 @@ export const useOrders = create<OrdersState>()(
         }
         const released = get().advance(id, "ready", "admin", { note: "reassigned" });
         if (released.error) return { order: null, error: released.error };
-        return get().assignRider(id, rider, "manual");
+        const result = get().assignRider(id, rider, "manual");
+        // The two transitions already produced an intervention entry and an
+        // assignment entry. This third one is the *decision* — "the desk took this
+        // job off one courier and gave it to another" — which neither of the other
+        // two says, and which is the line an incident review looks for.
+        if (result.order) {
+          recordAudit({
+            action: "order.rider-reassigned",
+            entity: "order",
+            entityId: id,
+            metadata: {
+              name: rider.name,
+              riderId: rider.id,
+              fromRiderId: current.lifecycle.rider?.id ?? null,
+              fromRider: current.lifecycle.rider?.name ?? null,
+            },
+          });
+        }
+        return result;
       },
 
       autoDispatch: (id) => {
@@ -394,6 +483,22 @@ export const useOrders = create<OrdersState>()(
         if (!current) return { order: null, error: "errors.notFound" };
         if (!canDecideRefund(current)) return { order: null, error: "errors.refundNotOpen" };
 
+        /**
+         * Phase 14: a desk decision needs `refunds.manage`. A `system` one does
+         * not, and the distinction is why `input.by` exists.
+         *
+         * `advance` calls this itself to settle a wallet order the customer just
+         * cancelled — the money is in a ledger this app owns and there is nothing
+         * to decide. Guarding that path on a permission would have made a
+         * customer's own cancellation fail unless they held an admin right, which
+         * is the §5.5 regression this parameter exists to prevent. The default is
+         * `desk`, so a new caller is guarded unless it says otherwise.
+         */
+        const by = input.by ?? "desk";
+        if (by === "desk" && !sessionCan("refunds.manage")) {
+          return { order: null, error: "errors.notPermitted" };
+        }
+
         const decided =
           decision === "approve"
             ? approveRefund(current, { amount: input.amount })
@@ -406,6 +511,23 @@ export const useOrders = create<OrdersState>()(
             decided.updatedAt,
           ),
         );
+
+        // Phase 15: §6's "refund decision". Recorded for both routes, labelled
+        // by which one it was, because "the desk approved ৳840" and "the system
+        // returned it automatically" are different facts about the same money.
+        recordAudit({
+          action: "refund.decided",
+          entity: "order",
+          entityId: id,
+          metadata: {
+            decision,
+            by,
+            amount: decided.lifecycle.refundAmount,
+            currency: decided.pricing.currency,
+            method: decided.lifecycle.refundMethod ?? null,
+            orderNumber: decided.orderNumber,
+          },
+        });
 
         if (decision === "reject") return { order: decided, error: null };
 
@@ -441,6 +563,22 @@ export const useOrders = create<OrdersState>()(
         const current = get().orders.find((o) => o.id === id);
         if (!current) return { order: null, error: "errors.notFound" };
         if (!canSettleRefund(current)) return { order: null, error: "errors.refundNotApproved" };
+
+        // Not guarded on a permission, deliberately: this records that money the
+        // desk already approved has actually arrived, and `decideRefund` calls it
+        // itself the instant a wallet refund is approved. The decision was the
+        // permission question; this is its consequence.
+        recordAudit({
+          action: "refund.settled",
+          entity: "order",
+          entityId: id,
+          metadata: {
+            amount: current.lifecycle.refundAmount,
+            currency: current.pricing.currency,
+            method: current.lifecycle.refundMethod ?? null,
+            orderNumber: current.orderNumber,
+          },
+        });
 
         if (canTransition(current.status, "refunded")) {
           const result = get().advance(id, "refunded", "system", {

@@ -529,7 +529,9 @@ export type PayoutError =
   | "errors.settlementAlreadyPaid"
   | "errors.amountRequired"
   /** A correction to a week the money has already left for. */
-  | "errors.periodAlreadyPaid";
+  | "errors.periodAlreadyPaid"
+  /** The signed-in account does not hold `payouts.manage` (Phase 14, G31). */
+  | "errors.notPermitted";
 
 /**
  * A human-quotable reference, derived from what it is paying and when.

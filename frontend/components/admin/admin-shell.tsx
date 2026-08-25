@@ -22,8 +22,16 @@ import {
   Users,
   Ticket,
   MessageSquareWarning,
+  ScrollText,
 } from "lucide-react";
-import type { UserRole } from "@/types";
+import type { PlatformPermission } from "@/types";
+import {
+  canOpenAdmin,
+  firstAdminRouteFor,
+  hasPermission,
+  permissionForAdminPath,
+} from "@/lib/rbac";
+import { useAudit } from "@/stores/audit";
 import { useAuth } from "@/stores/auth";
 import { useOrders } from "@/stores/orders";
 import { useCms } from "@/stores/cms";
@@ -42,19 +50,18 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/** Roles allowed into platform admin. */
-const ADMIN_ROLES: readonly UserRole[] = [
-  "super-admin",
-  "customer-support",
-  "moderator",
-  "finance-manager",
-];
-
 /**
  * What platform operations actually does. C25 made this a section
  * rather than the single page the shell's comment used to describe: sending a
  * broadcast is a different job from watching the board, and squeezing a
  * composer onto the live-ops screen would have degraded both.
+ *
+ * Phase 14 gave every entry the permission that opens it. The list a given
+ * account sees is this array filtered, and the permission is not repeated here —
+ * it is read from `lib/rbac.ADMIN_ROUTE_PERMISSIONS`, the same table the route
+ * gate below consults, so a nav entry and the page it points at can never
+ * disagree about who may see it. That was the bug worth designing out: hiding a
+ * link is not access control if the URL still works.
  */
 const NAV = [
   { href: "/admin", key: "navOps", icon: Activity },
@@ -80,6 +87,8 @@ const NAV = [
   { href: "/admin/coupons", key: "navCampaigns", icon: Ticket },
   // Phase 13: reports had nowhere to go. This is where they go.
   { href: "/admin/reviews", key: "navReviews", icon: MessageSquareWarning },
+  // Phase 15: every important mutation on the platform, and who made it.
+  { href: "/admin/audit", key: "navAudit", icon: ScrollText },
   { href: "/admin/cms", key: "navContent", icon: FileText },
   { href: "/admin/notifications", key: "navNotifications", icon: Bell },
 ] as const;
@@ -136,6 +145,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     navReviews: moderationHydrated ? pendingModerationCount(moderationRecords) : 0,
   };
 
+  /**
+   * The sections this account can actually open.
+   *
+   * Filtered through the same table the route gate reads, so the two cannot drift.
+   * A `null` from `permissionForAdminPath` would mean a nav entry pointing at a
+   * path nobody gave a permission — kept visible rather than silently dropped,
+   * because a link that vanishes for everybody is a bug that hides itself.
+   */
+  const visibleNav = NAV.filter(({ href }) => {
+    const permission = permissionForAdminPath(href);
+    return permission === null || hasPermission(user, permission as PlatformPermission);
+  });
+
   useEffect(() => {
     useAuth.persist.rehydrate();
     useOrders.persist.rehydrate();
@@ -152,6 +174,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     // customer-facing coupon surfaces read them before either screen is opened.
     void useCampaigns.persist.rehydrate();
     void useReviewModeration.persist.rehydrate();
+    // Phase 15: hydrated here as well as on the audit screen, because every
+    // mutation on every admin surface appends to it — a desk that acted before
+    // the log had come up would have written into an empty store and had its
+    // entry overwritten by the rehydrate.
+    void Promise.resolve(useAudit.persist.rehydrate()).then(() =>
+      useAudit.getState().seed(),
+    );
   }, []);
 
   if (!hydrated) {
@@ -177,7 +206,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!ADMIN_ROLES.includes(user.role)) {
+  // Phase 14: two gates, not one. The first asks whether this account belongs in
+  // platform operations at all; the second asks whether it belongs on *this*
+  // page. Before RBAC there was only the first, and it was a role list that
+  // admitted a moderator to the payout run.
+  if (!canOpenAdmin(user)) {
     return (
       <CenterState>
         <span className="inline-flex size-16 items-center justify-center rounded-pill bg-danger/10 text-danger">
@@ -186,6 +219,39 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <h1 className="text-h2 text-ink">{t("noAccessTitle")}</h1>
         <p className="max-w-sm text-body">{t("noAccessBody")}</p>
         <Button href="/" variant="outline" className="mt-2">
+          {t("backToSite")}
+        </Button>
+      </CenterState>
+    );
+  }
+
+  const required = permissionForAdminPath(pathname);
+  /**
+   * Refused rather than redirected, deliberately.
+   *
+   * A redirect would tell somebody who typed a URL that the page does not exist,
+   * which is a different and less useful thing than "this exists and is not
+   * yours". The panel offers the first section this account *can* open, so the
+   * refusal is not a dead end — a marketing manager who lands on `/admin` (which
+   * needs `orders.view`) gets a way through to campaigns instead of a wall.
+   */
+  if (required && !hasPermission(user, required)) {
+    const fallback = firstAdminRouteFor(user);
+    return (
+      <CenterState>
+        <span className="inline-flex size-16 items-center justify-center rounded-pill bg-accent-50 text-accent-600">
+          <ShieldAlert className="size-7" aria-hidden />
+        </span>
+        <h1 className="text-h2 text-ink">{t("noSectionTitle")}</h1>
+        <p className="max-w-sm text-body">
+          {t("noSectionBody", { permission: required })}
+        </p>
+        {fallback && fallback !== pathname && (
+          <Button href={fallback} className="mt-2">
+            {t("noSectionGo")}
+          </Button>
+        )}
+        <Button href="/" variant="outline" className="mt-1">
           {t("backToSite")}
         </Button>
       </CenterState>
@@ -231,7 +297,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         className="border-b border-line bg-surface px-4 sm:px-6"
       >
         <ul className="mx-auto flex max-w-7xl gap-1.5 overflow-x-auto">
-          {NAV.map(({ href, key, icon: Icon }) => {
+          {visibleNav.map(({ href, key, icon: Icon }) => {
             const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
             return (
               <li key={href}>

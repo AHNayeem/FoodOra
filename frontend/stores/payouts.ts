@@ -18,6 +18,8 @@ import {
   type PayoutError,
 } from "@/lib/settlement";
 import { emitNotifications } from "./notifications";
+import { sessionCan } from "./auth";
+import { recordAudit } from "./audit";
 
 /**
  * payouts store — the money the platform has actually sent, and the corrections
@@ -109,6 +111,13 @@ export const usePayouts = create<PayoutsState>()(
       hydrated: false,
 
       payVendor: (settlement, by) => {
+        // Phase 14: `payouts.view` opens the book, `payouts.manage` moves the
+        // money. Guarded on the *transfer* rather than on the run, so a batch
+        // cannot get through a right one transfer could not — the run is a loop
+        // over this function, which is the reason it was written that way.
+        if (!sessionCan("payouts.manage")) {
+          return { payout: null, error: "errors.notPermitted" };
+        }
         if (vendorPaid(get().payouts, settlement)) {
           return { payout: null, error: "errors.settlementAlreadyPaid" };
         }
@@ -127,10 +136,29 @@ export const usePayouts = create<PayoutsState>()(
             href: "/dashboard/earnings",
           }),
         );
+        // Phase 15: §6's "payout action". One entry per transfer — a run adds its
+        // own summary entry on top, so a batch reads as one decision and forty
+        // movements rather than as forty unexplained ones.
+        recordAudit({
+          action: "payout.paid",
+          entity: "settlement",
+          entityId: payout.payoutRef,
+          metadata: {
+            payee: "vendor",
+            name: settlement.vendorName,
+            vendorId: settlement.vendorId,
+            periodRef: payout.periodRef,
+            amount: payout.amount,
+            currency: payout.currency,
+          },
+        });
         return { payout, error: null };
       },
 
       payRider: (settlement, by) => {
+        if (!sessionCan("payouts.manage")) {
+          return { payout: null, error: "errors.notPermitted" };
+        }
         if (riderPaid(get().riderPayouts, settlement)) {
           return { payout: null, error: "errors.settlementAlreadyPaid" };
         }
@@ -149,6 +177,19 @@ export const usePayouts = create<PayoutsState>()(
             href: "/delivery/wallet",
           }),
         );
+        recordAudit({
+          action: "payout.paid",
+          entity: "settlement",
+          entityId: payout.payoutRef,
+          metadata: {
+            payee: "rider",
+            name: settlement.riderName,
+            riderId: settlement.riderId,
+            periodRef: payout.periodRef,
+            amount: payout.amount,
+            currency: payout.currency,
+          },
+        });
         return { payout, error: null };
       },
 
@@ -170,6 +211,17 @@ export const usePayouts = create<PayoutsState>()(
             amount += result.payout.amount;
           }
         }
+        recordAudit({
+          action: "payout.run",
+          entity: "payout-run",
+          entityId: `run_vendor_${settlements.length}`,
+          metadata: {
+            payee: "vendor",
+            paid,
+            skipped: settlements.length - paid,
+            amount,
+          },
+        });
         return { paid, skipped: settlements.length - paid, amount };
       },
 
@@ -183,6 +235,17 @@ export const usePayouts = create<PayoutsState>()(
             amount += result.payout.amount;
           }
         }
+        recordAudit({
+          action: "payout.run",
+          entity: "payout-run",
+          entityId: `run_rider_${settlements.length}`,
+          metadata: {
+            payee: "rider",
+            paid,
+            skipped: settlements.length - paid,
+            amount,
+          },
+        });
         return { paid, skipped: settlements.length - paid, amount };
       },
 
@@ -197,6 +260,9 @@ export const usePayouts = create<PayoutsState>()(
        * the *next* period, and the desk is told so rather than quietly allowed.
        */
       adjust: ({ vendorId, periodRef, label, amount, reason, by }) => {
+        if (!sessionCan("payouts.manage")) {
+          return { adjustment: null, error: "errors.notPermitted" };
+        }
         if (vendorPaid(get().payouts, { vendorId, periodRef })) {
           return { adjustment: null, error: "errors.periodAlreadyPaid" };
         }
@@ -210,6 +276,18 @@ export const usePayouts = create<PayoutsState>()(
         });
         if (!adjustment) return { adjustment: null, error };
         set((s) => ({ adjustments: [adjustment, ...s.adjustments] }));
+        recordAudit({
+          action: "payout.adjusted",
+          entity: "settlement",
+          entityId: adjustment.id,
+          metadata: {
+            vendorId,
+            periodRef,
+            label,
+            amount,
+            reason: reason?.trim() || null,
+          },
+        });
         return { adjustment, error: null };
       },
 

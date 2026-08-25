@@ -14,6 +14,8 @@ import {
 } from "@/lib/customers";
 import { useOrders } from "./orders";
 import { useSupport } from "./support";
+import { sessionCan } from "./auth";
+import { recordAudit } from "./audit";
 
 /**
  * customers store — the platform's customer directory (Phase 11, G15).
@@ -95,17 +97,56 @@ export const useCustomers = create<CustomersState>()(
       getById: (id) => get().accounts.find((c) => c.id === id),
       directory: () => currentDirectory(get().accounts),
 
-      block: (id, input) => moderate(set, get, id, (customer, now) =>
-        blockCustomer(customer, input, now),
-      ),
+      /**
+       * Phase 14: every write here is `customers.manage`.
+       *
+       * Reading the directory is `customers.view`, which a moderator holds — they
+       * need to see who wrote a review. Stopping somebody ordering is not theirs,
+       * and neither is writing on their file, because a note on an account is part
+       * of the record a block is later justified by.
+       */
+      block: (id, input) => {
+        const result = guarded(() =>
+          moderate(set, get, id, (customer, now) => blockCustomer(customer, input, now)),
+        );
+        // Phase 15: §6's "customer blocking". The grounds and the written reason
+        // are both carried, because the moderation entry on the account explains
+        // it to the next agent and the audit entry explains it to whoever asks
+        // months later why an account stopped ordering.
+        if (result.customer) {
+          recordAudit({
+            action: "customer.blocked",
+            entity: "customer",
+            entityId: result.customer.id,
+            metadata: {
+              name: result.customer.name,
+              reason: input.reason,
+              note: input.note.trim(),
+            },
+          });
+        }
+        return result;
+      },
 
-      unblock: (id, input) => moderate(set, get, id, (customer, now) =>
-        unblockCustomer(customer, input, now),
-      ),
+      unblock: (id, input) => {
+        const result = guarded(() =>
+          moderate(set, get, id, (customer, now) => unblockCustomer(customer, input, now)),
+        );
+        if (result.customer) {
+          recordAudit({
+            action: "customer.unblocked",
+            entity: "customer",
+            entityId: result.customer.id,
+            metadata: { name: result.customer.name, note: input.note?.trim() || null },
+          });
+        }
+        return result;
+      },
 
-      addNote: (id, input) => moderate(set, get, id, (customer, now) =>
-        noteCustomer(customer, input, now),
-      ),
+      addNote: (id, input) =>
+        guarded(() =>
+          moderate(set, get, id, (customer, now) => noteCustomer(customer, input, now)),
+        ),
 
       seed: (now = Date.now()) => {
         if (get().seeded) return;
@@ -136,6 +177,22 @@ export const useCustomers = create<CustomersState>()(
     },
   ),
 );
+
+/**
+ * Refuse the write unless the session holds `customers.manage` (Phase 14, G31).
+ *
+ * A wrapper rather than a line inside `moderate`, because `moderate` is handed a
+ * domain function and has no idea which of the three actions it is running — and
+ * a guard that cannot name what it is guarding is a guard nobody can audit.
+ */
+function guarded(
+  run: () => { customer: Customer | null; error: CustomerError | null },
+): { customer: Customer | null; error: CustomerError | null } {
+  if (!sessionCan("customers.manage")) {
+    return { customer: null, error: "errors.notPermitted" };
+  }
+  return run();
+}
 
 /**
  * The shape every moderation action shares: find the person (managed *or*

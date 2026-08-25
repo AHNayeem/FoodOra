@@ -66,7 +66,16 @@ export type OnboardingError =
   | "errors.applicationNotFound"
   | "errors.illegalApplicationMove"
   | "errors.applicationIncomplete"
-  | "errors.decisionReasonRequired";
+  | "errors.decisionReasonRequired"
+  /**
+   * The signed-in account may not rule on applications (Phase 14, G31).
+   *
+   * In this union rather than a separate one because a caller already handles
+   * every member of it the same way — `toast.error(t(result.error))` — and a
+   * second error type would have meant changing that at each of the four call
+   * sites to say nothing new.
+   */
+  | "errors.notPermitted";
 
 /** Shared transition check — each graph passes its own table. */
 export function canMove<S extends string>(
