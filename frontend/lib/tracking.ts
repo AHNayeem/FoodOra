@@ -1,4 +1,10 @@
-import type { Order, OrderEvent, OrderEventDetail, OrderStatus } from "@/types";
+import type {
+  Order,
+  OrderEvent,
+  OrderEventDetail,
+  OrderStatus,
+  RiderPosition,
+} from "@/types";
 import {
   isFailure,
   isTerminal,
@@ -21,6 +27,10 @@ import { etaInMs, prepFraction, readyInMs, toMinutes } from "./order-lifecycle";
  * (`stores/orders` + `lib/order-machine`); the only things still derived from
  * the clock are the things that genuinely are estimates — countdowns, ETAs and
  * how far through the promised preparation window the kitchen is.
+ *
+ * Since G38 it does not answer *where the courier is* either. That is one
+ * question with three audiences (the customer, the rider, the operations desk),
+ * so it belongs to `lib/rider-position` and is passed in — see `fraction`.
  *
  * Re-exports the stage lists so existing callers keep one import.
  */
@@ -63,7 +73,13 @@ export interface TrackingProgress {
   readyMs: number | null;
   /** 0..1 through the promised preparation window. */
   prepFraction: number;
-  /** 0..1 along the whole journey, for the map marker and progress bar. */
+  /**
+   * 0..1 along the whole journey, for the map marker.
+   *
+   * The courier's real place on the route when a position is supplied, and the
+   * clock-smoothed stage estimate below when there is none (a pickup order, an
+   * order nobody is carrying yet, a trip whose geometry could not be resolved).
+   */
   fraction: number;
 }
 
@@ -73,8 +89,18 @@ export interface TrackingProgress {
  * Pure and deterministic. The event log supplies the "when" for every step that
  * has happened; steps that have not happened simply have no time, which is
  * honest — a real app cannot tell you when your food will be packed either.
+ *
+ * `position` is the courier's fix from `lib/rider-position`, injected rather
+ * than computed here for the reason G38 exists: the rider's whereabouts is not
+ * the customer's private opinion, and a second derivation in this module is
+ * exactly the drift the phase removed. Optional, because the answer is not
+ * always available and the fallback below is still an honest estimate.
  */
-export function trackingProgress(order: Order, now: number): TrackingProgress {
+export function trackingProgress(
+  order: Order,
+  now: number,
+  position?: RiderPosition | null,
+): TrackingProgress {
   const stages = stagesFor(order.fulfillment);
   const events = order.lifecycle?.events ?? [];
 
@@ -116,18 +142,25 @@ export function trackingProgress(order: Order, now: number): TrackingProgress {
     remainingMs,
     readyMs: readyInMs(order, now),
     prepFraction: prepFraction(order, now),
-    fraction: journeyFraction(order, now),
+    fraction: position ? position.routeFraction : journeyFraction(order, now),
   };
 }
 
 /**
- * How far along the route the courier is, 0..1 — what moves the map marker.
+ * How far along the *journey* the order is, 0..1 — the estimate used when no
+ * courier position is available.
  *
  * Stage index alone is too coarse (the marker would jump in five big steps and
  * then sit still for the whole ride), so the leg the order is *in* is smoothed
  * by the clock: within `on-the-way`, the marker creeps from the pickup toward
  * the door as the ETA approaches. The clock is used for animation only — it can
  * never move the order to the next status.
+ *
+ * Kept, not superseded. G38 generalised precisely this interpolation into
+ * `lib/rider-position` (where it smooths any leg of a real route against the
+ * same promised ETA); this remains the answer for the cases that have no route
+ * to interpolate along, and it is the reason a pickup order's tracker still
+ * behaves exactly as it did.
  */
 function journeyFraction(order: Order, now: number): number {
   const stages = stagesFor(order.fulfillment);

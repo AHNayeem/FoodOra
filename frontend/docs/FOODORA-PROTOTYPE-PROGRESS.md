@@ -26,6 +26,7 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 17 — Customer Improvements Done
 - Phase 18 — Consistency + Quality Gaps Done
 - Phase 19 — Platform Settings Done
+- Phase 20 — Live Rider Position Done
 
 ---
 
@@ -84,7 +85,7 @@ none were found already fixed. Three corrections/additions are listed under
 | G35 | Reorder | INCORRECT → **CLOSED (Phase 17)** | Was: `order-history.tsx` "reorder" is `href={/restaurants/${slug}}`. Now `lib/reorder.planReorder` + the reorder dialog + `stores/cart.replaceWith` |
 | G36 | Rating action | PARTIAL → **CLOSED (Phase 17)** | Was: `customerActions` emits `rate`; no surface renders it. Now `RateOrderControl` renders it and `stores/orders.rateOrder` is the one writer of `lifecycle.rating` |
 | G37 | Location / serviceability | MISSING → **CLOSED (Phase 17)** | Was: `lib/mock/delivery-zones` never read for customer serviceability. Now `lib/serviceability` + `stores/location`, checked on the restaurant page and again at checkout |
-| G38 | Live rider position | PARTIAL | `lib/tracking.ts` clock-smoothed fraction. **Not assigned to any phase in the v2 spec** |
+| G38 | Live rider position | PARTIAL → **CLOSED (Phase 20)** | Was: `lib/tracking.ts` clock-smoothed *stage* fraction on the customer's map, `route-map.tsx` counting completed stops on the rider's, nothing on the desk's. Now `lib/rider-position` publishes one `RiderTrack` per delivery and all three render it. **Not assigned to any phase in the v2 spec** |
 | G39 | Two delivery systems | INCORRECT | `DeliveryJob` (offers/trip/earnings/wallet/history) and `Order` (`LiveDeliveries`/`LiveTripView`) share no bridge |
 | G40 | Online/offline vs dispatch | INCORRECT | `lib/order-lifecycle.dispatchRider` filters on `deletedAt` + `rejectedRiderIds` only — shift state lives in `stores/rider` and is unreadable to it |
 | G41 | Dead read path | CONFIRMED | `services/vendor.getVendorOrders` — the only match in the repo is its own definition |
@@ -113,7 +114,8 @@ Counts: 22 MISSING · 13 PARTIAL · 9 INCORRECT · 1 CONFIRMED (dead code) · 0 
    terminal state requires extending the union, not just adding UI.
 4. **G30 and G38 are not covered by any of the 18 phases.** Both are P2. Flagged
    so they are a deliberate omission rather than an accident. **G30 was closed in
-   Phase 19**, after the spec's own order was finished; G38 is still open.
+   Phase 19** and **G38 in Phase 20**, both after the spec's own order was
+   finished. No gap in the analysis is now open.
 
 #### Implementation map (dependency-ordered)
 
@@ -137,7 +139,7 @@ G33                      → admin analytics             → PHASE 16 (needs G02
 G34, G35, G36, G37, G43, G27 → customer improvements   → PHASE 17
 G41, G42, G44, G45       → consistency/quality         → PHASE 18
 G30                      → platform settings           → PHASE 19 (unassigned by the v2 spec; taken on after 1–18)
-(G38)                    → unassigned by the v2 spec
+G38                      → live rider position       → PHASE 20 (unassigned by the v2 spec; taken on after 19)
 ```
 
 Key seams identified for the implementation phases:
@@ -186,8 +188,77 @@ payout numbers to keep in step with the fare rules.
 ## Current Phase
 
 None in progress. Phases 1–18 complete — every phase in §6's implementation order
-is closed — plus **Phase 19 (G30)**, which §6 assigns to no phase and which was
-taken on afterwards.
+is closed — plus **Phase 19 (G30)** and **Phase 20 (G38)**, the two gaps §6
+assigns to no phase, both taken on afterwards. **No gap in the audit is open.**
+
+### Phase 20 — Live Rider Position (2026-08-26)
+
+**Done.** G38 closed — the last of the two gaps the v2 spec assigns to no phase,
+and the one the audit described as "mocked but incomplete" rather than missing.
+Taken on as an extension of the **Phase 3 rider delivery domain**, which is where
+the real geometry already lived: Phase 3 built `lib/delivery`'s routes and
+`lib/delivery-bridge`'s projection of a real order into a trip, and never
+published either to the two surfaces that were drawing couriers of their own.
+
+The gap was not "there is no rider position". It was that there were *three*
+answers to one question, and no two of them agreed:
+
+* the **customer's tracker** moved its marker by a clock-smoothed *stage*
+  fraction (`lib/tracking.journeyFraction`) — at `picked-up` the courier was
+  drawn two-thirds of the way to the door, having not left the kitchen;
+* the **courier's own map** (`components/rider/route-map`) put the marker on the
+  last completed stop, so a rider mid-ride was drawn standing at the restaurant
+  they had already left — and it was never rendered on a *real* order at all,
+  only on the synthesised batching demo;
+* the **operations desk** had no answer, which is the surface most often asked
+  the question out loud.
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| Whether this is a new tracking system or the existing one shared | **The existing one, generalised and published.** `lib/tracking`'s within-leg clock interpolation is exactly the smoothing the new provider does — it was already the right idea, applied to the wrong geometry (a straight line between two labels instead of the route the router computed). It is *kept*, not deleted: `journeyFraction` is still the answer for a delivery that has no route to interpolate along, which is why a pickup order's tracker is unchanged by construction. | `lib/rider-position.ts` header, `lib/tracking.journeyFraction` |
+| What the one shared representation is | **`RiderTrack`: the route plus a `RiderPosition` on it**, in `types/delivery`. Not a bare coordinate — a coordinate answers "where" and every surface also needs "what does that mean" (`phase`), "how far" (`routeFraction`), "is it actually moving" (`moving`) and "is this real" (`source`). A pair of numbers would have left each screen to re-derive the other four, which is the gap re-opening one field at a time. | `types/delivery.RiderTrack` |
+| Where a position comes from | **The active delivery, never the page.** `services/delivery.riderTrackForOrder(order, now, zones)` is `jobForOrder` — Phase 3's projection of the order into a trip — handed to the provider. So the position is a function of the order the customer placed, the restaurant cooked and the rider is carrying; there is no fourth record to drift. | `services/delivery.riderTrackForOrder` |
+| What is allowed to move the marker | **Geometry and, within one leg, the clock. Nothing else.** Progress *past* a stop is only ever the rider's own report; the clock creeps the marker to `MAX_APPROACH` (0.95) of the door and waits there. An hour past the promised ETA with no `arrived` on the log is still not an arrival — the flow check asserts it. This is the rule the tracker was rewritten around in Phase 1, now enforced for the map as well as the status. | `lib/rider-position` MAX_APPROACH, `scripts/rider-position-flow.ts` |
+| Why the ride to the door is timed against the ETA rather than the planned leg | **Because that is the number the customer is already watching.** The existing tracker smoothed toward `estimatedDeliveryAt`, and both parties see it; timing that leg by `legMinutes` instead would have parked the courier at the kerb while the countdown still said nine minutes. Every *other* leg uses the plan, because no promise was made about it. | `lib/rider-position.legEndMs` |
+| What freezes, and when | **A finished delivery and a stopped one, at the moment they stopped.** `delivered` pins to the last stop with `at` set to the handoff, so re-reading it later cannot restate it. `ended` (cancelled, returned, rejected, `delivery-failed`) freezes where the rider actually got to — the door if they reached it, since a failed handoff happens on a doorstep — with `at` set to `updatedAt`. Without this a cancelled order's marker keeps creeping toward a door nobody is riding to. | `lib/rider-position` phase branches |
+| Why `RouteMap` stopped computing its own marker | **Because it was a second position, and it was wrong.** It now takes a `RiderTrack` and projects it. The component decides nothing about where the rider is, which is what lets the same component render the courier's screen, the synthesised trip and the admin panel without three behaviours. | `components/rider/route-map.tsx` header |
+| Why the customer's marker now starts at the restaurant | **Deliberate, and the point of the gap.** The old stage fraction put the courier at ~0.6 of the way home the instant the food was collected. The new one is 0 at the kitchen and 1 at the door, which is what the map's two pins have always claimed to mean. It is the one visible change to the customer's tracker; everything else about that screen is untouched. | this table |
+| Why a provider interface with exactly one implementation | **Because the swap is the deliverable.** `RiderPositionProvider` + `setRiderPositionProvider` is a module-level seam, not a prop threaded through eight components: a real GPS/WebSocket feed registers once and no surface is edited, because no surface imports the mock. The flow check installs a fake `gps` provider and asserts the fix reaching the surfaces changes source and nothing else. | `lib/rider-position` registry |
+| Why there is no polling, socket or `navigator.geolocation` | **There is no rider hardware and no server, and pretending otherwise is the failure mode this prototype keeps refusing.** The provider is arithmetic over records the device already holds; the screens' existing one- and two-second ticks re-read it, which is the same cadence they already used for countdowns. The flow check greps the module (comments stripped) for `WebSocket`, `fetch(`, `setInterval`, `geolocation`, `navigator` and `Math.random`. | `lib/rider-position.ts` header, `scripts/rider-position-flow.ts` §7 |
+| Why the admin desk gets a position at all | **Because "where is my order" is asked of the desk, not of the map.** It reads the same seam the other two do, so an operator reading a position over the phone is reading the customer's position. Two renderings: a phase-and-percent chip on the live feed, and the route map itself on the order detail. | `components/admin/live-ops.CourierChip`, `order-detail-view` |
+| Why `Coordinates` was factored out of `GeoPoint` | **To avoid minting a third identical shape.** `types/common.GeoPoint` is a located *address*; a zone centre, a route origin and a courier fix are bare points, and `lib/delivery.LatLng` already was one. `GeoPoint` now extends `Coordinates` and `LatLng` is an alias of it — one shape, no duplicate domain model, which is the §11 pattern this phase was most likely to break. | `types/common.Coordinates`, `lib/delivery.LatLng` |
+| Whether the synthesised batching trip kept its own model | **No — it goes through the same provider**, from the zone centre its router measured the first leg from. A batch is still just four stops through one function; the position advances along the same legs, weighted by distance, so a two-minute hop and a nine-kilometre ride are not the same half of the route. | `components/rider/trip-view`, `lib/rider-position` leg weights |
+
+**What the phase actually changed about behaviour.**
+
+* **The customer's tracker** — the marker is the courier's real place on the real
+  route: at the kitchen when the food is collected, creeping toward the door only
+  once the rider says they are away, pinned at the door when they say they have
+  arrived, and never arriving on the clock's say-so. The ping stops when the
+  courier stops.
+* **The courier's delivery screen** — has a map for the first time on a *real*
+  order (it only ever had one for the synthesised demo), showing the same route
+  and the same marker the customer is looking at.
+* **The courier's trip screen** — same map, same provider; the marker now moves
+  *along* a leg instead of jumping between stops, and pings only while riding.
+* **The operations desk** — the live feed names what each courier is doing and
+  how far along they are; the order detail draws the route and the fix.
+
+**Verified.** `scripts/rider-position-flow.ts` (run
+`NODE_ENV=test bun scripts/rider-position-flow.ts`) — 65 assertions, all green,
+following the `*-flow.ts` convention Phases C24–C26 established. It drives one
+seeded delivery order forward through `lib/order-machine.transition` (so the
+event log the position reads is a log a real run would produce) and checks the
+five claims the phase rests on: the customer's fraction, the desk's percentage
+and the rider's marker are one number; the same delivery at the same instant is
+byte-identical every time; the fix lies on the leg it names and advances
+monotonically along measured geometry; every lifecycle state behaves (unassigned
+→ to-pickup → at-pickup → to-dropoff → arrived → delivered, plus a failed handoff
+and both cancellations), including that an hour past the ETA cannot complete the
+route; and a registered `gps` provider reaches every surface while the mock
+restores cleanly. It also asserts the four surfaces read the shared seam and that
+`route-map` no longer counts stops, greps the provider for real-feed APIs and
+randomness, and checks all ten new message paths in **en, bn and ar**.
 
 ### Phase 19 — Platform Settings (2026-08-26)
 
@@ -726,6 +797,30 @@ plausible-looking implementation would miss:
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
 
+Re-run on 2026-08-26 after Phase 20, all three still **PASS** — `tsc --noEmit`
+exit 0, `eslint` no findings, `next build` compiled every route. Five extra gates
+for this phase:
+
+* `NODE_ENV=test bun scripts/rider-position-flow.ts` — **65 assertions passed.**
+  The phase's own flow check; see the Phase 20 write-up for what it asserts.
+* `bun run verify:graphql` — **24 operations, 0 failed.** Nothing about the wire
+  changed: a position is derived on the device from records the order already
+  carries, so there is no new field and no new document.
+* The two pre-existing flow checks over the domains this phase touched still pass
+  unchanged: `notifications-flow` **116** (it reads the order event log, which the
+  position now also reads) and `platform-settings-flow` **151** (the tracker,
+  the courier's screen and the desk all resolve the route against the folded
+  zones, so the G30 fold is on this path now).
+* A dev-server smoke test (port 3211, mock path) returned **200** for every
+  touched route — `/`, `/admin`, `/admin/orders`, `/delivery`, `/account/orders`,
+  `/orders/[id]` and `/dashboard/orders` — in all three locales, with
+  **`dir="rtl"` for `ar`** and **zero errors or warnings** in the server log.
+  The map is pinned LTR inside an RTL page by design: east stays east.
+* The forbidden-pattern half of §11 is asserted in code rather than by reading:
+  the flow check fails if any of the four surfaces stops reading
+  `riderTrackForOrder`, if `route-map` starts counting completed stops again, or
+  if the provider grows a socket, a fetch, a timer or a random number.
+
 Re-run on 2026-08-26 after Phase 19, all three still **PASS** — `tsc --noEmit`
 exit 0, `eslint` no findings, `next build` compiled every route including the new
 `/admin/settings`. Four extra gates for this phase:
@@ -1141,6 +1236,44 @@ components call rather than the components themselves. The pre-existing
 
 ## Important Architecture
 
+### Added in Phase 20
+
+```text
+types/common.ts                    (Coordinates — the bare point; GeoPoint now extends it)
+        ↓
+types/delivery.ts                  (RiderPosition — one fix: phase/routeFraction/legIndex/
+        ↓                           legFraction/headingStopId/moving/at/source;
+        ↓                           RiderTrack — the route + the fix; RiderPositionPhase/Source)
+        ↓
+lib/rider-position.ts              (pure + deterministic: RiderPositionProvider seam;
+        ↓                           mockRiderPositions — route geometry × delivery lifecycle × clock;
+        ↓                           setRiderPositionProvider / riderPositionProvider / riderTrack;
+        ↓                           isRiderOnRoute / headingStop / routePercent)
+        ↓
+services/delivery.riderTrackForOrder(order, now, zones)
+        ↓                          (= jobForOrder ∘ riderTrack — the ONE entry point for real orders)
+        ↓
+        ├── components/tracking/order-tracking   → trackingProgress(order, now, track.position)
+        │                                          → TrackingMap fraction + moving
+        ├── components/rider/live-trip-view      → RouteMap (new on a real order)
+        ├── components/admin/live-ops            → CourierChip (phase + route %)
+        └── components/admin/order-detail-view   → RouteMap + courier-position row
+
+components/rider/trip-view         → riderTrack({job, origin: zone centre}) → RouteMap
+                                     (the synthesised batching trip, same provider)
+```
+
+**The rule this shape encodes:** a surface may *render* a position and may never
+*derive* one. `lib/tracking.journeyFraction` survives as the fallback for a
+delivery with no route (a pickup order, an order before dispatch) and is
+unreachable whenever a track exists — `trackingProgress`' third parameter is how
+the two are kept from both being live at once.
+
+**Replacing the mock** is one call: implement `RiderPositionProvider` against a
+socket or a polling endpoint and pass it to `setRiderPositionProvider`. No
+component, signature or import changes — the flow check proves it by installing a
+fake `gps` provider and reading the surfaces' fix.
+
 ### Added in Phase 19
 
 ```text
@@ -1257,6 +1390,11 @@ use-rider-records.ts       (one reading of the rider's reality, six screens)
 * No competing lifecycle was added. Every rider transition still goes through
   `lib/order-machine.transition`; the synthesised trip's own stop-completion rules
   still live in `services/delivery.completeStop`.
+* **Extended by Phase 20 (G38).** The route geometry this phase built was never
+  published to the customer or the operations desk, so both had couriers of their
+  own. `lib/rider-position` publishes it — see "Added in Phase 20". Nothing here
+  changed: `jobFromOrder` is still the projection, and the position is a read of
+  it.
 
 ### Deliberately deferred (not omissions)
 
@@ -1990,8 +2128,9 @@ the money, which is the record `buildRiderSettlements` pays from),
 ## Next Phase
 
 **None in §6.** Phases 1–18 are complete, so the implementation order is finished,
-and Phase 19 has closed G30 — the first of the two gaps §6 assigned to nobody.
-What is left in the spec is verification and delivery, not construction:
+and Phases 19 and 20 have closed G30 and G38 — the two gaps §6 assigned to nobody.
+**Every gap in the audit is now closed.** What is left in the spec is verification
+and delivery, not construction:
 
 * **§10 End-to-End Verification** — Scenarios A–G driven in a browser, in one
   sitting, on a clean device. Worth doing after `/clear` as §12 says, because it is
@@ -2001,10 +2140,29 @@ What is left in the spec is verification and delivery, not construction:
   fallback, fake financial values, duplicate domain models.
 * **§14 Final Deliverable** — the summary the spec asks for once everything is done.
 
-**G38 (live rider position) is the one gap left open.** It is P2 and, like G30, is
-assigned to no phase. `lib/tracking` advances the customer's map by a clock-smoothed
-fraction while `lib/delivery` holds the courier's real stop geometry; closing it
-means publishing the second into the first.
+**No gap is left open.** G38 was the last, and Phase 20 closed it by doing exactly
+what this section anticipated: publishing `lib/delivery`'s real stop geometry into
+the customer's map, through one shared representation the courier's screen and the
+operations desk read as well.
+
+### What Phase 20 leaves ready for that
+
+1. **The §11 pattern Phase 20 was most likely to break, it did not.** "Duplicate
+   domain models" is what a second map invites, and the phase went the other way:
+   it *removed* two independent position derivations and folded a third
+   near-duplicate coordinate shape (`LatLng`) into `types/common.Coordinates`. The
+   flow check fails if any surface starts deriving again.
+2. **No status is assigned anywhere outside `lib/order-machine`.** The provider is
+   a pure read of the order's event log; the clock can move a marker and can never
+   move an order, and there is an assertion for exactly that (an hour past the ETA
+   with no `arrived` recorded leaves the route incomplete).
+3. **§10 Scenario A gains its missing half.** Driving customer → restaurant →
+   rider in two windows now shows the *same courier in the same place* on both,
+   which is the cheapest way to see that the two windows are one system, and the
+   thing the scenario could not previously demonstrate.
+4. **The provider swap is the documented cutover point.** Phase E replaces
+   `mockRiderPositions` with a socket-backed provider; `setRiderPositionProvider`
+   is the only line that changes, and the flow check already exercises that path.
 
 ### What Phase 19 leaves ready for that
 
@@ -2055,6 +2213,41 @@ means publishing the second into the first.
   window the platform reports over. That is a defensible prototype decision and it
   is now the only reason the module exists. It is a question for the cutover, not a
   gap.
+
+## Deliberately deferred by Phase 20 (not omissions)
+
+1. **No WebSocket, no polling endpoint, no `navigator.geolocation`.** Explicitly
+   out of scope, and refused rather than stubbed: there is no rider hardware and
+   no server in this prototype, and a fake socket would be a lie with a
+   reconnection handler. The seam that makes the real one a one-line change is
+   the deliverable instead, and the flow check greps the provider to keep it
+   honest.
+2. **No road-following geometry.** A leg is interpolated as a straight line
+   between two points; the *route* is real (the router's own stops, its own leg
+   distances, its own order), the shape between two stops is not. A polyline from
+   a routing provider drops into `RiderTrack.path` without touching a surface —
+   that is why `path` is a list of points and not a pair of endpoints.
+3. **No position history or breadcrumb trail.** The representation is one fix,
+   not a track log. Nothing on any of the three surfaces asks for the last ten
+   minutes of movement, and storing it would be the first piece of position state
+   the prototype persists — which is exactly what makes two devices disagree.
+4. **No bearing / heading angle.** The marker is a circular badge that does not
+   rotate, so a bearing would be a computed field nothing reads. `headingStopId`
+   answers the question the UI actually asks ("riding to which stop").
+5. **The courier's position is not shown before dispatch.** `phase:
+   "unassigned"` is returned and every surface hides the marker. Parking a bike
+   icon at the restaurant to represent nobody was the specific dishonesty the
+   old rider map had.
+6. **The customer's map is still only rendered from `picked-up` onward.** The
+   position exists from `rider-assigned`, and the desk shows it there, but the
+   customer's screen gate was not widened — that is a product decision about the
+   tracker, not a gap in the position, and this phase deliberately changed one
+   thing about that screen and no more.
+7. **No live-ops map.** The desk gets a phase and a percentage per order in the
+   feed, and the full route map on the order detail. A single map with every
+   courier on it is a genuinely useful screen and a different one; it needs a
+   multi-delivery viewport and a fleet-level bounding box, neither of which any
+   existing gap asks for.
 
 ## Deliberately deferred by Phase 19 (not omissions)
 

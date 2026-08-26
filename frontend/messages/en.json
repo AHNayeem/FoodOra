@@ -3154,6 +3154,18 @@
     "fieldAssignment": "Assigned",
     "fieldAssignedAt": "Assigned at",
     "fieldHandedBack": "Handed back by",
+    "fieldCourierPosition": "Courier position",
+    "courierAt": "{phase} · {percent}% of the route",
+    "routePercent": "{percent}%",
+    "courierPhase": {
+      "unassigned": "Not dispatched",
+      "to-pickup": "Heading to the kitchen",
+      "at-pickup": "At the kitchen",
+      "to-dropoff": "On the road",
+      "arrived": "At the door",
+      "delivered": "Handed over",
+      "ended": "Stopped"
+    },
     "fieldTrip": "Trip",
     "fieldDistance": "Route",
     "fieldStops": "Stops",

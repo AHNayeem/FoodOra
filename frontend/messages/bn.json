@@ -3154,6 +3154,18 @@
     "fieldAssignment": "নিয়োগ",
     "fieldAssignedAt": "নিয়োগের সময়",
     "fieldHandedBack": "ফিরিয়ে দিয়েছেন",
+    "fieldCourierPosition": "রাইডারের অবস্থান",
+    "courierAt": "{phase} · রুটের {percent}%",
+    "routePercent": "{percent}%",
+    "courierPhase": {
+      "unassigned": "এখনও পাঠানো হয়নি",
+      "to-pickup": "রেস্টুরেন্টের পথে",
+      "at-pickup": "রেস্টুরেন্টে",
+      "to-dropoff": "রাস্তায়",
+      "arrived": "দরজায়",
+      "delivered": "হস্তান্তর হয়েছে",
+      "ended": "থেমে গেছে"
+    },
     "fieldTrip": "ট্রিপ",
     "fieldDistance": "রুট",
     "fieldStops": "স্টপ",

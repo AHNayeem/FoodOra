@@ -18,10 +18,21 @@ export interface BaseEntity {
   deletedAt: ISODate | null;
 }
 
-/** Geographic point + human-readable address. */
-export interface GeoPoint {
+/**
+ * A bare map coordinate.
+ *
+ * Factored out of `GeoPoint` (G38) because half the domain wants a point without
+ * an address attached: a zone centre, a route's origin, a courier's position. One
+ * shape rather than three structurally identical ones — `lib/delivery.LatLng` is
+ * this type.
+ */
+export interface Coordinates {
   lat: number;
   lng: number;
+}
+
+/** Geographic point + human-readable address. */
+export interface GeoPoint extends Coordinates {
   address: string;
   city: string;
   countryCode: string;

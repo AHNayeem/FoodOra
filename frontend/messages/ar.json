@@ -3154,6 +3154,18 @@
     "fieldAssignment": "الإسناد",
     "fieldAssignedAt": "وقت الإسناد",
     "fieldHandedBack": "أعاده",
+    "fieldCourierPosition": "موقع المندوب",
+    "courierAt": "{phase} · {percent}٪ من المسار",
+    "routePercent": "{percent}٪",
+    "courierPhase": {
+      "unassigned": "لم يُسنَد بعد",
+      "to-pickup": "في الطريق إلى المطعم",
+      "at-pickup": "عند المطعم",
+      "to-dropoff": "على الطريق",
+      "arrived": "عند الباب",
+      "delivered": "تم التسليم",
+      "ended": "متوقف"
+    },
     "fieldTrip": "الرحلة",
     "fieldDistance": "المسار",
     "fieldStops": "المحطات",

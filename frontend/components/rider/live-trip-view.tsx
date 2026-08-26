@@ -23,7 +23,7 @@ import { useOrders } from "@/stores/orders";
 import { verifyOtp } from "@/services/orders";
 import { usePlatformDraft } from "@/stores/platform-settings";
 import { platformSettingsOf } from "@/services/platform-settings";
-import { jobForOrder } from "@/services/delivery";
+import { jobForOrder, riderTrackForOrder } from "@/services/delivery";
 import {
   cashDueOn,
   isTerminal,
@@ -43,6 +43,7 @@ import { ContactButton } from "@/components/orders/contact-dialog";
 import { cn } from "@/lib/utils";
 import { useRiderApp } from "./rider-context";
 import { PayoutBreakdown } from "./payout-breakdown";
+import { RouteMap } from "./route-map";
 
 const TICK_MS = 1000;
 
@@ -54,6 +55,10 @@ const TICK_MS = 1000;
  * payouts. This one drives a single *real* order through the spec's delivery
  * half, and it is the screen the end-to-end demo runs on: collect from the
  * restaurant, ride, arrive, verify the customer's code, done.
+ *
+ * The map is the same one the multi-stop trip screen draws, on the same shared
+ * position (G38): the courier the customer is watching and the courier on this
+ * screen are one record, so the two markers move together.
  *
  * The OTP step is the point of the screen. The code is checked in the seam
  * against the order's own OTP (`services/orders.verifyOtp`), attempts are
@@ -207,6 +212,14 @@ export function LiveTripView({ orderId }: { orderId: string }) {
   // `useRiderRecords` — cannot disagree about what a trip in this zone pays.
   const trip = done ? jobForOrder(order, now, zones) : null;
 
+  /**
+   * This delivery's route and where the courier is on it (G38). Computed for
+   * every state, not only the finished one: the rider is the person the position
+   * is *about*, and a delivery screen that could not show the ride was the reason
+   * the customer's tracker and this one were never comparable.
+   */
+  const track = riderTrackForOrder(order, now, zones);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
@@ -266,7 +279,10 @@ export function LiveTripView({ orderId }: { orderId: string }) {
           )}
         </>
       ) : (
-        <StopCard order={order} cashDue={cashDue} currency={currency} />
+        <>
+          {track && <RouteMap track={track} />}
+          <StopCard order={order} cashDue={cashDue} currency={currency} />
+        </>
       )}
 
       {/* Actions — derived from the machine, never hardcoded per screen. */}

@@ -1,4 +1,4 @@
-import type { BaseEntity, ISODate, RiderVehicle } from "./common";
+import type { BaseEntity, Coordinates, ISODate, RiderVehicle } from "./common";
 import type { PaymentMethod } from "./order";
 
 /**
@@ -319,4 +319,72 @@ export interface RiderWallet {
   /** Minimum a withdrawal must reach, from the zone/platform rules. */
   minWithdrawal: number;
   entries: RiderLedgerEntry[];
+}
+
+// ---------------------------------------------------------------------------
+// Live rider position (G38)
+// ---------------------------------------------------------------------------
+
+/**
+ * What a courier's position *means*, which is the half of "where is my rider"
+ * that a coordinate cannot answer.
+ *
+ * Read off the delivery's own lifecycle rather than off the clock: a rider is
+ * `at-pickup` because the order says it was collected and not yet on the road,
+ * never because forty minutes have passed. `unassigned` is a real state and not
+ * an error — the route exists before anybody is riding it.
+ */
+export type RiderPositionPhase =
+  | "unassigned"
+  | "to-pickup"
+  | "at-pickup"
+  | "to-dropoff"
+  | "arrived"
+  | "delivered"
+  | "ended";
+
+/**
+ * Where a fix came from. The prototype only ever produces `mock`; the field
+ * exists so a screen can say so, and so a real feed is distinguishable from a
+ * simulation the day one is plugged in (`lib/rider-position.setRiderPositionProvider`).
+ */
+export type RiderPositionSource = "mock" | "gps";
+
+/** One courier position fix. */
+export interface RiderPosition extends Coordinates {
+  phase: RiderPositionPhase;
+  /** 0..1 along the whole route, weighted by leg distance. */
+  routeFraction: number;
+  /** Index of the leg being ridden; `stops.length` once the route is finished. */
+  legIndex: number;
+  /** 0..1 through that leg. */
+  legFraction: number;
+  /** The stop being ridden to; null once the route is finished. */
+  headingStopId: string | null;
+  /** Genuinely in motion, as opposed to standing at a stop or stopped for good. */
+  moving: boolean;
+  /** The instant the fix describes (ms) — frozen for a finished delivery. */
+  at: number;
+  source: RiderPositionSource;
+}
+
+/**
+ * A delivery's route and the courier on it — the one representation every
+ * surface renders (G38).
+ *
+ * The customer's tracker, the courier's own screen and the operations desk all
+ * read this same record for the same delivery, so the three cannot disagree
+ * about where the rider is. `path` is the polyline the position is measured
+ * along: the origin followed by every stop in ride order, which means
+ * `path[i + 1]` is `stops[i]` and leg `i` is `stops[i].legKm` long.
+ */
+export interface RiderTrack {
+  jobId: string;
+  /** The customer order behind the trip; null for a synthesised one. */
+  orderId: string | null;
+  riderId: string | null;
+  path: Coordinates[];
+  stops: DeliveryStop[];
+  completedStopIds: string[];
+  position: RiderPosition;
 }

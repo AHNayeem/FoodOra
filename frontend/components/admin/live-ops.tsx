@@ -15,7 +15,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import type { Order, Rider, Vendor } from "@/types";
+import type { DeliveryZone, Order, Rider, Vendor } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import {
   useOrders,
@@ -25,11 +25,14 @@ import {
 } from "@/stores/orders";
 import { offShiftRiderIds, useFleet } from "@/stores/fleet";
 import { undispatchableRiderIds, useOnboarding } from "@/stores/onboarding";
-import { getFleet } from "@/services/delivery";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { platformSettingsOf } from "@/services/platform-settings";
+import { getFleet, riderTrackForOrder } from "@/services/delivery";
 import { getVendors } from "@/services/catalog";
 import { isFailure, isWithRider, isInKitchen } from "@/lib/order-machine";
 import { readyInMs, stuckOrders, stuckReason } from "@/lib/order-lifecycle";
 import { platformFinancials } from "@/lib/settlement";
+import { routePercent } from "@/lib/rider-position";
 import { formatPrice } from "@/lib/format";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
 import { CompleteOrderButton } from "@/components/orders/complete-order-button";
@@ -51,6 +54,11 @@ const TICK_MS = 2000;
  * has passed, or that has been sitting on a pass with no courier, is the thing
  * an operations desk exists to notice. It is derived, not flagged, so it cannot
  * go stale.
+ *
+ * G38 added the fifth thing a desk is asked: *where* is that courier. The feed
+ * reads it from `services/delivery.riderTrackForOrder`, the same record the
+ * customer's tracker and the rider's own screen render, so an operator reading a
+ * position over the phone is reading the customer's position.
  */
 export function LiveOps() {
   const t = useTranslations("admin");
@@ -59,6 +67,11 @@ export function LiveOps() {
   const hydrated = useOrders((s) => s.hydrated);
   const orders = useOrders((s) => s.orders);
   const shifts = useFleet((s) => s.shifts);
+
+  // The network the trips behind these orders are resolved against (Phase 19,
+  // G30) — the same one the courier's app and the order desk use.
+  const platform = usePlatformDraft();
+  const zones = useMemo(() => platformSettingsOf(platform).zones, [platform]);
 
   const [now, setNow] = useState(() => Date.now());
   const [fleet, setFleet] = useState<Rider[]>([]);
@@ -354,10 +367,7 @@ export function LiveOps() {
                   </span>
 
                   {order.lifecycle.rider && (
-                    <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-muted px-2.5 py-1 text-xs font-semibold text-body">
-                      <Bike className="size-3" aria-hidden />
-                      {order.lifecycle.rider.name}
-                    </span>
+                    <CourierChip order={order} now={now} zones={zones} />
                   )}
 
                   <span className="text-end">
@@ -464,6 +474,59 @@ export function LiveOps() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Where the courier on one live order is — name, what they are doing, and how
+ * far along the route they are.
+ *
+ * A component rather than three lines in the feed because it is the only place
+ * on this page that reads a position, and keeping the read in one place is the
+ * point of G38: this chip, the customer's marker and the rider's map are three
+ * renderings of one record, and none of them may start computing its own.
+ */
+function CourierChip({
+  order,
+  now,
+  zones,
+}: {
+  order: Order;
+  now: number;
+  zones: DeliveryZone[];
+}) {
+  const t = useTranslations("admin");
+  const track = riderTrackForOrder(order, now, zones);
+  const name = order.lifecycle.rider?.name ?? "";
+
+  if (!track || track.position.phase === "unassigned") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-muted px-2.5 py-1 text-xs font-semibold text-body">
+        <Bike className="size-3" aria-hidden />
+        {name}
+      </span>
+    );
+  }
+
+  const { phase, moving } = track.position;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold",
+        moving ? "bg-fresh/15 text-fresh-600" : "bg-surface-muted text-body",
+      )}
+      title={t("courierAt", {
+        phase: t(`courierPhase.${phase}`),
+        percent: routePercent(track),
+      })}
+    >
+      <Bike className="size-3" aria-hidden />
+      {name}
+      <span aria-hidden>·</span>
+      <span className="font-normal">{t(`courierPhase.${phase}`)}</span>
+      <span className="tabular-nums">{t("routePercent", { percent: routePercent(track) })}</span>
+    </span>
   );
 }
 

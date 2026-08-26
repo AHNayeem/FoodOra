@@ -28,7 +28,7 @@ import { undispatchableRiderIds, useOnboarding } from "@/stores/onboarding";
 import { usePlatformDraft } from "@/stores/platform-settings";
 import { platformSettingsOf } from "@/services/platform-settings";
 import { zoneForArea } from "@/lib/serviceability";
-import { getFleet, jobForOrder } from "@/services/delivery";
+import { getFleet, jobForOrder, riderTrackForOrder } from "@/services/delivery";
 import {
   adminActions,
   cashDueOn,
@@ -45,6 +45,7 @@ import {
 import { noteDetail } from "@/lib/order-events";
 import { cartCount } from "@/lib/cart";
 import { formatDistance, formatPrice } from "@/lib/format";
+import { routePercent } from "@/lib/rider-position";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { OrderStatusChip } from "@/components/orders/order-status-chip";
@@ -54,6 +55,7 @@ import { ReasonDialog } from "@/components/orders/reason-dialog";
 import { AssignRiderDialog } from "@/components/orders/assign-rider-dialog";
 import { HandoverDialog } from "@/components/orders/handover-dialog";
 import { PayoutBreakdown } from "@/components/rider/payout-breakdown";
+import { RouteMap } from "@/components/rider/route-map";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { cn } from "@/lib/utils";
 import { ReadOnlyNotice } from "./read-only-notice";
@@ -158,6 +160,17 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
 
   const job = useMemo(
     () => (order ? jobForOrder(order, now, zones) : null),
+    [order, now, zones],
+  );
+
+  /**
+   * Where the courier is, right now (G38) — the same fix the customer's tracker
+   * and the rider's own screen are drawing. The desk fielding "where is my
+   * order?" was the one surface that could not answer it, and answering it from
+   * a third derivation would have been worse than not answering at all.
+   */
+  const track = useMemo(
+    () => (order ? riderTrackForOrder(order, now, zones) : null),
     [order, now, zones],
   );
 
@@ -538,6 +551,20 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
               value={String(order.lifecycle.rejectedRiderIds.length)}
               tone="danger"
             />
+          )}
+
+          {track && track.position.phase !== "unassigned" && (
+            <div className="mt-3 border-t border-line pt-3">
+              <Row
+                label={t("fieldCourierPosition")}
+                value={t("courierAt", {
+                  phase: t(`courierPhase.${track.position.phase}`),
+                  percent: routePercent(track),
+                })}
+                tone={track.position.moving ? "fresh" : undefined}
+              />
+              <RouteMap track={track} className="mt-3 h-48" />
+            </div>
           )}
 
           {job && (

@@ -25,6 +25,7 @@ import type { CurrencyCode } from "@/config/regions";
 import { useRider } from "@/stores/rider";
 import { cancelJob, completeStop } from "@/services/delivery";
 import { cashOutstanding, isBatch, jobProgress } from "@/lib/delivery";
+import { riderTrack } from "@/lib/rider-position";
 import { formatDistance, formatPrice } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,15 @@ function ActiveTrip({ job }: { job: DeliveryJob }) {
   const progress = jobProgress(job, now);
   const next = progress.nextStop;
 
+  /**
+   * The courier on this route (G38) — the same representation the customer's
+   * tracker and the operations desk read, built here from the zone centre the
+   * router measured the first leg from (`lib/mock/delivery-jobs`). A synthesised
+   * trip has no customer order behind it, so its own completed stops are the
+   * lifecycle the position is derived from.
+   */
+  const track = riderTrack({ job, origin: { lat: zone.lat, lng: zone.lng }, now });
+
   const advance = useCallback(
     (stop: DeliveryStop, otp?: string, cashCollected?: boolean) => {
       setSubmitting(true);
@@ -185,11 +195,7 @@ function ActiveTrip({ job }: { job: DeliveryJob }) {
         </span>
       </div>
 
-      <RouteMap
-        stops={job.stops}
-        origin={{ lat: zone.lat, lng: zone.lng }}
-        completedStopIds={job.completedStopIds}
-      />
+      {track && <RouteMap track={track} />}
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
         <span className="inline-flex items-center gap-1.5">

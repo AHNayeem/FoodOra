@@ -24,6 +24,7 @@ import type {
   RiderEarningsSummary,
   RiderLedgerEntry,
   RiderRemittance,
+  RiderTrack,
   RiderVehicle,
   RiderWallet,
   RiderWithdrawal,
@@ -44,6 +45,7 @@ import {
   riderEarningFrom,
   type TripPlace,
 } from "@/lib/delivery-bridge";
+import { riderTrack } from "@/lib/rider-position";
 import { zoneForArea } from "@/lib/serviceability";
 import { EMPTY_PLATFORM_DRAFT, serviceableZones } from "@/lib/platform-settings";
 import type { PlatformSettingsDraft } from "@/types";
@@ -220,6 +222,28 @@ export function jobForOrder(
     dropoff: places.dropoff,
     now,
   });
+}
+
+/**
+ * Where the courier on this order is (G38).
+ *
+ * The single entry point for the customer's tracker, the courier's own delivery
+ * screen and the operations desk — three surfaces that used to answer the
+ * question separately and therefore differently. All three call *this*, so the
+ * route, the phase and the fix they render are the same record; none of them
+ * resolves geometry, and none of them knows which provider produced the fix.
+ *
+ * Synchronous and derived, exactly like `jobForOrder` it is built on: no fetch,
+ * no socket, nothing stored. When a real feed arrives it is registered with
+ * `lib/rider-position.setRiderPositionProvider` and this signature does not move.
+ */
+export function riderTrackForOrder(
+  order: Order,
+  now: number = Date.now(),
+  zones?: readonly DeliveryZone[],
+): RiderTrack | null {
+  const job = jobForOrder(order, now, zones);
+  return job ? riderTrack({ job, order, now }) : null;
 }
 
 /**

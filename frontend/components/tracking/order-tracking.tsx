@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -21,7 +21,10 @@ import type { CurrencyCode } from "@/config/regions";
 import type { Order, OrderCancelReason } from "@/types";
 import { useOrders } from "@/stores/orders";
 import { liveTicketForOrder, useSupport } from "@/stores/support";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { platformSettingsOf } from "@/services/platform-settings";
 import { cancelOrder } from "@/services/orders";
+import { riderTrackForOrder } from "@/services/delivery";
 import { remainingMinutes, trackingProgress, type TrackingProgress } from "@/lib/tracking";
 import {
   canCustomerCancel,
@@ -69,6 +72,11 @@ const TICK_MS = 1000;
  *
  * The handoff code follows the spec strictly — it is issued at checkout but
  * revealed only once the rider is at the door (`isOtpRevealed`).
+ *
+ * Since G38 the marker on the map is not this screen's own arithmetic either.
+ * It is the courier's shared position (`services/delivery.riderTrackForOrder`),
+ * the same fix the rider's delivery screen and the operations desk render — so
+ * the three cannot disagree about where the food is.
  */
 export function OrderTracking({ orderId }: { orderId: string }) {
   const t = useTranslations("tracking");
@@ -83,6 +91,11 @@ export function OrderTracking({ orderId }: { orderId: string }) {
   const advance = useOrders((s) => s.advance);
   const askRefund = useOrders((s) => s.askRefund);
   const tickets = useSupport((s) => s.tickets);
+
+  // The folded delivery network (Phase 19, G30): the courier's route is resolved
+  // against the same zones dispatch and the rider app price the trip with.
+  const platform = usePlatformDraft();
+  const zones = useMemo(() => platformSettingsOf(platform).zones, [platform]);
 
   const [now, setNow] = useState(() => Date.now());
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -118,7 +131,13 @@ export function OrderTracking({ orderId }: { orderId: string }) {
     );
   }
 
-  const progress = trackingProgress(order, now);
+  /**
+   * Where the courier is. Null for a pickup order or before dispatch resolves a
+   * trip, in which case `trackingProgress` falls back to its own clock-smoothed
+   * estimate and this screen behaves exactly as it did.
+   */
+  const track = riderTrackForOrder(order, now, zones);
+  const progress = trackingProgress(order, now, track?.position);
   const currency = order.vendor.currency as CurrencyCode;
   const isDelivery = order.fulfillment === "delivery";
   const rider = order.lifecycle.rider;
@@ -196,7 +215,7 @@ export function OrderTracking({ orderId }: { orderId: string }) {
               fraction={progress.fraction}
               vendorName={order.vendor.name}
               destinationLabel={order.address?.label ?? t("mapYou")}
-              moving={order.status === "on-the-way"}
+              moving={track?.position.moving ?? order.status === "on-the-way"}
             />
           </div>
         )}

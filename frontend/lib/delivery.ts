@@ -1,4 +1,5 @@
 import type {
+  Coordinates,
   DeliveryJob,
   DeliveryPayout,
   DeliveryStop,
@@ -76,10 +77,12 @@ const OTP_LENGTH = 4;
 // Geometry + time
 // ---------------------------------------------------------------------------
 
-export interface LatLng {
-  lat: number;
-  lng: number;
-}
+/**
+ * A map coordinate. Aliased onto the domain's own `Coordinates` (G38) so a stop,
+ * a zone centre and a courier's position are one shape everywhere, not three
+ * that happen to match.
+ */
+export type LatLng = Coordinates;
 
 /** Great-circle distance between two points, km. */
 export function haversineKm(a: LatLng, b: LatLng): number {
