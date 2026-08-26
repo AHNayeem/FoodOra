@@ -328,6 +328,10 @@ export const ADMIN_ROUTE_PERMISSIONS: readonly {
   { prefix: "/admin/analytics", permission: "analytics.view" },
   { prefix: "/admin/cms", permission: "content.manage" },
   { prefix: "/admin/notifications", permission: "notifications.send" },
+  // Phase 19 (G30): `settings.manage` has been in the vocabulary since Phase 14
+  // with no surface behind it — the platform's configuration was `config/regions`
+  // and a seeded array, so there was nothing for the right to open.
+  { prefix: "/admin/settings", permission: "settings.manage" },
   // The live board, last: it is the shortest prefix and would otherwise match
   // every path above it.
   { prefix: "/admin", permission: "orders.view" },

@@ -12,8 +12,25 @@ const base = { createdAt: SEED_NOW, updatedAt: SEED_NOW, deletedAt: null };
  * lets riders hold more cash than a dense inner-city one, and none of that is a
  * branch in a component — the rider app reads whatever the rider's zone says.
  * Peak hours differ per zone too, because lunch in an office district and dinner
- * in a residential one are not the same hour. Maps onto the future
- * `DeliveryZone` model, where an admin edits these values.
+ * in a residential one are not the same hour.
+ *
+ * Phase 19 (G30) built the admin this file was waiting for. These rows are now the
+ * **baseline**: an operator's edits to a zone's coverage, fares or cash ceiling —
+ * and whether couriers work it at all — are a diff held in
+ * `stores/platform-settings` and folded back here by
+ * `lib/platform-settings.effectiveZones`. Two consequences worth knowing before
+ * reading the callers:
+ *
+ *  - **`deliveryZones` and `zoneById` are the seed, not the network.** Live
+ *    readers ask through the fold: `services/delivery.getDeliveryZones` (the open
+ *    zones, for the storefront, the rider app and the application forms) or
+ *    `stores/platform-settings.platformZones` (every zone, for dispatch and
+ *    pricing). The two exports below are still the right thing to read where the
+ *    *seed* is what is wanted — the synthesised week in `delivery-jobs`, and the
+ *    baseline a patch is a diff against.
+ *  - **A closed zone is marked, not removed.** It comes back from the fold with
+ *    `deletedAt` set, which is the flag every reader here already filters on, so
+ *    an order placed while the zone was open still prices.
  */
 export const deliveryZones: DeliveryZone[] = [
   {

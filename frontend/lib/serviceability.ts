@@ -27,6 +27,12 @@ import { haversineKm } from "./delivery";
  * binds `zoneForArea` to the seeded list, which is how dispatch and the storefront
  * are guaranteed the same answer — the rule has one implementation and it is this
  * one.
+ *
+ * Phase 19 (G30) changed *which* zones get injected and nothing else here. Callers
+ * now pass the folded network — the seed with the platform's own settings applied —
+ * so an area an operator removed stops matching and a zone they narrowed starts
+ * refusing restaurants that used to reach it. That this file needed no change to
+ * absorb that is the argument for the zones having been a parameter all along.
  */
 
 // ---------------------------------------------------------------------------

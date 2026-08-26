@@ -20,6 +20,8 @@ import { isPhoneBlocked, useCustomers } from "@/stores/customers";
 import { useLocation } from "@/stores/location";
 import { authorisePayment, placeOrder } from "@/services/orders";
 import { getAddressBook } from "@/services/account";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { taxTermsFor } from "@/services/platform-settings";
 import { getDeliveryZones } from "@/services/delivery";
 import { authoriseWalletPayment, getWallet } from "@/services/wallet";
 import { couponHeld, customerRisk, paymentLocked } from "@/lib/risk";
@@ -130,9 +132,17 @@ export function CheckoutView() {
   // Rehydrate the persisted stores on the client (they skip auto-hydration).
   // The delivery network, for the serviceability check below. Reference data, so
   // it is fetched rather than persisted (see `stores/location`).
+  /**
+   * The platform's configuration (Phase 19, G30): the open delivery network the
+   * serviceability check below runs against, and the tax terms the total is priced
+   * with. Both used to be fixed — the network was the seed and the rate was
+   * `config/regions.ts` — and both are now what an operator has set.
+   */
+  const platform = usePlatformDraft();
+
   useEffect(() => {
-    if (zones.length === 0) getDeliveryZones().then(seedZones);
-  }, [zones.length, seedZones]);
+    if (zones.length === 0) getDeliveryZones(platform).then(seedZones);
+  }, [zones.length, seedZones, platform]);
 
   useEffect(() => {
     useCart.persist.rehydrate();
@@ -215,8 +225,17 @@ export function CheckoutView() {
 
   const pricing = useMemo(
     () =>
-      vendor ? computeTotals({ vendor, lines, tipPercent, coupon, fulfillment }) : null,
-    [vendor, lines, tipPercent, coupon, fulfillment],
+      vendor
+        ? computeTotals({
+            vendor,
+            lines,
+            tipPercent,
+            coupon,
+            fulfillment,
+            tax: taxTermsFor(vendor.countryCode, platform),
+          })
+        : null,
+    [vendor, lines, tipPercent, coupon, fulfillment, platform],
   );
 
   /**

@@ -44,6 +44,9 @@ import {
   riderEarningFrom,
   type TripPlace,
 } from "@/lib/delivery-bridge";
+import { zoneForArea } from "@/lib/serviceability";
+import { EMPTY_PLATFORM_DRAFT, serviceableZones } from "@/lib/platform-settings";
+import type { PlatformSettingsDraft } from "@/types";
 import { roundMoney } from "@/lib/checkout";
 import { toDateKey } from "@/lib/dates";
 import { mockDelay, ok, type Result } from "./http";
@@ -86,6 +89,17 @@ export interface RiderContext {
   remittances?: RiderRemittance[];
   /** Cash-outs made in this browser. */
   withdrawals?: RiderWithdrawal[];
+  /**
+   * The delivery network as this device has it — the seed with the platform
+   * settings applied (Phase 19, G30).
+   *
+   * Zone fares are what a trip pays and `cashLimit` is the ceiling the wallet
+   * draws, so an operator who lowers either has to reach these reads. Injected
+   * for exactly the reason the rest of this context is: a service cannot read a
+   * client store, and in Phase E the zones are rows the server already has.
+   * Absent, the seed answers — which is what every caller did before this phase.
+   */
+  zones?: DeliveryZone[];
 }
 
 /** Minimum balance a rider can cash out (platform rule; data in Phase E). */
@@ -143,10 +157,38 @@ function placesFor(order: Order, zone: DeliveryZone): { pickup: TripPlace; dropo
   };
 }
 
+/**
+ * One zone by id, from whichever network the caller handed over.
+ *
+ * `zones` is the folded network when a surface passed one and the seed otherwise,
+ * so every read below goes through the same two lines rather than each deciding
+ * for itself whether to consult the seed — which is how the storefront and
+ * dispatch came to disagree about the network in the first place (G37).
+ *
+ * Closed zones are *not* filtered here. A zone an operator has shut still has to
+ * resolve for an order placed while it was open, or the trip behind that delivery
+ * disappears along with the courier's fares. `getDeliveryZones` is where the
+ * closed ones are dropped, because "may a new order be placed here" is the only
+ * question they should answer no to.
+ */
+function zoneAt(
+  zones: readonly DeliveryZone[] | undefined,
+  zoneId: string | null | undefined,
+): DeliveryZone | undefined {
+  if (!zoneId) return undefined;
+  return zones ? zones.find((z) => z.id === zoneId) : zoneById.get(zoneId);
+}
+
 /** The zone whose fares apply to an order — the drop area's, else the rider's. */
-function zoneForOrder(order: Order, rider: Rider | undefined): DeliveryZone | undefined {
-  const byArea = zoneIdForArea(order.address?.area);
-  return zoneById.get(byArea ?? rider?.zoneId ?? "") ?? (rider ? zoneById.get(rider.zoneId) : undefined);
+function zoneForOrder(
+  order: Order,
+  rider: Rider | undefined,
+  zones?: readonly DeliveryZone[],
+): DeliveryZone | undefined {
+  const byArea = zones
+    ? zoneForArea(zones, order.address?.area)?.id
+    : zoneIdForArea(order.address?.area);
+  return zoneAt(zones, byArea) ?? zoneAt(zones, rider?.zoneId);
 }
 
 /**
@@ -157,10 +199,14 @@ function zoneForOrder(order: Order, rider: Rider | undefined): DeliveryZone | un
  * already holds, not a fetch. Phase E turns it into a join and the callers stay
  * put.
  */
-export function jobForOrder(order: Order, now: number = Date.now()): DeliveryJob | null {
+export function jobForOrder(
+  order: Order,
+  now: number = Date.now(),
+  zones?: readonly DeliveryZone[],
+): DeliveryJob | null {
   if (order.fulfillment !== "delivery") return null;
   const rider = order.lifecycle.rider ? riderById.get(order.lifecycle.rider.id) : undefined;
-  const zone = zoneForOrder(order, rider);
+  const zone = zoneForOrder(order, rider, zones);
   if (!zone) return null;
   const places = placesFor(order, zone);
   if (!places) return null;
@@ -187,8 +233,9 @@ export function jobForOrder(order: Order, now: number = Date.now()): DeliveryJob
 export function riderEarningForOrder(
   order: Order,
   now: number = Date.now(),
+  zones?: readonly DeliveryZone[],
 ): OrderRiderEarning | null {
-  const job = jobForOrder(order, now);
+  const job = jobForOrder(order, now, zones);
   return job ? riderEarningFrom(order, job) : null;
 }
 
@@ -206,7 +253,7 @@ function orderTrips(riderId: string, now: number, ctx: RiderContext = {}): Deliv
   for (const order of ctx.orders ?? []) {
     if (order.lifecycle.rider?.id !== riderId) continue;
     if (order.status !== "delivered" && order.status !== "completed") continue;
-    const job = jobForOrder(order, now);
+    const job = jobForOrder(order, now, ctx.zones);
     if (job) trips.set(job.id, job);
   }
   return [...trips.values()];
@@ -273,8 +320,11 @@ export async function getRiderProfile(
   return mockDelay(mine, 250);
 }
 
-export async function getRiderZone(zoneId: string): Promise<DeliveryZone | null> {
-  return mockDelay(zoneById.get(zoneId) ?? null, 150);
+export async function getRiderZone(
+  zoneId: string,
+  zones?: readonly DeliveryZone[],
+): Promise<DeliveryZone | null> {
+  return mockDelay(zoneAt(zones, zoneId) ?? null, 150);
 }
 
 /**
@@ -293,20 +343,29 @@ export async function getFleet(
   return mockDelay(zoneId ? active.filter((r) => r.zoneId === zoneId) : active, 150);
 }
 
-/** Every zone — the profile screen lets a rider change which one they work. */
-export async function getDeliveryZones(): Promise<DeliveryZone[]> {
-  return mockDelay(
-    deliveryZones.filter((z) => !z.deletedAt),
-    150,
-  );
+/**
+ * Every zone a new order may be placed into — the profile screen's list of zones
+ * a rider can work, the application forms' list, and the network the storefront
+ * checks serviceability against.
+ *
+ * Takes the platform settings draft rather than a zone list, because "which zones
+ * are open" is a question about the configuration and answering it in one place is
+ * the whole of G30. The default is the empty draft, so a caller with no opinion
+ * gets the seed minus its own soft-deletes — exactly the previous behaviour.
+ */
+export async function getDeliveryZones(
+  draft: PlatformSettingsDraft = EMPTY_PLATFORM_DRAFT,
+): Promise<DeliveryZone[]> {
+  return mockDelay(serviceableZones(deliveryZones, draft), 150);
 }
 
 /** Simulated profile edit: vehicle, plate and home zone are the rider's to change. */
 export async function updateRiderProfile(
   rider: Rider,
   patch: { vehicle?: RiderVehicle; plate?: string | null; zoneId?: string },
+  zones?: readonly DeliveryZone[],
 ): Promise<Result<Rider>> {
-  if (patch.zoneId && !zoneById.has(patch.zoneId)) {
+  if (patch.zoneId && !zoneAt(zones, patch.zoneId)) {
     return mockDelay({ data: null, error: "errors.unknownZone" });
   }
   // A bicycle has no registration to give, so an empty plate is normal there.
@@ -517,7 +576,7 @@ export async function getRiderDay({
   ctx?: RiderContext;
 }): Promise<RiderDay | null> {
   const rider = riderById.get(riderId);
-  const zone = rider ? zoneById.get(rider.zoneId) : undefined;
+  const zone = rider ? zoneAt(ctx?.zones, rider.zoneId) : undefined;
   if (!rider || !zone) return mockDelay(null, 200);
 
   const history = resolveHistory(riderId, now, ctx);
@@ -584,7 +643,7 @@ export async function getRiderEarnings({
   ctx?: RiderContext;
 }): Promise<RiderEarningsSummary | null> {
   const rider = riderById.get(riderId);
-  const zone = rider ? zoneById.get(rider.zoneId) : undefined;
+  const zone = rider ? zoneAt(ctx?.zones, rider.zoneId) : undefined;
   if (!rider || !zone) return mockDelay(null, 200);
 
   const days = RANGE_DAYS[range];
@@ -655,7 +714,7 @@ export async function getRiderWallet({
   ctx?: RiderContext;
 }): Promise<RiderWallet | null> {
   const rider = riderById.get(riderId);
-  const zone = rider ? zoneById.get(rider.zoneId) : undefined;
+  const zone = rider ? zoneAt(ctx?.zones, rider.zoneId) : undefined;
   if (!rider || !zone) return mockDelay(null, 200);
 
   const currency = zone.currency;

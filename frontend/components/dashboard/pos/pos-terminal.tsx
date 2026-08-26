@@ -18,6 +18,8 @@ import type { MenuSectionWithItems } from "@/services/catalog";
 import { getPosCatalog, getPosTables, completeSale } from "@/services/pos";
 import type { CurrencyCode } from "@/config/regions";
 import { formatPrice } from "@/lib/format";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { taxTermsFor } from "@/services/platform-settings";
 import { computePosTotals, ticketCount } from "@/lib/pos";
 import { useAuth } from "@/stores/auth";
 import { useMerchant } from "@/stores/merchant";
@@ -102,9 +104,20 @@ export function PosTerminal() {
     };
   }, [vendor.id]);
 
+  // The platform's tax terms, not `config/regions.ts`'s (Phase 19, G30): the
+  // counter charges the rate an operator has set, like every other till here.
+  const platform = usePlatformDraft();
+
   const pricing = useMemo(
-    () => computePosTotals({ lines, discount, currency, countryCode }),
-    [lines, discount, currency, countryCode],
+    () =>
+      computePosTotals({
+        lines,
+        discount,
+        currency,
+        countryCode,
+        tax: taxTermsFor(countryCode, platform),
+      }),
+    [lines, discount, currency, countryCode, platform],
   );
 
   /**

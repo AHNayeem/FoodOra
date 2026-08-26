@@ -3,6 +3,7 @@ export * from "./common";
 export * from "./catalog";
 export * from "./menu";
 export * from "./vendor-settings";
+export * from "./platform-settings";
 export * from "./staff";
 export * from "./user";
 export * from "./audit";

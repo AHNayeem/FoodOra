@@ -29,9 +29,13 @@ import type { VendorBranch } from "./onboarding";
  *    them through `stores/onboarding.editVendor`, so there is one record and one
  *    audit log — not a copy here that could disagree.
  *  - **Platform delivery zones are not touched.** `config/regions.ts` and
- *    `lib/mock/delivery-zones.ts` are the platform's geography (G30, which the v2
- *    spec assigns to no phase). A restaurant sets *its own* fee, minimum, free-over
- *    threshold and ETA window; which zones exist is not its decision.
+ *    `lib/mock/delivery-zones.ts` are the platform's geography, and Phase 19 (G30)
+ *    gave them their own owner — `types/platform-settings.ts`, edited from
+ *    `/admin/settings`. A restaurant sets *its own* fee, minimum, free-over
+ *    threshold and ETA window; which zones exist, what they cover and what a trip
+ *    in one pays is not its decision. The boundary did not move when the platform
+ *    side became editable: it is now two settings surfaces with one seam each,
+ *    rather than one surface and a constant.
  */
 
 /**

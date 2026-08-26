@@ -25,8 +25,10 @@ import { useCan } from "@/stores/auth";
 import { useOrders, busyRiderIds } from "@/stores/orders";
 import { offShiftRiderIds, useFleet } from "@/stores/fleet";
 import { undispatchableRiderIds, useOnboarding } from "@/stores/onboarding";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { platformSettingsOf } from "@/services/platform-settings";
+import { zoneForArea } from "@/lib/serviceability";
 import { getFleet, jobForOrder } from "@/services/delivery";
-import { zoneById, zoneIdForArea } from "@/lib/mock";
 import {
   adminActions,
   cashDueOn,
@@ -146,7 +148,18 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
    * Derived from the order on demand (Phase 3's bridge), so it cannot disagree
    * with the trip the courier is actually running.
    */
-  const job = useMemo(() => (order ? jobForOrder(order, now) : null), [order, now]);
+  /**
+   * The delivery network as the platform is configured (Phase 19, G30). The trip
+   * below and the zone panel both read it, so the fares the desk is looking at are
+   * the fares the courier was actually paid.
+   */
+  const platform = usePlatformDraft();
+  const zones = useMemo(() => platformSettingsOf(platform).zones, [platform]);
+
+  const job = useMemo(
+    () => (order ? jobForOrder(order, now, zones) : null),
+    [order, now, zones],
+  );
 
   if (!hydrated) {
     return (
@@ -176,7 +189,7 @@ export function AdminOrderDetail({ orderId }: { orderId: string }) {
   const actions = adminActions(order);
   const stuck = stuckReason(order, now);
   const rider = order.lifecycle.rider;
-  const zone = zoneById.get(zoneIdForArea(order.address?.area) ?? "");
+  const zone = zoneForArea(zones, order.address?.area);
   const cashDue = cashDueOn(order);
   const financials = order.lifecycle.financials;
 

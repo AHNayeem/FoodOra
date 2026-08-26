@@ -60,7 +60,13 @@ export type AuditAction =
   /** An account stopped from ordering, and let back in. */
   | "customer.blocked"
   | "customer.unblocked"
-  /** A restaurant's own configuration, changed by whoever was signed in. */
+  /**
+   * Configuration changed — a restaurant's own, or the platform's (Phase 19,
+   * G30). Which is which is on the entry's `entity`, not on a second action:
+   * `vendor` for a restaurant, `region` / `delivery-zone` / `platform` for the
+   * platform. One slug, because the question an auditor asks is "who changed
+   * configuration" and the record kind is the answer to "whose".
+   */
   | "settings.changed"
   /** Somebody's rights changed — §6's "permission changes". */
   | "permission.changed"
@@ -85,7 +91,16 @@ export type AuditEntityKind =
   | "coupon"
   | "vendor"
   | "staff"
-  | "cms-document";
+  | "cms-document"
+  /**
+   * The platform's own configuration (Phase 19, G30). Three kinds rather than
+   * one, because they are three records an operator edits separately and an
+   * auditor filters separately: a country's trading terms, a delivery zone, and
+   * the platform-wide defaults that belong to no single row.
+   */
+  | "region"
+  | "delivery-zone"
+  | "platform";
 
 /**
  * Who did it.

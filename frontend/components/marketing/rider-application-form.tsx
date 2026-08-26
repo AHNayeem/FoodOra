@@ -17,6 +17,7 @@ import {
   type RiderStep,
 } from "@/lib/rider-onboarding";
 import { PAYOUT_METHODS, submittedDocument } from "@/lib/onboarding";
+import { usePlatformDraft } from "@/stores/platform-settings";
 import { getDeliveryZones } from "@/services/delivery";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -108,15 +109,18 @@ function RiderWizard({
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [now] = useState(() => Date.now());
 
+  // Only the zones the platform runs (Phase 19, G30) — see the partner form.
+  const platform = usePlatformDraft();
+
   useEffect(() => {
-    getDeliveryZones().then((list) => {
+    getDeliveryZones(platform).then((list) => {
       setZones(list);
       // Default to the first zone rather than leaving the field empty: every zone
       // is a valid answer, and an unset one is the commonest reason a rider
       // bounces off the vehicle step.
       setDraft((d) => (d.zoneId ? d : { ...d, zoneId: list[0]?.id ?? "" }));
     });
-  }, []);
+  }, [platform]);
 
   const current: RiderStep = RIDER_STEPS[step];
   const errors = useMemo(() => riderStepErrors(draft, current), [draft, current]);

@@ -24,6 +24,7 @@ import {
   MessageSquareWarning,
   ScrollText,
   ChartColumn,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { PlatformPermission } from "@/types";
 import {
@@ -95,6 +96,10 @@ const NAV = [
   { href: "/admin/audit", key: "navAudit", icon: ScrollText },
   { href: "/admin/cms", key: "navContent", icon: FileText },
   { href: "/admin/notifications", key: "navNotifications", icon: Bell },
+  // Phase 19: the platform's own configuration — regions, tax terms and the
+  // delivery network. Last, because it is the entry a desk opens least often and
+  // the one whose effects everything above it inherits.
+  { href: "/admin/settings", key: "navSettings", icon: SlidersHorizontal },
 ] as const;
 
 function CenterState({ children }: { children: React.ReactNode }) {

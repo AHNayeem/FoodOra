@@ -1,16 +1,13 @@
-import {
-  countries,
-  defaultCountry,
-  type CountryCode,
-} from "@/config/regions";
 import type {
   CateringAddOn,
   CateringPricing,
   EventType,
   QuoteAddOnLine,
   ServiceStyle,
+  TaxTerms,
 } from "@/types";
 import { roundMoney } from "./checkout";
+import { resolveTax } from "./platform-settings";
 
 /**
  * catering.ts — pure catering-quote math + the event/style vocabularies, kept
@@ -77,6 +74,13 @@ export interface EstimateInput {
   addOns: QuoteAddOnLine[];
   currency: string;
   countryCode: string;
+  /**
+   * The platform's tax terms for this country (Phase 19, G30). Injected rather
+   * than looked up so an operator's change to the rate reaches the bill; absent,
+   * `config/regions.ts` answers exactly as before. See
+   * `lib/platform-settings.resolveTax`.
+   */
+  tax?: TaxTerms | null;
 }
 
 /**
@@ -91,8 +95,9 @@ export function estimateQuote({
   addOns,
   currency,
   countryCode,
+  tax: taxTerms,
 }: EstimateInput): CateringPricing {
-  const country = countries[countryCode as CountryCode] ?? countries[defaultCountry];
+  const { rate: taxRate, label: taxLabel } = resolveTax(countryCode, taxTerms);
 
   const packageSubtotal = roundMoney(pricePerGuest * guests, currency);
   const addOnsTotal = roundMoney(
@@ -101,7 +106,7 @@ export function estimateQuote({
   );
   const serviceFee = roundMoney((packageSubtotal + addOnsTotal) * SERVICE_FEE_RATE, currency);
   const taxable = packageSubtotal + addOnsTotal + serviceFee;
-  const tax = roundMoney(taxable * country.taxRate, currency);
+  const tax = roundMoney(taxable * taxRate, currency);
   const total = roundMoney(taxable + tax, currency);
 
   return {
@@ -113,8 +118,8 @@ export function estimateQuote({
     serviceFee,
     serviceFeeRate: SERVICE_FEE_RATE,
     tax,
-    taxLabel: country.taxLabel,
-    taxRate: country.taxRate,
+    taxLabel,
+    taxRate,
     total,
   };
 }

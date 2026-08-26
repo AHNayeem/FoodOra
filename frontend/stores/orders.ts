@@ -8,7 +8,7 @@ import type {
   OrderStatus,
   Rider,
 } from "@/types";
-import { buildDemoOrders, riders, vendorById, zoneById, zoneIdForArea } from "@/lib/mock";
+import { buildDemoOrders, riders, vendorById } from "@/lib/mock";
 import {
   notificationsFor,
   nearYouNotification,
@@ -46,6 +46,7 @@ import {
 } from "@/lib/order-lifecycle";
 import { commissionRateFor, DEFAULT_COMMISSION_RATE } from "@/lib/settlement";
 import { overCashLimit } from "@/lib/risk";
+import { zoneForArea } from "@/lib/serviceability";
 import { riderEarningForOrder } from "@/services/delivery";
 import { offShiftRiderIds, useFleet } from "./fleet";
 import { undispatchableRiderIds, useOnboarding } from "./onboarding";
@@ -53,6 +54,7 @@ import { emitNotifications, useNotifications } from "./notifications";
 import { useWallet } from "./wallet";
 import { sessionCan } from "./auth";
 import { recordAudit } from "./audit";
+import { platformZones } from "./platform-settings";
 import { syncAcrossWindows } from "@/lib/store-sync";
 
 /**
@@ -247,7 +249,11 @@ function withRiderEarning(order: Order): Order {
   if (!financials || financials.riderEarning) return order;
   if (order.fulfillment !== "delivery" || !order.lifecycle.rider) return order;
 
-  const earning = riderEarningForOrder(order, Date.parse(financials.settledAt));
+  const earning = riderEarningForOrder(
+    order,
+    Date.parse(financials.settledAt),
+    platformZones(),
+  );
   if (!earning) return order;
   return {
     ...order,
@@ -297,7 +303,12 @@ export const useOrders = create<OrdersState>()(
          */
         const resolved: TransitionPatch =
           to === "completed" && patch.riderEarning === undefined
-            ? { ...patch, riderEarning: riderEarningForOrder(current) }
+            ? {
+                ...patch,
+                // Priced against the zone as the platform is configured now
+                // (Phase 19, G30), not against the seed's fares.
+                riderEarning: riderEarningForOrder(current, Date.now(), platformZones()),
+              }
             : patch;
 
         const result = transition(current, to, actor, resolved);
@@ -387,7 +398,12 @@ export const useOrders = create<OrdersState>()(
          * there is nothing to collect.
          */
         const order = get().orders.find((o) => o.id === id);
-        const zone = order ? zoneById.get(rider.zoneId) : null;
+        // The ceiling an operator has set, not the seed's (Phase 19, G30). The
+        // whole folded network, so a courier whose zone was closed today is still
+        // held to a limit rather than waved through for want of a record.
+        const zone = order
+          ? (platformZones().find((z) => z.id === rider.zoneId) ?? null)
+          : null;
         if (
           order &&
           zone &&
@@ -791,12 +807,17 @@ syncAcrossWindows("foodora-orders", () => void useOrders.persist.rehydrate());
  * Which delivery zone an order belongs to — matched on the drop area. Dispatch
  * uses it to prefer riders who are actually nearby.
  *
- * The matching itself moved to `lib/mock/delivery-zones` so the rider app's own
- * zone lookup gives the same answer (G39): a real order's trip has to be priced
+ * The matching itself moved to `lib/serviceability.zoneForArea` so the rider app's
+ * own zone lookup gives the same answer (G39): a real order's trip has to be priced
  * by the same zone dispatch used to choose its courier.
+ *
+ * Phase 19 (G30) moved the *list* it matches against, from the seed to the folded
+ * network. Same reason, one step further out: an operator who moves an area from
+ * one zone to another has to move the couriers dispatch prefers for it, or the
+ * order is priced by one zone and offered to the other's fleet.
  */
 function zoneForOrder(order: Order): string | null {
-  return zoneIdForArea(order.address?.area);
+  return zoneForArea(platformZones(), order.address?.area)?.id ?? null;
 }
 
 // ---------------------------------------------------------------------------

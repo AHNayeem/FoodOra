@@ -3216,7 +3216,8 @@
         "handoffFailures": "{count} wrong handover codes across {of} orders"
       },
       "couponHold": "Coupons are held on this account while these signals stand."
-    }
+    },
+    "navSettings": "Settings"
   },
   "cms": {
     "title": "Content",
@@ -5150,6 +5151,94 @@
       "decisionReasonRequired": "Write the reason the applicant will read."
     }
   },
+  "platformSettings": {
+    "title": "Platform settings",
+    "subtitle": "Where the platform trades, on what tax terms, and the delivery network behind it.",
+    "lastSaved": "Last changed {when}",
+    "discard": "Discard changes",
+    "discardTitle": "Discard every change?",
+    "discardBody": "The platform goes back to its published regions and delivery zones. Anything set on this device is lost.",
+    "discarded": "Back to the published configuration.",
+    "save": "Save",
+    "saved": "Saved.",
+    "saveFailed": "Check the marked fields below.",
+    "edited": "Edited",
+    "statRegions": "Trading in",
+    "statRegionsHint": "Of {total} countries configured",
+    "statTax": "Default tax",
+    "statTaxHint": "{label} in {country}",
+    "statZones": "Open zones",
+    "statZonesHint": "Of {total} in the network",
+    "statAreas": "Areas served",
+    "statAreasHint": "What the storefront will accept",
+    "deviceNote": "This configuration is real and takes effect immediately — for this browser. The prototype has no server, so what you change here is what this device serves: the customer's location picker, checkout, the counter and the courier's fares all read it.",
+    "tab": {
+      "regions": "Regions & tax",
+      "zones": "Delivery zones"
+    },
+    "regions": {
+      "title": "Countries and tax terms",
+      "subtitle": "The rate and the label every bill on the platform is priced with.",
+      "note": "The rate applies to orders, POS tickets, dine-in bills, catering estimates and meal-plan quotes in that country. The currency, timezone and dial code are fixed — they are facts about the country, not platform policy.",
+      "fixed": "{currency} · {timezone} · {dialCode}",
+      "taxLabel": "Tax label",
+      "taxLabelHint": "What the receipt calls the line — VAT, Sales Tax.",
+      "taxRate": "Tax rate",
+      "taxRateHint": "Percentage of the post-discount subtotal. Up to {max}%.",
+      "defaultBadge": "Default",
+      "inactive": "Not trading",
+      "makeDefault": "Make default",
+      "defaultSet": "{country} is now the fallback country.",
+      "open": "Open for trade",
+      "close": "Stop trading",
+      "opened": "Open for trade.",
+      "closed": "No longer trading there."
+    },
+    "zones": {
+      "title": "The delivery network",
+      "subtitle": "What each zone covers, what a trip in it pays, and whether couriers work it.",
+      "note": "Areas and reach decide what the storefront accepts: an area removed here disappears from the customer's location picker, and a narrower reach starts refusing restaurants too far outside. Fares and the cash ceiling decide what a courier is paid and how much cash dispatch will let them carry.",
+      "fixed": "{city} · {currency} · {lat}, {lng}",
+      "summary": "{areas} areas · {radius} km reach · {base} base · {perKm}/km · {cash} cash ceiling",
+      "closed": "Closed",
+      "closeZone": "Close zone",
+      "openZone": "Open zone",
+      "closedToast": "Zone closed. New orders there will be refused.",
+      "openedToast": "Zone open.",
+      "edit": "Edit",
+      "collapse": "Collapse",
+      "name": "Zone name",
+      "areas": "Areas covered",
+      "areasHint": "The labels a delivery address is matched against. This is the list the customer's location picker offers.",
+      "removeArea": "Remove {area}",
+      "addAreaLabel": "Add an area",
+      "addAreaPlaceholder": "e.g. Gulshan 1",
+      "addArea": "Add",
+      "radius": "Cross-zone reach (km)",
+      "radiusHint": "How far outside a restaurant may be and still deliver in. {min}–{max} km.",
+      "cashLimit": "Cash ceiling",
+      "cashLimitHint": "Cash a courier may hold before dispatch refuses another cash order.",
+      "baseFare": "Base fare",
+      "perKm": "Per kilometre",
+      "peakMultiplier": "Peak multiplier",
+      "peakMultiplierHint": "{min}–{max}×, applied to base plus distance.",
+      "batchBonus": "Batch bonus",
+      "peakHours": "Peak hours",
+      "peakHoursHint": "Local hours that pay the multiplier. Lunch in an office district and dinner in a residential one are not the same hour."
+    },
+    "errors": {
+      "required": "Required.",
+      "negative": "Cannot be negative.",
+      "invalidRate": "Enter a percentage the platform could actually charge.",
+      "invalidMultiplier": "Peak must pay at least as much as a quiet hour.",
+      "invalidRadius": "Reach must be within the allowed range.",
+      "invalidHour": "Hours run from 00 to 23.",
+      "pickOneArea": "A zone must cover at least one area.",
+      "lastRegion": "The platform has to trade somewhere, and the fallback country cannot be closed.",
+      "lastZone": "The network has to serve somewhere — this is the last open zone.",
+      "notFound": "No such record."
+    }
+  },
   "campaigns": {
     "title": "Campaigns",
     "subtitle": "Coupon codes the platform funds — and what each one has cost.",
@@ -5471,7 +5560,10 @@
       "coupon": "Campaign",
       "vendor": "Restaurant",
       "staff": "Account",
-      "cms-document": "Content document"
+      "cms-document": "Content document",
+      "region": "Country",
+      "delivery-zone": "Delivery zone",
+      "platform": "Platform"
     },
     "role": {
       "guest": "System",

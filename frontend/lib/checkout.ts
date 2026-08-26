@@ -1,12 +1,13 @@
-import {
-  countries,
-  currencies,
-  defaultCountry,
-  type CountryCode,
-  type CurrencyCode,
-} from "@/config/regions";
-import type { AppliedCoupon, CartLine, CartVendor, OrderPricing } from "@/types";
+import { currencies, type CurrencyCode } from "@/config/regions";
+import type {
+  AppliedCoupon,
+  CartLine,
+  CartVendor,
+  OrderPricing,
+  TaxTerms,
+} from "@/types";
 import { cartSubtotal, deliveryFeeFor } from "./cart";
+import { resolveTax } from "./platform-settings";
 
 /**
  * checkout.ts — pure order-total math (tax, tip, coupon, grand total), kept out
@@ -18,6 +19,12 @@ import { cartSubtotal, deliveryFeeFor } from "./cart";
  * discount now arrives as an `AppliedCoupon` already priced and validated by
  * `lib/coupons` through `services/coupons`, so there is one coupon engine rather
  * than a checkout-only copy of one.
+ *
+ * Phase 19 (G30) did the same to the tax rate. It used to be read straight off
+ * `config/regions.ts` here, which made it the one figure on the bill no operator
+ * could change. It now arrives as `TotalsInput.tax` — resolved by
+ * `lib/platform-settings.resolveTax`, which falls back to that same table when no
+ * caller has an opinion, so the seeds and the server-rendered pages are unchanged.
  */
 
 /** Tip presets offered in the summary (fraction of subtotal). */
@@ -39,6 +46,15 @@ export interface TotalsInput {
   coupon: AppliedCoupon | null;
   /** Pickup waives the delivery fee. */
   fulfillment: "delivery" | "pickup";
+  /**
+   * The platform's tax terms for this order's country (Phase 19, G30).
+   *
+   * Injected rather than looked up so an operator's change to the rate reaches
+   * the total, while a caller that has no opinion — the deterministic seeds, a
+   * server component — gets `config/regions.ts` exactly as before. See
+   * `lib/platform-settings.resolveTax`.
+   */
+  tax?: TaxTerms | null;
 }
 
 /**
@@ -56,12 +72,12 @@ export function computeTotals({
   tipPercent,
   coupon,
   fulfillment,
+  tax: taxTerms,
 }: TotalsInput): OrderPricing {
   const currency = vendor.currency;
   const subtotal = cartSubtotal(lines);
 
-  const countryCode = (vendor.countryCode as CountryCode) ?? defaultCountry;
-  const country = countries[countryCode] ?? countries[defaultCountry];
+  const { rate: taxRate, label: taxLabel } = resolveTax(vendor.countryCode, taxTerms);
 
   const discount = coupon
     ? roundMoney(Math.min(coupon.evaluation.discount, subtotal), currency)
@@ -71,7 +87,7 @@ export function computeTotals({
       ? 0
       : deliveryFeeFor(vendor, subtotal);
   const taxable = Math.max(0, subtotal - discount);
-  const tax = roundMoney(taxable * country.taxRate, currency);
+  const tax = roundMoney(taxable * taxRate, currency);
   const tip = roundMoney(subtotal * tipPercent, currency);
   const total = roundMoney(taxable + deliveryFee + tax + tip, currency);
 
@@ -81,8 +97,8 @@ export function computeTotals({
     deliveryFee,
     discount,
     tax,
-    taxLabel: country.taxLabel,
-    taxRate: country.taxRate,
+    taxLabel,
+    taxRate,
     tip,
     total,
     couponCode: coupon?.coupon.code ?? null,

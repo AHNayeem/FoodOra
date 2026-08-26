@@ -17,6 +17,8 @@ import type { DeliveryZone, RiderVehicle } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { useAuth } from "@/stores/auth";
 import { useRider } from "@/stores/rider";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { platformSettingsOf } from "@/services/platform-settings";
 import { getDeliveryZones, updateRiderProfile } from "@/services/delivery";
 import { VEHICLES } from "@/lib/delivery";
 import { formatPrice, formatRating } from "@/lib/format";
@@ -52,15 +54,22 @@ export function RiderProfileView() {
   const [zoneId, setZoneId] = useState(rider.zoneId);
   const [saving, setSaving] = useState(false);
 
+  /**
+   * The zones an operator has actually opened (Phase 19, G30). A rider may only
+   * pick one the platform runs — the closed ones are gone from this list, which
+   * is the same list the storefront checks serviceability against.
+   */
+  const platform = usePlatformDraft();
+
   useEffect(() => {
     let active = true;
-    getDeliveryZones().then((list) => {
+    getDeliveryZones(platform).then((list) => {
       if (active && list.length > 0) setZones(list);
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [platform]);
 
   // A bicycle has nothing to register, so switching to one drops the plate
   // rather than quietly keeping the motorbike's behind a disabled field.
@@ -70,7 +79,13 @@ export function RiderProfileView() {
 
   function save() {
     setSaving(true);
-    updateRiderProfile(rider, { vehicle, plate: nextPlate, zoneId }).then((res) => {
+    updateRiderProfile(
+      rider,
+      { vehicle, plate: nextPlate, zoneId },
+      // Validated against the whole folded network, not the open subset: the
+      // rider's current zone is a legal answer even on the day it is closed.
+      platformSettingsOf(platform).zones,
+    ).then((res) => {
       setSaving(false);
       if (res.error || !res.data) {
         toast.error(t(res.error ?? "errors.generic"));

@@ -28,6 +28,7 @@ import { useCampaigns } from "@/stores/campaigns";
 import { useReviewModeration } from "@/stores/review-moderation";
 import { useAudit } from "@/stores/audit";
 import { useOrderChat } from "@/stores/order-chat";
+import { usePlatformSettings } from "@/stores/platform-settings";
 import { useVendorSettings } from "@/stores/vendor-settings";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,7 @@ export function DemoBar() {
   const resetModeration = useReviewModeration((s) => s.resetDemo);
   const resetAudit = useAudit((s) => s.resetDemo);
   const resetThreads = useOrderChat((s) => s.resetDemo);
+  const resetPlatform = usePlatformSettings((s) => s.resetDemo);
 
   const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
@@ -251,6 +253,12 @@ export function DemoBar() {
                 // rebuilt, so a surviving one would be a message to a courier on a
                 // delivery that no longer exists.
                 resetThreads();
+                // Phase 19's platform configuration (G30). A tax rate or a closed
+                // zone set during the last demonstration would change what the next
+                // reviewer is shown — a checkout priced at somebody else's VAT, or
+                // an address the storefront refuses — with the only explanation two
+                // clicks deep in a screen they have not opened yet.
+                resetPlatform();
                 toast.success(t("resetToast"));
               }}
               className="ms-auto inline-flex items-center gap-1.5 rounded-pill border border-line px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/5"

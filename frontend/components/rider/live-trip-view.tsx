@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -21,6 +21,8 @@ import type { Order, OrderCancelReason, OrderStatus } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { useOrders } from "@/stores/orders";
 import { verifyOtp } from "@/services/orders";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { platformSettingsOf } from "@/services/platform-settings";
 import { jobForOrder } from "@/services/delivery";
 import {
   cashDueOn,
@@ -71,6 +73,10 @@ export function LiveTripView({ orderId }: { orderId: string }) {
   const failOtp = useOrders((s) => s.failOtp);
   const failHandover = useOrders((s) => s.failHandover);
   const notifyNearby = useOrders((s) => s.notifyNearby);
+
+  // The folded delivery network (Phase 19, G30) — see the payout below.
+  const platform = usePlatformDraft();
+  const zones = useMemo(() => platformSettingsOf(platform).zones, [platform]);
 
   const [now, setNow] = useState(() => Date.now());
   const [otpOpen, setOtpOpen] = useState(false);
@@ -196,7 +202,10 @@ export function LiveTripView({ orderId }: { orderId: string }) {
    * the same figure the completed order carries in its financials and the same
    * one the rider's wallet counts.
    */
-  const trip = done ? jobForOrder(order) : null;
+  // Priced against the network as the platform is configured (Phase 19, G30), so
+  // this figure and the wallet's — which reads the same zones through
+  // `useRiderRecords` — cannot disagree about what a trip in this zone pays.
+  const trip = done ? jobForOrder(order, now, zones) : null;
 
   return (
     <div className="space-y-5">

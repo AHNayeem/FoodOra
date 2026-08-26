@@ -25,6 +25,7 @@ Tracks execution of `GAP - Implement v2.md`. Updated at the end of every session
 - Phase 16 — Admin Analytics Done
 - Phase 17 — Customer Improvements Done
 - Phase 18 — Consistency + Quality Gaps Done
+- Phase 19 — Platform Settings Done
 
 ---
 
@@ -75,7 +76,7 @@ none were found already fixed. Three corrections/additions are listed under
 | G27 | Rider/restaurant contact | PARTIAL → **CLOSED (Phase 17)** | Was: `order-tracking.tsx` call/message buttons are `toast.info` stubs. Now `types/conversation` + `lib/order-chat` + `stores/order-chat`, read and written by the tracker and the live trip screen |
 | G28 | Admin coupons/campaigns | MISSING | only `stores/merchant.addCoupon` (vendor-issued) |
 | G29 | Review moderation | MISSING | no route, though `moderator` is an admitted role |
-| G30 | Platform settings | MISSING | hard-coded in `config/regions.ts`, `lib/mock/delivery-zones.ts`. **Not assigned to any phase in the v2 spec** |
+| G30 | Platform settings | MISSING | hard-coded in `config/regions.ts`, `lib/mock/delivery-zones.ts`. **Not assigned to any phase in the v2 spec** — closed in Phase 19 |
 | G31 | RBAC | PARTIAL | `ADMIN_ROLES` / `MANAGEMENT_ROLES` / `RIDER_ROLES` list membership only; no permission helper |
 | G32 | Audit log | PARTIAL | `services/cms.ts` audit trail exists; nothing platform-wide |
 | G33 | Admin analytics | MISSING | KPI strip only |
@@ -111,7 +112,8 @@ Counts: 22 MISSING · 13 PARTIAL · 9 INCORRECT · 1 CONFIRMED (dead code) · 0 
    `none | requested | approved | rejected` — the spec's `refunded/settled`
    terminal state requires extending the union, not just adding UI.
 4. **G30 and G38 are not covered by any of the 18 phases.** Both are P2. Flagged
-   so they are a deliberate omission rather than an accident.
+   so they are a deliberate omission rather than an accident. **G30 was closed in
+   Phase 19**, after the spec's own order was finished; G38 is still open.
 
 #### Implementation map (dependency-ordered)
 
@@ -134,7 +136,8 @@ G32                      → platform audit log          → PHASE 15 (retro-app
 G33                      → admin analytics             → PHASE 16 (needs G02, G23)
 G34, G35, G36, G37, G43, G27 → customer improvements   → PHASE 17
 G41, G42, G44, G45       → consistency/quality         → PHASE 18
-(G30, G38)               → unassigned by the v2 spec
+G30                      → platform settings           → PHASE 19 (unassigned by the v2 spec; taken on after 1–18)
+(G38)                    → unassigned by the v2 spec
 ```
 
 Key seams identified for the implementation phases:
@@ -183,7 +186,68 @@ payout numbers to keep in step with the fare rules.
 ## Current Phase
 
 None in progress. Phases 1–18 complete — every phase in §6's implementation order
-is closed.
+is closed — plus **Phase 19 (G30)**, which §6 assigns to no phase and which was
+taken on afterwards.
+
+### Phase 19 — Platform Settings (2026-08-26)
+
+**Done.** G30 closed — the first of the two gaps the v2 spec assigns to no phase
+(G38 is the other, and is still open). It is also the one the codebase had been
+asking for in its own comments: `config/regions.ts`
+said "in production it becomes an admin-editable table",
+`lib/mock/delivery-zones.ts` said the values "map onto the future `DeliveryZone`
+model, where an admin edits these values", `lib/rbac` has carried a
+`settings.manage` permission with nothing behind it since Phase 14, and
+`components/dashboard/settings/delivery-panel` told restaurants to ask somebody
+about zones without being able to name a screen. All four were the same missing
+thing.
+
+| Question | Answer | Where it is stated |
+|---|---|---|
+| Whether this is a new configuration system or a layer over the old one | **A diff, and the two existing files stay the baseline.** `config/regions.ts` and `lib/mock/delivery-zones.ts` are unchanged as data; `PlatformSettingsDraft` records only the fields an operator actually set, and `lib/platform-settings.effectiveSettings` folds it back. So editing the seed still reaches every device, which a stored copy of the whole table would have quietly stopped doing. This is `stores/vendor-settings`' arrangement applied one level up, deliberately — a second config table was the one outcome G30 could not have. | `types/platform-settings.ts` header, `lib/platform-settings.ts` header |
+| What is editable and what is not | **Policy is; facts are not.** Editable: a country's tax rate and label, whether the platform trades there, which country is the fallback; a zone's name, areas, cross-zone reach, base fare, per-km, peak multiplier, peak hours, batch bonus, cash ceiling, and whether it is open. Not editable: `Currency.symbol` / `.locale` / `.fractionDigits` (facts about ISO 4217 and `Intl` — an operator who could set BDT to two decimals would be breaking `lib/format`, not configuring anything), and a zone's `lat`/`lng`/`city`/`currency` (its identity — moving the centre would silently re-place every synthesised pickup in the seeded week). | `types/platform-settings.ts` header |
+| What happens to a zone an operator closes | **It is marked, not removed.** The fold returns it carrying `deletedAt`, which is the soft-delete flag every existing zone reader already filtered on. That split is the point: `services/delivery.getDeliveryZones` drops it, so a *new* order there is refused; `stores/platform-settings.platformZones` keeps it, so an order placed while the zone was open still resolves a trip, fares and a courier payout. Dropping it would have made a real delivery unpriceable — `jobForOrder` returns null for a zone it cannot find, and a null trip means no earnings for a delivery that happened. | `lib/platform-settings.effectiveZones`, `stores/platform-settings.platformZones` |
+| How the tax rate got out of five hard-coded call sites without a rewrite | **One resolver and one optional parameter.** `lib/checkout`, `pos`, `qr`, `catering` and `subscriptions` each inlined `countries[code] ?? countries[defaultCountry]` and read two fields off it. That expression now lives once, in `lib/platform-settings.resolveTax`, and each function takes an optional `tax?: TaxTerms`. Absent, the config answers exactly as before — so the deterministic seeds (`demo-orders`, `vendor-orders`, `delivery-jobs`) and the server-rendered meal-plan page are unchanged *by construction* rather than by somebody remembering to leave them alone. | `lib/platform-settings.resolveTax` |
+| Why the tax seam takes `TaxTerms` rather than a country or the whole draft | **Because a pricing function should not be able to mix two countries.** Passing the `Country` row would let a caller inject one place's rate with another's label; passing the draft would make five pure math functions depend on the shape of a settings record. Two fields is exactly what they read. | `types/platform-settings.TaxTerms` |
+| How a service reads a configuration held in a client store | **It does not — the draft is injected.** `getDeliveryZones(draft)`, `getRiderZone(zoneId, zones)`, `jobForOrder(order, now, zones)`, `riderEarningForOrder(order, now, zones)` and `RiderContext.zones` all take it as a parameter, which is the rule the whole `services/` layer already keeps (`getFleet` takes `admitted`, `getRiderDay` takes a `RiderContext`). In Phase E the parameter is dropped and every signature stays put. | `services/platform-settings.ts` header, `services/delivery.RiderContext.zones` |
+| How eleven surfaces inject it without eleven chances to forget | **One hook.** `stores/platform-settings.usePlatformDraft` rehydrates the store and returns the draft in a single line. Both halves matter: the persist middleware is `skipHydration` like every other store here, so a surface that read without rehydrating would silently still be on the seed — the failure mode this phase most needed to design out. | `stores/platform-settings.usePlatformDraft` |
+| Whether closing everything is possible | **No, and it is refused in the domain rather than hidden in the form.** The last open zone cannot be closed (an empty network would leave the location picker with nothing to offer and answer every address `outsideNetwork`); the last trading country cannot be closed, and neither can the fallback country (`resolveTax` would fall back to somewhere the platform has just switched off). Both refusals return an i18n key the form shows, so the reason is on screen rather than in a console. | `lib/platform-settings.setZoneActive`, `setRegionActive` |
+| Why the tax rate is typed as a percentage | **Because `0.19` typed as `19` is the mistake that multiplies every bill on the platform by twenty.** The field says `%`, stores a fraction, and `regionErrors` refuses anything above `MAX_TAX_RATE` as the second line of the same defence. | `components/admin/platform-settings/regions-panel.tsx` |
+| What the audit trail records | **The section and the record, on the existing `settings.changed` action.** No new action was minted — it already means "somebody changed configuration", and the new `entity` kinds (`region`, `delivery-zone`, `platform`) are what say whose. Field-level detail is deliberately not recorded, for the reason `stores/vendor-settings.auditSave` states: the draft *is* a diff, and a field trail would mean diffing the diff on every save. | `stores/platform-settings.auditChange`, `types/audit.AuditEntityKind` |
+| Whether a no-op save leaves a trace | **No.** `saveRegion` and `saveZone` compare field by field against the baseline and record only differences; typing the published values back in drops the patch entirely, and reopening a closed zone removes the flag rather than writing `active: true`. A stored value identical to the seed is indistinguishable from an edit until the seed changes — and then it silently pins the old number. | `lib/platform-settings.saveRegion`, `saveZone`, `prune` |
+
+**What the phase actually changed about behaviour.** The point of G30 was never a
+form; it was that a configuration nobody could reach was being read in twenty
+places. After this phase, one screen moves:
+
+* **the customer's location picker and serviceability notice** — an area removed
+  from a zone disappears from the picker; a closed zone's addresses answer
+  "outside the network"; a narrowed cross-zone reach starts refusing restaurants
+  that used to deliver in;
+* **checkout** — the tax line, its label, and the serviceability gate on the
+  address;
+* **the restaurant's POS and its dine-in / QR bills** — the same rate as the
+  customer's delivery order, which is the point;
+* **the catering estimate and the meal-plan builder**;
+* **dispatch** — which zone an order is matched to (so which couriers are
+  preferred), and the cash ceiling `lib/risk.overCashLimit` is checked against;
+* **the courier's app** — the fares behind today's figures, the week, the wallet
+  and the trip receipt, and the zone list their profile may choose from;
+* **both application forms** — an applicant is only offered zones the platform
+  actually runs;
+* **the admin order detail** — the zone panel and the trip payout the desk reads.
+
+**Verified.** `scripts/platform-settings-flow.ts` (run
+`NODE_ENV=test bun scripts/platform-settings-flow.ts`) — 151 assertions, all
+green, following the `*-flow.ts` convention Phases C24–C26 established. It checks
+the four claims the phase rests on: an empty draft is byte-identical to the old
+behaviour on all five pricing functions and reference-identical on every zone; a
+change reaches the checkout, the till, the dine-in bill, the catering estimate,
+the meal plan, the storefront's serviceability and the courier's payout; a closed
+zone refuses a new order while still pricing an old one; and every refusal holds.
+It also checks `settings.manage` gating on `/admin/settings` and that the
+`platformSettings` namespace, all ten refusal keys, the nav entry and the three
+new audit entity labels exist in **en, bn and ar**.
 
 ### Phase 18 — Consistency + Quality Gaps (2026-08-25)
 
@@ -662,6 +726,27 @@ plausible-looking implementation would miss:
 | Lint | `bun run lint` | **PASS** (no findings) — `.claude/**` added to `eslint.config.mjs` ignores, so the gate reports on application code again |
 | Build | `bun run build` | **PASS** (all routes compiled) |
 
+Re-run on 2026-08-26 after Phase 19, all three still **PASS** — `tsc --noEmit`
+exit 0, `eslint` no findings, `next build` compiled every route including the new
+`/admin/settings`. Four extra gates for this phase:
+
+* `bun run verify:graphql` — **24 operations, 0 failed.** Nothing about the wire
+  changed (G30 is frontend configuration, and the live checkout path is
+  server-priced by design), and this is the check that says so.
+* `NODE_ENV=test bun scripts/platform-settings-flow.ts` — **151 assertions
+  passed.** The phase's own flow check; see the Phase 19 write-up for what it
+  asserts.
+* The three pre-existing flow checks still pass unchanged, which matters because
+  this phase edited five shared pricing modules: `cms-flow` **177**, `ai-flow`
+  **119**, `notifications-flow` **116**.
+* A dev-server smoke test (port 3005, mock path) returned **200** for
+  `/admin/settings`, `/admin`, `/checkout`, `/restaurants`, `/delivery` and
+  `/dashboard/settings`, with no runtime error in the log. `/admin/settings` was
+  fetched in all three locales: `dir="ltr"` for `en`/`bn`, **`dir="rtl"` for `ar`**,
+  translated copy in each, and **zero raw `platformSettings.*` keys** in the
+  rendered HTML — the gate that matters for a phase adding ~90 message keys across
+  three catalogs.
+
 Re-run on 2026-08-25 after Phase 18, all three still **PASS** — `tsc --noEmit`
 exit 0, `eslint` no findings, `next build` exit 0 with every route compiled. Two
 extra gates matter this phase: `bun run verify:graphql` still validates **24
@@ -1055,6 +1140,63 @@ components call rather than the components themselves. The pre-existing
 ---
 
 ## Important Architecture
+
+### Added in Phase 19
+
+```text
+types/platform-settings.ts         (PlatformSettingsDraft — the diff; PlatformSettings — the fold; TaxTerms)
+        ↓
+lib/platform-settings.ts           (pure: effectiveRegions/effectiveZones/effectiveSettings — the fold;
+        ↓                           serviceableZones; resolveTax/taxFor; regionErrors/zoneErrors;
+        ↓                           saveRegion/saveZone/setRegionActive/setZoneActive/setDefaultCountry)
+        ↓
+stores/platform-settings.ts        (the persisted draft + audit + syncAcrossWindows;
+        ↓                           platformDraft() / platformZones() / serviceableNetwork() / platformTax()
+        ↓                           for non-React callers; usePlatformDraft() for components)
+        ↓
+services/platform-settings.ts      (getPlatformSettings / platformSettingsOf / getServiceableZones /
+        ↓                           taxTermsFor / savePlatformSettings — draft injected, never read)
+        ↓
+components/admin/platform-settings/  (settings-view + regions-panel + zones-panel)
+app/(admin)/admin/settings/page.tsx
+```
+
+**The two baselines, unchanged as data and re-documented as baselines:**
+
+```text
+config/regions.ts            → countries/currencies. Still the published table.
+lib/mock/delivery-zones.ts   → the seeded network. Still what a patch is a diff against,
+                               and still what lib/mock/delivery-jobs synthesises from.
+```
+
+**Who reads the fold, and through which door:**
+
+```text
+open network (closed zones dropped)          every zone (closed ones marked)
+  services/delivery.getDeliveryZones(draft)    stores/platform-settings.platformZones()
+  services/platform-settings                   services/platform-settings.platformSettingsOf(draft)
+    .getServiceableZones(draft)                  ↓
+    ↓                                          stores/orders  (dispatch zone match, cash ceiling,
+  location-picker · serviceability-notice        riderEarningForOrder)
+  checkout-view · rider profile-view            services/delivery  (RiderContext.zones → today,
+  partner-application-form                        earnings, history, wallet; jobForOrder)
+  rider-application-form                        rider-shell · live-trip-view
+                                                admin/order-detail-view
+
+tax terms
+  services/platform-settings.taxTermsFor(countryCode, draft)
+    → lib/checkout · lib/pos · lib/qr · lib/catering · lib/subscriptions   (as `tax?: TaxTerms`)
+    → checkout-view · pos-terminal · qr-menu-view · qr-bill-panel ·
+      qr-ticket-panel · catering-quote-builder · subscribe-builder
+```
+
+**The rule that keeps it one system:** nothing reads `Country.taxRate` /
+`Country.taxLabel` or `deliveryZones` / `zoneById` directly for a *live* answer any
+more. The two exports remain the right thing to read where the **seed** is what is
+wanted — the synthesised week in `lib/mock/delivery-jobs`, and the baseline a patch
+is a diff against.
+
+---
 
 ### Added in Phases 1–2
 
@@ -1847,7 +1989,8 @@ the money, which is the record `buildRiderSettlements` pays from),
 
 ## Next Phase
 
-**None in §6.** Phases 1–18 are complete, so the implementation order is finished.
+**None in §6.** Phases 1–18 are complete, so the implementation order is finished,
+and Phase 19 has closed G30 — the first of the two gaps §6 assigned to nobody.
 What is left in the spec is verification and delivery, not construction:
 
 * **§10 End-to-End Verification** — Scenarios A–G driven in a browser, in one
@@ -1857,6 +2000,30 @@ What is left in the spec is verification and delivery, not construction:
   the finished tree: direct status mutation, disconnected rider delivery, vendor
   fallback, fake financial values, duplicate domain models.
 * **§14 Final Deliverable** — the summary the spec asks for once everything is done.
+
+**G38 (live rider position) is the one gap left open.** It is P2 and, like G30, is
+assigned to no phase. `lib/tracking` advances the customer's map by a clock-smoothed
+fraction while `lib/delivery` holds the courier's real stop geometry; closing it
+means publishing the second into the first.
+
+### What Phase 19 leaves ready for that
+
+1. **The §11 pattern Phase 19 was most likely to break, it did not.** "Duplicate
+   domain models" is exactly what a settings screen invites, and the whole design
+   is the refusal: no second country table, no second zone list, no `taxRate` copied
+   onto anything. The flow check asserts reference identity on an untouched zone,
+   which is the strongest available statement that there is one record and not two.
+2. **No financial value was minted.** The tax on a bill is still `taxable × rate`
+   computed by the same five functions; the phase changed only where `rate` comes
+   from. The courier's payout is still `lib/delivery-bridge`'s arithmetic over a
+   zone; the phase changed only which zone.
+3. **§10's scenarios gain a control surface.** Scenario A can now be driven against
+   a *narrowed* network — close Uttara, remove Banani — which is the cheapest way to
+   see the serviceability refusals G37 built and nothing has been able to trigger on
+   demand since.
+4. **The demo reset covers it.** `resetPlatform()` is wired into the demo bar, so a
+   rate or a closed zone set during one demonstration cannot silently change what
+   the next reviewer is shown.
 
 ### What Phase 18 leaves ready for that
 
@@ -1888,6 +2055,46 @@ What is left in the spec is verification and delivery, not construction:
   window the platform reports over. That is a defensible prototype decision and it
   is now the only reason the module exists. It is a question for the cutover, not a
   gap.
+
+## Deliberately deferred by Phase 19 (not omissions)
+
+* **Creating and deleting zones and countries.** An operator may edit, open and
+  close every zone and country the seed and the config define; they may not mint a
+  new one. Creating a zone needs a centre, and a centre is a map — the prototype has
+  no geocoder and `TrackingMap` is an explicit CSS/SVG placeholder, so the field
+  would be two numbers typed by hand into a form that could not show where they
+  land. A new *country* needs a currency, which needs a symbol, an `Intl` locale and
+  a precision — data about ISO 4217, not a preference (see the header of
+  `types/platform-settings.ts`). Both are additive when there is a backend with a
+  real geography behind it, and neither is what G30 filed: the gap was that the
+  existing configuration could not be reached, not that the platform could not grow
+  new ones.
+* **Currency definitions stay read-only, and so do a zone's centre, city and
+  currency.** Stated on the type rather than discovered here, and the reasoning is
+  in the Phase 19 table above.
+* **The restaurant's delivery panel still shows zones as prose, not as a list.**
+  Phase 10 put a paragraph there saying the zones are the platform's and naming who
+  to ask; Phase 19 changed the "who" from a source file to a screen and left the
+  paragraph. Rendering the live zone list there would be a fair improvement and is
+  not G30: the panel's job is to draw a boundary, and it draws it.
+* **Field-level audit detail.** The trail records the section and the record, not
+  the old and new values — the same limit `stores/vendor-settings` states, for the
+  same reason (the draft *is* a diff, so a field trail means diffing the diff and
+  storing a second copy of every value).
+* **Commission stays out.** `Vendor.commissionRate` with `DEFAULT_COMMISSION_RATE`
+  behind it is a negotiated term per restaurant from Phase 2's money domain, not a
+  platform preference. Moving it here would make a settings screen able to rewrite
+  the terms of a signed agreement.
+* **A restaurant's own delivery terms stay the restaurant's.** Fee, minimum,
+  free-over threshold and ETA window still belong to `VendorDeliverySettings` and
+  its own panel. Phase 19 did not move the boundary; it gave the platform side of it
+  an owner.
+* **The configuration is still device-local, like every other store here.** The
+  admin sets a rate and the customer's tab beside it charges it — through
+  `syncAcrossWindows`, same origin. Two machines or two browser profiles still see
+  two configurations, which is the half of G42 the prototype's own §2 forbids
+  closing. The screen says so, in `deviceNote`, rather than leaving a reviewer to
+  discover it.
 
 ## Deliberately deferred by Phase 18 (not omissions)
 

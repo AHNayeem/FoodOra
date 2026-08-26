@@ -1,23 +1,20 @@
-import {
-  countries,
-  defaultCountry,
-  type CountryCode,
-} from "@/config/regions";
 import type {
   BillingCycle,
   MealSlot,
   NutritionFacts,
   PlanGoal,
-  PlannedDelivery,
   PlanMeal,
+  PlannedDelivery,
   Subscription,
   SubscriptionPricing,
   SubscriptionStatus,
+  TaxTerms,
   Weekday,
 } from "@/types";
 import { WEEKDAYS, addDays, fromDateKey, toDateKey, weekdayOf } from "./dates";
 import { totalNutrition } from "./nutrition";
 import { roundMoney } from "./checkout";
+import { resolveTax } from "./platform-settings";
 
 /**
  * subscriptions.ts — pure meal-plan math + the plan vocabularies (Phase C15).
@@ -105,6 +102,13 @@ export interface SubscriptionPricingInput {
   deliveryFeePerDay: number;
   currency: string;
   countryCode: string;
+  /**
+   * The platform's tax terms for this country (Phase 19, G30). Injected rather
+   * than looked up so an operator's change to the rate reaches the bill; absent,
+   * `config/regions.ts` answers exactly as before. See
+   * `lib/platform-settings.resolveTax`.
+   */
+  tax?: TaxTerms | null;
 }
 
 /**
@@ -123,8 +127,9 @@ export function computeSubscriptionPricing({
   deliveryFeePerDay,
   currency,
   countryCode,
+  tax: taxTerms,
 }: SubscriptionPricingInput): SubscriptionPricing {
-  const country = countries[countryCode as CountryCode] ?? countries[defaultCountry];
+  const { rate: taxRate, label: taxLabel } = resolveTax(countryCode, taxTerms);
   const weeks = cycleWeeks(cycle);
 
   const deliveryCount = deliveryDaysPerWeek * weeks;
@@ -134,7 +139,7 @@ export function computeSubscriptionPricing({
   const discount = roundMoney(subtotal * discountRate, currency);
   const deliveryFee = roundMoney(deliveryFeePerDay * deliveryCount, currency);
   const taxable = subtotal - discount + deliveryFee;
-  const tax = roundMoney(taxable * country.taxRate, currency);
+  const tax = roundMoney(taxable * taxRate, currency);
   const total = roundMoney(taxable + tax, currency);
 
   return {
@@ -149,8 +154,8 @@ export function computeSubscriptionPricing({
     discountRate,
     deliveryFee,
     tax,
-    taxLabel: country.taxLabel,
-    taxRate: country.taxRate,
+    taxLabel,
+    taxRate,
     total,
     effectivePerMeal:
       mealCount === 0 ? 0 : roundMoney((subtotal - discount) / mealCount, currency),

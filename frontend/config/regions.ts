@@ -2,8 +2,26 @@
  * regions.ts — multi-currency / multi-country / tax configuration.
  *
  * The platform is global: currency, country and tax rules are all data, never
- * hardcoded in components. This is the single source of truth; in production it
- * becomes an admin-editable table (see spec: Countries / Currencies / Tax).
+ * hardcoded in components. This is the **baseline** — the published table every
+ * device starts from (see spec: Countries / Currencies / Tax).
+ *
+ * Phase 19 (G30) made it editable without making it mutable. An operator's change
+ * to a country's tax rate or label, or to whether the platform trades there at
+ * all, is a *diff* held in `stores/platform-settings` and folded back over this
+ * table by `lib/platform-settings.effectiveRegions`. So:
+ *
+ *  - **This file is still the single source of truth for anything nobody has
+ *    edited.** A patch records only the fields an operator actually set, which is
+ *    why editing a rate here still reaches every device.
+ *  - **Nothing reads `taxRate`/`taxLabel` off this table directly any more.** The
+ *    five pricing functions (`lib/checkout`, `pos`, `qr`, `catering`,
+ *    `subscriptions`) take their terms through
+ *    `lib/platform-settings.resolveTax`, which falls back to this table when the
+ *    caller has no opinion — the deterministic seeds and the server-rendered
+ *    marketing pages, both of which should show the published rate.
+ *  - **Currency definitions are deliberately not editable.** `symbol`, `locale`
+ *    and `fractionDigits` are facts about ISO 4217 and `Intl`, not policy; see
+ *    the header of `types/platform-settings.ts`.
  */
 
 export interface Currency {

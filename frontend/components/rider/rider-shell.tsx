@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -22,6 +22,8 @@ import { useAuth } from "@/stores/auth";
 import { useRider } from "@/stores/rider";
 import { useOnboarding } from "@/stores/onboarding";
 import { canDispatchToRider, canUseRiderApp } from "@/lib/rider-onboarding";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { platformSettingsOf } from "@/services/platform-settings";
 import { getRiderProfile, getRiderZone, nextStopOf } from "@/services/delivery";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
@@ -91,13 +93,22 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
 
   const canRide = !!user && RIDER_ROLES.includes(user.role);
 
+  /**
+   * The delivery network as the platform is configured (Phase 19, G30). The whole
+   * folded list rather than the open zones: this resolves the courier's *own*
+   * zone for the chrome, and a courier whose zone an operator has closed still
+   * has to be able to open the app and read why their fares changed.
+   */
+  const platform = usePlatformDraft();
+  const zones = useMemo(() => platformSettingsOf(platform).zones, [platform]);
+
   useEffect(() => {
     if (!canRide || !user || !onboardingHydrated) return;
     let active = true;
     // Injected admitted riders, no flagship fallback — see `getRiderProfile`.
     getRiderProfile(user.id, admittedRiders)
       .then(async (rider) => {
-        const zone = rider ? await getRiderZone(rider.zoneId) : null;
+        const zone = rider ? await getRiderZone(rider.zoneId, zones) : null;
         if (active) setResolved({ rider, zone });
       })
       .catch(() => {
@@ -106,7 +117,7 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [canRide, user, onboardingHydrated, admittedRiders]);
+  }, [canRide, user, onboardingHydrated, admittedRiders, zones]);
 
   /**
    * This account's application: by fleet record when there is one, by account when
@@ -122,10 +133,10 @@ export function RiderShell({ children }: { children: React.ReactNode }) {
   const setRider = useCallback((rider: Rider) => {
     setResolved((prev) => (prev ? { ...prev, rider } : prev));
     // A zone change has to be reflected in the chrome straight away.
-    getRiderZone(rider.zoneId).then((zone) =>
+    getRiderZone(rider.zoneId, zones).then((zone) =>
       setResolved((prev) => (prev ? { ...prev, zone: zone ?? prev.zone } : prev)),
     );
-  }, []);
+  }, [zones]);
 
   if (!authHydrated) {
     return (

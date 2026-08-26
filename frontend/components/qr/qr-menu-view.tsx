@@ -16,6 +16,8 @@ import type { CurrencyCode } from "@/config/regions";
 import type { MenuSectionWithItems } from "@/services/catalog";
 import { useDineIn } from "@/stores/dine-in";
 import { cartCount } from "@/lib/cart";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { taxTermsFor } from "@/services/platform-settings";
 import { computeQrTotals, roundsLines, roundStatus, sessionKey } from "@/lib/qr";
 import { formatPrice } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -117,11 +119,16 @@ export function QrMenuView({
   const count = attached ? cartCount(lines) : 0;
   const showWelcome = attached && !started;
 
+  // The bill is taxed at the rate the platform is configured with (Phase 19,
+  // G30), which is the same rate the same guest's delivery order would carry.
+  const tax = taxTermsFor(vendor.location.countryCode, usePlatformDraft());
+
   const roundPricing = computeQrTotals({
     lines,
     currency: vendor.currency,
     countryCode: vendor.location.countryCode,
     serviceChargeRate: config.serviceChargeRate,
+    tax,
   });
   const billTotal = attached
     ? computeQrTotals({
@@ -129,6 +136,7 @@ export function QrMenuView({
         currency: vendor.currency,
         countryCode: vendor.location.countryCode,
         serviceChargeRate: config.serviceChargeRate,
+        tax,
       }).total
     : 0;
 

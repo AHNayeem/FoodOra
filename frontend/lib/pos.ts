@@ -1,10 +1,6 @@
-import {
-  countries,
-  defaultCountry,
-  type CountryCode,
-} from "@/config/regions";
-import type { PosDiscount, PosPricing, PosTicketLine } from "@/types";
+import type { PosDiscount, PosPricing, PosTicketLine, TaxTerms } from "@/types";
 import { roundMoney } from "./checkout";
+import { resolveTax } from "./platform-settings";
 
 /**
  * pos.ts — pure POS ticket math (Phase C11), kept out of the terminal UI so it
@@ -48,6 +44,13 @@ export interface PosTotalsInput {
   currency: string;
   /** Vendor country — drives the tax rate/label. */
   countryCode: string;
+  /**
+   * The platform's tax terms for this country (Phase 19, G30). Injected rather
+   * than looked up so an operator's change to the rate reaches the bill; absent,
+   * `config/regions.ts` answers exactly as before. See
+   * `lib/platform-settings.resolveTax`.
+   */
+  tax?: TaxTerms | null;
 }
 
 /**
@@ -60,13 +63,14 @@ export function computePosTotals({
   discount,
   currency,
   countryCode,
+  tax: taxTerms,
 }: PosTotalsInput): PosPricing {
   const subtotal = ticketSubtotal(lines);
-  const country = countries[countryCode as CountryCode] ?? countries[defaultCountry];
+  const { rate: taxRate, label: taxLabel } = resolveTax(countryCode, taxTerms);
 
   const discountVal = roundMoney(discountAmount(discount, subtotal), currency);
   const taxable = Math.max(0, subtotal - discountVal);
-  const tax = roundMoney(taxable * country.taxRate, currency);
+  const tax = roundMoney(taxable * taxRate, currency);
   const total = roundMoney(taxable + tax, currency);
 
   return {
@@ -74,8 +78,8 @@ export function computePosTotals({
     subtotal: roundMoney(subtotal, currency),
     discount: discountVal,
     tax,
-    taxLabel: country.taxLabel,
-    taxRate: country.taxRate,
+    taxLabel,
+    taxRate,
     total,
   };
 }

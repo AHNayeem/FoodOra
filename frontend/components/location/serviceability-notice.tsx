@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { CheckCircle2, MapPin, TriangleAlert } from "lucide-react";
 import type { CartVendor } from "@/types";
 import { useLocation } from "@/stores/location";
+import { usePlatformDraft } from "@/stores/platform-settings";
 import { getDeliveryZones } from "@/services/delivery";
 import { checkVendorDelivery } from "@/lib/serviceability";
 import { LocationPicker } from "./location-picker";
@@ -38,10 +39,12 @@ export function ServiceabilityNotice({
   const area = useLocation((s) => s.area);
   const hydrated = useLocation((s) => s.hydrated);
 
+  // The open network, per the platform's configuration (Phase 19, G30).
+  const platform = usePlatformDraft();
   useEffect(() => {
     void useLocation.persist.rehydrate();
-    if (zones.length === 0) getDeliveryZones().then(seedZones);
-  }, [zones.length, seedZones]);
+    if (zones.length === 0) getDeliveryZones(platform).then(seedZones);
+  }, [zones.length, seedZones, platform]);
 
   // The zones are the question's other half: without them every answer would be
   // "outside the network", which is the one wrong thing to say while loading.

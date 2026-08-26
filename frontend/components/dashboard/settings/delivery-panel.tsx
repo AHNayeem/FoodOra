@@ -25,11 +25,12 @@ function num(raw: string, fallback = 0): number {
  * The boundary this panel draws is the one worth stating, because it is easy to
  * cross by accident: a restaurant sets **its own** terms — whether it delivers at
  * all, its fee, its minimum, its free-delivery threshold and its ETA window — and
- * it does not set the platform's geography. Delivery zones live in
- * `lib/mock/delivery-zones` and `config/regions`, they are what dispatch prices and
- * routes against, and they are G30 (platform settings), which the v2 spec assigns to
- * no phase. So the zones the restaurant was approved for are *shown* here and are
- * not editable, and the panel says who to ask.
+ * it does not set the platform's geography. Delivery zones are what dispatch prices
+ * and routes against, and since Phase 19 (G30) they have a surface of their own —
+ * `/admin/settings`, gated on `settings.manage`. So the zones the restaurant was
+ * approved for are *shown* here and are not editable, and the panel says who to
+ * ask. That "who" is now a screen rather than a source file, which is the only
+ * thing G30 changed about this panel.
  *
  * Every field flows into `computeTotals` on the customer's next order, which is why
  * the validation is in `lib/vendor-settings.deliveryErrors` and not here: a negative

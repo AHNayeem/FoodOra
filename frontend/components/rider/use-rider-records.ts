@@ -9,6 +9,8 @@ import {
   completedOrdersForRider,
   useOrders,
 } from "@/stores/orders";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { platformSettingsOf } from "@/services/platform-settings";
 import type { RiderContext } from "@/services/delivery";
 import { useRiderApp } from "./rider-context";
 
@@ -61,6 +63,20 @@ export function useRiderRecords(): RiderRecords {
   const orders = useOrders((s) => s.orders);
   const ordersHydrated = useOrders((s) => s.hydrated);
 
+  /**
+   * The delivery network as the platform is configured (Phase 19, G30).
+   *
+   * In the context rather than read per screen for the same reason the orders
+   * are: zone fares decide what a trip paid and `cashLimit` decides what the
+   * wallet says the rider owes, so today, earnings, history and the wallet have
+   * to be looking at the same zones or the four screens disagree about one day.
+   * The whole folded list, closed zones included — a courier's completed trip in
+   * a zone an operator has since shut still has to price. See
+   * `lib/platform-settings.effectiveZones`.
+   */
+  const platform = usePlatformDraft();
+  const zones = useMemo(() => platformSettingsOf(platform).zones, [platform]);
+
   // Both stores back this screen, so both have to be asked to hydrate — the
   // rider shell only knows about its own.
   useEffect(() => {
@@ -83,8 +99,8 @@ export function useRiderRecords(): RiderRecords {
   );
 
   const ctx = useMemo<RiderContext>(
-    () => ({ orders: delivered, completed, declined, remittances, withdrawals }),
-    [delivered, completed, declined, remittances, withdrawals],
+    () => ({ orders: delivered, completed, declined, remittances, withdrawals, zones }),
+    [delivered, completed, declined, remittances, withdrawals, zones],
   );
 
   return {

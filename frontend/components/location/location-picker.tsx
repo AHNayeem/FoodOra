@@ -8,6 +8,7 @@ import { useAddresses } from "@/stores/addresses";
 import { useAuth } from "@/stores/auth";
 import { useLocation } from "@/stores/location";
 import { getAddressBook } from "@/services/account";
+import { usePlatformDraft } from "@/stores/platform-settings";
 import { getDeliveryZones } from "@/services/delivery";
 import { checkArea, servedAreas } from "@/lib/serviceability";
 import { Modal } from "@/components/ui/modal";
@@ -38,11 +39,17 @@ export function LocationPicker({ className }: { className?: string }) {
   const zones = useLocation((s) => s.zones);
   const seedZones = useLocation((s) => s.seedZones);
 
-  // The network is reference data and is never persisted — see the store.
+  /**
+   * The network is reference data and is never persisted — see the store. What it
+   * *is* now is the platform's own configuration: `platform` is the operator's
+   * draft (Phase 19, G30), so an area an operator has taken off the network is
+   * gone from this list, and a zone whose areas they widened offers the new ones.
+   */
+  const platform = usePlatformDraft();
   useEffect(() => {
     void useLocation.persist.rehydrate();
-    if (zones.length === 0) getDeliveryZones().then(seedZones);
-  }, [zones.length, seedZones]);
+    if (zones.length === 0) getDeliveryZones(platform).then(seedZones);
+  }, [zones.length, seedZones, platform]);
 
   return (
     <>

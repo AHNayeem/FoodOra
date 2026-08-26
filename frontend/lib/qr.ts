@@ -1,8 +1,3 @@
-import {
-  countries,
-  defaultCountry,
-  type CountryCode,
-} from "@/config/regions";
 import type {
   CartLine,
   DineInRound,
@@ -10,9 +5,11 @@ import type {
   QrPricing,
   ServiceRequest,
   ServiceRequestKind,
+  TaxTerms,
 } from "@/types";
 import { cartSubtotal } from "./cart";
 import { roundMoney } from "./checkout";
+import { resolveTax } from "./platform-settings";
 
 /**
  * qr.ts — pure QR Menu math and time-derived state (Phase C12).
@@ -66,6 +63,13 @@ export interface QrTotalsInput {
   /** Vendor country — drives the tax rate/label. */
   countryCode: string;
   serviceChargeRate: number;
+  /**
+   * The platform's tax terms for this country (Phase 19, G30). Injected rather
+   * than looked up so an operator's change to the rate reaches the bill; absent,
+   * `config/regions.ts` answers exactly as before. See
+   * `lib/platform-settings.resolveTax`.
+   */
+  tax?: TaxTerms | null;
 }
 
 /**
@@ -79,13 +83,14 @@ export function computeQrTotals({
   currency,
   countryCode,
   serviceChargeRate,
+  tax: taxTerms,
 }: QrTotalsInput): QrPricing {
-  const country = countries[countryCode as CountryCode] ?? countries[defaultCountry];
+  const { rate: taxRate, label: taxLabel } = resolveTax(countryCode, taxTerms);
   const rate = Math.max(0, serviceChargeRate);
 
   const subtotal = roundMoney(cartSubtotal(lines), currency);
   const serviceCharge = roundMoney(subtotal * rate, currency);
-  const tax = roundMoney((subtotal + serviceCharge) * country.taxRate, currency);
+  const tax = roundMoney((subtotal + serviceCharge) * taxRate, currency);
 
   return {
     currency,
@@ -93,8 +98,8 @@ export function computeQrTotals({
     serviceCharge,
     serviceChargeRate: rate,
     tax,
-    taxLabel: country.taxLabel,
-    taxRate: country.taxRate,
+    taxLabel,
+    taxRate,
     total: roundMoney(subtotal + serviceCharge + tax, currency),
   };
 }

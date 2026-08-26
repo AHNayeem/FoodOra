@@ -28,6 +28,8 @@ import type { CurrencyCode } from "@/config/regions";
 import { useAuth } from "@/stores/auth";
 import { useCatering } from "@/stores/catering";
 import { requestQuote } from "@/services/catering";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { taxTermsFor } from "@/services/platform-settings";
 import { estimateQuote, toAddOnLine, EVENT_TYPE_EMOJI } from "@/lib/catering";
 import { formatPrice } from "@/lib/format";
 import { Field } from "@/components/ui/field";
@@ -129,6 +131,10 @@ export function CateringQuoteBuilder({
     [addOns, addOnIds],
   );
 
+  // The platform's tax terms (Phase 19, G30): an operator's rate change reaches
+  // the estimate the customer is looking at, not just the next order.
+  const platform = usePlatformDraft();
+
   const pricing = useMemo(() => {
     const lines = selectedAddOns.map((a) => toAddOnLine(a, guests));
     return estimateQuote({
@@ -137,8 +143,16 @@ export function CateringQuoteBuilder({
       addOns: lines,
       currency,
       countryCode: service.location.countryCode,
+      tax: taxTermsFor(service.location.countryCode, platform),
     });
-  }, [selectedAddOns, guests, pricePerGuest, currency, service.location.countryCode]);
+  }, [
+    selectedAddOns,
+    guests,
+    pricePerGuest,
+    currency,
+    service.location.countryCode,
+    platform,
+  ]);
 
   function setGuestsClamped(next: number) {
     if (Number.isNaN(next)) return setGuests(minGuests);

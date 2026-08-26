@@ -88,6 +88,10 @@ export const AUDIT_ENTITIES: readonly AuditEntityKind[] = [
   "vendor",
   "staff",
   "cms-document",
+  // Phase 19 (G30): the platform's own configuration.
+  "region",
+  "delivery-zone",
+  "platform",
 ];
 
 /**

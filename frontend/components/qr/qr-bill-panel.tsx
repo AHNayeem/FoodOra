@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import type { CartVendor, QrMenuConfig } from "@/types";
 import type { CurrencyCode } from "@/config/regions";
 import { useDineIn } from "@/stores/dine-in";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { taxTermsFor } from "@/services/platform-settings";
 import { computeQrTotals, roundsLines, roundStatus } from "@/lib/qr";
 import { formatPrice } from "@/lib/format";
 import { Modal } from "@/components/ui/modal";
@@ -46,6 +48,8 @@ export function QrBillPanel({
     currency: vendor.currency,
     countryCode: vendor.countryCode ?? "BD",
     serviceChargeRate: config.serviceChargeRate,
+    // The platform's rate (Phase 19, G30) — see `qr-menu-view`.
+    tax: taxTermsFor(vendor.countryCode, usePlatformDraft()),
   });
 
   function handleEnd() {

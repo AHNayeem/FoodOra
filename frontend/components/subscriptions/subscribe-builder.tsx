@@ -27,6 +27,8 @@ import { useAuth } from "@/stores/auth";
 import { useAddresses } from "@/stores/addresses";
 import { useSubscriptions } from "@/stores/subscriptions";
 import { getAddressBook } from "@/services/account";
+import { usePlatformDraft } from "@/stores/platform-settings";
+import { taxTermsFor } from "@/services/platform-settings";
 import { createSubscription, toPlanRef } from "@/services/subscriptions";
 import {
   DELIVERY_WINDOWS,
@@ -137,6 +139,19 @@ export function SubscribeBuilder({
   const activeAddressId = selectedAddressId || defaultAddressId;
   const showSavedList = addressMode === "saved" && savedAddrs.length > 0;
 
+  /**
+   * The platform's tax terms (Phase 19, G30). One value for the page, so the
+   * headline price and every tier option below are quoted at the same rate.
+   *
+   * Memoised because `taxTermsFor` mints an object: an unstable reference here
+   * would be in `pricing`'s dependency list and would defeat the memo it is in.
+   */
+  const platform = usePlatformDraft();
+  const tax = useMemo(
+    () => taxTermsFor(plan.countryCode, platform),
+    [plan.countryCode, platform],
+  );
+
   const pricing = useMemo(
     () =>
       computeSubscriptionPricing({
@@ -148,8 +163,9 @@ export function SubscribeBuilder({
         deliveryFeePerDay: plan.deliveryFeePerDay,
         currency: plan.currency,
         countryCode: plan.countryCode,
+        tax,
       }),
-    [tier, deliveryDays.length, plan],
+    [tier, deliveryDays.length, plan, tax],
   );
 
   /** The date the first box actually lands on — derived, not the raw input. */
@@ -304,6 +320,7 @@ export function SubscribeBuilder({
                   deliveryFeePerDay: plan.deliveryFeePerDay,
                   currency: plan.currency,
                   countryCode: plan.countryCode,
+                  tax,
                 });
                 return (
                   <button

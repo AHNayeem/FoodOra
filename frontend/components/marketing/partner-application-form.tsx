@@ -25,6 +25,7 @@ import {
 } from "@/lib/vendor-onboarding";
 import { PAYOUT_METHODS, submittedDocument } from "@/lib/onboarding";
 import { getCuisines } from "@/services/catalog";
+import { usePlatformDraft } from "@/stores/platform-settings";
 import { getDeliveryZones } from "@/services/delivery";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -141,10 +142,14 @@ function PartnerWizard({
   // shift between renders while somebody is typing.
   const [now] = useState(() => Date.now());
 
+  // An applicant is offered the zones the platform actually runs (Phase 19, G30) —
+  // a restaurant approved into a closed zone is a listing nobody could deliver from.
+  const platform = usePlatformDraft();
+
   useEffect(() => {
     getCuisines().then(setCuisines);
-    getDeliveryZones().then(setZones);
-  }, []);
+    getDeliveryZones(platform).then(setZones);
+  }, [platform]);
 
   const current: VendorStep = VENDOR_STEPS[step];
   const errors = useMemo(() => vendorStepErrors(draft, current), [draft, current]);
