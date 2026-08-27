@@ -2,7 +2,7 @@
   "name": "@foodora/backend",
   "version": "0.1.0",
   "private": true,
-  "description": "FoodOra API \u2014 Fastify + JavaScript + Prisma + PostgreSQL. Foundation only; no business modules.",
+  "description": "FoodOra API — Fastify + JavaScript + Prisma + PostgreSQL. Modules 0–4: foundation, reference data, auth & sessions, RBAC/PBAC, catalog & discovery.",
   "type": "module",
   "engines": {
     "node": ">=20.11"
@@ -13,13 +13,15 @@
     "dev": "node --watch src/server.js",
     "test": "NODE_ENV=test RATE_LIMIT_ENABLED=false AUTH_ECHO_SECRETS=1 AUTHZ_CACHE_TTL_MS=0 node --test tests/",
     "seed:reference": "node scripts/seed-reference.js",
+    "seed:catalog": "node scripts/seed-catalog.js",
     "db:generate": "prisma generate --schema ../database/prisma/schema",
     "db:validate": "prisma validate --schema ../database/prisma/schema",
     "db:status": "prisma migrate status --schema ../database/prisma/schema",
     "check:forbidden": "node scripts/check-forbidden.js",
     "test:watch": "NODE_ENV=test RATE_LIMIT_ENABLED=false AUTH_ECHO_SECRETS=1 AUTHZ_CACHE_TTL_MS=0 node --test --watch tests/",
-    "verify": "npm run db:validate && npm run check:forbidden && npm test && npm run auth:flow",
-    "auth:flow": "node scripts/auth-flow.js"
+    "verify": "npm run db:validate && npm run check:forbidden && npm test && npm run auth:flow && npm run catalog:flow",
+    "auth:flow": "node scripts/auth-flow.js",
+    "catalog:flow": "node scripts/catalog-flow.js"
   },
   "dependencies": {
     "@fastify/cookie": "~11.0.2",

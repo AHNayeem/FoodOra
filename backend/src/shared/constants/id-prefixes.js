@@ -48,6 +48,24 @@ export const ID_PREFIXES = Object.freeze({
    * prefix while also inventing a permission editor.
    */
   userPermission: "usp_",
+
+  /**
+   * Module 4 — catalog & discovery. The two taxonomy tables, and only those.
+   *
+   * `cus_` and `cat_` are the prefixes `lib/mock/cuisines.ts` and
+   * `lib/mock/categories.ts` already use, and the taxonomy seeder mints them
+   * from the same natural keys (`deterministicId(prefix, slug)`), so a cuisine
+   * is the same row in every database that has run it.
+   *
+   * **`ven_` and `vbr_` are deliberately absent.** Module 4 *reads* vendors and
+   * branches; the module that mints a storefront is onboarding (§3 row 15), and
+   * registering a prefix here for rows this module never creates would make the
+   * registry a wish list instead of the record of what is written. The catalog
+   * tests create their vendor fixtures with an explicit local helper, exactly as
+   * module 3's do.
+   */
+  cuisine: "cus_",
+  category: "cat_",
 });
 
 /** Every prefix this backend is allowed to mint. Modules extend it as they land. */

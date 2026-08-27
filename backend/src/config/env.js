@@ -233,6 +233,27 @@ const env = Object.freeze({
    */
   authzVerifyRoutes: bool("AUTHZ_VERIFY_ROUTES", { fallback: String(!isProduction) }),
 
+  // ---------------------------------------------------------------------------
+  // Module 4 — catalog & discovery
+  // ---------------------------------------------------------------------------
+
+  /**
+   * How many candidate storefronts one derived-filter query may read.
+   *
+   * `isOpen` and `distanceKm` are computed per request and never stored
+   * (BACKEND-REQUIREMENTS §3 row 4), so a query that filters or sorts on either
+   * cannot be paged by PostgreSQL: the rows have to be read, derived and then
+   * paged in memory. This is the ceiling on that read.
+   *
+   * It is a **correctness bound, not a tuning knob**. Past it, `total` counts the
+   * scanned window rather than the catalogue, so the service logs a warning
+   * naming the query — a truncation nobody can see is a wrong answer that looks
+   * right. 500 is comfortably above the number of storefronts a city has in this
+   * product; the two changes that would remove the bound entirely are in
+   * `docs/backend/M4-catalog-discovery.md`.
+   */
+  catalogScanLimit: int("CATALOG_SCAN_LIMIT", { fallback: 500, min: 1, max: 10_000 }),
+
   rateLimitEnabled: bool("RATE_LIMIT_ENABLED", { fallback: String(!isTest) }),
   rateLimitMax: int("RATE_LIMIT_MAX", { fallback: 300, min: 1 }),
   rateLimitWindowMs: int("RATE_LIMIT_WINDOW_MS", { fallback: 60_000, min: 1000 }),

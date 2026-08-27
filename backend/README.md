@@ -3,16 +3,18 @@
 The FoodOra API. **Fastify · JavaScript · Prisma · PostgreSQL.** No TypeScript,
 no NestJS, no Redis, no Docker, no GraphQL.
 
-**Three of the 32 modules in
+**Four of the 32 modules in
 [BACKEND-REQUIREMENTS §3](../docs/FOODORA-BACKEND-REQUIREMENTS.md#3-module-build-order)
-are built:** module 1, reference data; module 2, auth & sessions; and module 3,
-RBAC/PBAC. The rest is the frame they mount into. Next is module 4.
+are built:** module 1, reference data; module 2, auth & sessions; module 3,
+RBAC/PBAC; and module 4, catalog & discovery. The rest is the frame they mount
+into. Next is module 5, menu & inventory.
 
 | Document | |
 | --- | --- |
 | [`F1 — Fastify foundation`](../docs/backend/F1-fastify-foundation.md) | stack, structure, lifecycle, Prisma layers, error and response contracts, validation, the seeder |
 | [`M2 — Auth & sessions`](../docs/backend/M2-auth-sessions.md) | Argon2id, the session and refresh lifecycle, rotation with reuse detection, OTP, password reset, `requireUser` |
 | [`M3 — RBAC / PBAC`](../docs/backend/M3-rbac-pbac.md) | role and permission resolution, vendor scope, the authorization guards, 401 vs 403, the permission cache |
+| [`M4 — Catalog & discovery`](../docs/backend/M4-catalog-discovery.md) | the read model, `isOpen` and `distanceKm`, the facets and sorts, storefront visibility, the taxonomy seeder |
 
 ## Getting it running
 
@@ -35,7 +37,11 @@ cp .env.example .env      # every value is already the default
 #    FK to countries, so no account can exist until a country row does.
 npm run seed:reference
 
-# 5. Go.
+# 5. The browse taxonomy — cuisines, categories and the keywords that make a
+#    category tile a real search. Module 4 answers empty lists without it.
+npm run seed:catalog
+
+# 6. Go.
 npm run dev
 curl localhost:4000/health/ready
 ```
@@ -46,13 +52,15 @@ curl localhost:4000/health/ready
 | --- | --- |
 | `npm run dev` | `node --watch src/server.js` |
 | `npm start` | production |
-| `npm test` | 144 assertions, `node:test`, against real PostgreSQL |
+| `npm test` | 330 assertions, `node:test`, against real PostgreSQL |
 | `npm run seed:reference` | reference data — deterministic, idempotent |
+| `npm run seed:catalog` | the browse taxonomy (cuisines, categories, keywords) — the same three properties |
 | `npm run db:generate` | regenerate the Prisma client |
 | `npm run db:validate` / `db:status` | schema valid / migrations applied |
 | `npm run check:forbidden` | searches for TypeScript, NestJS, Redis, Docker, GraphQL |
 | `npm run auth:flow` | the module 2 lifecycle end to end over a real socket — 51 checks |
-| `npm run verify` | `db:validate` + `check:forbidden` + `test` + `auth:flow` |
+| `npm run catalog:flow` | the module 4 discovery journey over a real socket, limiter on — 49 checks |
+| `npm run verify` | `db:validate` + `check:forbidden` + `test` + `auth:flow` + `catalog:flow` |
 
 ## Endpoints
 
@@ -106,6 +114,29 @@ purpose. A misspelt slug throws at startup, not at the first refusal. Use these,
 not `fastify.authorize`, which reads that empty claim and is F1's.
 
 `/api/v1/_authz` carries verification probes outside production.
+
+**Module 4 — catalog & discovery**, at `/api/v1/catalog`. Contracts in
+[M4 §4](../docs/backend/M4-catalog-discovery.md#4-endpoints).
+
+| Route | |
+| --- | --- |
+| `GET /cuisines`, `/categories` | the browse vocabulary; a category carries the keywords that make its tile a query |
+| `GET /vendors` | the directory, the search results page and both landings — fifteen facets, seven sorts, paged |
+| `GET /vendors/featured`, `/trending` | the home rails |
+| `GET /vendors/:slug` | one storefront |
+| `GET /search/suggestions` | type-ahead |
+
+Read-only: the catalogue is written by onboarding (module 15) and the menu
+(module 5). `isOpen` and `distanceKm` are **derived per request and never stored** —
+the first from the branch's weekly grid read in the branch's own timezone, the
+second from `?lat`/`?lng`. A query that filters or sorts on either cannot be paged
+by PostgreSQL, so it takes a bounded in-memory path that *reports* its bound
+([M4 §5](../docs/backend/M4-catalog-discovery.md#5-the-two-derived-fields)).
+
+Visibility is module 3's: public callers see `active` and `paused` storefronts, a
+merchant sees their own in any status, and `restaurants.view` sees all six. Every
+refusal on `GET /vendors/:slug` is a **404** — a 403 would confirm that a slug
+somebody guessed is real.
 
 ## The five things to know before writing a module
 
@@ -164,8 +195,9 @@ routes/      index.js → v1/index.js (where modules register)
 modules/
   auth/      module 2 — routes · controller · service · repository · schemas · utils
   authz/     module 3 — index (guards) · service · policy · repository · routes
+  catalog/   module 4 — routes · controller · service · repository · schemas · hours · geo
 health/      /health, /health/ready
-seed/        reference.js + data/
+seed/        reference.js · catalog.js + data/
 ```
 
 There is no `backend/prisma/`, deliberately: there is one datamodel, it lives in

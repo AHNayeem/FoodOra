@@ -23,6 +23,7 @@
 import healthRoutes from "../../health/routes.js";
 import authModule from "../../modules/auth/index.js";
 import authzModule from "../../modules/authz/index.js";
+import catalogModule, { CATALOG_PREFIX } from "../../modules/catalog/index.js";
 
 export default async function v1Routes(fastify) {
   // Same handlers as the unprefixed pair — a client that only knows the
@@ -31,9 +32,6 @@ export default async function v1Routes(fastify) {
 
   // ---------------------------------------------------------------------------
   // Modules mount here, in the order of BACKEND-REQUIREMENTS §3.
-  //
-  //   await fastify.register(catalogRoutes, { prefix: "/catalog" });
-  //   …
   // ---------------------------------------------------------------------------
 
   /**
@@ -56,4 +54,17 @@ export default async function v1Routes(fastify) {
    * and mounts nothing at all in production.
    */
   await fastify.register(authzModule);
+
+  /**
+   * Module 4 — catalog & discovery, at `/api/v1/catalog`.
+   *
+   * The first module that takes a `prefix` option, and the difference from the two
+   * above is worth a line: this one decorates nothing, so it does not need `fp`,
+   * and a plain plugin is the one Fastify will actually attach a prefix to. It
+   * *consumes* what the two above decorate — `requireUser` for the optional
+   * identity, `mayAuthorize` and `authz.vendorAccess` for who may see a storefront
+   * that has not opened — and refuses to start if either is missing, so the order
+   * of these three lines is load-bearing rather than tidy.
+   */
+  await fastify.register(catalogModule, { prefix: CATALOG_PREFIX });
 }

@@ -90,7 +90,7 @@ the work. Order follows dependency, not importance.
 | 1 | Reference data & seeder | 0 | **done** — §2. |
 | 2 | Auth & sessions | 1 | **done** — Argon2id, refresh rotation with reuse detection, OTP, devices, `requireUser`. [M2](./backend/M2-auth-sessions.md) |
 | 3 | RBAC / PBAC | 2 | Resolve `User.permissions` = role grants ∪ direct grants − denials |
-| 4 | Catalog & discovery | 1 | Derive `isOpen` (branch hours + timezone) and `distanceKm` (caller coordinates) — **never stored** |
+| 4 | Catalog & discovery | 1 | **done** — `isOpen` (branch hours + timezone) and `distanceKm` (caller coordinates) derived, never stored. [M4](./backend/M4-catalog-discovery.md) |
 | 5 | Menu & inventory | 4 | Availability = merchant switch AND (untracked OR in stock) |
 | 6 | Cart | 5 | Composite key `{ cartId, id }`; single-vendor by construction |
 | 7 | Checkout | 6 | Server-priced. Tax from `TaxRule`, coupons server-side, `commissionRate` snapshotted at placement |
