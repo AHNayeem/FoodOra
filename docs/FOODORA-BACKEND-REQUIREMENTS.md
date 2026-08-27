@@ -88,7 +88,7 @@ the work. Order follows dependency, not importance.
 |---|---|---|---|
 | 0 | Foundation | — | **done** — Fastify, config, logging, error shape, health, Prisma client + soft-delete and enum-mapping layers. [F1](./backend/F1-fastify-foundation.md) |
 | 1 | Reference data & seeder | 0 | **done** — §2. |
-| 2 | Auth & sessions | 1 | Argon2id, refresh rotation with reuse detection, OTP, devices |
+| 2 | Auth & sessions | 1 | **done** — Argon2id, refresh rotation with reuse detection, OTP, devices, `requireUser`. [M2](./backend/M2-auth-sessions.md) |
 | 3 | RBAC / PBAC | 2 | Resolve `User.permissions` = role grants ∪ direct grants − denials |
 | 4 | Catalog & discovery | 1 | Derive `isOpen` (branch hours + timezone) and `distanceKm` (caller coordinates) — **never stored** |
 | 5 | Menu & inventory | 4 | Availability = merchant switch AND (untracked OR in stock) |
@@ -132,9 +132,14 @@ Two live-flag facts from `Analysis.md` to settle early:
 
 - `NEXT_PUBLIC_BACKEND_*` flags in `frontend/.env.local` currently point at a
   deleted API (A1, A2). They must be `0` until a real endpoint answers. **Still
-  outstanding** — the foundation phase touched no frontend file, and when an
-  endpoint does answer it will answer REST rather than the GraphQL those flags
-  reach for.
+  outstanding, and now concrete for auth**: module 2 answers at
+  `/api/v1/auth/*` in REST, while `services/auth.ts` behind
+  `NEXT_PUBLIC_BACKEND_AUTH` still issues Apollo mutations — so that flag must
+  stay `0`. The API deliberately matches the client's *contract* (the
+  `AuthSession` shape, the `User` read model, the refusal envelope, the
+  `RENDERABLE` keys, the cookie and header names), so the remaining delta is
+  transport and one base URL:
+  [M2 §11](./backend/M2-auth-sessions.md#11-what-is-not-here) sets it out.
 - `scripts/verify-operations.ts` (`verify:graphql`) reads `backend/schema.gql`,
   which no longer exists (A3). The GraphQL client layer — 1,691 LOC in
   `lib/graphql/` — needs an explicit keep-or-excise decision (A4). **This

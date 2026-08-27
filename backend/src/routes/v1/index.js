@@ -21,6 +21,7 @@
  * moved, which is the only reason to version a path at all.
  */
 import healthRoutes from "../../health/routes.js";
+import authModule from "../../modules/auth/index.js";
 
 export default async function v1Routes(fastify) {
   // Same handlers as the unprefixed pair — a client that only knows the
@@ -28,11 +29,19 @@ export default async function v1Routes(fastify) {
   await fastify.register(healthRoutes);
 
   // ---------------------------------------------------------------------------
-  // Modules mount here, in the order of BACKEND-REQUIREMENTS §3. Nothing is
-  // registered yet, by instruction: the foundation phase builds the frame.
+  // Modules mount here, in the order of BACKEND-REQUIREMENTS §3.
   //
-  //   await fastify.register(authRoutes,    { prefix: "/auth" });
   //   await fastify.register(catalogRoutes, { prefix: "/catalog" });
   //   …
   // ---------------------------------------------------------------------------
+
+  /**
+   * Module 2 — auth & sessions, at `/api/v1/auth`.
+   *
+   * No `prefix` here, and that is not an omission: the module is
+   * `fastify-plugin`-wrapped so that `requireUser` reaches the modules that come
+   * after it, and `fp` skips the encapsulation a prefix option would attach to.
+   * It applies its own `/auth` internally. See `modules/auth/index.js`.
+   */
+  await fastify.register(authModule);
 }

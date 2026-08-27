@@ -146,12 +146,78 @@ const env = Object.freeze({
   jwtAccessTtl: str("JWT_ACCESS_TTL", { fallback: "15m" }),
   jwtRefreshTtl: str("JWT_REFRESH_TTL", { fallback: "30d" }),
 
+  /**
+   * Where the refresh cookie is scoped.
+   *
+   * Derived rather than configured separately: the cookie must reach the two
+   * routes that spend it and nothing else, and those routes are the auth module
+   * mounted under the versioned prefix. A hand-set path that disagreed with the
+   * mount would produce a browser that never sends the cookie and a refresh
+   * endpoint that always answers "no session" — the hardest possible way to find
+   * out two strings differ.
+   */
+  authCookiePath: `${str("API_PREFIX", { fallback: "/api/v1" })}/auth`,
+  /** `Secure` on the refresh cookie. Off in development, where there is no TLS. */
+  authCookieSecure: bool("AUTH_COOKIE_SECURE", { fallback: String(isProduction) }),
+  authCookieSameSite: str("AUTH_COOKIE_SAMESITE", { fallback: "lax", oneOf: ["lax", "strict", "none"] }),
+  /** Unset for a same-origin deployment; set when the API and the app differ in host. */
+  authCookieDomain: str("AUTH_COOKIE_DOMAIN"),
+
+  /**
+   * Argon2id parameters. OWASP's second recommended profile (m=19456, t=2, p=1),
+   * which is the lowest-memory one they still consider adequate and the one that
+   * fits a container with a modest memory limit.
+   */
+  authArgonMemoryKib: int("AUTH_ARGON_MEMORY_KIB", { fallback: 19_456, min: 8_192 }),
+  authArgonTimeCost: int("AUTH_ARGON_TIME_COST", { fallback: 2, min: 1 }),
+  authArgonParallelism: int("AUTH_ARGON_PARALLELISM", { fallback: 1, min: 1 }),
+  /** `errors.passwordShort` in the three locale files says "at least 8". */
+  authPasswordMinLength: int("AUTH_PASSWORD_MIN_LENGTH", { fallback: 8, min: 8 }),
+
+  /** Consecutive failures before the credential locks, and for how long. */
+  authLockoutThreshold: int("AUTH_LOCKOUT_THRESHOLD", { fallback: 5, min: 1 }),
+  authLockoutMinutes: int("AUTH_LOCKOUT_MINUTES", { fallback: 15, min: 1 }),
+
+  /**
+   * Session lifetime. `JWT_REFRESH_TTL` governs `signRefreshToken` only — the
+   * refresh credential this backend actually issues is opaque, hashed into
+   * `refresh_tokens.tokenHash`, and expires on these.
+   */
+  authSessionTtlDays: int("AUTH_SESSION_TTL_DAYS", { fallback: 7, min: 1 }),
+  authSessionRememberTtlDays: int("AUTH_SESSION_REMEMBER_TTL_DAYS", { fallback: 30, min: 1 }),
+
+  authOtpTtlSeconds: int("AUTH_OTP_TTL_SECONDS", { fallback: 300, min: 30 }),
+  authOtpMaxAttempts: int("AUTH_OTP_MAX_ATTEMPTS", { fallback: 5, min: 1 }),
+  authOtpResendSeconds: int("AUTH_OTP_RESEND_SECONDS", { fallback: 60, min: 0 }),
+  authResetTtlMinutes: int("AUTH_RESET_TTL_MINUTES", { fallback: 30, min: 1 }),
+
+  /**
+   * Return the one-time code / reset token in the response body.
+   *
+   * There is no SMS or email provider yet, so without this the two flows cannot
+   * be driven end to end at all. It is off by default and **refused in
+   * production** below, because an OTP endpoint that echoes its own code is not
+   * an OTP endpoint.
+   */
+  authEchoSecrets: bool("AUTH_ECHO_SECRETS", { fallback: "false" }),
+
+  /** The country a self-registered account is created in; must exist in `countries`. */
+  authDefaultCountry: str("AUTH_DEFAULT_COUNTRY", { fallback: "BD" }),
+
+  /** The tight, per-route ceiling the credential endpoints get on top of the global one. */
+  authRateMax: int("AUTH_RATE_MAX", { fallback: 10, min: 1 }),
+  authRateWindowMs: int("AUTH_RATE_WINDOW_MS", { fallback: 60_000, min: 1_000 }),
+
   rateLimitEnabled: bool("RATE_LIMIT_ENABLED", { fallback: String(!isTest) }),
   rateLimitMax: int("RATE_LIMIT_MAX", { fallback: 300, min: 1 }),
   rateLimitWindowMs: int("RATE_LIMIT_WINDOW_MS", { fallback: 60_000, min: 1000 }),
 
   apiPrefix: str("API_PREFIX", { fallback: "/api/v1" }),
 });
+
+if (env.authEchoSecrets && isProduction) {
+  problems.push("AUTH_ECHO_SECRETS cannot be enabled in production — it returns OTP codes and reset tokens in the response body");
+}
 
 if (problems.length > 0) throw new EnvError(problems);
 

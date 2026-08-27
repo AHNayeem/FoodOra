@@ -27,6 +27,16 @@ export const ID_PREFIXES = Object.freeze({
   paymentProvider: "pvd_",
   role: "rol_",
   taxRule: "tax_",
+
+  /** Module 2 — auth & sessions. `usr_` is the one the frontend fixtures already use. */
+  user: "usr_",
+  session: "ses_",
+  refreshToken: "rft_",
+  device: "dev_",
+  otpChallenge: "otp_",
+  passwordReset: "pwr_",
+  loginAttempt: "lga_",
+  userRoleAssignment: "ura_",
 });
 
 /** Every prefix this backend is allowed to mint. Modules extend it as they land. */

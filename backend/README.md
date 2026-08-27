@@ -3,12 +3,15 @@
 The FoodOra API. **Fastify · JavaScript · Prisma · PostgreSQL.** No TypeScript,
 no NestJS, no Redis, no Docker, no GraphQL.
 
-**Foundation only.** No business module is implemented yet — this is the frame
-the 32 modules in
+**Two of the 32 modules in
 [BACKEND-REQUIREMENTS §3](../docs/FOODORA-BACKEND-REQUIREMENTS.md#3-module-build-order)
-mount into, plus the reference seeder §2 called the one blocking prerequisite.
-The architecture document is
-[`docs/backend/F1-fastify-foundation.md`](../docs/backend/F1-fastify-foundation.md).
+are built:** module 1, reference data, and module 2, auth & sessions. The rest is
+the frame they mount into. Next is module 3, RBAC/PBAC.
+
+| Document | |
+| --- | --- |
+| [`F1 — Fastify foundation`](../docs/backend/F1-fastify-foundation.md) | stack, structure, lifecycle, Prisma layers, error and response contracts, validation, the seeder |
+| [`M2 — Auth & sessions`](../docs/backend/M2-auth-sessions.md) | Argon2id, the session and refresh lifecycle, rotation with reuse detection, OTP, password reset, `requireUser` |
 
 ## Getting it running
 
@@ -42,12 +45,13 @@ curl localhost:4000/health/ready
 | --- | --- |
 | `npm run dev` | `node --watch src/server.js` |
 | `npm start` | production |
-| `npm test` | 74 assertions, `node:test`, against real PostgreSQL |
+| `npm test` | 144 assertions, `node:test`, against real PostgreSQL |
 | `npm run seed:reference` | reference data — deterministic, idempotent |
 | `npm run db:generate` | regenerate the Prisma client |
 | `npm run db:validate` / `db:status` | schema valid / migrations applied |
 | `npm run check:forbidden` | searches for TypeScript, NestJS, Redis, Docker, GraphQL |
-| `npm run verify` | `db:validate` + `check:forbidden` + `test` |
+| `npm run auth:flow` | the module 2 lifecycle end to end over a real socket — 51 checks |
+| `npm run verify` | `db:validate` + `check:forbidden` + `test` + `auth:flow` |
 
 ## Endpoints
 
@@ -58,7 +62,23 @@ curl localhost:4000/health/ready
 | `GET /health/ready` | readiness — queries PostgreSQL; **503** when it cannot |
 | `GET /api/v1/health`, `/api/v1/health/ready` | the same two, versioned |
 
-Modules mount under `/api/v1`. There are none yet, by instruction.
+**Module 2 — auth & sessions**, at `/api/v1/auth`. Contracts in
+[M2 §4](../docs/backend/M2-auth-sessions.md#4-endpoints).
+
+| Route | |
+| --- | --- |
+| `POST /register` | create an account and sign in |
+| `POST /login` | email + password |
+| `POST /otp/request`, `/otp/verify` | one-time code; verifying a `login` code signs in |
+| `POST /password/forgot`, `/password/reset` | reset by emailed token |
+| `POST /refresh` | spend the refresh cookie; rotates, and detects reuse |
+| `POST /logout` | `{ allDevices? }` |
+| `GET /me` | the signed-in account |
+
+Guard a new route with **`fastify.requireUser`**, not bare `fastify.authenticate`:
+the second checks the token, the first also checks the account, the session row
+and `credentials.tokenEpoch`, which is what makes revocation immediate.
+[M2 §5](../docs/backend/M2-auth-sessions.md#5-requireuser--the-guard-for-every-later-module).
 
 ## The five things to know before writing a module
 
@@ -114,6 +134,8 @@ plugins/     prisma, auth, cors, security, rate-limit, sensible
 middleware/  error-handler, request-context
 shared/      constants · errors · utils · validators
 routes/      index.js → v1/index.js (where modules register)
+modules/
+  auth/      module 2 — routes · controller · service · repository · schemas · utils
 health/      /health, /health/ready
 seed/        reference.js + data/
 ```

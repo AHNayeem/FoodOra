@@ -409,8 +409,17 @@ Two decisions that are load-bearing:
 
 **Where permissions come from is a stated limitation.** From the token, for now.
 Module 3 resolves `role grants ∪ direct grants − denials` against the database
-and this reads whatever it puts in the claim; nothing mints a token yet, so
-nothing depends on the answer.
+and this reads whatever it puts in the claim; module 2 mints tokens with
+`permissions: []`, so nothing depends on the answer yet.
+
+> **Superseded in part by [M2](./M2-auth-sessions.md).** The module is built.
+> `authenticate` is unchanged and still answers only "is this a valid access
+> token", from the claims, with no database read — which is not enough to
+> protect a route, because it stays true for fifteen minutes after the account is
+> suspended, deleted or signed out. **New routes should use `fastify.requireUser`**
+> (M2 §5), which re-reads the account, the session row and
+> `credentials.tokenEpoch`. M2 also fixed a bug in `plugins/rate-limit.js` that
+> made every rate-limited request answer 500 instead of 429 — see M2 §6.
 
 ---
 

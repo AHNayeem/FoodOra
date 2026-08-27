@@ -15,8 +15,7 @@
 import fp from "fastify-plugin";
 import rateLimit from "@fastify/rate-limit";
 import env from "../config/env.js";
-import { ERROR_CODES } from "../shared/constants/error-codes.js";
-import { fail } from "../shared/errors/envelope.js";
+import { tooManyRequests } from "../shared/errors/app-error.js";
 
 async function rateLimitPlugin(fastify) {
   if (!env.rateLimitEnabled) {
@@ -32,13 +31,20 @@ async function rateLimitPlugin(fastify) {
     // the probe eventually rate-limits itself and reports the service as down.
     allowList: (request) => request.url.startsWith("/health"),
     keyGenerator: (request) => request.ip,
-    errorResponseBuilder: (request, context) =>
-      fail({
-        code: "TOO_MANY_REQUESTS",
-        key: ERROR_CODES.TOO_MANY_REQUESTS.key,
-        message: `Rate limit exceeded — retry in ${context.after}`,
+    /**
+     * **This must return an `Error`, not a body.**
+     *
+     * The plugin `throw`s whatever comes back (`index.js`: `throw
+     * params.errorResponseBuilder(...)`), so a plain object arrives at the error
+     * handler with no `statusCode`, falls through every branch of
+     * `normalizeError`, and is answered **500** — an API that says "internal
+     * error" every time it rate-limits, which is both wrong and the opposite of
+     * actionable. Returning an `AppError` gives the handler the 429, the code,
+     * the i18n key and the request id, with no special case anywhere.
+     */
+    errorResponseBuilder: (_request, context) =>
+      tooManyRequests(`Rate limit exceeded — retry in ${context.after}`, {
         details: { limit: context.max, retryAfterMs: context.ttl },
-        requestId: request.id,
       }),
   });
 }

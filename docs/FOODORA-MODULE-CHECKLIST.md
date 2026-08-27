@@ -5,10 +5,10 @@
 Database, backend, frontend and verification are tracked **separately** — a
 complete database column says nothing about the backend.
 
-Last updated **2026-08-27**, at the end of the **backend foundation** phase.
+Last updated **2026-08-27**, at the end of **module 2 — auth & sessions**.
 
 - **Database** — table, columns, relations, constraints, indexes exist and have been applied and exercised against real PostgreSQL.
-- **Backend** — Fastify routes exist and are wired to Prisma. *The foundation is built ([F1](./backend/F1-fastify-foundation.md)); no business module has started, by instruction.*
+- **Backend** — Fastify routes exist and are wired to Prisma. *The foundation is built ([F1](./backend/F1-fastify-foundation.md)) and module 2, auth & sessions, is built and verified ([M2](./backend/M2-auth-sessions.md)). No other business module has started, by instruction.*
 - **Frontend** — the surface exists and works on the mock path (state per [`Analysis.md`](../Analysis.md)).
 - **Verified** — driven end to end, not inspected. For the database phase this means the assertions in [`FOODORA-DATABASE-DESIGN.md`](./FOODORA-DATABASE-DESIGN.md) §9.
 
@@ -20,8 +20,8 @@ Last updated **2026-08-27**, at the end of the **backend foundation** phase.
 |---|---|---|---|---|
 | Reference data (currencies, countries, languages, tax) | [x] | [x] seeded | [x] | [x] |
 | Reference **seeder** | [x] schema | [x] **unblocked** | n/a | [x] 255 rows, re-run is a no-op |
-| Authentication & sessions | [x] | [ ] | [x] | [~] schema only |
-| RBAC / PBAC | [x] | [ ] | [x] | [~] schema only |
+| Authentication & sessions | [x] | [x] [M2](./backend/M2-auth-sessions.md) | [x] mock path | [x] 70 tests + 51 lifecycle checks |
+| RBAC / PBAC | [x] | [ ] **next** | [x] | [~] schema only — `permissions` is `[]` until module 3 |
 | Discovery & search | [x] | [ ] | [x] | [~] schema only |
 | Menu & options | [x] | [ ] | [x] | [x] |
 | Inventory & stock | [x] | [ ] | [x] | [x] |
@@ -135,8 +135,9 @@ Last updated **2026-08-27**, at the end of the **backend foundation** phase.
 | Deferred schema changes DSC-1, DSC-2 | [x] closed |
 | Backend foundation | [x] Fastify app, health, error/response contract, validation, Prisma layers, auth guards — [F1](./backend/F1-fastify-foundation.md) |
 | Backend reference seeder | [x] 255 rows, deterministic and idempotent |
-| Backend test suite | [x] 74 assertions against real PostgreSQL |
+| Backend test suite | [x] 144 assertions against real PostgreSQL, plus `npm run auth:flow` (51 lifecycle checks over a real socket) |
 | Forbidden technologies | [x] `npm run check:forbidden` — no TypeScript, NestJS, Redis, Docker, GraphQL |
-| Backend business modules | [ ] **not started, by instruction** — next is module 2, auth & sessions |
-| Frontend `.env.local` points at a deleted API | [ ] A1–A3 outstanding |
+| Backend module 2 — auth & sessions | [x] Argon2id, sessions, refresh rotation with reuse detection, OTP, password reset, `requireUser` — [M2](./backend/M2-auth-sessions.md) |
+| Backend business modules | [~] 2 of 32 done (0 foundation, 1 reference data, 2 auth) — next is module 3, RBAC/PBAC |
+| Frontend `.env.local` points at a deleted API | [ ] A1–A3 outstanding. `NEXT_PUBLIC_BACKEND_AUTH` **must stay `0`**: the API is REST and `services/auth.ts` still issues GraphQL. See [M2 §11](./backend/M2-auth-sessions.md#11-what-is-not-here) for the exact delta |
 | §10 browser verification (Scenarios A–G) | [ ] A23 outstanding |
