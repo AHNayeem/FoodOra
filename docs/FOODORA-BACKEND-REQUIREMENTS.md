@@ -3,6 +3,13 @@
 **Written from the finalised database, 2026-08-27.** The database phase is
 complete; this is what the next phase must build on top of it.
 
+> **Update, 2026-08-27 — the foundation phase has shipped.** Module 0 and module
+> 1 below are done: `backend/` is a running Fastify application and the
+> reference seeder in §2 exists, which closes the blocking prerequisite. What was
+> built, and the conventions in §1 it implements, is
+> [`docs/backend/F1-fastify-foundation.md`](./backend/F1-fastify-foundation.md).
+> The next module is **2 — Auth & sessions**.
+
 **Stack (decided):** Fastify + JavaScript + Prisma + PostgreSQL.
 **Not in scope, by instruction:** NestJS, TypeScript, GraphQL, Redis, Docker.
 
@@ -35,27 +42,40 @@ produces silently wrong data rather than an error.
 
 ---
 
-## 2. The one blocking prerequisite
+## 2. The one blocking prerequisite — **closed**
 
-**A reference-data seeder.** `database/package.json#prisma.seed` delegates to
-the removed backend's `seed:reference`, so `bun run seed` currently fails.
-Nothing works before it exists: `User.countryCode` is a non-null FK to
-`countries`, so **no account can be created until a country row exists**.
+**A reference-data seeder.** `database/package.json#prisma.seed` delegated to the
+removed backend's `seed:reference`, so `bun run seed` failed. Nothing worked
+before it existed: `User.countryCode` is a non-null FK to `countries`, so **no
+account could be created until a country row existed**.
 
-Minimum set, as exercised by the verified end-to-end fixture:
+**Built 2026-08-27** as `backend/src/seed/reference.js`, reached from both sides:
 
-- `Currency` (BDT), `Language` (en, bn, ar — matching the frontend's three locales), `Country` (BD), `CountryLanguage`
-- `TaxRule` for the country
-- `Permission` catalogue — the closed list in `types/user.ts::PlatformPermission`
-- `Role` × the 14 `UserRoleSlug` built-ins, with `RolePermission` grants
-- `DeliveryZone` + `ZoneArea` **with centroids** (`lib/mock/drop-points.ts` is the source)
-- `PaymentProvider` rows (`cash`, `wallet` at minimum)
-- `LedgerAccount` for each platform account
-- `CmsCollection` definitions (`lib/mock/cms.ts`)
-- `NotificationTemplate` catalogue
+```bash
+cd backend  && npm run seed:reference
+cd database && bun run seed          # prisma.seed now → ../backend/scripts/seed-reference.js
+```
+
+255 rows across 14 tables, covering the minimum set below in full. Deterministic
+(ids are derived from natural keys, not random), idempotent (a second run changes
+nothing, ids included) and safe on a live database (it never touches
+`deletedAt`). Details and the row-by-row provenance are in
+[F1 §8](./backend/F1-fastify-foundation.md#8-the-reference-seeder).
+
+Minimum set, as exercised by the verified end-to-end fixture — all present:
+
+- ✅ `Currency` (5), `Language` (en, bn, ar — the frontend's three locales), `Country` (5), `CountryLanguage` (15)
+- ✅ `TaxRule` per country (5)
+- ✅ `Permission` catalogue — the closed list in `lib/rbac.ts::PLATFORM_PERMISSIONS` (20)
+- ✅ `Role` × the 14 `UserRoleSlug` built-ins, with `RolePermission` grants (54)
+- ✅ `DeliveryZone` (3) + `ZoneArea` **with centroids** (19), from `lib/mock/drop-points.ts`
+- ✅ `PaymentProvider` — `cash` and `wallet` enabled, three gateways disabled and in test mode
+- ✅ `LedgerAccount` for each platform account (6)
+- ✅ `CmsCollection` definitions (9), exported verbatim from `lib/mock/cms.ts`
+- ✅ `NotificationTemplate` catalogue (92) — one per `notifications.<audience>.<key>`
 
 A demo seeder — restaurants, menus, orders in every status, the financial
-scenarios `GAP - Implement.md` §21 lists — is separate and comes after.
+scenarios `GAP - Implement.md` §21 lists — is separate and **still to come**.
 
 ---
 
@@ -66,8 +86,8 @@ the work. Order follows dependency, not importance.
 
 | # | Module | Depends on | Notes |
 |---|---|---|---|
-| 0 | Foundation | — | Fastify, config, logging, error shape, health, Prisma client + soft-delete and enum-mapping layers |
-| 1 | Reference data & seeder | 0 | §2. Blocking. |
+| 0 | Foundation | — | **done** — Fastify, config, logging, error shape, health, Prisma client + soft-delete and enum-mapping layers. [F1](./backend/F1-fastify-foundation.md) |
+| 1 | Reference data & seeder | 0 | **done** — §2. |
 | 2 | Auth & sessions | 1 | Argon2id, refresh rotation with reuse detection, OTP, devices |
 | 3 | RBAC / PBAC | 2 | Resolve `User.permissions` = role grants ∪ direct grants − denials |
 | 4 | Catalog & discovery | 1 | Derive `isOpen` (branch hours + timezone) and `distanceKm` (caller coordinates) — **never stored** |
@@ -111,13 +131,20 @@ type. The read models the backend must return are `frontend/types/*` **unchanged
 Two live-flag facts from `Analysis.md` to settle early:
 
 - `NEXT_PUBLIC_BACKEND_*` flags in `frontend/.env.local` currently point at a
-  deleted API (A1, A2). They must be `0` until a real endpoint answers.
+  deleted API (A1, A2). They must be `0` until a real endpoint answers. **Still
+  outstanding** — the foundation phase touched no frontend file, and when an
+  endpoint does answer it will answer REST rather than the GraphQL those flags
+  reach for.
 - `scripts/verify-operations.ts` (`verify:graphql`) reads `backend/schema.gql`,
   which no longer exists (A3). The GraphQL client layer — 1,691 LOC in
   `lib/graphql/` — needs an explicit keep-or-excise decision (A4). **This
   backend is not GraphQL**, so the honest options are to vendor a schema copy
   for the gate or remove the layer and the gate together. Leaving it undecided
-  is the one thing the audit rules out.
+  is the one thing the audit rules out. **Still outstanding**: the foundation is
+  REST (`/api/v1`, JSON, the error contract in
+  [F1 §5](./backend/F1-fastify-foundation.md#5-error-contract)), which settles
+  what the API *is* but not what happens to `lib/graphql/` — a frontend change,
+  and not one this phase was asked to make.
 
 ---
 

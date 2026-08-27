@@ -1,0 +1,638 @@
+[
+  {
+    "id": "banners",
+    "label": "Banners & promotions",
+    "description": "The landing hero and every promotional strip, with their own publication windows.",
+    "icon": "Flame",
+    "surface": "Landing page, offers page",
+    "previewHref": "/",
+    "fields": [
+      {
+        "key": "placement",
+        "label": "Placement",
+        "type": "select",
+        "required": true,
+        "help": "Which slot on the site renders it.",
+        "options": [
+          {
+            "value": "home-hero",
+            "label": "Landing hero"
+          },
+          {
+            "value": "home-strip",
+            "label": "Landing promo strip"
+          },
+          {
+            "value": "offers-top",
+            "label": "Top of the offers page"
+          }
+        ]
+      },
+      {
+        "key": "eyebrow",
+        "label": "Eyebrow",
+        "type": "text",
+        "localized": true,
+        "max": 40
+      },
+      {
+        "key": "title",
+        "label": "Headline",
+        "type": "text",
+        "localized": true,
+        "required": true,
+        "max": 90
+      },
+      {
+        "key": "subtitle",
+        "label": "Sub-headline",
+        "type": "textarea",
+        "localized": true,
+        "rows": 2,
+        "max": 240
+      },
+      {
+        "key": "searchPlaceholder",
+        "label": "Address placeholder",
+        "type": "text",
+        "localized": true,
+        "max": 60,
+        "help": "Hero only — the placeholder inside the address field."
+      },
+      {
+        "key": "ctaLabel",
+        "label": "Button label",
+        "type": "text",
+        "localized": true,
+        "max": 40
+      },
+      {
+        "key": "ctaHref",
+        "label": "Button link",
+        "type": "url"
+      },
+      {
+        "key": "icon",
+        "label": "Icon",
+        "type": "icon",
+        "help": "Lucide icon name — see the allow-list in components/directory/dash-icon."
+      },
+      {
+        "key": "tone",
+        "label": "Tone",
+        "type": "select",
+        "options": [
+          {
+            "value": "primary",
+            "label": "Primary"
+          },
+          {
+            "value": "ink",
+            "label": "Ink"
+          },
+          {
+            "value": "accent",
+            "label": "Accent"
+          }
+        ]
+      }
+    ],
+    "titleField": "title",
+    "creatable": true,
+    "orderable": true
+  },
+  {
+    "id": "pages",
+    "label": "Pages",
+    "description": "About, careers, help, contact and the two acquisition pages.",
+    "icon": "FileText",
+    "surface": "/about, /careers, /help, /contact, /partner, /rider",
+    "fields": [
+      {
+        "key": "eyebrow",
+        "label": "Eyebrow",
+        "type": "text",
+        "localized": true,
+        "max": 40
+      },
+      {
+        "key": "title",
+        "label": "Heading",
+        "type": "text",
+        "localized": true,
+        "required": true,
+        "max": 90
+      },
+      {
+        "key": "lead",
+        "label": "Lead paragraph",
+        "type": "textarea",
+        "localized": true,
+        "rows": 3,
+        "max": 400
+      }
+    ],
+    "titleField": "title"
+  },
+  {
+    "id": "legal",
+    "label": "Legal documents",
+    "description": "Terms, privacy and the refund policy — sectioned, with an effective date.",
+    "icon": "ShieldCheck",
+    "surface": "/terms, /privacy, /refund",
+    "fields": [
+      {
+        "key": "title",
+        "label": "Document title",
+        "type": "text",
+        "localized": true,
+        "required": true
+      },
+      {
+        "key": "intro",
+        "label": "Introduction",
+        "type": "textarea",
+        "localized": true,
+        "rows": 4
+      },
+      {
+        "key": "effectiveFrom",
+        "label": "Effective from",
+        "type": "date",
+        "required": true
+      },
+      {
+        "key": "sections",
+        "label": "Sections",
+        "type": "repeater",
+        "required": true,
+        "max": 24,
+        "fields": [
+          {
+            "key": "id",
+            "label": "Anchor",
+            "type": "text",
+            "required": true,
+            "help": "Used by the on-page contents list."
+          },
+          {
+            "key": "heading",
+            "label": "Heading",
+            "type": "text",
+            "localized": true,
+            "required": true
+          },
+          {
+            "key": "body",
+            "label": "Body",
+            "type": "textarea",
+            "localized": true,
+            "rows": 6,
+            "help": "A blank line starts a new paragraph."
+          },
+          {
+            "key": "bullets",
+            "label": "Bullets",
+            "type": "textarea",
+            "localized": true,
+            "rows": 3,
+            "help": "One per line."
+          }
+        ]
+      }
+    ],
+    "titleField": "title",
+    "creatable": true
+  },
+  {
+    "id": "posts",
+    "label": "Blog",
+    "description": "Articles, their structured bodies and the tags the related rail matches on.",
+    "icon": "Newspaper",
+    "surface": "/blog",
+    "previewHref": "/blog",
+    "fields": [
+      {
+        "key": "slug",
+        "label": "Slug",
+        "type": "text",
+        "required": true,
+        "help": "The article's URL under /blog."
+      },
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "localized": true,
+        "required": true,
+        "max": 120
+      },
+      {
+        "key": "excerpt",
+        "label": "Excerpt",
+        "type": "textarea",
+        "localized": true,
+        "rows": 3,
+        "max": 320
+      },
+      {
+        "key": "cover",
+        "label": "Cover image",
+        "type": "image"
+      },
+      {
+        "key": "category",
+        "label": "Category",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "author",
+        "label": "Author",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "authorRole",
+        "label": "Author role",
+        "type": "text",
+        "localized": true
+      },
+      {
+        "key": "authorAvatar",
+        "label": "Author avatar",
+        "type": "image"
+      },
+      {
+        "key": "readMinutes",
+        "label": "Read time (min)",
+        "type": "number"
+      },
+      {
+        "key": "publishedAt",
+        "label": "Published on",
+        "type": "date",
+        "required": true
+      },
+      {
+        "key": "tags",
+        "label": "Tags",
+        "type": "list",
+        "help": "One per line — used for the related-posts rail."
+      },
+      {
+        "key": "body",
+        "label": "Article",
+        "type": "repeater",
+        "required": true,
+        "max": 60,
+        "fields": [
+          {
+            "key": "type",
+            "label": "Block",
+            "type": "select",
+            "required": true,
+            "options": [
+              {
+                "value": "paragraph",
+                "label": "Paragraph"
+              },
+              {
+                "value": "heading",
+                "label": "Heading"
+              },
+              {
+                "value": "list",
+                "label": "Bullet list"
+              },
+              {
+                "value": "quote",
+                "label": "Quote"
+              }
+            ]
+          },
+          {
+            "key": "text",
+            "label": "Text",
+            "type": "textarea",
+            "localized": true,
+            "rows": 5,
+            "required": true
+          },
+          {
+            "key": "cite",
+            "label": "Attribution",
+            "type": "text",
+            "help": "Quote blocks only."
+          }
+        ]
+      }
+    ],
+    "titleField": "title",
+    "creatable": true
+  },
+  {
+    "id": "faqs",
+    "label": "FAQs",
+    "description": "Question groups, each pinned to the page that shows it.",
+    "icon": "MessageCircle",
+    "surface": "/help, /partner, /rider",
+    "previewHref": "/help",
+    "fields": [
+      {
+        "key": "surface",
+        "label": "Shown on",
+        "type": "select",
+        "required": true,
+        "options": [
+          {
+            "value": "help",
+            "label": "Help centre"
+          },
+          {
+            "value": "partner",
+            "label": "Partner page"
+          },
+          {
+            "value": "rider",
+            "label": "Rider page"
+          }
+        ]
+      },
+      {
+        "key": "title",
+        "label": "Group title",
+        "type": "text",
+        "localized": true,
+        "required": true
+      },
+      {
+        "key": "icon",
+        "label": "Icon",
+        "type": "icon",
+        "help": "Lucide icon name — see the allow-list in components/directory/dash-icon."
+      },
+      {
+        "key": "items",
+        "label": "Questions",
+        "type": "repeater",
+        "required": true,
+        "max": 24,
+        "fields": [
+          {
+            "key": "question",
+            "label": "Question",
+            "type": "text",
+            "localized": true,
+            "required": true
+          },
+          {
+            "key": "answer",
+            "label": "Answer",
+            "type": "textarea",
+            "localized": true,
+            "rows": 4,
+            "required": true
+          }
+        ]
+      }
+    ],
+    "titleField": "title",
+    "creatable": true,
+    "orderable": true
+  },
+  {
+    "id": "categories",
+    "label": "Categories",
+    "description": "The craving rail on the landing page — and the search each tile runs.",
+    "icon": "Utensils",
+    "surface": "Landing page",
+    "previewHref": "/",
+    "fields": [
+      {
+        "key": "slug",
+        "label": "Slug",
+        "type": "text",
+        "required": true,
+        "help": "Becomes /search?category=<slug>."
+      },
+      {
+        "key": "name",
+        "label": "Name",
+        "type": "text",
+        "localized": true,
+        "required": true
+      },
+      {
+        "key": "emoji",
+        "label": "Emoji",
+        "type": "emoji"
+      },
+      {
+        "key": "image",
+        "label": "Image",
+        "type": "image"
+      },
+      {
+        "key": "keywords",
+        "label": "Search keywords",
+        "type": "list",
+        "help": "One per line — what the tile actually searches for."
+      }
+    ],
+    "titleField": "name",
+    "creatable": true,
+    "orderable": true
+  },
+  {
+    "id": "menus",
+    "label": "Navigation",
+    "description": "Header and footer links, their order and their groups.",
+    "icon": "Menu",
+    "surface": "Every public page",
+    "fields": [
+      {
+        "key": "name",
+        "label": "Menu",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "items",
+        "label": "Links",
+        "type": "repeater",
+        "required": true,
+        "max": 24,
+        "fields": [
+          {
+            "key": "label",
+            "label": "Label",
+            "type": "text",
+            "localized": true,
+            "help": "Overrides the translation key."
+          },
+          {
+            "key": "labelKey",
+            "label": "Message key",
+            "type": "text",
+            "help": "Used when no label is authored."
+          },
+          {
+            "key": "href",
+            "label": "Link",
+            "type": "url",
+            "required": true
+          },
+          {
+            "key": "icon",
+            "label": "Icon",
+            "type": "icon",
+            "help": "Lucide icon name — see the allow-list in components/directory/dash-icon."
+          },
+          {
+            "key": "group",
+            "label": "Group",
+            "type": "select",
+            "options": [
+              {
+                "value": "discover",
+                "label": "Discover"
+              },
+              {
+                "value": "services",
+                "label": "Services"
+              },
+              {
+                "value": "company",
+                "label": "Company"
+              },
+              {
+                "value": "legal",
+                "label": "Legal"
+              },
+              {
+                "value": "business",
+                "label": "For business"
+              }
+            ]
+          },
+          {
+            "key": "visible",
+            "label": "Visible",
+            "type": "boolean"
+          }
+        ]
+      }
+    ],
+    "titleField": "name",
+    "orderable": true
+  },
+  {
+    "id": "seo",
+    "label": "SEO metadata",
+    "description": "Title tags, descriptions and share images, per route.",
+    "icon": "Search",
+    "surface": "Document head",
+    "fields": [
+      {
+        "key": "route",
+        "label": "Route",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "metaTitle",
+        "label": "Title tag",
+        "type": "text",
+        "localized": true,
+        "max": 70
+      },
+      {
+        "key": "metaDescription",
+        "label": "Meta description",
+        "type": "textarea",
+        "localized": true,
+        "rows": 3,
+        "max": 200
+      },
+      {
+        "key": "ogImage",
+        "label": "Share image",
+        "type": "image"
+      },
+      {
+        "key": "noindex",
+        "label": "Hide from search engines",
+        "type": "boolean"
+      }
+    ],
+    "titleField": "route",
+    "creatable": true
+  },
+  {
+    "id": "site",
+    "label": "Site settings",
+    "description": "Brand, tagline, support contacts and social links.",
+    "icon": "Store",
+    "surface": "Footer, contact page, metadata",
+    "fields": [
+      {
+        "key": "brandName",
+        "label": "Brand name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "tagline",
+        "label": "Tagline",
+        "type": "text",
+        "localized": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "textarea",
+        "localized": true,
+        "rows": 3
+      },
+      {
+        "key": "supportEmail",
+        "label": "Support email",
+        "type": "text"
+      },
+      {
+        "key": "supportPhone",
+        "label": "Support phone",
+        "type": "text"
+      },
+      {
+        "key": "address",
+        "label": "Registered address",
+        "type": "text",
+        "localized": true
+      },
+      {
+        "key": "twitter",
+        "label": "X / Twitter",
+        "type": "url"
+      },
+      {
+        "key": "instagram",
+        "label": "Instagram",
+        "type": "url"
+      },
+      {
+        "key": "facebook",
+        "label": "Facebook",
+        "type": "url"
+      },
+      {
+        "key": "footerNote",
+        "label": "Footer note",
+        "type": "text",
+        "localized": true
+      }
+    ],
+    "titleField": "brandName"
+  }
+]

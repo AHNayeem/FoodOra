@@ -5,10 +5,10 @@
 Database, backend, frontend and verification are tracked **separately** — a
 complete database column says nothing about the backend.
 
-Last updated **2026-08-27**, at the end of the database phase.
+Last updated **2026-08-27**, at the end of the **backend foundation** phase.
 
 - **Database** — table, columns, relations, constraints, indexes exist and have been applied and exercised against real PostgreSQL.
-- **Backend** — Fastify routes exist and are wired to Prisma. *Nothing has started; the backend directory is empty by instruction.*
+- **Backend** — Fastify routes exist and are wired to Prisma. *The foundation is built ([F1](./backend/F1-fastify-foundation.md)); no business module has started, by instruction.*
 - **Frontend** — the surface exists and works on the mock path (state per [`Analysis.md`](../Analysis.md)).
 - **Verified** — driven end to end, not inspected. For the database phase this means the assertions in [`FOODORA-DATABASE-DESIGN.md`](./FOODORA-DATABASE-DESIGN.md) §9.
 
@@ -18,8 +18,8 @@ Last updated **2026-08-27**, at the end of the database phase.
 
 | Module | Database | Backend | Frontend | Verified |
 |---|---|---|---|---|
-| Reference data (currencies, countries, languages, tax) | [x] | [ ] | [x] | [x] |
-| Reference **seeder** | [x] schema | [ ] **blocking** | n/a | [ ] |
+| Reference data (currencies, countries, languages, tax) | [x] | [x] seeded | [x] | [x] |
+| Reference **seeder** | [x] schema | [x] **unblocked** | n/a | [x] 255 rows, re-run is a no-op |
 | Authentication & sessions | [x] | [ ] | [x] | [~] schema only |
 | RBAC / PBAC | [x] | [ ] | [x] | [~] schema only |
 | Discovery & search | [x] | [ ] | [x] | [~] schema only |
@@ -89,6 +89,7 @@ Last updated **2026-08-27**, at the end of the database phase.
 
 | Module | Database | Backend | Frontend | Verified |
 |---|---|---|---|---|
+| **Backend foundation** (app, health, errors, validation, Prisma layers, auth guards) | n/a | [x] | n/a | [x] 74 assertions |
 | Admin order operations | [x] | [ ] | [x] | [x] |
 | Coupons & offers | [x] +index | [ ] | [x] | [~] |
 | Audit log | [x] | [ ] | [x] | [~] |
@@ -132,6 +133,10 @@ Last updated **2026-08-27**, at the end of the database phase.
 | Constraints negative-tested | [x] 22/22 (18 refused, 4 allowed) |
 | End-to-end data flow | [x] 26/26 assertions |
 | Deferred schema changes DSC-1, DSC-2 | [x] closed |
-| Backend implementation | [ ] **not started, by instruction** |
+| Backend foundation | [x] Fastify app, health, error/response contract, validation, Prisma layers, auth guards — [F1](./backend/F1-fastify-foundation.md) |
+| Backend reference seeder | [x] 255 rows, deterministic and idempotent |
+| Backend test suite | [x] 74 assertions against real PostgreSQL |
+| Forbidden technologies | [x] `npm run check:forbidden` — no TypeScript, NestJS, Redis, Docker, GraphQL |
+| Backend business modules | [ ] **not started, by instruction** — next is module 2, auth & sessions |
 | Frontend `.env.local` points at a deleted API | [ ] A1–A3 outstanding |
 | §10 browser verification (Scenarios A–G) | [ ] A23 outstanding |

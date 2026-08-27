@@ -21,17 +21,23 @@ cd database && bun run migrate:deploy
 # 3. Reference data — currencies, countries, languages, roles, permissions.
 #    Nothing else works before this: `User.countryCode` is a non-null FK to
 #    `countries`, so no account can be created until a country row exists.
-bun run seed   # ⚠️ see below — the seeder does not currently exist
+bun run seed   # → backend/scripts/seed-reference.js
 ```
 
-> **`bun run seed` is broken and is the one blocking prerequisite for a runnable
-> stack.** `package.json#prisma.seed` delegates to `backend`'s `seed:reference`,
-> and that backend has been removed. The seeder needs an id service and the
-> permission catalogue, so it belongs with the new backend. The minimum
-> reference set is specified in
-> [BACKEND-REQUIREMENTS §2](../docs/FOODORA-BACKEND-REQUIREMENTS.md#2-the-one-blocking-prerequisite),
-> and a working example of it is the end-to-end fixture described in
-> [DATABASE-DESIGN §9](../docs/FOODORA-DATABASE-DESIGN.md#9-verification).
+> **`bun run seed` works again.** It was broken while `package.json#prisma.seed`
+> still pointed at the removed NestJS backend's `seed:reference`; it now runs
+> `node ../backend/scripts/seed-reference.js`, which the Fastify foundation phase
+> built. 255 rows across 14 tables — currencies, languages, countries, tax rules,
+> the permission catalogue, all fourteen roles with their grants, the three
+> delivery zones with area centroids, payment providers, the platform ledger
+> accounts, the CMS collection definitions and the 92 notification templates.
+> Deterministic, idempotent, and it never touches `deletedAt`. See
+> [F1 §8](../docs/backend/F1-fastify-foundation.md#8-the-reference-seeder). The
+> minimum set it satisfies is
+> [BACKEND-REQUIREMENTS §2](../docs/FOODORA-BACKEND-REQUIREMENTS.md#2-the-one-blocking-prerequisite).
+>
+> It needs the generated client, so run `bun run generate` (or `npm run
+> db:generate` from `backend/`) first.
 
 There is no `docker-compose` any more — `docker/` was deleted. Point
 `DATABASE_URL` at whatever PostgreSQL you have.
@@ -100,7 +106,10 @@ Details in [DATABASE-DESIGN §9](../docs/FOODORA-DATABASE-DESIGN.md#9-verificati
 ## Generated client
 
 `bun run generate` writes to `generated/client` (gitignored) and consumers
-import it through `@foodora/database`. It used to write into
+import it through `@foodora/database` — which now resolves, because
+`package.json` gained the `main`/`exports` entries pointing at it. The Fastify
+backend depends on this package as `file:../database` and holds no schema of its
+own. It used to write into
 `backend/src/infrastructure/prisma/generated`, a path in the removed NestJS
 tree; generating into a folder the next backend has not created — and whose
 shape was NestJS's, not Fastify's — was not worth preserving.

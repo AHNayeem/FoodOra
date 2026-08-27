@@ -1,12 +1,23 @@
-# Backend — Phase D (design) and Phase E (implementation)
+# Backend — Phase D (design), Phase E (NestJS), Phase F (Fastify)
+
+## The current backend
+
+| Doc | What |
+| --- | --- |
+| [**F1 — Fastify Backend Foundation**](./F1-fastify-foundation.md) | the backend that exists in `backend/` today: stack, structure, lifecycle, Prisma layers, error and response contracts, validation, the reference seeder, the auth foundation, versioning, environment, tests |
+
+Everything below F1 describes the **removed** NestJS backend and is kept as a
+record of the reasoning, not as a plan. Where it and F1 disagree, F1 wins.
+
+---
 
 > [!IMPORTANT]
 > **Historical record — do not plan new work from this directory.**
 >
 > Every document below designs a **NestJS + GraphQL + Redis + Docker** backend
-> that has since been removed (`backend/` is empty; `backend OLD/` holds it).
-> The replacement is **Fastify + JavaScript**, with no GraphQL, no Redis and no
-> Docker.
+> that has since been removed (`backend OLD/` holds it). The replacement is
+> **Fastify + JavaScript**, with no GraphQL, no Redis and no Docker, and it is
+> built: see [F1](./F1-fastify-foundation.md).
 >
 > The current authorities are:
 >
@@ -16,6 +27,7 @@
 > | What the backend must do | [`docs/FOODORA-BACKEND-REQUIREMENTS.md`](../FOODORA-BACKEND-REQUIREMENTS.md) |
 > | Module status | [`docs/FOODORA-MODULE-CHECKLIST.md`](../FOODORA-MODULE-CHECKLIST.md) |
 > | Product / frontend state | [`Analysis.md`](../../Analysis.md) |
+> | The backend as built | [`F1`](./F1-fastify-foundation.md) |
 >
 > These documents remain because the *reasoning* in them — D2 on normalisation
 > and money, D3's ER diagrams, D7 on the ledger and settlement — is what the

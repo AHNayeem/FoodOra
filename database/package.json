@@ -2,10 +2,19 @@
   "name": "@foodora/database",
   "version": "0.1.0",
   "private": true,
-  "description": "FoodOra PostgreSQL schema, migrations and seeders (Phase D4).",
+  "description": "FoodOra PostgreSQL schema, migrations and the generated Prisma client (Phase D4).",
+  "main": "./generated/client/index.js",
+  "types": "./generated/client/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./generated/client/index.d.ts",
+      "default": "./generated/client/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "prisma": {
     "schema": "./prisma/schema",
-    "seed": "cd ../backend && bun run seed:reference"
+    "seed": "node ../backend/scripts/seed-reference.js"
   },
   "scripts": {
     "validate": "prisma validate",
