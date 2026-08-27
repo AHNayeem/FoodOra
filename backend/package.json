@@ -11,13 +11,13 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "NODE_ENV=test RATE_LIMIT_ENABLED=false AUTH_ECHO_SECRETS=1 node --test tests/",
+    "test": "NODE_ENV=test RATE_LIMIT_ENABLED=false AUTH_ECHO_SECRETS=1 AUTHZ_CACHE_TTL_MS=0 node --test tests/",
     "seed:reference": "node scripts/seed-reference.js",
     "db:generate": "prisma generate --schema ../database/prisma/schema",
     "db:validate": "prisma validate --schema ../database/prisma/schema",
     "db:status": "prisma migrate status --schema ../database/prisma/schema",
     "check:forbidden": "node scripts/check-forbidden.js",
-    "test:watch": "NODE_ENV=test RATE_LIMIT_ENABLED=false AUTH_ECHO_SECRETS=1 node --test --watch tests/",
+    "test:watch": "NODE_ENV=test RATE_LIMIT_ENABLED=false AUTH_ECHO_SECRETS=1 AUTHZ_CACHE_TTL_MS=0 node --test --watch tests/",
     "verify": "npm run db:validate && npm run check:forbidden && npm test && npm run auth:flow",
     "auth:flow": "node scripts/auth-flow.js"
   },

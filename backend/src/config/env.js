@@ -208,6 +208,31 @@ const env = Object.freeze({
   authRateMax: int("AUTH_RATE_MAX", { fallback: 10, min: 1 }),
   authRateWindowMs: int("AUTH_RATE_WINDOW_MS", { fallback: 60_000, min: 1_000 }),
 
+  // ---------------------------------------------------------------------------
+  // Module 3 — authorization
+  // ---------------------------------------------------------------------------
+
+  /**
+   * How long a resolved permission set may be reused, in milliseconds.
+   *
+   * The consistency bound module 3 states rather than a performance knob: a role
+   * granted or revoked without the granting module calling `authz.invalidate`
+   * takes effect within this window. `0` turns the cache off, which is what the
+   * test suite does so that every authorization assertion is a statement about
+   * the database rather than about a Map.
+   *
+   * It cannot keep a *blocked* account working: `requireUser` re-reads the
+   * account and its session on every request and refuses before a guard runs.
+   */
+  authzCacheTtlMs: int("AUTHZ_CACHE_TTL_MS", { fallback: 5_000, min: 0 }),
+
+  /**
+   * Mount `/api/v1/_authz` — the routes that exist only to prove authorization
+   * works. Off in production: an endpoint whose purpose is to describe the
+   * caller's rights is not one to deploy.
+   */
+  authzVerifyRoutes: bool("AUTHZ_VERIFY_ROUTES", { fallback: String(!isProduction) }),
+
   rateLimitEnabled: bool("RATE_LIMIT_ENABLED", { fallback: String(!isTest) }),
   rateLimitMax: int("RATE_LIMIT_MAX", { fallback: 300, min: 1 }),
   rateLimitWindowMs: int("RATE_LIMIT_WINDOW_MS", { fallback: 60_000, min: 1000 }),

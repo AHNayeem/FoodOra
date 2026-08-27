@@ -22,6 +22,7 @@
  */
 import healthRoutes from "../../health/routes.js";
 import authModule from "../../modules/auth/index.js";
+import authzModule from "../../modules/authz/index.js";
 
 export default async function v1Routes(fastify) {
   // Same handlers as the unprefixed pair — a client that only knows the
@@ -44,4 +45,15 @@ export default async function v1Routes(fastify) {
    * It applies its own `/auth` internally. See `modules/auth/index.js`.
    */
   await fastify.register(authModule);
+
+  /**
+   * Module 3 — RBAC / PBAC, at `/api/v1/_authz`.
+   *
+   * After module 2 and for the same two reasons module 2 is `fp`-wrapped: it
+   * needs `requireUser`, which the auth module decorates, and the guards it
+   * decorates in turn — `requirePermission`, `requireVendorAccess` — have to
+   * reach every module registered below this line. It applies its own prefix,
+   * and mounts nothing at all in production.
+   */
+  await fastify.register(authzModule);
 }

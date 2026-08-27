@@ -15,13 +15,20 @@
  *
  * ## What is deliberately not here
  *
- * **Authorization.** `permissions` on the read model is `[]` and the access
- * token's claim is `[]`, in every path. Resolving `role grants ∪ direct grants −
- * denials` is module 3's whole job (BACKEND-REQUIREMENTS §3), the tables it reads
- * are seeded and this module writes the `user_role_assignments` row it will read,
- * but nothing here decides what an account may do. `request.user.roles` carries
- * the account's role because authorization will need an identity to work from —
- * that is the line STEP 17 draws and this file stays on the near side of it.
+ * **Authorization.** Nothing here decides what an account may do. Module 3 now
+ * exists and owns that question end to end (`modules/authz/`), and two things
+ * follow that are worth stating because both look like omissions:
+ *
+ *  - **The access token's `permissions` claim is still `[]`**, deliberately, and
+ *    module 3's STEP 13 confirms it: authorization is resolved from the database
+ *    on the request, so a claim would be a fifteen-minute-stale copy of an answer
+ *    the server can compute exactly. `roles` stays in the claim as identity, and
+ *    nothing reads it as authority.
+ *  - **The read model's `permissions` is filled**, because it is not a decision —
+ *    it is `types/user.ts::User.permissions`, which the frontend feeds to
+ *    `lib/rbac.ts::permissionsFor` to decide which buttons to draw. It comes from
+ *    `app.authz`, so the field the browser sees and the set the API enforces are
+ *    the same resolution rather than two implementations that can disagree.
  */
 import env from "../../config/env.js";
 import { unauthenticated } from "../../shared/errors/app-error.js";
@@ -66,7 +73,7 @@ const SIGN_IN_PURPOSES = new Set(["login", "register", "phone-verify"]);
  * the `select` widened, and the read model the components consume has not
  * changed since Phase C.
  */
-export function toUserReadModel(row) {
+export function toUserReadModel(row, permissions = []) {
   return {
     id: row.id,
     name: row.name,
@@ -74,8 +81,13 @@ export function toUserReadModel(row) {
     phone: row.phone ?? null,
     avatar: row.avatar ?? "",
     role: toApiEnum("UserRoleSlug", row.primaryRole),
-    /** Module 3. See the header. */
-    permissions: [],
+    /**
+     * Resolved by module 3 and passed in, because this function is pure and the
+     * resolution is a database read. `[]` when the caller did not resolve one —
+     * fail-closed, which for a *display* set means a screen draws fewer buttons
+     * than it could, never more.
+     */
+    permissions,
     countryCode: row.countryCode,
     currency: row.currency,
     locale: row.locale,
@@ -105,6 +117,24 @@ export function accountRefusal(user) {
 
 export function createService({ app, repo }) {
   const log = app.log;
+
+  /**
+   * The account's effective permissions, for the read model.
+   *
+   * Read through `app` rather than injected, and read *at call time*: module 3
+   * registers after this one, so `app.authz` does not exist while this service
+   * is being built and does by the time any of these functions runs. The
+   * fallback is the honest one — a backend running without module 3 mounted
+   * reports no permissions rather than guessing at some.
+   *
+   * This is a *display* set. Nothing in this module gates on it; the API is
+   * guarded by `modules/authz/`'s hooks, which resolve the same sets again at
+   * the point of the decision. A hidden button is not authorization.
+   */
+  const permissionsOf = (userId) => (app.authz ? app.authz.permissionsOf(userId) : []);
+
+  /** `toUserReadModel`, with the permissions resolved. What every response uses. */
+  const readModelFor = async (row) => toUserReadModel(row, await permissionsOf(row.id));
 
   // ---------------------------------------------------------------------------
   // Sessions
@@ -163,7 +193,7 @@ export function createService({ app, repo }) {
         accessToken: access.accessToken,
         accessTokenExpiresAt: access.accessTokenExpiresAt.toISOString(),
         sessionId: session.id,
-        user: toUserReadModel(user),
+        user: await readModelFor(user),
       },
     };
   }
@@ -579,7 +609,7 @@ export function createService({ app, repo }) {
         accessToken: access.accessToken,
         accessTokenExpiresAt: access.accessTokenExpiresAt.toISOString(),
         sessionId: session.id,
-        user: toUserReadModel(user),
+        user: await readModelFor(user),
       },
     };
   }
@@ -628,6 +658,8 @@ export function createService({ app, repo }) {
     refresh,
     logout,
     toUserReadModel,
+    readModelFor,
+    permissionsOf,
     accountRefusal,
   };
 }

@@ -3,15 +3,16 @@
 The FoodOra API. **Fastify · JavaScript · Prisma · PostgreSQL.** No TypeScript,
 no NestJS, no Redis, no Docker, no GraphQL.
 
-**Two of the 32 modules in
+**Three of the 32 modules in
 [BACKEND-REQUIREMENTS §3](../docs/FOODORA-BACKEND-REQUIREMENTS.md#3-module-build-order)
-are built:** module 1, reference data, and module 2, auth & sessions. The rest is
-the frame they mount into. Next is module 3, RBAC/PBAC.
+are built:** module 1, reference data; module 2, auth & sessions; and module 3,
+RBAC/PBAC. The rest is the frame they mount into. Next is module 4.
 
 | Document | |
 | --- | --- |
 | [`F1 — Fastify foundation`](../docs/backend/F1-fastify-foundation.md) | stack, structure, lifecycle, Prisma layers, error and response contracts, validation, the seeder |
 | [`M2 — Auth & sessions`](../docs/backend/M2-auth-sessions.md) | Argon2id, the session and refresh lifecycle, rotation with reuse detection, OTP, password reset, `requireUser` |
+| [`M3 — RBAC / PBAC`](../docs/backend/M3-rbac-pbac.md) | role and permission resolution, vendor scope, the authorization guards, 401 vs 403, the permission cache |
 
 ## Getting it running
 
@@ -80,6 +81,32 @@ the second checks the token, the first also checks the account, the session row
 and `credentials.tokenEpoch`, which is what makes revocation immediate.
 [M2 §5](../docs/backend/M2-auth-sessions.md#5-requireuser--the-guard-for-every-later-module).
 
+**Module 3 — RBAC/PBAC.** Declare what a route needs and the guard authenticates
+and authorizes in one line. Contracts in
+[M3 §6](../docs/backend/M3-rbac-pbac.md#6-the-fastify-authorization-api).
+
+```js
+fastify.get("/orders",      { preHandler: fastify.requirePermission("orders.view") }, handler)
+fastify.get("/queue",       { preHandler: fastify.requireAnyPermission("support.view", "orders.view") }, handler)
+fastify.get("/flags",       { preHandler: fastify.requireRole("super-admin") }, handler)
+fastify.get("/v/:vendorId", { preHandler: fastify.requireVendorAccess() }, handler)
+
+// the permission AND the record it is being used on
+fastify.get("/v/:vendorId/orders", {
+  preHandler: fastify.requireAuthorization({
+    permission: "orders.view",
+    vendor: (request) => request.params.vendorId,
+  }),
+}, handler)
+```
+
+Permissions are resolved from the database on the request — `role grants ∪ direct
+grants − denials` — never from the token, whose `permissions` claim is `[]` on
+purpose. A misspelt slug throws at startup, not at the first refusal. Use these,
+not `fastify.authorize`, which reads that empty claim and is F1's.
+
+`/api/v1/_authz` carries verification probes outside production.
+
 ## The five things to know before writing a module
 
 Each one is an obligation the database makes and does not enforce
@@ -136,6 +163,7 @@ shared/      constants · errors · utils · validators
 routes/      index.js → v1/index.js (where modules register)
 modules/
   auth/      module 2 — routes · controller · service · repository · schemas · utils
+  authz/     module 3 — index (guards) · service · policy · repository · routes
 health/      /health, /health/ready
 seed/        reference.js + data/
 ```

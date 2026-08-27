@@ -37,6 +37,17 @@ export const ID_PREFIXES = Object.freeze({
   passwordReset: "pwr_",
   loginAttempt: "lga_",
   userRoleAssignment: "ura_",
+
+  /**
+   * Module 3 — RBAC / PBAC. The direct-grant layer over the role table.
+   *
+   * Module 3 itself never writes one: it resolves `role grants ∪ direct grants −
+   * denials` and grants nothing. The prefix is registered here because module 3
+   * is the module that *owns* `user_permissions` — its tests write the rows, and
+   * the admin surface that eventually grants them should not have to invent a
+   * prefix while also inventing a permission editor.
+   */
+  userPermission: "usp_",
 });
 
 /** Every prefix this backend is allowed to mint. Modules extend it as they land. */

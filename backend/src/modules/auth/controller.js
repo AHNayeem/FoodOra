@@ -141,8 +141,14 @@ export function createController({ service }) {
       return ok(result);
     },
 
-    /** The account as the server currently describes it. `requireUser` loaded it. */
-    me: async (request) => ok(service.toUserReadModel(request.account)),
+    /**
+     * The account as the server currently describes it. `requireUser` loaded it.
+     *
+     * `readModelFor` rather than `toUserReadModel`: the read model's
+     * `permissions` is what `lib/rbac.ts::permissionsFor` reads on the client,
+     * and module 3 resolves it from the database. See `service.js`'s header.
+     */
+    me: async (request) => ok(await service.readModelFor(request.account)),
   };
 }
 
