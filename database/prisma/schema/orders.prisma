@@ -14,6 +14,15 @@
 // =============================================================================
 
 enum OrderStatusKind {
+  /// QUEUED — placed for a future slot and not yet released to anybody.
+  ///
+  /// The entry state of a *scheduled* order and the only status no transition
+  /// reaches: an order is born here or it is born PLACED. It is not a step of
+  /// the journey but the wait before it starts, which is why the happy-path
+  /// stage lists both begin at PLACED. `releaseScheduled` moves it on once the
+  /// slot is close enough to cook for, and nothing downstream needs to know it
+  /// was ever scheduled.
+  SCHEDULED       @map("scheduled")
   PLACED          @map("placed")
   CONFIRMED       @map("confirmed")
   PREPARING       @map("preparing")
@@ -87,13 +96,37 @@ enum OrderCancelReasonKind {
   @@map("order_cancel_reason_kind")
 }
 
+/// Where a refund has got to: `requested -> approved | rejected -> refunded`.
+///
+/// REFUNDED is the member whose absence was the defect. With APPROVED as the
+/// terminal state there was no way to say "we decided to pay this AND the money
+/// has actually gone back", which is a different fact from "we agreed to". A
+/// wallet refund passes through both in one commit; a card refund sits at
+/// APPROVED while the provider works.
 enum RefundStatusKind {
   NONE      @map("none")
   REQUESTED @map("requested")
   APPROVED  @map("approved")
   REJECTED  @map("rejected")
+  REFUNDED  @map("refunded")
 
   @@map("refund_status_kind")
+}
+
+/// How the money goes back. Mirrors the tender it was taken on, because that is
+/// what decides how long it takes and who has to do something: WALLET is a
+/// ledger entry this platform owns and is instant, CARD is a request to a
+/// provider, and CASH has to be handed back or paid out by a person.
+///
+/// Resolved when the refund opens and then stored — never re-derived from the
+/// payment method at read time, because a payment method can be inspected but a
+/// refund *route* is a decision somebody made.
+enum RefundMethodKind {
+  WALLET @map("wallet")
+  CARD   @map("card")
+  CASH   @map("cash")
+
+  @@map("refund_method_kind")
 }
 
 enum AssignmentKind {
@@ -101,6 +134,43 @@ enum AssignmentKind {
   MANUAL @map("manual")
 
   @@map("assignment_kind")
+}
+
+/// One thing the counter and the courier confirm before the food leaves the
+/// kitchen. A closed vocabulary rather than free text, because the point of a
+/// checklist is that the *same* four things are checked every time and can be
+/// counted afterwards. IDENTITY is the one needing the courier's code; the other
+/// three are things either party can see.
+enum HandoverCheckKind {
+  IDENTITY     @map("identity")
+  ORDER_NUMBER @map("orderNumber")
+  ITEMS        @map("items")
+  SEALED       @map("sealed")
+
+  @@map("handover_check_kind")
+}
+
+/// The tag of `OrderEvent.meta`, stored as a column so the payload's *kind* is
+/// queryable without opening the JSON.
+///
+/// This is what makes "every order the kitchen asked for more time on" or "every
+/// doorstep code that failed" an index scan rather than a JSONB predicate over
+/// the whole log. The payload itself stays in `meta`, because each kind carries
+/// different fields and a column per field would be mostly nulls.
+enum OrderEventDetailKind {
+  DELAY             @map("delay")
+  OTP_FAILED        @map("otp-failed")
+  HANDOVER_FAILED   @map("handover-failed")
+  REFUND_REQUESTED  @map("refund-requested")
+  REFUND_APPROVED   @map("refund-approved")
+  REFUND_REJECTED   @map("refund-rejected")
+  REFUND_SETTLED    @map("refund-settled")
+  REASSIGNED        @map("reassigned")
+  SCHEDULED_RELEASE @map("scheduled-release")
+  RATING            @map("rating")
+  NOTE              @map("note")
+
+  @@map("order_event_detail_kind")
 }
 
 enum OrderChannel {
@@ -156,12 +226,15 @@ model CartItem {
   /// The composite cart-line id: food id + sorted option ids, so identical
   /// configurations merge instead of stacking (`types/cart.ts::CartLine.id`).
   ///
-  /// TEMPORARY: that value is unique only *within* a cart, so a global `@id` let two
-  /// baskets collide on the same dish. Rows are therefore stored as
-  /// `<cartId>#<lineId>` — a workaround the application enforces and the database does
-  /// not. Scheduled for replacement by `@@id([cartId, id])`; see DSC-1 in
-  /// `docs/backend/deferred-schema-changes.md`.
-  id        String  @id @db.VarChar(120)
+  /// Unique within the cart, which is the only scope in which it means
+  /// anything — hence the composite primary key rather than a global `@id`.
+  ///
+  /// It was global once, and two customers who both ordered a large Margherita
+  /// computed the identical id, so an upsert keyed on it found the other
+  /// person's row. The application worked around it by storing
+  /// `<cartId>#<lineId>`; the constraint below is the database enforcing what
+  /// the convention only asked for. DSC-1 closed.
+  id        String  @db.VarChar(120)
   cartId    String  @db.VarChar(40)
   foodId    String  @db.VarChar(40)
   /// Snapshots, so a menu edit never silently reprices a live basket.
@@ -180,22 +253,26 @@ model CartItem {
   food    FoodItem         @relation("CartItemFood", fields: [foodId], references: [id], onDelete: Cascade)
   options CartItemOption[] @relation("CartItemOptions")
 
-  @@index([cartId])
+  /// The leading column serves every `WHERE cartId = ...` the cart module makes,
+  /// so the old standalone `@@index([cartId])` is redundant and is gone.
+  @@id([cartId, id])
   @@index([foodId])
   @@map("cart_items")
 }
 
 model CartItemOption {
+  /// Carried so the foreign key can reference the composite parent key.
+  cartId     String  @db.VarChar(40)
   cartItemId String  @db.VarChar(120)
   groupId    String  @db.VarChar(40)
   optionId   String  @db.VarChar(40)
   name       String  @db.VarChar(120)
   priceDelta Decimal @default(0) @db.Decimal(14, 2)
 
-  cartItem CartItem   @relation("CartItemOptions", fields: [cartItemId], references: [id], onDelete: Cascade)
+  cartItem CartItem   @relation("CartItemOptions", fields: [cartId, cartItemId], references: [cartId, id], onDelete: Cascade)
   option   FoodOption @relation("CartOptionRef", fields: [optionId], references: [id], onDelete: Cascade)
 
-  @@id([cartItemId, optionId])
+  @@id([cartId, cartItemId, optionId])
   @@index([optionId])
   @@map("cart_item_options")
 }
@@ -235,22 +312,28 @@ model Order {
   cardLast4     String?           @db.Char(4)
 
   // --- pricing (OrderPricing) ------------------------------------------------
-  currency      String  @db.Char(3)
-  subtotal      Decimal @db.Decimal(14, 2)
-  deliveryFee   Decimal @default(0) @db.Decimal(14, 2)
-  discount      Decimal @default(0) @db.Decimal(14, 2)
-  couponCode    String? @db.VarChar(40)
-  couponId      String? @db.VarChar(40)
-  tax           Decimal @default(0) @db.Decimal(14, 2)
-  taxLabel      String  @default("VAT") @db.VarChar(40)
-  taxRate       Decimal @default(0) @db.Decimal(6, 4)
-  tip           Decimal @default(0) @db.Decimal(14, 2)
-  serviceCharge Decimal @default(0) @db.Decimal(14, 2)
-  packagingFee  Decimal @default(0) @db.Decimal(14, 2)
-  total         Decimal @db.Decimal(14, 2)
+  currency       String  @db.Char(3)
+  subtotal       Decimal @db.Decimal(14, 2)
+  deliveryFee    Decimal @default(0) @db.Decimal(14, 2)
+  discount       Decimal @default(0) @db.Decimal(14, 2)
+  couponCode     String? @db.VarChar(40)
+  couponId       String? @db.VarChar(40)
+  tax            Decimal @default(0) @db.Decimal(14, 2)
+  taxLabel       String  @default("VAT") @db.VarChar(40)
+  taxRate        Decimal @default(0) @db.Decimal(6, 4)
+  tip            Decimal @default(0) @db.Decimal(14, 2)
+  serviceCharge  Decimal @default(0) @db.Decimal(14, 2)
+  packagingFee   Decimal @default(0) @db.Decimal(14, 2)
+  total          Decimal @db.Decimal(14, 2)
   /// Platform commission on this order — settlement input, not shown to the
-  /// customer.
-  commission    Decimal @default(0) @db.Decimal(14, 2)
+  /// customer. The itemised breakdown is `OrderCommission`; this column is the
+  /// single figure the order carries so a receipt needs no join.
+  commission     Decimal @default(0) @db.Decimal(14, 2)
+  /// The rate agreed with the vendor when this order was PLACED, 0-1.
+  /// Snapshotted rather than read from `Vendor.commissionRate` at completion:
+  /// the rate that applied is a property of the order, and a later
+  /// renegotiation must not silently restate last week's books.
+  commissionRate Decimal @default(0) @db.Decimal(6, 4)
 
   status              OrderStatusKind @default(PLACED)
   placedAt            DateTime        @db.Timestamptz(3)
@@ -275,10 +358,28 @@ model Order {
   otpHash         String                 @db.Char(64)
   otpAttempts     Int                    @default(0) @db.SmallInt
   otpVerifiedAt   DateTime?              @db.Timestamptz(3)
-  refundStatus    RefundStatusKind       @default(NONE)
-  refundAmount    Decimal                @default(0) @db.Decimal(14, 2)
+
+  /// Wrong courier codes typed at the counter. The restaurant is locked out of
+  /// the handover after HANDOVER_MAX_ATTEMPTS, exactly as the rider is locked
+  /// out of the doorstep — the same rule on the other side of the bag.
+  handoverAttempts   Int                 @default(0) @db.SmallInt
+  /// When the food actually changed hands, verified. Null until it has.
+  handoverVerifiedAt DateTime?           @db.Timestamptz(3)
+  /// Which checks were confirmed. Empty until the handover happens — recorded
+  /// rather than merely required, because a checklist nobody can look up
+  /// afterwards is a decoration.
+  handoverChecks     HandoverCheckKind[] @default([])
+
+  refundStatus    RefundStatusKind  @default(NONE)
+  refundAmount    Decimal           @default(0) @db.Decimal(14, 2)
+  /// Resolved from the tender when the refund opens; null while none exists.
+  refundMethod    RefundMethodKind?
+  /// When it was approved or rejected; null while nobody has decided.
+  refundDecidedAt DateTime?         @db.Timestamptz(3)
+  /// When the money actually reached the customer; null until it has.
+  refundSettledAt DateTime?         @db.Timestamptz(3)
   /// Customer's 1–5 rating of the completed order; null until they rate.
-  rating          Int?                   @db.SmallInt
+  rating          Int?              @db.SmallInt
 
   /// Denormalised for the kitchen board and dispatch filters.
   itemCount   Int       @default(0) @db.SmallInt
@@ -288,6 +389,14 @@ model Order {
   deliveredAt DateTime? @db.Timestamptz(3)
   completedAt DateTime? @db.Timestamptz(3)
   cancelledAt DateTime? @db.Timestamptz(3)
+
+  /// When the `completed` transition stamped this order's books. Its presence
+  /// IS the idempotency guard: a replayed completion finds it already set and
+  /// leaves the commission, the rider earning and the settlement line alone.
+  settledAt     DateTime? @db.Timestamptz(3)
+  /// The settlement period the vendor is paid in, e.g. "2026-W34". The join key
+  /// between an order and the payout that eventually covers it.
+  settlementRef String?   @db.VarChar(24)
 
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)
@@ -313,6 +422,11 @@ model Order {
   walletTxns        WalletTransaction[] @relation("WalletTxnOrder")
   ledgerEntries     LedgerEntry[]       @relation("LedgerOrder")
   notifications     Notification[]      @relation("NotificationOrder")
+  commissionRecord  OrderCommission?    @relation("CommissionOrder")
+  riderEarning      OrderRiderEarning?  @relation("RiderEarningOrder")
+  payoutLines       PayoutOrder[]       @relation("PayoutOrderOrder")
+  supportTickets    SupportTicket[]     @relation("SupportTicketOrder")
+  threads           OrderThread[]       @relation("OrderThreadOrder")
 
   /// The workhorse index: the merchant board, the customer's history and the
   /// admin ops list are all (scope, status, recency).
@@ -323,6 +437,13 @@ model Order {
   @@index([riderId, status])
   @@index([paymentStatus, placedAt(sort: Desc)])
   @@index([scheduledFor])
+  /// Checkout enforces both coupon limits by counting orders, and Postgres does
+  /// not index a foreign key for you. Composite rather than on `couponId`
+  /// alone: both counts filter on `status`, and it is the same index the
+  /// promotions unit wants for campaign performance. DSC-2 closed.
+  @@index([couponId, status])
+  /// The settlement read: every completed order in one vendor's period.
+  @@index([settlementRef, vendorId])
   @@index([deletedAt])
   @@map("orders")
 }
@@ -374,24 +495,30 @@ model OrderItemOption {
 /// The append-only lifecycle log. This is the only honest source for the
 /// timeline: a status alone cannot say who set it, when, or why.
 model OrderEvent {
-  id      String          @id @db.VarChar(40)
-  orderId String          @db.VarChar(40)
+  id         String                @id @db.VarChar(40)
+  orderId    String                @db.VarChar(40)
   /// The status the order moved *into*.
-  status  OrderStatusKind
-  at      DateTime        @default(now()) @db.Timestamptz(3)
-  actor   OrderActorKind
+  status     OrderStatusKind
+  at         DateTime              @default(now()) @db.Timestamptz(3)
+  actor      OrderActorKind
   /// Account behind `actor`, when there was one (null for `system`).
-  actorId String?         @db.VarChar(40)
+  actorId    String?               @db.VarChar(40)
   /// Free-text detail shown under the timeline entry.
-  note    String?         @db.VarChar(500)
+  note       String?               @db.VarChar(500)
+  /// The tag of `meta`, as a column — see `OrderEventDetailKind`. Null for a
+  /// plain transition that carries no payload.
+  detailKind OrderEventDetailKind?
   /// Structured payload for events that carry more than a note (delay
-  /// minutes, the rejected rider id, the failed OTP attempt).
-  meta    Json?
+  /// minutes, the rejected rider id, the failed OTP attempt). Its shape is
+  /// decided by `detailKind`, and `types/order.ts::OrderEventDetail` is the
+  /// discriminated union both sides read it as.
+  meta       Json?
 
   order Order @relation("OrderEvents", fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId, at])
   @@index([status, at(sort: Desc)])
+  @@index([detailKind, at(sort: Desc)])
   @@map("order_events")
 }
 

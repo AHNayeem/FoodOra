@@ -1,5 +1,33 @@
 # Backend — Phase D (design) and Phase E (implementation)
 
+> [!IMPORTANT]
+> **Historical record — do not plan new work from this directory.**
+>
+> Every document below designs a **NestJS + GraphQL + Redis + Docker** backend
+> that has since been removed (`backend/` is empty; `backend OLD/` holds it).
+> The replacement is **Fastify + JavaScript**, with no GraphQL, no Redis and no
+> Docker.
+>
+> The current authorities are:
+>
+> | For | Read |
+> | --- | --- |
+> | The data model | [`docs/FOODORA-DATABASE-DESIGN.md`](../FOODORA-DATABASE-DESIGN.md) |
+> | What the backend must do | [`docs/FOODORA-BACKEND-REQUIREMENTS.md`](../FOODORA-BACKEND-REQUIREMENTS.md) |
+> | Module status | [`docs/FOODORA-MODULE-CHECKLIST.md`](../FOODORA-MODULE-CHECKLIST.md) |
+> | Product / frontend state | [`Analysis.md`](../../Analysis.md) |
+>
+> These documents remain because the *reasoning* in them — D2 on normalisation
+> and money, D3's ER diagrams, D7 on the ledger and settlement — is what the
+> schema is built from and is still correct about the database. The stack
+> decisions, the module layout, the GraphQL contracts and the deployment
+> chapter are not.
+>
+> Two counts here are also stale: the schema is now **184 models and 127
+> enums** across 18 files, and "Nothing in V1 has been run against a database"
+> is no longer true — see
+> [DATABASE-DESIGN §9](../FOODORA-DATABASE-DESIGN.md#9-verification).
+
 Design for the production backend that will gradually replace the Phase C mock
 layer, and the implementation as it lands. **No frontend code has been modified.**
 

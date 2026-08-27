@@ -57,14 +57,61 @@ enum WeekdayKind {
   @@map("weekday_kind")
 }
 
+/// A storefront's operational state — what discovery filters on.
+///
+/// A DENORMALISED PROJECTION of `VendorApplication.status`, maintained in the
+/// same transaction as the review decision (see onboarding.prisma for why the
+/// column exists at all rather than the join). The mapping is one-to-one except
+/// at both ends:
+///
+///   application APPROVED  -> ACTIVE
+///   PAUSED                -> not a review outcome. The merchant's own
+///                            open/closed switch, which the review service never
+///                            writes and a reviewer never sees.
+///
+/// REJECTED is here so a refused application's storefront — if one was ever
+/// minted — cannot be left looking merely PENDING.
 enum VendorStatus {
   DRAFT     @map("draft")
   PENDING   @map("pending")
   ACTIVE    @map("active")
   PAUSED    @map("paused")
+  REJECTED  @map("rejected")
   SUSPENDED @map("suspended")
 
   @@map("vendor_status")
+}
+
+/// What somebody does at one restaurant (`types/staff.ts::StaffRole`).
+///
+/// Restaurant-scoped, and deliberately not `UserRoleSlug`: that answers "what
+/// kind of account is this on the platform" and this answers "what does this
+/// person do at this restaurant". A cashier at one branch is not a platform
+/// role, and folding the two vocabularies would mean every new job title needed
+/// a change to the account model.
+enum StaffRoleKind {
+  /// The account the restaurant belongs to. Exactly one at all times.
+  OWNER   @map("owner")
+  MANAGER @map("manager")
+  KITCHEN @map("kitchen")
+  CASHIER @map("cashier")
+  SUPPORT @map("support")
+
+  @@map("staff_role_kind")
+}
+
+/// Where an invitation got to.
+///
+/// INVITED is separate from ACTIVE because they are different facts: somebody
+/// asked has not yet agreed, and a rota that showed them as staff would
+/// overstate who is actually working. This is why `VendorStaff.userId` is
+/// nullable — an invitation is a record, not a login that exists.
+enum StaffStatusKind {
+  INVITED  @map("invited")
+  ACTIVE   @map("active")
+  INACTIVE @map("inactive")
+
+  @@map("staff_status_kind")
 }
 
 model Cuisine {
@@ -172,36 +219,40 @@ model Vendor {
   updatedBy String?   @db.VarChar(40)
   version   Int       @default(0)
 
-  owner    User?           @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  branches VendorBranch[]  @relation("VendorBranches")
-  cuisines VendorCuisine[] @relation("VendorCuisines")
-  dietary  VendorDietary[] @relation("VendorDietaryTags")
-  staff    VendorStaff[]   @relation("VendorStaffVendor")
+  owner       User?              @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  application VendorApplication? @relation("VendorApplicationVendor")
+  branches    VendorBranch[]     @relation("VendorBranches")
+  cuisines    VendorCuisine[]    @relation("VendorCuisines")
+  dietary     VendorDietary[]    @relation("VendorDietaryTags")
+  staff       VendorStaff[]      @relation("VendorStaffVendor")
 
-  menus            Menu[]               @relation("VendorMenus")
-  menuSections     MenuSection[]        @relation("VendorMenuSections")
-  foods            FoodItem[]           @relation("VendorFoods")
-  inventoryItems   InventoryItem[]      @relation("VendorInventory")
-  tables           RestaurantTable[]    @relation("VendorTables")
-  qrConfig         QrMenuConfig?        @relation("VendorQrConfig")
-  posShifts        PosShift[]           @relation("VendorPosShifts")
-  posSales         PosSale[]            @relation("VendorPosSales")
-  heldTickets      PosHeldTicket[]      @relation("VendorHeldTickets")
-  bookingPolicy    BookingPolicy?       @relation("VendorBookingPolicy")
-  reservations     Reservation[]        @relation("VendorReservations")
-  carts            Cart[]               @relation("CartVendor")
-  orders           Order[]              @relation("OrderVendor")
-  offers           OfferVendor[]        @relation("VendorOffers")
-  coupons          Coupon[]             @relation("CouponIssuer")
-  couponScopes     CouponVendor[]       @relation("VendorCoupons")
-  reviews          Review[]             @relation("ReviewVendor")
-  ratingAggregates RatingAggregate[]    @relation("AggregateVendor")
-  mealPlans        MealPlan[]           @relation("VendorMealPlans")
-  taxRules         TaxRule[]            @relation("VendorTaxRules")
-  payoutAccounts   PayoutAccount[]      @relation("PayoutAccountVendor")
-  payouts          Payout[]             @relation("PayoutVendor")
-  memberships      VendorMembership[]   @relation("MembershipVendor")
-  roleAssignments  UserRoleAssignment[] @relation("VendorRoleAssignments")
+  menus            Menu[]                 @relation("VendorMenus")
+  menuSections     MenuSection[]          @relation("VendorMenuSections")
+  foods            FoodItem[]             @relation("VendorFoods")
+  inventoryItems   InventoryItem[]        @relation("VendorInventory")
+  tables           RestaurantTable[]      @relation("VendorTables")
+  qrConfig         QrMenuConfig?          @relation("VendorQrConfig")
+  posShifts        PosShift[]             @relation("VendorPosShifts")
+  posSales         PosSale[]              @relation("VendorPosSales")
+  heldTickets      PosHeldTicket[]        @relation("VendorHeldTickets")
+  bookingPolicy    BookingPolicy?         @relation("VendorBookingPolicy")
+  reservations     Reservation[]          @relation("VendorReservations")
+  carts            Cart[]                 @relation("CartVendor")
+  orders           Order[]                @relation("OrderVendor")
+  offers           OfferVendor[]          @relation("VendorOffers")
+  coupons          Coupon[]               @relation("CouponIssuer")
+  couponScopes     CouponVendor[]         @relation("VendorCoupons")
+  reviews          Review[]               @relation("ReviewVendor")
+  ratingAggregates RatingAggregate[]      @relation("AggregateVendor")
+  mealPlans        MealPlan[]             @relation("VendorMealPlans")
+  taxRules         TaxRule[]              @relation("VendorTaxRules")
+  payoutAccounts   PayoutAccount[]        @relation("PayoutAccountVendor")
+  payouts          Payout[]               @relation("PayoutVendor")
+  memberships      VendorMembership[]     @relation("MembershipVendor")
+  roleAssignments  UserRoleAssignment[]   @relation("VendorRoleAssignments")
+  commissions      OrderCommission[]      @relation("CommissionVendor")
+  adjustments      SettlementAdjustment[] @relation("AdjustmentVendor")
+  supportTickets   SupportTicket[]        @relation("SupportTicketVendor")
 
   @@index([type, status, deletedAt])
   @@index([isFeatured, deletedAt])
@@ -265,14 +316,15 @@ model VendorBranch {
   updatedBy String?   @db.VarChar(40)
   version   Int       @default(0)
 
-  vendor    Vendor          @relation("VendorBranches", fields: [vendorId], references: [id], onDelete: Cascade)
-  country   Country         @relation("BranchCountry", fields: [countryCode], references: [code], onDelete: Restrict)
-  zone      DeliveryZone?   @relation("ZoneBranches", fields: [zoneId], references: [id], onDelete: SetNull)
-  hours     BranchHour[]    @relation("BranchHours")
-  closures  BranchClosure[] @relation("BranchClosures")
-  amenities BranchAmenity[] @relation("BranchAmenities")
-  orders    Order[]         @relation("OrderBranch")
-  carts     Cart[]          @relation("CartBranch")
+  vendor          Vendor                   @relation("VendorBranches", fields: [vendorId], references: [id], onDelete: Cascade)
+  fromApplication VendorApplicationBranch? @relation("BranchFromApplication")
+  country         Country                  @relation("BranchCountry", fields: [countryCode], references: [code], onDelete: Restrict)
+  zone            DeliveryZone?            @relation("ZoneBranches", fields: [zoneId], references: [id], onDelete: SetNull)
+  hours           BranchHour[]             @relation("BranchHours")
+  closures        BranchClosure[]          @relation("BranchClosures")
+  amenities       BranchAmenity[]          @relation("BranchAmenities")
+  orders          Order[]                  @relation("OrderBranch")
+  carts           Cart[]                   @relation("CartBranch")
 
   @@unique([vendorId, slug])
   @@index([city, countryCode, deletedAt])
@@ -344,30 +396,83 @@ model VendorDietary {
   @@map("vendor_dietary")
 }
 
-/// A staff member on a merchant account (spec: Staff Management). The role is
-/// held in `UserRoleAssignment` scoped to the vendor; this row adds the
-/// employment facts the dashboard shows.
+/// A staff member on a merchant account (`types/staff.ts::StaffMember`).
+///
+/// THREE DECISIONS, each following the frontend's:
+///
+///  - **A staff member is a record, not an account.** `userId` is NULLABLE: an
+///    invitation is a row that says "this person has been asked", not a login
+///    that exists. Minting a `User` for every invitation would put accounts in
+///    the system nobody can authenticate as, which is worse than an honest
+///    INVITED row. `invitedName` / `invitedEmail` carry who was asked until the
+///    account appears.
+///  - **A role grants permissions; a member carries only the difference.**
+///    `role` names the job and its grant table is policy; what this row's
+///    `permissions` hold is the DELTA — see `VendorStaffPermission`. So "what
+///    may a manager do" has one answer and changing it changes every manager.
+///  - **`status`, not `isActive`.** A boolean cannot express INVITED, and a
+///    boolean beside a status would be two ways to say one thing.
 model VendorStaff {
-  id       String  @id @db.VarChar(40)
-  vendorId String  @db.VarChar(40)
-  userId   String  @db.VarChar(40)
+  id           String          @id @db.VarChar(40)
+  vendorId     String          @db.VarChar(40)
+  /// The account, once there is one. Null for an outstanding invitation.
+  userId       String?         @db.VarChar(40)
   /// Branch the person works at; null = all branches.
-  branchId String? @db.VarChar(40)
-  jobTitle String  @default("") @db.VarChar(80)
+  branchId     String?         @db.VarChar(40)
+  role         StaffRoleKind   @default(MANAGER)
+  status       StaffStatusKind @default(INVITED)
+  jobTitle     String          @default("") @db.VarChar(80)
+  /// Who was asked. Kept after acceptance too, so the invitation is auditable.
+  invitedName  String          @default("") @db.VarChar(120)
+  invitedEmail String          @default("") @db.VarChar(191)
+  invitedAt    DateTime?       @db.Timestamptz(3)
+  invitedById  String?         @db.VarChar(40)
+  acceptedAt   DateTime?       @db.Timestamptz(3)
   /// POS sign-in PIN (hashed) for the shared counter terminal.
-  pinHash  String? @db.Char(64)
-  isActive Boolean @default(true)
+  pinHash      String?         @db.Char(64)
 
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
 
-  vendor Vendor @relation("VendorStaffVendor", fields: [vendorId], references: [id], onDelete: Cascade)
-  user   User   @relation("VendorStaffUser", fields: [userId], references: [id], onDelete: Cascade)
+  vendor      Vendor                  @relation("VendorStaffVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  user        User?                   @relation("VendorStaffUser", fields: [userId], references: [id], onDelete: Cascade)
+  permissions VendorStaffPermission[] @relation("StaffPermissions")
 
+  /// Only guards the linked-account case — Postgres treats NULLs as distinct, so
+  /// the migration adds a partial unique index on (vendorId, invitedEmail) for
+  /// the outstanding-invitation case, and one that keeps a vendor to a single
+  /// OWNER.
   @@unique([vendorId, userId])
   @@index([userId])
+  @@index([vendorId, status])
   @@map("vendor_staff")
+}
+
+/// One permission a staff member holds or is denied BEYOND what their role
+/// grants. The delta, never a copy of the role's grants.
+///
+/// The same shape as `UserPermission` — and the reason it is not that table is
+/// that an INVITED member has no `userId` for it to hang off. On acceptance the
+/// rows are copied into `UserPermission` scoped to the vendor, which is what
+/// makes the permission editor record intent that later becomes enforcement.
+model VendorStaffPermission {
+  staffId      String  @db.VarChar(40)
+  permissionId String  @db.VarChar(40)
+  /// true = granted beyond the role, false = revoked from it. A revoke always
+  /// beats a grant, as in `UserPermission`.
+  effect       Boolean @default(true)
+
+  grantedAt DateTime @default(now()) @db.Timestamptz(3)
+  grantedBy String?  @db.VarChar(40)
+
+  staff      VendorStaff @relation("StaffPermissions", fields: [staffId], references: [id], onDelete: Cascade)
+  permission Permission  @relation("StaffPermissionRef", fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([staffId, permissionId])
+  @@index([permissionId])
+  @@map("vendor_staff_permissions")
 }
 
 /// Smart-search facets from the spec (WiFi, Rooftop, Parking, Live Music,

@@ -36,44 +36,69 @@ model DeliveryZone {
   boundary    Json?
 
   /// Flat amount a rider earns for accepting a trip.
-  baseFare        Decimal @db.Decimal(14, 2)
+  baseFare         Decimal @db.Decimal(14, 2)
   /// Earned per kilometre of the whole route.
-  perKm           Decimal @db.Decimal(14, 2)
+  perKm            Decimal @db.Decimal(14, 2)
   /// Multiplier applied to (base + distance) during peak hours.
-  peakMultiplier  Decimal @default(1) @db.Decimal(6, 4)
+  peakMultiplier   Decimal @default(1) @db.Decimal(6, 4)
   /// Local hours (0–23) that count as peak.
-  peakHours       Int[]   @default([])
+  peakHours        Int[]   @default([])
   /// Extra paid per additional order batched into one trip.
-  batchBonus      Decimal @default(0) @db.Decimal(14, 2)
+  batchBonus       Decimal @default(0) @db.Decimal(14, 2)
   /// Cash a rider may hold before a remittance is required.
-  cashLimit       Decimal @db.Decimal(14, 2)
+  cashLimit        Decimal @db.Decimal(14, 2)
   /// Minimum a rider withdrawal must reach.
-  minWithdrawal   Decimal @default(0) @db.Decimal(14, 2)
+  minWithdrawal    Decimal @default(0) @db.Decimal(14, 2)
   /// Customer-facing delivery charge basis for branches in this zone.
-  customerBaseFee Decimal @default(0) @db.Decimal(14, 2)
-  customerPerKm   Decimal @default(0) @db.Decimal(14, 2)
-  isActive        Boolean @default(true)
+  customerBaseFee  Decimal @default(0) @db.Decimal(14, 2)
+  customerPerKm    Decimal @default(0) @db.Decimal(14, 2)
+  /// How far from the zone centre a restaurant may be and still deliver INTO
+  /// this zone, km. Data, like the fares above, and for the same reason: a
+  /// sprawling suburban zone can be served from further away than a dense one,
+  /// and "does this restaurant deliver to me" must not be a branch in a
+  /// component. A restaurant inside the zone always serves it — this is the
+  /// cross-zone allowance, and it is distinct from
+  /// `VendorBranch.deliveryRadiusKm`, which is one branch's own limit.
+  deliveryRadiusKm Decimal @default(8) @db.Decimal(6, 2)
+  isActive         Boolean @default(true)
 
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt DateTime? @db.Timestamptz(3)
   version   Int       @default(0)
 
-  country  Country        @relation("ZoneCountry", fields: [countryCode], references: [code], onDelete: Restrict)
-  areas    ZoneArea[]     @relation("ZoneAreas")
-  riders   Rider[]        @relation("RiderZone")
-  jobs     DeliveryJob[]  @relation("JobZone")
-  branches VendorBranch[] @relation("ZoneBranches")
+  country      Country            @relation("ZoneCountry", fields: [countryCode], references: [code], onDelete: Restrict)
+  areas        ZoneArea[]         @relation("ZoneAreas")
+  riders       Rider[]            @relation("RiderZone")
+  jobs         DeliveryJob[]      @relation("JobZone")
+  branches     VendorBranch[]     @relation("ZoneBranches")
+  applications RiderApplication[] @relation("RiderApplicationZone")
 
   @@index([countryCode, city, isActive])
   @@map("delivery_zones")
 }
 
-/// An area label the zone covers — what a dropoff address is matched against.
+/// An area label the zone covers — what a dropoff address is matched against,
+/// and where that area actually is.
+///
+/// The coordinates are the reason this is more than a label. A saved `Address`
+/// may have no `lat`/`lng` (the customer typed it and nobody geocoded it), but
+/// `DeliveryStop.lat`/`lng` are NOT NULL because a rider cannot ride to a
+/// string. The area centroid is the honest answer in between: it is the *area's*
+/// centre rather than the doorstep, and it means one neighbourhood has ONE
+/// position — so a real delivery and a synthesised one beside it are paid the
+/// same distance instead of two.
+///
+/// Nullable, because a zone may cover an area nobody has placed yet; dispatch
+/// falls back to `DeliveryZone.lat`/`lng` when they are absent.
 model ZoneArea {
-  zoneId String @db.VarChar(40)
+  zoneId String   @db.VarChar(40)
   /// Lower-cased, unaccented at write time.
-  area   String @db.VarChar(120)
+  area   String   @db.VarChar(120)
+  /// Display form, as a customer would recognise it ("Gulshan 1").
+  label  String   @default("") @db.VarChar(120)
+  lat    Decimal? @db.Decimal(10, 7)
+  lng    Decimal? @db.Decimal(10, 7)
 
   zone DeliveryZone @relation("ZoneAreas", fields: [zoneId], references: [id], onDelete: Cascade)
 
@@ -82,9 +107,20 @@ model ZoneArea {
   @@map("zone_areas")
 }
 
+/// A rider's operational state — what dispatch checks before handing out work.
+///
+/// A DENORMALISED PROJECTION of `RiderApplication.status`, maintained in the
+/// same transaction as the review decision, exactly as `Vendor.status` is. The
+/// mapping is one-to-one, with application APPROVED -> ACTIVE; the rider's
+/// INACTIVE (approved but not currently working) is the one state the merchant
+/// side expresses through a storefront switch instead.
+///
+/// Only ACTIVE riders take part in normal dispatch.
 enum RiderStatus {
+  DRAFT     @map("draft")
   PENDING   @map("pending")
   ACTIVE    @map("active")
+  REJECTED  @map("rejected")
   SUSPENDED @map("suspended")
   INACTIVE  @map("inactive")
 
@@ -129,22 +165,26 @@ model Rider {
   deletedAt DateTime? @db.Timestamptz(3)
   version   Int       @default(0)
 
-  user User?        @relation("RiderUser", fields: [userId], references: [id], onDelete: SetNull)
-  zone DeliveryZone @relation("RiderZone", fields: [zoneId], references: [id], onDelete: Restrict)
+  user        User?             @relation("RiderUser", fields: [userId], references: [id], onDelete: SetNull)
+  zone        DeliveryZone      @relation("RiderZone", fields: [zoneId], references: [id], onDelete: Restrict)
+  application RiderApplication? @relation("RiderApplicationRider")
 
-  documents      RiderDocument[]     @relation("RiderDocuments")
-  shifts         RiderShift[]        @relation("RiderShifts")
-  jobs           DeliveryJob[]       @relation("JobRider")
-  jobOffers      JobOffer[]          @relation("OfferRider")
-  orders         Order[]             @relation("OrderRider")
-  orderDeclines  OrderRiderDecline[] @relation("RiderDeclines")
-  pings          RiderLocationPing[] @relation("PingRider")
-  ledger         RiderLedgerEntry[]  @relation("RiderLedger")
-  remittances    RiderRemittance[]   @relation("RiderRemittances")
-  withdrawals    RiderWithdrawal[]   @relation("RiderWithdrawals")
-  reviews        Review[]            @relation("ReviewRider")
-  payoutAccounts PayoutAccount[]     @relation("PayoutAccountRider")
-  payouts        Payout[]            @relation("PayoutRider")
+  documents      RiderDocument[]        @relation("RiderDocuments")
+  shifts         RiderShift[]           @relation("RiderShifts")
+  jobs           DeliveryJob[]          @relation("JobRider")
+  jobOffers      JobOffer[]             @relation("OfferRider")
+  orders         Order[]                @relation("OrderRider")
+  orderDeclines  OrderRiderDecline[]    @relation("RiderDeclines")
+  pings          RiderLocationPing[]    @relation("PingRider")
+  ledger         RiderLedgerEntry[]     @relation("RiderLedger")
+  remittances    RiderRemittance[]      @relation("RiderRemittances")
+  withdrawals    RiderWithdrawal[]      @relation("RiderWithdrawals")
+  reviews        Review[]               @relation("ReviewRider")
+  payoutAccounts PayoutAccount[]        @relation("PayoutAccountRider")
+  payouts        Payout[]               @relation("PayoutRider")
+  orderEarnings  OrderRiderEarning[]    @relation("RiderEarningRider")
+  adjustments    SettlementAdjustment[] @relation("AdjustmentRider")
+  orderThreads   OrderThread[]          @relation("OrderThreadRider")
 
   @@index([zoneId, status, isOnShift])
   @@index([userId])
@@ -270,11 +310,12 @@ model DeliveryJob {
   rider Rider?       @relation("JobRider", fields: [riderId], references: [id], onDelete: SetNull)
   zone  DeliveryZone @relation("JobZone", fields: [zoneId], references: [id], onDelete: Restrict)
 
-  orders DeliveryJobOrder[]  @relation("JobOrders")
-  stops  DeliveryStop[]      @relation("JobStops")
-  offers JobOffer[]          @relation("OfferJob")
-  pings  RiderLocationPing[] @relation("PingJob")
-  ledger RiderLedgerEntry[]  @relation("LedgerJob")
+  orders        DeliveryJobOrder[]  @relation("JobOrders")
+  stops         DeliveryStop[]      @relation("JobStops")
+  offers        JobOffer[]          @relation("OfferJob")
+  pings         RiderLocationPing[] @relation("PingJob")
+  ledger        RiderLedgerEntry[]  @relation("LedgerJob")
+  orderEarnings OrderRiderEarning[] @relation("RiderEarningJob")
 
   @@index([riderId, status, offeredAt(sort: Desc)])
   @@index([zoneId, status, expiresAt])

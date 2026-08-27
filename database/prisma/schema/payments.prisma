@@ -499,29 +499,54 @@ enum PayoutStatus {
 }
 
 /// A settlement run for one vendor (or rider) over one period.
+///
+/// A payout is an EVENT — it happened at an instant, a named account ran it, and
+/// it has a reference somebody can quote on the phone. `types/finance.ts` draws
+/// the same line: `OrderCommission` is stored and `VendorSettlement` is derived,
+/// and this row is what a derived settlement projects its `status` / `paidAt`
+/// from.
+///
+/// The frontend's `SettlementStatus` has two members this enum does not — `open`
+/// (the period is still running) and `pending` (closed and owed). Both are
+/// states of a period with NO payout row yet, so storing them would mean minting
+/// a payout for money nobody has agreed to move. They stay derived.
 model Payout {
-  id              String       @id @db.VarChar(40)
-  reference       String       @unique @db.VarChar(32)
-  vendorId        String?      @db.VarChar(40)
-  riderId         String?      @db.VarChar(40)
-  accountId       String?      @db.VarChar(40)
-  providerId      String?      @db.VarChar(40)
-  status          PayoutStatus @default(SCHEDULED)
-  currency        String       @db.Char(3)
+  id              String             @id @db.VarChar(40)
+  reference       String             @unique @db.VarChar(32)
+  vendorId        String?            @db.VarChar(40)
+  riderId         String?            @db.VarChar(40)
+  accountId       String?            @db.VarChar(40)
+  providerId      String?            @db.VarChar(40)
+  status          PayoutStatus       @default(SCHEDULED)
+  currency        String             @db.Char(3)
   /// Gross sales in the window.
-  grossAmount     Decimal      @db.Decimal(16, 2)
-  commission      Decimal      @default(0) @db.Decimal(16, 2)
+  grossAmount     Decimal            @db.Decimal(16, 2)
+  commission      Decimal            @default(0) @db.Decimal(16, 2)
   /// Refunds and chargebacks clawed back.
-  deductions      Decimal      @default(0) @db.Decimal(16, 2)
+  deductions      Decimal            @default(0) @db.Decimal(16, 2)
+  /// Signed sum of the `SettlementAdjustment` rows this run picked up. Distinct
+  /// from `deductions`: that is money the platform took back automatically, this
+  /// is a correction a human decided on.
+  adjustments     Decimal            @default(0) @db.Decimal(16, 2)
   /// Cash the rider/vendor already collected on our behalf.
-  cashOffset      Decimal      @default(0) @db.Decimal(16, 2)
-  netAmount       Decimal      @db.Decimal(16, 2)
-  periodStart     DateTime     @db.Timestamptz(3)
-  periodEnd       DateTime     @db.Timestamptz(3)
-  paidAt          DateTime?    @db.Timestamptz(3)
-  providerRef     String?      @db.VarChar(191)
-  failureCode     String?      @db.VarChar(60)
-  statementFileId String?      @db.VarChar(40)
+  cashOffset      Decimal            @default(0) @db.Decimal(16, 2)
+  netAmount       Decimal            @db.Decimal(16, 2)
+  /// The period being paid, e.g. "2026-W34" — the same string
+  /// `Order.settlementRef` carries, which is what makes an order traceable to
+  /// the payout that covered it without a date-range guess.
+  periodRef       String             @db.VarChar(24)
+  periodStart     DateTime           @db.Timestamptz(3)
+  periodEnd       DateTime           @db.Timestamptz(3)
+  paidAt          DateTime?          @db.Timestamptz(3)
+  /// How it went out. Snapshotted from the account rather than read through it,
+  /// because `accountId` is `SetNull` and a paid payout must still be able to
+  /// say how the money left.
+  method          PayoutAccountKind?
+  /// The operator account that ran it.
+  paidById        String?            @db.VarChar(40)
+  providerRef     String?            @db.VarChar(191)
+  failureCode     String?            @db.VarChar(60)
+  statementFileId String?            @db.VarChar(40)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -532,9 +557,16 @@ model Payout {
   account  PayoutAccount?   @relation("PayoutAccount", fields: [accountId], references: [id], onDelete: SetNull)
   provider PaymentProvider? @relation("PayoutProvider", fields: [providerId], references: [id], onDelete: SetNull)
 
+  orders          PayoutOrder[]          @relation("PayoutOrderPayout")
+  adjustmentLines SettlementAdjustment[] @relation("AdjustmentPayout")
+
+  /// A period can be PAID at most once per payee — enforced by two partial
+  /// unique indexes in the migration, which also leave a FAILED run free to be
+  /// retried as a second row. Prisma cannot express `WHERE status = 'paid'`.
   @@index([vendorId, periodEnd(sort: Desc)])
   @@index([riderId, periodEnd(sort: Desc)])
   @@index([status, periodEnd])
+  @@index([periodRef])
   @@map("payouts")
 }
 
@@ -637,4 +669,209 @@ model VendorMembership {
   @@index([vendorId, status])
   @@index([currentPeriodEnd])
   @@map("vendor_memberships")
+}
+
+// ---------------------------------------------------------------------------
+// Order-level books — `types/finance.ts`
+//
+// The division `types/finance.ts` draws, kept structurally:
+//
+//   STORED    OrderCommission, OrderRiderEarning. Stamped onto the order by the
+//             `completed` transition and never recomputed, because the rate that
+//             applied is the rate that applied — a vendor renegotiating tomorrow
+//             must not silently restate last week's books.
+//   DERIVED   VendorSettlement, RiderSettlement, PlatformFinancials. Aggregates
+//             over the stored rows for a period, computed on demand. Deriving
+//             them is what makes the restaurant's earnings page, the admin's
+//             payout run and platform analytics agree by construction rather
+//             than by three services doing similar sums.
+//
+// Both stored tables are keyed on `orderId` — one commission and one rider
+// earning per order, by the primary key, which is the idempotency guard the
+// completion transition relies on. Neither carries `deletedAt` or `version`:
+// they are immutable financial records (main.prisma §3), and a correction is a
+// `SettlementAdjustment`, never an edit.
+// ---------------------------------------------------------------------------
+
+/// What has become of a commission charge.
+///
+/// The member that matters is REVERSED: a refunded order must not keep earning
+/// the platform its cut, and the honest way to say so is a state on the charge
+/// rather than a deletion of it. The row stays, so a statement can show the
+/// charge and its reversal instead of a gap where a number used to be.
+enum CommissionStatus {
+  /// Stamped at completion. The vendor owes it.
+  CHARGED  @map("charged")
+  /// Clawed back — the order was refunded or returned.
+  REVERSED @map("reversed")
+
+  @@map("commission_status")
+}
+
+/// What the platform charged on one completed order.
+///
+/// The split follows the money as it actually moves: commission is charged on
+/// the food (subtotal less discount), the vendor keeps the rest of the food
+/// money, the delivery fee is the platform's, the tip is the rider's and the tax
+/// is the state's. Anything NOT charged commission is still recorded, so a
+/// statement never has to reach back into the order's pricing and re-derive it.
+model OrderCommission {
+  /// One per order, by the primary key.
+  orderId  String @id @db.VarChar(40)
+  vendorId String @db.VarChar(40)
+  currency String @db.Char(3)
+
+  /// Rate applied, 0-1. A copy of `Order.commissionRate`, held here so a
+  /// statement line is self-contained.
+  rate                 Decimal @db.Decimal(6, 4)
+  /// What the customer paid, in full — the order's gross value.
+  grossAmount          Decimal @db.Decimal(14, 2)
+  /// The part commission is charged on: subtotal less discount.
+  commissionableAmount Decimal @db.Decimal(14, 2)
+  /// The platform's cut of `commissionableAmount`.
+  commissionAmount     Decimal @db.Decimal(14, 2)
+  /// What the vendor is owed for the food: commissionable less commission.
+  vendorNetAmount      Decimal @db.Decimal(14, 2)
+  /// Total platform take: commission plus the delivery fee.
+  platformAmount       Decimal @db.Decimal(14, 2)
+  /// Delivery fee charged to the customer — the platform's, not the vendor's.
+  deliveryFee          Decimal @default(0) @db.Decimal(14, 2)
+  /// Consumption tax collected; remitted, never anybody's earnings.
+  tax                  Decimal @default(0) @db.Decimal(14, 2)
+  /// Courier tip collected; passes through to the rider.
+  tip                  Decimal @default(0) @db.Decimal(14, 2)
+
+  status         CommissionStatus @default(CHARGED)
+  /// The period the vendor is paid in, e.g. "2026-W34".
+  settlementRef  String           @db.VarChar(24)
+  settledAt      DateTime         @db.Timestamptz(3)
+  reversedAt     DateTime?        @db.Timestamptz(3)
+  reversalReason String?          @db.VarChar(240)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  order  Order  @relation("CommissionOrder", fields: [orderId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation("CommissionVendor", fields: [vendorId], references: [id], onDelete: Restrict)
+
+  /// The vendor statement: one vendor, one period.
+  @@index([vendorId, settlementRef])
+  @@index([settlementRef])
+  @@index([status, settledAt(sort: Desc)])
+  @@map("order_commissions")
+}
+
+/// What one completed order paid its rider.
+///
+/// Itemised with the same five components `DeliveryJob` uses for a synthesised
+/// trip, because a real order and an invented one beside it are paid by one
+/// formula rather than two — and because a courier querying their week asks
+/// *which part* is short.
+///
+/// `cashCollected` is deliberately separate from the payout: money taken at the
+/// door is a liability the rider owes the platform, never part of what they
+/// earned. What the platform actually transfers is fares less that float, which
+/// is why a rider's week is allowed to net negative.
+model OrderRiderEarning {
+  /// One per order, by the primary key.
+  orderId   String  @id @db.VarChar(40)
+  riderId   String  @db.VarChar(40)
+  /// Snapshotted so a statement survives a profile edit.
+  riderName String  @db.VarChar(120)
+  currency  String  @db.Char(3)
+  /// The trip this order was delivered on, when one was recorded.
+  jobId     String? @db.VarChar(40)
+
+  /// Route distance the pay was computed from, km.
+  distanceKm    Decimal @db.Decimal(8, 2)
+  baseFare      Decimal @default(0) @db.Decimal(14, 2)
+  distanceFee   Decimal @default(0) @db.Decimal(14, 2)
+  peakBonus     Decimal @default(0) @db.Decimal(14, 2)
+  batchBonus    Decimal @default(0) @db.Decimal(14, 2)
+  tip           Decimal @default(0) @db.Decimal(14, 2)
+  /// Sum of the five above — what the rider earned on this order.
+  payoutTotal   Decimal @db.Decimal(14, 2)
+  /// Doorstep cash taken on a cash order; 0 for prepaid.
+  cashCollected Decimal @default(0) @db.Decimal(14, 2)
+
+  settlementRef String   @db.VarChar(24)
+  settledAt     DateTime @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  order Order        @relation("RiderEarningOrder", fields: [orderId], references: [id], onDelete: Cascade)
+  rider Rider        @relation("RiderEarningRider", fields: [riderId], references: [id], onDelete: Restrict)
+  job   DeliveryJob? @relation("RiderEarningJob", fields: [jobId], references: [id], onDelete: SetNull)
+
+  /// The rider statement: one rider, one period.
+  @@index([riderId, settlementRef])
+  @@index([settlementRef])
+  @@index([jobId])
+  @@map("order_rider_earnings")
+}
+
+/// A manual correction to a settlement — a goodwill credit, a chargeback, a
+/// damaged-order deduction.
+///
+/// Signed: negative reduces what the payee is paid. Append-only, like
+/// `StockMovement` and for the same reason — a correction to a correction is a
+/// new row, so the trail of who decided what survives.
+///
+/// Exactly one of `vendorId` / `riderId` is set; the migration adds the CHECK.
+/// `payoutId` is filled when a run picks the row up, which is what stops the
+/// same credit being applied to two periods.
+model SettlementAdjustment {
+  id        String  @id @db.VarChar(40)
+  vendorId  String? @db.VarChar(40)
+  riderId   String? @db.VarChar(40)
+  /// The period it applies to, e.g. "2026-W34".
+  periodRef String  @db.VarChar(24)
+  currency  String  @db.Char(3)
+  /// What it is called on the statement.
+  label     String  @db.VarChar(160)
+  /// Signed amount in `currency`.
+  amount    Decimal @db.Decimal(16, 2)
+  /// Why. Prose a human wrote.
+  reason    String? @db.VarChar(500)
+  /// The payout run that applied it; null while it is still outstanding.
+  payoutId  String? @db.VarChar(40)
+
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  createdById String?  @db.VarChar(40)
+
+  vendor Vendor? @relation("AdjustmentVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  rider  Rider?  @relation("AdjustmentRider", fields: [riderId], references: [id], onDelete: Cascade)
+  payout Payout? @relation("AdjustmentPayout", fields: [payoutId], references: [id], onDelete: SetNull)
+
+  /// What a run picks up: one payee's period, not yet applied.
+  @@index([vendorId, periodRef, payoutId])
+  @@index([riderId, periodRef, payoutId])
+  @@index([payoutId])
+  @@map("settlement_adjustments")
+}
+
+/// Which orders made a payout's number.
+///
+/// `types/finance.ts` carries `VendorSettlement.orderIds` "so a statement can
+/// link back to the orders that made the number, which is the difference between
+/// a report and a claim". This is that link, and the contributed amounts are
+/// snapshotted onto it: re-deriving a paid line from the order later would let a
+/// subsequent refund silently restate a statement that has already been sent.
+model PayoutOrder {
+  payoutId String @db.VarChar(40)
+  orderId  String @db.VarChar(40)
+
+  /// What this order contributed to the run, at the moment it was run.
+  grossAmount      Decimal @db.Decimal(14, 2)
+  commissionAmount Decimal @default(0) @db.Decimal(14, 2)
+  /// The payee's share: vendor net for a vendor run, rider payout for a rider's.
+  netAmount        Decimal @db.Decimal(14, 2)
+  /// Doorstep cash offset against a rider run; 0 on a vendor run.
+  cashCollected    Decimal @default(0) @db.Decimal(14, 2)
+
+  payout Payout @relation("PayoutOrderPayout", fields: [payoutId], references: [id], onDelete: Cascade)
+  order  Order  @relation("PayoutOrderOrder", fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@id([payoutId, orderId])
+  @@index([orderId])
+  @@map("payout_orders")
 }

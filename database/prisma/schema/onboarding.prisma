@@ -1,0 +1,441 @@
+// =============================================================================
+// ONBOARDING — how a restaurant or a rider joins the platform.
+//
+// Serves `types/onboarding.ts` (VendorApplication, RiderApplication,
+// OnboardingDocument, OnboardingEvent), which had no database support at all:
+// `Vendor.status` and `Rider.status` could say a partner was PENDING but nothing
+// recorded *what was applied for*, *who reviewed it* or *why they said no*.
+//
+// -----------------------------------------------------------------------------
+// THE ONE STRUCTURAL DECISION: two statuses, one authority
+// -----------------------------------------------------------------------------
+//
+// `types/onboarding.ts` states that `Vendor` and `Rider` "deliberately gain no
+// status field: a second copy on the catalog row is a second answer to 'is this
+// restaurant live'". That is right about authority and wrong about storage: the
+// discovery query is `WHERE type = ? AND status = ? AND deletedAt IS NULL`
+// (`Vendor.@@index([type, status, deletedAt])`), and routing every storefront
+// read through a join to an application table to learn whether to list it would
+// put the review queue on the hot path of the home page.
+//
+// So the application is the AUTHORITY and the catalog column is a DENORMALISED
+// PROJECTION of it, maintained in the same transaction as the decision — the
+// convention `Vendor.rating` / `Offer.claimed` already follow (main.prisma §8).
+// Concretely:
+//
+//   VendorApplication.status   the reviewed lifecycle. One writer: the review
+//                              service. draft → pending → approved | rejected,
+//                              and approved → suspended.
+//   Vendor.status             what discovery filters on. Written ONLY by the
+//                              same service, plus PAUSED, which is the
+//                              merchant's own open/closed switch and is not a
+//                              review outcome at all.
+//
+// `RiderApplication` / `Rider.status` work identically, with the rider's extra
+// INACTIVE (approved, not currently working).
+//
+// -----------------------------------------------------------------------------
+// SHARED PAPERWORK, NOT A POLYMORPHIC BLOB
+// -----------------------------------------------------------------------------
+//
+// `OnboardingDocument` and `OnboardingEvent` each carry a nullable FK to BOTH
+// application kinds, exactly one of which is set. That is the pattern
+// `PayoutAccount` and `Payout` already use for (vendorId?, riderId?) — a real
+// foreign key on each side, so the database still enforces that the parent
+// exists, rather than an `entityType`/`entityId` pair it cannot check. The
+// "exactly one" half is enforced by two CHECK constraints in the migration,
+// which Prisma's DSL cannot express.
+//
+// The alternative — four tables — would duplicate the reviewer's log, and the
+// frontend is explicit that "a reviewer's log should read identically on either
+// queue".
+//
+// -----------------------------------------------------------------------------
+// WHY THE FORM IS PART COLUMN, PART JSON
+// -----------------------------------------------------------------------------
+//
+// Anything a reviewer filters, sorts or reports on is a column. Two things are
+// not: `proposedHours` (a `WeeklyHours` grid that becomes `BranchHour` rows on
+// approval) and `VendorApplicationBranch.hours`. Both are PROPOSALS — nothing
+// queries them until they are copied into the real tables — and both are already
+// JSON-shaped on the wire, so a relational decomposition would exist purely to
+// be flattened again on every read (main.prisma §7).
+//
+// `proposedCuisineIds` / `proposedZoneIds` are `String[]` rather than join
+// tables for the same reason: an application is a form, and a form may name a
+// cuisine that a reviewer rejects. A join table would assert a relationship the
+// platform has not agreed to yet.
+// =============================================================================
+
+/// The union of both lifecycles, matching `types/onboarding.ts::OnboardingStatus`
+/// exactly. `INACTIVE` is riders only; `lib/onboarding` holds the two allowed
+/// subsets and the review service is the only writer.
+enum OnboardingStatus {
+  DRAFT     @map("draft")
+  PENDING   @map("pending")
+  APPROVED  @map("approved")
+  REJECTED  @map("rejected")
+  SUSPENDED @map("suspended")
+  INACTIVE  @map("inactive")
+
+  @@map("onboarding_status")
+}
+
+/// Every document either queue asks for. One enum rather than two, because
+/// `OnboardingDocument` is one table; which kinds are *required* of which
+/// applicant is policy (`lib/onboarding`), not schema.
+///
+/// Distinct from `RiderDocumentKind` in delivery.prisma, which is the smaller
+/// set of documents an ACTIVE rider must keep valid. This is the application's
+/// vocabulary, and `types/onboarding.ts` spells it differently on purpose
+/// (`driving-licence` here, `licence` there).
+enum OnboardingDocKind {
+  // Restaurant
+  TRADE_LICENCE        @map("trade-licence")
+  TIN_CERTIFICATE      @map("tin-certificate")
+  BANK_STATEMENT       @map("bank-statement")
+  FOOD_SAFETY          @map("food-safety")
+  PREMISES_PHOTO       @map("premises-photo")
+  // Rider
+  DRIVING_LICENCE      @map("driving-licence")
+  VEHICLE_REGISTRATION @map("vehicle-registration")
+  INSURANCE            @map("insurance")
+  PROFILE_PHOTO        @map("profile-photo")
+  // Both
+  NATIONAL_ID          @map("national-id")
+
+  @@map("onboarding_doc_kind")
+}
+
+/// `MISSING` is a state, not an absent row: a required document nobody uploaded
+/// is a gap the reviewer must see, and a checklist assembled from whatever rows
+/// happen to exist cannot show one.
+enum OnboardingDocStatus {
+  MISSING  @map("missing")
+  PENDING  @map("pending")
+  VERIFIED @map("verified")
+  REJECTED @map("rejected")
+  EXPIRED  @map("expired")
+
+  @@map("onboarding_doc_status")
+}
+
+enum OnboardingAuthorKind {
+  APPLICANT @map("applicant")
+  REVIEWER  @map("reviewer")
+  SYSTEM    @map("system")
+
+  @@map("onboarding_author_kind")
+}
+
+enum OnboardingEventKind {
+  EDITED    @map("edited")
+  SUBMITTED @map("submitted")
+  DECISION  @map("decision")
+  DOCUMENT  @map("document")
+  NOTE      @map("note")
+
+  @@map("onboarding_event_kind")
+}
+
+// ---------------------------------------------------------------------------
+// Restaurant application
+// ---------------------------------------------------------------------------
+
+/// A restaurant's application and its onboarding state.
+///
+/// Every restaurant on the platform has exactly one — the seeded catalogue
+/// included — so the admin's restaurant list and its pending-applications queue
+/// are the same rows filtered differently. `vendorId` is unique where set: an
+/// approved application governs exactly one storefront.
+model VendorApplication {
+  id                String           @id @db.VarChar(40)
+  /// Human-facing reference, e.g. "RAP-8F3A21".
+  applicationNumber String           @unique @db.VarChar(24)
+  /// The listing this governs. Null until approval mints one.
+  vendorId          String?          @unique @db.VarChar(40)
+  /// The account that will manage it — how the dashboard resolves "my
+  /// restaurant" without falling back to somebody else's flagship listing.
+  ownerId           String?          @db.VarChar(40)
+  status            OnboardingStatus @default(DRAFT)
+
+  // --- owner (VendorOwnerInfo) ----------------------------------------------
+  ownerName       String @db.VarChar(120)
+  ownerEmail      String @db.VarChar(191)
+  ownerPhone      String @db.VarChar(24)
+  /// National ID / passport — the identity the trade licence is checked against.
+  ownerNationalId String @db.VarChar(60)
+
+  // --- business (VendorBusinessInfo) ----------------------------------------
+  /// Registered name, which is often not the trading name.
+  legalName    String         @db.VarChar(200)
+  tradeLicence String         @db.VarChar(80)
+  tin          String         @db.VarChar(80)
+  /// VAT/BIN registration, where the business has one.
+  bin          String?        @db.VarChar(80)
+  /// What the vendor becomes on approval.
+  vendorType   VendorTypeKind @default(RESTAURANT)
+  yearsTrading Int            @default(0) @db.SmallInt
+
+  // --- listing (VendorProfileDraft) ----------------------------------------
+  restaurantName     String   @db.VarChar(160)
+  tagline            String   @default("") @db.VarChar(240)
+  description        String   @default("") @db.Text
+  /// Proposed cuisines — ids, not a join table. See the file header.
+  proposedCuisineIds String[] @default([])
+  priceLevel         Int      @default(2) @db.SmallInt
+  /// `GeoPoint` the applicant dropped on the map.
+  lat                Decimal? @db.Decimal(10, 7)
+  lng                Decimal? @db.Decimal(10, 7)
+  address            String   @default("") @db.VarChar(300)
+  area               String?  @db.VarChar(120)
+  city               String   @default("") @db.VarChar(120)
+  countryCode        String   @db.Char(2)
+  contactPhone       String   @db.VarChar(24)
+  contactEmail       String   @db.VarChar(191)
+  /// Proposed `WeeklyHours`. JSON: a proposal, and `BranchHour` rows are minted
+  /// from it on approval. See the file header.
+  proposedHours      Json     @default("{}")
+
+  // --- delivery (VendorDeliveryDraft) --------------------------------------
+  offersDelivery   Boolean  @default(true)
+  offersPickup     Boolean  @default(true)
+  deliveryFee      Decimal  @default(0) @db.Decimal(14, 2)
+  minOrder         Decimal  @default(0) @db.Decimal(14, 2)
+  freeDeliveryOver Decimal? @db.Decimal(14, 2)
+  etaMinMinutes    Int      @default(25) @db.SmallInt
+  etaMaxMinutes    Int      @default(40) @db.SmallInt
+  /// Zones the restaurant asks to serve (`dzn_*`). Ids, not a join table.
+  proposedZoneIds  String[] @default([])
+
+  // --- payout (PayoutAccount, as applied for) ------------------------------
+  /// Where settlements would be sent. Deliberately NOT a `PayoutAccount` row:
+  /// that table hangs off a vendor or a rider, neither of which exists yet, and
+  /// a payout account for a partner the platform has not accepted would be a
+  /// payable destination with nothing behind it. Approval mints the real row.
+  payoutMethod        PayoutAccountKind @default(BANK)
+  /// Bank name, or the mobile-wallet provider ("bKash", "Nagad").
+  payoutProvider      String            @default("") @db.VarChar(160)
+  payoutAccountName   String            @default("") @db.VarChar(160)
+  /// Stored as given. Masked for display; never a verified instrument until the
+  /// real `PayoutAccount` is created and `isVerified` is set on it.
+  payoutAccountNumber String            @default("") @db.VarChar(80)
+  payoutBranch        String?           @db.VarChar(160)
+
+  // --- review --------------------------------------------------------------
+  /// Null while it is a draft.
+  submittedAt  DateTime? @db.Timestamptz(3)
+  decidedAt    DateTime? @db.Timestamptz(3)
+  decidedById  String?   @db.VarChar(40)
+  /// The reason the applicant is told — a refusal or a suspension. A rejection
+  /// with no reason is not a rejection.
+  decisionNote String?   @db.VarChar(1000)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  vendor  Vendor? @relation("VendorApplicationVendor", fields: [vendorId], references: [id], onDelete: SetNull)
+  owner   User?   @relation("VendorApplicationOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  country Country @relation("VendorApplicationCountry", fields: [countryCode], references: [code], onDelete: Restrict)
+
+  branches  VendorApplicationBranch[] @relation("ApplicationBranches")
+  documents OnboardingDocument[]      @relation("VendorApplicationDocuments")
+  events    OnboardingEvent[]         @relation("VendorApplicationEvents")
+
+  /// The reviewer's queue: one status, oldest submission first.
+  @@index([status, submittedAt])
+  @@index([ownerId])
+  @@index([city, countryCode])
+  @@index([deletedAt])
+  @@map("vendor_applications")
+}
+
+/// An additional outlet named on an application.
+///
+/// A table rather than JSON because a reviewer lists and decides on them
+/// individually, and because approval turns each accepted row into a real
+/// `VendorBranch`. `branchId` records which one it became, so a re-review can
+/// tell a branch that was accepted from one that was not.
+model VendorApplicationBranch {
+  id            String  @id @db.VarChar(40)
+  applicationId String  @db.VarChar(40)
+  name          String  @db.VarChar(160)
+  address       String  @db.VarChar(300)
+  area          String  @db.VarChar(120)
+  phone         String  @db.VarChar(24)
+  /// Proposed `WeeklyHours`; null = inherits the main listing's.
+  hours         Json?
+  /// The `VendorBranch` this became on approval; null while unaccepted.
+  branchId      String? @unique @db.VarChar(40)
+  sort          Int     @default(0) @db.SmallInt
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  application VendorApplication @relation("ApplicationBranches", fields: [applicationId], references: [id], onDelete: Cascade)
+  branch      VendorBranch?     @relation("BranchFromApplication", fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, sort])
+  @@map("vendor_application_branches")
+}
+
+// ---------------------------------------------------------------------------
+// Rider application
+// ---------------------------------------------------------------------------
+
+/// A rider's application and their onboarding state.
+///
+/// Same rule as the vendor side: every rider in the fleet has one, so the admin's
+/// rider list and its application queue are one set of rows, and dispatch has a
+/// single fact to check before it hands somebody work.
+model RiderApplication {
+  id                String           @id @db.VarChar(40)
+  /// Human-facing reference, e.g. "DAP-8F3A21".
+  applicationNumber String           @unique @db.VarChar(24)
+  /// The fleet record this governs. Null until approval mints one.
+  riderId           String?          @unique @db.VarChar(40)
+  /// The account that signs into the rider app.
+  userId            String?          @db.VarChar(40)
+  status            OnboardingStatus @default(DRAFT)
+
+  // --- personal (RiderPersonalInfo) ----------------------------------------
+  name        String   @db.VarChar(120)
+  /// A date of birth has no time and no zone.
+  dateOfBirth DateTime @db.Date
+  nationalId  String   @db.VarChar(60)
+  /// Where the rider lives — the basis for the zone they are offered work in.
+  address     String   @db.VarChar(300)
+  area        String   @db.VarChar(120)
+  city        String   @db.VarChar(120)
+  countryCode String   @db.Char(2)
+
+  // --- contact (RiderContactInfo) ------------------------------------------
+  phone String @db.VarChar(24)
+  email String @db.VarChar(191)
+
+  // --- emergency (RiderEmergencyContact) -----------------------------------
+  /// Who to call if something happens on the road.
+  emergencyName         String @default("") @db.VarChar(120)
+  emergencyRelationship String @default("") @db.VarChar(80)
+  emergencyPhone        String @default("") @db.VarChar(24)
+
+  // --- vehicle (RiderVehicleInfo) ------------------------------------------
+  vehicle       RiderVehicleKind @default(BIKE)
+  /// Null for a bicycle, which has nothing to register.
+  plate         String?          @db.VarChar(24)
+  vehicleModel  String?          @db.VarChar(120)
+  licenceNumber String?          @db.VarChar(60)
+
+  /// Zone the rider is applying to work.
+  zoneId String @db.VarChar(40)
+
+  // --- payout --------------------------------------------------------------
+  /// See the note on `VendorApplication.payoutMethod` — the real
+  /// `PayoutAccount` is minted on approval, not before.
+  payoutMethod        PayoutAccountKind @default(MFS)
+  payoutProvider      String            @default("") @db.VarChar(160)
+  payoutAccountName   String            @default("") @db.VarChar(160)
+  payoutAccountNumber String            @default("") @db.VarChar(80)
+  payoutBranch        String?           @db.VarChar(160)
+
+  // --- review --------------------------------------------------------------
+  submittedAt  DateTime? @db.Timestamptz(3)
+  decidedAt    DateTime? @db.Timestamptz(3)
+  decidedById  String?   @db.VarChar(40)
+  decisionNote String?   @db.VarChar(1000)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  rider   Rider?       @relation("RiderApplicationRider", fields: [riderId], references: [id], onDelete: SetNull)
+  user    User?        @relation("RiderApplicationUser", fields: [userId], references: [id], onDelete: SetNull)
+  zone    DeliveryZone @relation("RiderApplicationZone", fields: [zoneId], references: [id], onDelete: Restrict)
+  country Country      @relation("RiderApplicationCountry", fields: [countryCode], references: [code], onDelete: Restrict)
+
+  documents OnboardingDocument[] @relation("RiderApplicationDocuments")
+  events    OnboardingEvent[]    @relation("RiderApplicationEvents")
+
+  @@index([status, submittedAt])
+  @@index([zoneId, status])
+  @@index([userId])
+  @@index([deletedAt])
+  @@map("rider_applications")
+}
+
+// ---------------------------------------------------------------------------
+// Shared paperwork
+// ---------------------------------------------------------------------------
+
+/// One submitted document on one application.
+///
+/// Exactly one of `vendorApplicationId` / `riderApplicationId` is set; the
+/// migration adds the CHECK constraint, and two partial unique indexes make
+/// (application, kind) unique on each side — a document kind is asked for once,
+/// and a re-upload replaces the row rather than adding a second answer.
+model OnboardingDocument {
+  id                  String              @id @db.VarChar(40)
+  vendorApplicationId String?             @db.VarChar(40)
+  riderApplicationId  String?             @db.VarChar(40)
+  kind                OnboardingDocKind
+  status              OnboardingDocStatus @default(MISSING)
+  /// Reference/filename the applicant gave. Null while the document is missing.
+  reference           String?             @db.VarChar(200)
+  /// The scan in private object storage, once uploads exist. Null in the
+  /// prototype, which collects a reference number rather than a file.
+  fileId              String?             @db.VarChar(40)
+  /// Expiry for documents that have one. "verified today" and "expired next
+  /// March" are the same document, which is why this is not a boolean.
+  expiresAt           DateTime?           @db.Timestamptz(3)
+  /// Why a reviewer refused it. Null unless `status` is REJECTED.
+  note                String?             @db.VarChar(500)
+  uploadedAt          DateTime?           @db.Timestamptz(3)
+  reviewedAt          DateTime?           @db.Timestamptz(3)
+  reviewedById        String?             @db.VarChar(40)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  vendorApplication VendorApplication? @relation("VendorApplicationDocuments", fields: [vendorApplicationId], references: [id], onDelete: Cascade)
+  riderApplication  RiderApplication?  @relation("RiderApplicationDocuments", fields: [riderApplicationId], references: [id], onDelete: Cascade)
+
+  @@index([vendorApplicationId])
+  @@index([riderApplicationId])
+  /// The compliance sweep: what is expiring, and what is still unreviewed.
+  @@index([status, expiresAt])
+  @@map("onboarding_documents")
+}
+
+/// One thing that happened to an application. Append-only, oldest first — the
+/// same contract as `OrderEvent` and for the same reason: `status` is where it
+/// got to, and only the log can say who moved it and what they said.
+///
+/// No `deletedAt` and no `version`: an audit trail is never edited.
+model OnboardingEvent {
+  id                  String               @id @db.VarChar(40)
+  vendorApplicationId String?              @db.VarChar(40)
+  riderApplicationId  String?              @db.VarChar(40)
+  kind                OnboardingEventKind
+  author              OnboardingAuthorKind
+  /// Display name of whoever did it, snapshotted so the log survives a rename.
+  authorName          String               @db.VarChar(120)
+  /// The account behind `author`; null for SYSTEM.
+  authorId            String?              @db.VarChar(40)
+  /// The status the application moved into (SUBMITTED / DECISION).
+  status              OnboardingStatus?
+  /// A rejection reason, a reviewer's note.
+  body                String?              @db.VarChar(1000)
+  /// The document this concerns (DOCUMENT).
+  document            OnboardingDocKind?
+  at                  DateTime             @default(now()) @db.Timestamptz(3)
+
+  vendorApplication VendorApplication? @relation("VendorApplicationEvents", fields: [vendorApplicationId], references: [id], onDelete: Cascade)
+  riderApplication  RiderApplication?  @relation("RiderApplicationEvents", fields: [riderApplicationId], references: [id], onDelete: Cascade)
+
+  @@index([vendorApplicationId, at])
+  @@index([riderApplicationId, at])
+  @@map("onboarding_events")
+}

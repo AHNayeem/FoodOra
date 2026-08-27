@@ -39,6 +39,39 @@ enum UserStatus {
   @@map("user_status")
 }
 
+/// Why an account was stopped (`types/customer.ts::CustomerBlockReason`).
+///
+/// A closed list rather than free text, because the reason is the thing an appeal
+/// argues with and a report counts — the prose goes in the moderation note
+/// beside it.
+enum AccountBlockReason {
+  /// Stolen card, failed authorisations, payment taken back.
+  PAYMENT_FRAUD     @map("payment-fraud")
+  /// Repeated "it never arrived" on orders that did.
+  REFUND_ABUSE      @map("refund-abuse")
+  /// Orders placed with no intention of paying for or receiving them.
+  FAKE_ORDERS       @map("fake-orders")
+  /// Abuse aimed at riders or restaurant staff.
+  ABUSIVE_BEHAVIOUR @map("abusive-behaviour")
+  /// Money reversed by the bank rather than by us.
+  CHARGEBACK        @map("chargeback")
+  /// They asked us to close it.
+  CUSTOMER_REQUEST  @map("customer-request")
+  OTHER             @map("other")
+
+  @@map("account_block_reason")
+}
+
+/// What a moderator did. NOTE changes nothing and is kept for the same reason
+/// the others are: the log is the record.
+enum AccountModerationAction {
+  BLOCK   @map("block")
+  UNBLOCK @map("unblock")
+  NOTE    @map("note")
+
+  @@map("account_moderation_action")
+}
+
 model User {
   id     String  @id @db.VarChar(40)
   name   String  @db.VarChar(120)
@@ -67,6 +100,14 @@ model User {
   lastLoginAt    DateTime? @db.Timestamptz(3)
   /// Marketing consent, distinct from the per-topic notification matrix.
   marketingOptIn Boolean   @default(false)
+
+  /// The grounds for a block, set together with `status = BANNED` / `SUSPENDED`
+  /// and cleared on unblock. `status` can say somebody is blocked but never on
+  /// what grounds, which is precisely what is asked for when it is disputed —
+  /// and `AccountModerationEvent` says who and when.
+  blockReason AccountBlockReason?
+  blockedAt   DateTime?           @db.Timestamptz(3)
+  blockedById String?             @db.VarChar(40)
 
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)
@@ -110,6 +151,13 @@ model User {
   uploads         FileAsset[]          @relation("UserUploads")
   auditLogs       AuditLog[]           @relation("UserAuditLogs")
   posSales        PosSale[]            @relation("PosSaleCashier")
+
+  moderation         AccountModerationEvent[] @relation("ModerationSubject")
+  moderationActions  AccountModerationEvent[] @relation("ModerationActor")
+  vendorApplications VendorApplication[]      @relation("VendorApplicationOwner")
+  riderApplications  RiderApplication[]       @relation("RiderApplicationUser")
+  supportTickets     SupportTicket[]          @relation("SupportTicketUser")
+  orderThreads       OrderThread[]            @relation("OrderThreadUser")
 
   @@index([primaryRole, status])
   @@index([countryCode])
@@ -178,8 +226,9 @@ model Permission {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  roles RolePermission[] @relation("PermissionRoles")
-  users UserPermission[] @relation("PermissionUsers")
+  roles RolePermission[]        @relation("PermissionRoles")
+  users UserPermission[]        @relation("PermissionUsers")
+  staff VendorStaffPermission[] @relation("StaffPermissionRef")
 
   @@unique([resource, action])
   @@map("permissions")
@@ -550,6 +599,35 @@ model Address {
   @@index([userId, deletedAt])
   @@index([city, area])
   @@map("addresses")
+}
+
+/// One thing a moderator did to an account. Append-only, oldest first — the same
+/// contract as an order's event log and a ticket's, and for the same reason.
+///
+/// No `deletedAt`, no `version`: a moderation trail is never edited. Separate
+/// from `AuditLog`, which records every mutation on the platform: this is the
+/// per-account history a moderator reads inline before deciding, and the shape
+/// is fixed by `types/customer.ts::CustomerModerationEvent`.
+model AccountModerationEvent {
+  id        String                  @id @db.VarChar(40)
+  userId    String                  @db.VarChar(40)
+  action    AccountModerationAction
+  /// The grounds (`action = BLOCK`); null for anything else.
+  reason    AccountBlockReason?
+  /// What the moderator wrote. Prose a human typed, so never translated.
+  body      String?                 @db.VarChar(1000)
+  /// The admin account that did it.
+  actorId   String?                 @db.VarChar(40)
+  /// Snapshotted so the log survives a rename or a departure.
+  actorName String                  @db.VarChar(120)
+  at        DateTime                @default(now()) @db.Timestamptz(3)
+
+  user  User  @relation("ModerationSubject", fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("ModerationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, at(sort: Desc)])
+  @@index([action, at(sort: Desc)])
+  @@map("account_moderation_events")
 }
 
 enum FavoriteKind {

@@ -46,8 +46,26 @@
 //
 // 6. ENUM LABELS are stored in the frontend's kebab-case vocabulary via
 //    `@map`, so a Postgres row reads identically to the TypeScript union
-//    ("cloud-kitchen", "rider-assigned", "free-delivery"). D5 §Enums explains
-//    how those reach the wire unchanged.
+//    ("cloud-kitchen", "rider-assigned", "free-delivery").
+//
+//    THE CLIENT DOES NOT. Verified against the generated client, not assumed:
+//    `order.status` comes back as `"COMPLETED"`, and `where: { status:
+//    "completed" }` is REJECTED as an invalid value. Prisma addresses enums by
+//    the member identifier and applies `@map` only at the SQL boundary, and an
+//    identifier cannot contain a hyphen, so the two vocabularies can never be
+//    made to coincide for any value this schema maps.
+//
+//    So the API layer owns one total, mechanical translation in each direction
+//    — `COMPLETED <-> "completed"` — and it is not optional: leaving it out
+//    sends SCREAMING_CASE to a frontend whose unions are kebab-case, and no
+//    amount of `@map` prevents that. The mapping is derivable from the
+//    generated `Prisma.<Enum>` objects, so it should be generated once rather
+//    than hand-written per resolver.
+//
+//    The `@map` still earns its place: it is what makes a `psql` row, a CSV
+//    export and a hand-written report read in the product's own vocabulary,
+//    and what lets the raw column be compared against frontend fixtures
+//    directly.
 //
 // 7. SNAPSHOTS. Where the frontend embeds an immutable copy of another entity
 //    (`Order.vendor`, `Order.address`, `Reservation.venue`,
@@ -65,8 +83,18 @@
 // =============================================================================
 
 generator client {
-  provider        = "prisma-client-js"
-  output          = "../../../backend/src/infrastructure/prisma/generated"
+  provider = "prisma-client-js"
+  /// Inside the package that owns the schema, so `bun run generate` needs no
+  /// other package to exist.
+  ///
+  /// It used to be `../../../backend/src/infrastructure/prisma/generated` — a
+  /// path into the NestJS tree that has since been removed. Generating into a
+  /// directory the next backend has not created yet would have `prisma
+  /// generate` mint a NestJS-shaped folder under an empty `backend/`, and the
+  /// replacement is Fastify + JavaScript. The consumer imports the client from
+  /// `@foodora/database` instead, which is true whatever the backend's internal
+  /// layout turns out to be.
+  output          = "../../generated/client"
   previewFeatures = ["postgresqlExtensions", "relationJoins", "views"]
 }
 

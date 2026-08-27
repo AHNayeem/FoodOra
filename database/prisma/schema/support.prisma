@@ -1,0 +1,324 @@
+// =============================================================================
+// SUPPORT — disputes about an order, and contact threads about one.
+//
+// Serves `types/support.ts` (SupportTicket, SupportEvent, SupportResolution) and
+// `types/conversation.ts` (OrderThread, ContactEntry). Neither had any database
+// support: the platform's answer to "my order was wrong" was a static FAQ and a
+// `mailto:`, and the tracker's call/message buttons were toasts.
+//
+// TWO SHAPES, NOT ONE. `types/conversation.ts` is explicit about why:
+//
+//   SupportTicket   a DISPUTE — has a category, a queue, an agent, a refund
+//                   decision and a resolution. Somebody owes somebody something.
+//   OrderThread     a CONVERSATION — "I'm at the blue gate". Nobody owes
+//                   anything and there is nothing to decide.
+//
+// Folding them together would put every "which gate?" into the refunds queue and
+// give every dispute a chat window instead of a decision. They share no table on
+// purpose, which is the same call `MembershipPlan` / `MealPlan` makes in
+// payments.prisma.
+//
+// -----------------------------------------------------------------------------
+// THE RULES THE TICKET FOLLOWS — all three from `types/support.ts`
+// -----------------------------------------------------------------------------
+//
+// 1. THE EVENT LOG IS THE TRUTH. `status` is where a ticket got to;
+//    `SupportTicketEvent` is what happened, append-only, attributed and timed.
+//    Nothing is stored only as a status.
+//
+// 2. VISIBILITY IS A PROPERTY OF THE EVENT, NOT OF THE READER. An internal note
+//    is `visibility = INTERNAL` and is filtered once, in one place. A customer
+//    surface cannot leak one by forgetting a condition — and the index
+//    `(ticketId, visibility, at)` means the customer's filtered read is as cheap
+//    as the agent's unfiltered one.
+//
+// 3. THE REFUND LIVES ON THE ORDER, NOT HERE. A ticket RECORDS the decision —
+//    `REFUND` events, and `resolutionRefundAmount` — but the money is
+//    `Order.refundStatus` / `refundAmount` / `refundMethod` and the `Refund`
+//    rows under it. One place, so the customer's tracker, the admin's order page
+//    and platform financials cannot disagree about whether somebody was paid.
+//
+// `resolution` is flattened onto the ticket rather than given its own table: it
+// is a 1:0..1 value object with no identity of its own, and a ticket is never
+// read without it.
+// =============================================================================
+
+/// What went wrong, from the spec's list. Categories rather than free text
+/// because a category can be counted, routed and reported on; the prose goes in
+/// the first message.
+enum SupportCategoryKind {
+  MISSING_ITEM     @map("missing-item")
+  WRONG_ITEM       @map("wrong-item")
+  DAMAGED          @map("damaged")
+  LATE_DELIVERY    @map("late-delivery")
+  PAYMENT_ISSUE    @map("payment-issue")
+  RESTAURANT_ISSUE @map("restaurant-issue")
+  RIDER_ISSUE      @map("rider-issue")
+  OTHER            @map("other")
+
+  @@map("support_category_kind")
+}
+
+/// Where a ticket has got to.
+///
+/// RESOLVED and REJECTED are both *decisions*; CLOSED is filing it away
+/// afterwards. Keeping the decision and the filing separate is what makes
+/// "closed" mean the same thing for a ticket that paid out and one that did not,
+/// and what makes reopening possible from either.
+enum SupportTicketStatusKind {
+  OPEN              @map("open")
+  IN_REVIEW         @map("in-review")
+  AWAITING_CUSTOMER @map("awaiting-customer")
+  RESOLVED          @map("resolved")
+  REJECTED          @map("rejected")
+  CLOSED            @map("closed")
+
+  @@map("support_ticket_status_kind")
+}
+
+enum SupportAuthorKind {
+  CUSTOMER @map("customer")
+  AGENT    @map("agent")
+  SYSTEM   @map("system")
+
+  @@map("support_author_kind")
+}
+
+enum SupportEventKindEnum {
+  /// Prose either side wrote.
+  MESSAGE @map("message")
+  /// Prose only the desk sees.
+  NOTE    @map("note")
+  /// The ticket moved.
+  STATUS  @map("status")
+  /// A refund was approved, refused or settled.
+  REFUND  @map("refund")
+
+  @@map("support_event_kind")
+}
+
+enum SupportVisibility {
+  CUSTOMER @map("customer")
+  INTERNAL @map("internal")
+
+  @@map("support_visibility")
+}
+
+/// What the desk did about it — the sentence the customer is shown at the end.
+enum SupportOutcomeKind {
+  /// Money back.
+  REFUNDED  @map("refunded")
+  /// Wallet credit or a voucher instead of money back.
+  CREDITED  @map("credited")
+  /// The order, or the missing part of it, was sent again.
+  REPLACED  @map("replaced")
+  /// Nothing owed, but an explanation given.
+  EXPLAINED @map("explained")
+  /// Refused.
+  REFUSED   @map("refused")
+
+  @@map("support_outcome_kind")
+}
+
+/// A refund decision as recorded on a ticket's log — the ticket's own word for
+/// what it decided, distinct from `RefundExecutionStatus`, which is what the
+/// provider did about it.
+enum SupportRefundDecision {
+  APPROVED @map("approved")
+  REJECTED @map("rejected")
+  SETTLED  @map("settled")
+
+  @@map("support_refund_decision")
+}
+
+/// A support ticket about one order.
+///
+/// The order's identifying fields are snapshotted the way `Order` snapshots its
+/// vendor: a ticket must stay readable — in a queue, in a report — without
+/// joining to an order that may since have been removed. `orderId` is kept
+/// beside the snapshot for joins and analytics (main.prisma §7).
+model SupportTicket {
+  id            String                  @id @db.VarChar(40)
+  /// Human-facing reference, e.g. "SUP-8F3A21".
+  ticketNumber  String                  @unique @db.VarChar(24)
+  orderId       String                  @db.VarChar(40)
+  orderNumber   String                  @db.VarChar(24)
+  vendorId      String                  @db.VarChar(40)
+  vendorName    String                  @db.VarChar(160)
+  /// The account that raised it; null for a guest order.
+  userId        String?                 @db.VarChar(40)
+  customerName  String                  @db.VarChar(120)
+  customerPhone String                  @db.VarChar(24)
+  category      SupportCategoryKind
+  status        SupportTicketStatusKind @default(OPEN)
+  currency      String                  @db.Char(3)
+  /// The order's total, so the queue can show what is at stake.
+  orderTotal    Decimal                 @db.Decimal(14, 2)
+
+  // --- resolution (SupportResolution), flattened ----------------------------
+  /// Null while nothing has been decided.
+  resolutionOutcome      SupportOutcomeKind?
+  /// What the customer is told. Prose a human wrote, so never translated.
+  resolutionNote         String?             @db.VarChar(1000)
+  /// Refund granted as part of it, in `currency`; 0 when none.
+  resolutionRefundAmount Decimal             @default(0) @db.Decimal(14, 2)
+  resolvedAt             DateTime?           @db.Timestamptz(3)
+  /// The agent account that decided.
+  resolvedById           String?             @db.VarChar(40)
+
+  submittedAt DateTime  @default(now()) @db.Timestamptz(3)
+  /// When it was filed away; null while it is still open or merely decided.
+  closedAt    DateTime? @db.Timestamptz(3)
+  /// Last activity, so the queue can sort by "waiting longest" honestly.
+  lastEventAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  order  Order  @relation("SupportTicketOrder", fields: [orderId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation("SupportTicketVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User?  @relation("SupportTicketUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  events SupportTicketEvent[] @relation("TicketEvents")
+
+  /// The desk's queue: one status, longest-waiting first.
+  @@index([status, lastEventAt])
+  @@index([orderId])
+  @@index([userId, submittedAt(sort: Desc)])
+  @@index([vendorId, status])
+  @@index([category, submittedAt(sort: Desc)])
+  @@index([deletedAt])
+  @@map("support_tickets")
+}
+
+/// One thing that happened to a ticket. Append-only, oldest first.
+/// No `deletedAt`, no `version`: a dispute log is never edited.
+model SupportTicketEvent {
+  id             String                   @id @db.VarChar(40)
+  ticketId       String                   @db.VarChar(40)
+  kind           SupportEventKindEnum
+  author         SupportAuthorKind
+  /// Display name of whoever did it, snapshotted against a later rename.
+  authorName     String                   @db.VarChar(120)
+  /// The account behind `author`; null for SYSTEM.
+  authorId       String?                  @db.VarChar(40)
+  /// What was written. Null for a bare status move.
+  body           String?                  @db.VarChar(2000)
+  /// The status the ticket moved into (`kind = STATUS`).
+  status         SupportTicketStatusKind?
+  /// The refund decision this records (`kind = REFUND`).
+  refundDecision SupportRefundDecision?
+  /// In the ticket currency; 0 for a refusal.
+  refundAmount   Decimal?                 @db.Decimal(14, 2)
+  /// How the money goes back. Null on a refusal.
+  refundMethod   RefundMethodKind?
+  /// Whether the customer sees it. Internal notes never leave the desk.
+  visibility     SupportVisibility        @default(CUSTOMER)
+  at             DateTime                 @default(now()) @db.Timestamptz(3)
+
+  ticket SupportTicket @relation("TicketEvents", fields: [ticketId], references: [id], onDelete: Cascade)
+
+  /// The customer's read — filtered by visibility in the index, not after it.
+  @@index([ticketId, visibility, at])
+  @@index([ticketId, at])
+  @@map("support_ticket_events")
+}
+
+// ---------------------------------------------------------------------------
+// Contact threads — `types/conversation.ts`
+// ---------------------------------------------------------------------------
+
+/// Who the customer is talking to. A thread is per order AND per party.
+enum ContactPartyKind {
+  RIDER      @map("rider")
+  RESTAURANT @map("restaurant")
+
+  @@map("contact_party_kind")
+}
+
+enum ContactAuthorKind {
+  CUSTOMER   @map("customer")
+  RIDER      @map("rider")
+  RESTAURANT @map("restaurant")
+  SYSTEM     @map("system")
+
+  @@map("contact_author_kind")
+}
+
+enum ContactEntryKindEnum {
+  MESSAGE @map("message")
+  /// A call was placed. Recorded rather than dialled: there is no telephony
+  /// provider, and a log of "the customer tried to call at 19:42" is both true
+  /// and what a real call would have left behind anyway.
+  CALL    @map("call")
+
+  @@map("contact_entry_kind")
+}
+
+/// One conversation about one order with one counterparty.
+///
+/// The counterparty's identity is snapshotted: a thread with the courier who
+/// *had* the order must stay readable after a reassignment, and must not
+/// silently become a thread with somebody else. `riderId` is null for a
+/// restaurant thread and for one opened before dispatch chose anybody.
+///
+/// `@@unique([orderId, party])` is the whole concurrency model — two taps on
+/// "message the rider" cannot open two threads.
+model OrderThread {
+  id           String           @id @db.VarChar(40)
+  orderId      String           @db.VarChar(40)
+  orderNumber  String           @db.VarChar(24)
+  party        ContactPartyKind
+  vendorId     String           @db.VarChar(40)
+  vendorName   String           @db.VarChar(160)
+  riderId      String?          @db.VarChar(40)
+  riderName    String?          @db.VarChar(120)
+  /// The account on the customer side; null for a guest order.
+  userId       String?          @db.VarChar(40)
+  customerName String           @db.VarChar(120)
+  /// Last activity, so an inbox can sort without aggregating the entries.
+  lastEntryAt  DateTime         @default(now()) @db.Timestamptz(3)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  version   Int       @default(0)
+
+  order Order  @relation("OrderThreadOrder", fields: [orderId], references: [id], onDelete: Cascade)
+  user  User?  @relation("OrderThreadUser", fields: [userId], references: [id], onDelete: SetNull)
+  rider Rider? @relation("OrderThreadRider", fields: [riderId], references: [id], onDelete: SetNull)
+
+  entries OrderThreadEntry[] @relation("ThreadEntries")
+
+  @@unique([orderId, party])
+  @@index([userId, lastEntryAt(sort: Desc)])
+  @@index([riderId, lastEntryAt(sort: Desc)])
+  @@index([vendorId, lastEntryAt(sort: Desc)])
+  @@map("order_threads")
+}
+
+/// One entry in a thread. Append-only.
+///
+/// Deliberately NOT a chat product: there is no typing indicator, no read
+/// receipt and no delivery state, because none of those can be told the truth
+/// about without a server that has one.
+model OrderThreadEntry {
+  id         String               @id @db.VarChar(40)
+  threadId   String               @db.VarChar(40)
+  kind       ContactEntryKindEnum @default(MESSAGE)
+  author     ContactAuthorKind
+  /// Display name of whoever wrote it — the rider's name, the restaurant's.
+  authorName String               @db.VarChar(160)
+  /// The account behind `author`; null for SYSTEM.
+  authorId   String?              @db.VarChar(40)
+  /// What was written. Null for a CALL entry, which is an event, not prose.
+  body       String?              @db.VarChar(2000)
+  at         DateTime             @default(now()) @db.Timestamptz(3)
+
+  thread OrderThread @relation("ThreadEntries", fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, at])
+  @@map("order_thread_entries")
+}

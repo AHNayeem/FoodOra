@@ -11,8 +11,65 @@ cheaper than doing it. An entry is closed by writing the migration and deleting 
 
 | Id | Table | Working around | Trigger | Status |
 |----|-------|----------------|---------|--------|
-| DSC-1 | `cart_items` | Global `@id` on a per-cart value | The orders unit's first migration touching cart/order tables | Open |
-| DSC-2 | `orders` | No index on `couponId`, which checkout counts by | The next `orders` migration, or the first performance complaint | Open |
+| DSC-1 | `cart_items` | Global `@id` on a per-cart value | The orders unit's first migration touching cart/order tables | **Closed** 2026-08-27 |
+| DSC-2 | `orders` | No index on `couponId`, which checkout counts by | The next `orders` migration, or the first performance complaint | **Closed** 2026-08-27 |
+
+**Both entries are closed. Nothing is currently deferred.**
+
+Closed by `20260827120000_v2_gap_closure`, whose trigger condition — the first
+migration touching cart and order tables — is exactly what the database
+finalisation phase turned out to be. See
+[`FOODORA-DATABASE-DESIGN.md`](../FOODORA-DATABASE-DESIGN.md) §1 and §9.
+
+### What actually happened, per entry
+
+**DSC-1.** `cart_items` now carries `@@id([cartId, id])` and `cart_item_options`
+carries `@@id([cartId, cartItemId, optionId])` with a composite foreign key onto
+its parent. The standalone `@@index([cartId])` is gone — the composite key's
+leading column serves it. The `TEMPORARY` marker on `CartItem.id` is deleted.
+
+The migration was **verified against real data**, which is the part that could
+not be done when this entry was written: a database was built from the V1
+baseline, seeded in the prefixed shape *including the exact collision this entry
+describes* — two guests, the same dish, the same configuration, one global id —
+and migrated. Both baskets survived with the prefix stripped.
+
+Two corrections to the plan sketched below, both found by running it:
+
+1. **Both old primary keys must be dropped before any row is rewritten**, not
+   after. Stripping the prefix makes `cartA#line1` and `cartB#line1` both become
+   `line1`, so the rewrite transiently violates the very keys being replaced.
+   The original plan swapped constraints after the backfill and would have
+   failed on any database holding two carts with a common configuration — the
+   same case the entry exists for.
+2. A second pass is needed for children whose parent was *already* un-prefixed
+   (written by an older build, or by a re-run): they still need their `cartId`,
+   and the guarded `substring` join skips them. Orphans are deleted rather than
+   failing the deploy — a basket is disposable, which this entry already said.
+
+The `DELETE FROM cart_items` shortcut was **not** needed.
+
+**DSC-2.** `orders` now carries `@@index([couponId, status])`, composite for the
+reason given below: both of checkout's counts filter on `status`, and it is the
+same index the promotions unit wants for campaign performance. A second index
+`([settlementRef, vendorId])` was added alongside for the settlement read.
+
+### The code that was to change with DSC-1
+
+The "Code that changes with it" table below names five files under `backend/`.
+**All of them have been removed with the NestJS backend**, so there is nothing
+left to unwind — the workaround they implemented no longer exists in any form.
+What the new backend must do instead is simply use the composite key:
+`where: { cartId_id: { cartId, id } }`. Verified through the generated Prisma
+client, including that an upsert on it touches one basket only.
+
+`frontend/` changed nothing, exactly as predicted: the wire id has always been
+the bare composite value.
+
+---
+
+<details>
+<summary>Historical record — the entries as written, with their original plans</summary>
 
 ---
 
@@ -186,3 +243,5 @@ change with no data migration, so there is nothing to be gained by rushing it in
 deploy — and something to be gained by letting the orders unit, which will be altering this
 table anyway, carry it. The trigger is that migration or the first time a coupon-heavy
 checkout is measurably slow, whichever comes first.
+
+</details>
