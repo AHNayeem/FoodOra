@@ -254,6 +254,45 @@ const env = Object.freeze({
    */
   catalogScanLimit: int("CATALOG_SCAN_LIMIT", { fallback: 500, min: 1, max: 10_000 }),
 
+  // ---------------------------------------------------------------------------
+  // Module 6 — cart
+  // ---------------------------------------------------------------------------
+
+  /**
+   * How many distinct **configurations** one basket may hold.
+   *
+   * Lines, not units: a customer ordering forty of one dish is a party, and a
+   * basket holding fifty different dishes is a script. The cap exists because
+   * every cart read re-prices every line and every validation re-reads every
+   * dish, so an unbounded basket is an unbounded query behind an endpoint that
+   * needs no account.
+   *
+   * A property of the deployment rather than a constant, for the reason V1 gave
+   * when it moved the same three numbers out of the code: catalogue size and what
+   * the business considers a plausible order both vary, and neither should need a
+   * redeploy.
+   */
+  cartMaxLines: int("CART_MAX_LINES", { fallback: 50, min: 1, max: 500 }),
+
+  /**
+   * The ceiling on one line's quantity.
+   *
+   * `cart_items.quantity` is a `SMALLINT`, so 32767 is the hard limit and this is
+   * the product's. 99 is what a quantity stepper can plausibly reach.
+   */
+  cartMaxLineQuantity: int("CART_MAX_LINE_QUANTITY", { fallback: 99, min: 1, max: 32_767 }),
+
+  /**
+   * How long a basket stays live after its last write.
+   *
+   * `carts.expiresAt` exists and is indexed, so the datamodel intends baskets to
+   * expire. There is no sweeper — a background job is not this module's — so the
+   * column is honoured **on read** instead: an expired basket reads as absent and
+   * is revived rather than duplicated when its owner comes back. See
+   * `docs/backend/M6-cart.md` §"Expiry".
+   */
+  cartTtlHours: int("CART_TTL_HOURS", { fallback: 72, min: 1, max: 8_760 }),
+
   rateLimitEnabled: bool("RATE_LIMIT_ENABLED", { fallback: String(!isTest) }),
   rateLimitMax: int("RATE_LIMIT_MAX", { fallback: 300, min: 1 }),
   rateLimitWindowMs: int("RATE_LIMIT_WINDOW_MS", { fallback: 60_000, min: 1000 }),

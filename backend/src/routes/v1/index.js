@@ -24,6 +24,7 @@ import healthRoutes from "../../health/routes.js";
 import authModule from "../../modules/auth/index.js";
 import authzModule from "../../modules/authz/index.js";
 import catalogModule, { CATALOG_PREFIX } from "../../modules/catalog/index.js";
+import cartModule, { CART_PREFIX } from "../../modules/cart/index.js";
 import menuModule, { MENU_PREFIX } from "../../modules/menu/index.js";
 
 export default async function v1Routes(fastify) {
@@ -84,4 +85,21 @@ export default async function v1Routes(fastify) {
    * be the wrong shape for a food platform.
    */
   await fastify.register(menuModule, { prefix: MENU_PREFIX });
+
+  /**
+   * Module 6 — cart, at `/api/v1/cart`.
+   *
+   * After module 5 because it reads module 5's rules rather than restating them:
+   * `availability.js::deriveItemAvailability` decides whether a dish may go in a
+   * basket and `options.js::checkSelection` decides whether the modifiers on it
+   * are orderable, which is what M5 §15 said this module should call. It also
+   * reads module 4's `PUBLIC_STATUSES`, so a storefront the directory hides
+   * cannot end up in a basket.
+   *
+   * It needs module 2 for `requireUser` and refuses to start without it, and it
+   * needs module 3 for **nothing at all** — a basket is a customer-resource
+   * boundary, not a permission, so there is no guard on any of its six routes and
+   * every statement it issues is scoped by its owner instead.
+   */
+  await fastify.register(cartModule, { prefix: CART_PREFIX });
 }

@@ -57,7 +57,10 @@ describe("reference seeder", () => {
 
   it("writes the whole permission catalogue and every built-in role", async () => {
     assert.equal(await prisma.permission.count(), permissions.length);
-    assert.equal(await prisma.role.count(), roles.length);
+    // `isSystem: true` is what the seeder writes and what this assertion is
+    // about. A bare `count()` also counts a fixture role another test file is
+    // holding open, which made this pass or fail on the runner's file schedule.
+    assert.equal(await prisma.role.count({ where: { isSystem: true } }), roles.length);
 
     const superAdmin = await prisma.role.findUnique({
       where: { slug: "super-admin" },
@@ -97,7 +100,17 @@ describe("reference seeder", () => {
   it("changes nothing on a second run", async () => {
     const snapshot = async () => ({
       permissions: await prisma.permission.findMany({ orderBy: { id: "asc" }, select: { id: true, slug: true } }),
-      roleGrants: await prisma.rolePermission.count(),
+      /**
+       * The seeder's own grants, not every grant in the database.
+       *
+       * `ROLE_PERMISSIONS` is the whole answer for a **built-in** role and the
+       * seeder replaces exactly those; a fixture role another test file creates
+       * is none of its business. Counting globally made this assertion depend on
+       * whether `authz.test.js` happened to be inside its custom-role window when
+       * this ran — which it is or is not depending on how many files the runner
+       * has to schedule, so adding a test file elsewhere could turn this red.
+       */
+      roleGrants: await prisma.rolePermission.count({ where: { role: { isSystem: true } } }),
       templates: await prisma.notificationTemplate.count(),
       zones: await prisma.deliveryZone.count(),
       ledger: await prisma.ledgerAccount.count(),

@@ -22,7 +22,18 @@ async function corsPlugin(fastify) {
     credentials: env.corsCredentials,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     // `x-request-id` so a caller can correlate its own log line with ours.
-    allowedHeaders: ["Content-Type", "Authorization", "Accept-Language", "x-request-id", "Idempotency-Key"],
+    // `x-cart-key` carries the anonymous basket key (module 6). Without it in this
+    // list a browser's preflight fails and a signed-out visitor silently loses
+    // their cart on every request — `lib/cart-key.ts` keeps it in localStorage
+    // precisely so it is *not* a cookie, which means it has to be a header here.
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Accept-Language",
+      "x-request-id",
+      "Idempotency-Key",
+      "x-cart-key",
+    ],
     exposedHeaders: ["x-request-id"],
     maxAge: 600,
   });

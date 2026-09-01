@@ -946,7 +946,15 @@
     "fromVendor": "From {vendor}",
     "decrease": "Decrease quantity",
     "increase": "Increase quantity",
-    "close": "Close"
+    "close": "Close",
+    "errors": {
+      "vendorConflict": "Your cart already has items from another restaurant. Start a new cart to add this.",
+      "itemUnavailable": "That dish isn't available right now.",
+      "outOfStock": "There aren't enough left. Try a smaller quantity.",
+      "cartFull": "Your cart is full. Remove something before adding more.",
+      "quantityLimit": "That's more than you can order in one line.",
+      "selectionInvalid": "Check your choices — one of the options is no longer available."
+    }
   },
   "checkout": {
     "title": "Checkout",

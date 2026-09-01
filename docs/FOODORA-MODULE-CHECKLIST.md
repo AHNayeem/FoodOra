@@ -25,7 +25,7 @@ Last updated **2026-09-01**, at the end of **module 5 — menu & inventory**.
 | Discovery & search | [x] | [x] [M4](./backend/M4-catalog-discovery.md) | [x] | [x] 115 tests + 49 flow checks |
 | Menu & options | [x] | [x] [M5](./backend/M5-menu-inventory.md) | [x] | [x] 130 tests + 54 flow checks |
 | Inventory & stock | [x] | [x] [M5](./backend/M5-menu-inventory.md) | [x] | [x] atomic adjust, ledger balances |
-| Cart | [x] re-keyed | [ ] | [x] | [x] |
+| Cart | [x] re-keyed | [x] [M6](./backend/M6-cart.md) | [x] | [x] 90 tests + 51 flow checks |
 | Checkout & pricing | [x] | [ ] | [x] | [x] |
 | Order lifecycle (17 statuses) | [x] +`scheduled` | [ ] | [x] | [x] |
 | Order event log (typed details) | [x] | [ ] | [x] | [x] |
@@ -135,12 +135,13 @@ Last updated **2026-09-01**, at the end of **module 5 — menu & inventory**.
 | Deferred schema changes DSC-1, DSC-2 | [x] closed |
 | Backend foundation | [x] Fastify app, health, error/response contract, validation, Prisma layers, auth guards — [F1](./backend/F1-fastify-foundation.md) |
 | Backend reference seeder | [x] 255 rows, deterministic and idempotent |
-| Backend test suite | [x] 460 assertions against real PostgreSQL, plus `npm run auth:flow` (51 checks), `npm run catalog:flow` (49 checks) and `npm run menu:flow` (54 checks) over a real socket |
+| Backend test suite | [x] 550 assertions against real PostgreSQL, plus `npm run auth:flow` (51 checks), `npm run catalog:flow` (49 checks), `npm run menu:flow` (54 checks) and `npm run cart:flow` (51 checks) over a real socket |
 | Forbidden technologies | [x] `npm run check:forbidden` — no TypeScript, NestJS, Redis, Docker, GraphQL |
 | Backend module 2 — auth & sessions | [x] Argon2id, sessions, refresh rotation with reuse detection, OTP, password reset, `requireUser` — [M2](./backend/M2-auth-sessions.md) |
 | Backend module 4 — catalog & discovery | [x] the directory, search, rails and one storefront; `isOpen` and `distanceKm` derived per request — [M4](./backend/M4-catalog-discovery.md) |
 | Backend module 5 — menu & inventory | [x] boards, sections, dishes, modifier groups and options, stock with an append-only movement ledger; availability derived as *switch AND (untracked OR in stock)*; the atomic adjustment is one guarded `UPDATE` — [M5](./backend/M5-menu-inventory.md) |
+| Backend module 6 — cart | [x] one basket per customer or guest key, single-vendor by construction; the cart line's key **is** its configuration (food id + sorted option ids), prices snapshotted from stored menu rows, `InventoryItem.reserved` read and deliberately never written — [M6](./backend/M6-cart.md) |
 | Backend catalog taxonomy seeder | [x] 66 rows (8 cuisines, 10 categories, 48 keywords), deterministic, idempotent, reconciling |
-| Backend business modules | [~] 5 of 32 done (0 foundation, 1 reference data, 2 auth, 3 RBAC/PBAC, 4 catalog, 5 menu & inventory) — next is module 6, cart |
-| Frontend `.env.local` points at a deleted API | [~] A1–A3. `NEXT_PUBLIC_BACKEND_CATALOG` **set to `0`** by module 4 — the API is REST and `services/catalog.ts` still issues GraphQL ([M4 §6](./backend/M4-catalog-discovery.md#6-frontend-contract)). `NEXT_PUBLIC_BACKEND_AUTH` is still `1` and **must be `0`** for the same reason ([M2 §11](./backend/M2-auth-sessions.md#11-what-is-not-here)) |
+| Backend business modules | [~] 6 of 32 done (0 foundation, 1 reference data, 2 auth, 3 RBAC/PBAC, 4 catalog, 5 menu & inventory, 6 cart) — next is module 7, checkout |
+| Frontend `.env.local` points at a deleted API | [~] A1–A3. `NEXT_PUBLIC_BACKEND_CATALOG` **set to `0`** by module 4 — the API is REST and `services/catalog.ts` still issues GraphQL ([M4 §6](./backend/M4-catalog-discovery.md#6-frontend-contract)). `NEXT_PUBLIC_BACKEND_AUTH` is still `1` and **must be `0`** for the same reason ([M2 §11](./backend/M2-auth-sessions.md#11-what-is-not-here)). `NEXT_PUBLIC_BACKEND_CART` stays `0` — `services/cart.ts` still issues GraphQL ([M6 §12](./backend/M6-cart.md#12-frontend-contract)) |
 | §10 browser verification (Scenarios A–G) | [ ] A23 outstanding |

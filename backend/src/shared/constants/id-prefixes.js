@@ -89,6 +89,23 @@ export const ID_PREFIXES = Object.freeze({
   foodOption: "fop_",
   inventoryItem: "inv_",
   stockMovement: "stk_",
+
+  /**
+   * Module 6 — cart. **One** prefix, for the one table this module mints a key for.
+   *
+   * `CartItem` and `CartItemOption` are deliberately absent, and that is the
+   * module's central design fact rather than an oversight: a cart line's key is
+   * the *composite line id* — the food id plus its sorted option ids — so that
+   * identical configurations merge instead of stacking. `orders.prisma` says so
+   * on the column, `types/cart.ts::CartLine.id` is the same value on the wire,
+   * and `@@id([cartId, id])` is the database enforcing it. A minted `cli_` would
+   * make two identical burgers two rows. `CartItemOption` has no id column at all
+   * — it is keyed `(cartId, cartItemId, optionId)`.
+   *
+   * There is no frontend fixture to match: the prototype's cart lives in Zustand
+   * and has never had a persisted cart id.
+   */
+  cart: "cart_",
 });
 
 /** Every prefix this backend is allowed to mint. Modules extend it as they land. */
