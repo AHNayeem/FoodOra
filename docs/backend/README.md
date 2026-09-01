@@ -7,6 +7,8 @@
 | [**F1 — Fastify Backend Foundation**](./F1-fastify-foundation.md) | the backend that exists in `backend/` today: stack, structure, lifecycle, Prisma layers, error and response contracts, validation, the reference seeder, the auth foundation, versioning, environment, tests |
 | [**M2 — Authentication & Sessions**](./M2-auth-sessions.md) | module 2: Argon2id, the session and refresh-token lifecycle, rotation with reuse detection, OTP, password reset, `requireUser`, the nine endpoints, and what the frontend would need to change to reach them |
 | [**M3 — RBAC / PBAC Authorization**](./M3-rbac-pbac.md) | module 3: role and permission resolution from the seeded 14/20/54, the `vendorId` scope model, the Fastify guards (`requirePermission`, `requireVendorAccess`, `requireAuthorization`), 401 vs 403, the in-process cache, and why the token still carries no permissions |
+| [**M4 — Catalog & Discovery**](./M4-catalog-discovery.md) | module 4: the directory, search, rails and one storefront; the brand/branch split behind the frontend's flat `Vendor`; `isOpen` and `distanceKm` derived per request and never stored; the taxonomy seeder |
+| [**M5 — Menu & Inventory**](./M5-menu-inventory.md) | module 5: boards, sections, dishes, modifier groups and options, and the stock behind them; availability derived as *merchant switch AND (untracked OR in stock)*; the movement ledger and the one guarded `UPDATE` that keeps a balance atomic; ownership, staff roles and branch scope |
 
 Everything below F1 describes the **removed** NestJS backend and is kept as a
 record of the reasoning, not as a plan. Where it and F1 disagree, F1 wins.
@@ -29,7 +31,7 @@ record of the reasoning, not as a plan. Where it and F1 disagree, F1 wins.
 > | What the backend must do | [`docs/FOODORA-BACKEND-REQUIREMENTS.md`](../FOODORA-BACKEND-REQUIREMENTS.md) |
 > | Module status | [`docs/FOODORA-MODULE-CHECKLIST.md`](../FOODORA-MODULE-CHECKLIST.md) |
 > | Product / frontend state | [`Analysis.md`](../../Analysis.md) |
-> | The backend as built | [`F1`](./F1-fastify-foundation.md), [`M2`](./M2-auth-sessions.md), [`M3`](./M3-rbac-pbac.md) |
+> | The backend as built | [`F1`](./F1-fastify-foundation.md), [`M2`](./M2-auth-sessions.md), [`M3`](./M3-rbac-pbac.md), [`M4`](./M4-catalog-discovery.md), [`M5`](./M5-menu-inventory.md) |
 >
 > These documents remain because the *reasoning* in them — D2 on normalisation
 > and money, D3's ER diagrams, D7 on the ledger and settlement — is what the

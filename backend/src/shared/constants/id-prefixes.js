@@ -66,6 +66,29 @@ export const ID_PREFIXES = Object.freeze({
    */
   cuisine: "cus_",
   category: "cat_",
+
+  /**
+   * Module 5 — menu & inventory. The seven tables this module writes.
+   *
+   * `sec_` and `food_` are the prefixes `lib/mock/menus.ts` and `lib/mock/foods.ts`
+   * already use, so a section or a dish keeps the shape the frontend's fixtures
+   * have and any deep link minted against them keeps resolving. The other five
+   * have no frontend fixture to match — the prototype has no `Menu` entity at all,
+   * and its option-group and option ids are ad-hoc strings built out of a name
+   * (`smash_addons`, `smash_bacon`) rather than identifiers anything links to — so
+   * they are named for the table they belong to.
+   *
+   * **`ven_` and `vbr_` are still absent**, for the reason module 4 gave: this
+   * module hangs a menu off a storefront and never mints one. Its tests create
+   * vendor fixtures with the same local `fixtureId` helper.
+   */
+  menu: "menu_",
+  menuSection: "sec_",
+  foodItem: "food_",
+  foodOptionGroup: "fog_",
+  foodOption: "fop_",
+  inventoryItem: "inv_",
+  stockMovement: "stk_",
 });
 
 /** Every prefix this backend is allowed to mint. Modules extend it as they land. */

@@ -5,10 +5,10 @@
 Database, backend, frontend and verification are tracked **separately** — a
 complete database column says nothing about the backend.
 
-Last updated **2026-08-27**, at the end of **module 4 — catalog & discovery**.
+Last updated **2026-09-01**, at the end of **module 5 — menu & inventory**.
 
 - **Database** — table, columns, relations, constraints, indexes exist and have been applied and exercised against real PostgreSQL.
-- **Backend** — Fastify routes exist and are wired to Prisma. *The foundation is built ([F1](./backend/F1-fastify-foundation.md)); module 2, auth & sessions ([M2](./backend/M2-auth-sessions.md)), module 3, RBAC/PBAC ([M3](./backend/M3-rbac-pbac.md)) and module 4, catalog & discovery ([M4](./backend/M4-catalog-discovery.md)) are built and verified. No other business module has started, by instruction.*
+- **Backend** — Fastify routes exist and are wired to Prisma. *The foundation is built ([F1](./backend/F1-fastify-foundation.md)); module 2, auth & sessions ([M2](./backend/M2-auth-sessions.md)), module 3, RBAC/PBAC ([M3](./backend/M3-rbac-pbac.md)), module 4, catalog & discovery ([M4](./backend/M4-catalog-discovery.md)) and module 5, menu & inventory ([M5](./backend/M5-menu-inventory.md)) are built and verified. No other business module has started, by instruction.*
 - **Frontend** — the surface exists and works on the mock path (state per [`Analysis.md`](../Analysis.md)).
 - **Verified** — driven end to end, not inspected. For the database phase this means the assertions in [`FOODORA-DATABASE-DESIGN.md`](./FOODORA-DATABASE-DESIGN.md) §9.
 
@@ -23,8 +23,8 @@ Last updated **2026-08-27**, at the end of **module 4 — catalog & discovery**.
 | Authentication & sessions | [x] | [x] [M2](./backend/M2-auth-sessions.md) | [x] mock path | [x] 70 tests + 51 lifecycle checks |
 | RBAC / PBAC | [x] | [x] [M3](./backend/M3-rbac-pbac.md) | [x] | [x] 71 tests against the seeded 14/20/54 |
 | Discovery & search | [x] | [x] [M4](./backend/M4-catalog-discovery.md) | [x] | [x] 115 tests + 49 flow checks |
-| Menu & options | [x] | [ ] | [x] | [x] |
-| Inventory & stock | [x] | [ ] | [x] | [x] |
+| Menu & options | [x] | [x] [M5](./backend/M5-menu-inventory.md) | [x] | [x] 130 tests + 54 flow checks |
+| Inventory & stock | [x] | [x] [M5](./backend/M5-menu-inventory.md) | [x] | [x] atomic adjust, ledger balances |
 | Cart | [x] re-keyed | [ ] | [x] | [x] |
 | Checkout & pricing | [x] | [ ] | [x] | [x] |
 | Order lifecycle (17 statuses) | [x] +`scheduled` | [ ] | [x] | [x] |
@@ -135,11 +135,12 @@ Last updated **2026-08-27**, at the end of **module 4 — catalog & discovery**.
 | Deferred schema changes DSC-1, DSC-2 | [x] closed |
 | Backend foundation | [x] Fastify app, health, error/response contract, validation, Prisma layers, auth guards — [F1](./backend/F1-fastify-foundation.md) |
 | Backend reference seeder | [x] 255 rows, deterministic and idempotent |
-| Backend test suite | [x] 330 assertions against real PostgreSQL, plus `npm run auth:flow` (51 checks) and `npm run catalog:flow` (49 checks) over a real socket |
+| Backend test suite | [x] 460 assertions against real PostgreSQL, plus `npm run auth:flow` (51 checks), `npm run catalog:flow` (49 checks) and `npm run menu:flow` (54 checks) over a real socket |
 | Forbidden technologies | [x] `npm run check:forbidden` — no TypeScript, NestJS, Redis, Docker, GraphQL |
 | Backend module 2 — auth & sessions | [x] Argon2id, sessions, refresh rotation with reuse detection, OTP, password reset, `requireUser` — [M2](./backend/M2-auth-sessions.md) |
 | Backend module 4 — catalog & discovery | [x] the directory, search, rails and one storefront; `isOpen` and `distanceKm` derived per request — [M4](./backend/M4-catalog-discovery.md) |
+| Backend module 5 — menu & inventory | [x] boards, sections, dishes, modifier groups and options, stock with an append-only movement ledger; availability derived as *switch AND (untracked OR in stock)*; the atomic adjustment is one guarded `UPDATE` — [M5](./backend/M5-menu-inventory.md) |
 | Backend catalog taxonomy seeder | [x] 66 rows (8 cuisines, 10 categories, 48 keywords), deterministic, idempotent, reconciling |
-| Backend business modules | [~] 4 of 32 done (0 foundation, 1 reference data, 2 auth, 3 RBAC/PBAC, 4 catalog) — next is module 5, menu & inventory |
+| Backend business modules | [~] 5 of 32 done (0 foundation, 1 reference data, 2 auth, 3 RBAC/PBAC, 4 catalog, 5 menu & inventory) — next is module 6, cart |
 | Frontend `.env.local` points at a deleted API | [~] A1–A3. `NEXT_PUBLIC_BACKEND_CATALOG` **set to `0`** by module 4 — the API is REST and `services/catalog.ts` still issues GraphQL ([M4 §6](./backend/M4-catalog-discovery.md#6-frontend-contract)). `NEXT_PUBLIC_BACKEND_AUTH` is still `1` and **must be `0`** for the same reason ([M2 §11](./backend/M2-auth-sessions.md#11-what-is-not-here)) |
 | §10 browser verification (Scenarios A–G) | [ ] A23 outstanding |

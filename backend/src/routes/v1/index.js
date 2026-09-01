@@ -24,6 +24,7 @@ import healthRoutes from "../../health/routes.js";
 import authModule from "../../modules/auth/index.js";
 import authzModule from "../../modules/authz/index.js";
 import catalogModule, { CATALOG_PREFIX } from "../../modules/catalog/index.js";
+import menuModule, { MENU_PREFIX } from "../../modules/menu/index.js";
 
 export default async function v1Routes(fastify) {
   // Same handlers as the unprefixed pair — a client that only knows the
@@ -67,4 +68,20 @@ export default async function v1Routes(fastify) {
    * of these three lines is load-bearing rather than tidy.
    */
   await fastify.register(catalogModule, { prefix: CATALOG_PREFIX });
+
+  /**
+   * Module 5 — menu & inventory, at `/api/v1/menu`.
+   *
+   * After module 4 because it is module 4's dependant in two senses: the build
+   * order in BACKEND-REQUIREMENTS §3 puts it there, and it imports `hours.js` to
+   * read a breakfast menu's window in the branch's own timezone. It consumes
+   * module 3's `requireVendorAccess` on every write and refuses to start without
+   * it, so the order of these four lines is load-bearing rather than tidy.
+   *
+   * Its three public reads — the customer's menu, one dish, and whether a set of
+   * modifiers is orderable — take no session at all, for the reason module 4's
+   * directory does not: a menu that only worked once somebody had signed in would
+   * be the wrong shape for a food platform.
+   */
+  await fastify.register(menuModule, { prefix: MENU_PREFIX });
 }
